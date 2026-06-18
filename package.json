@@ -1,0 +1,13 @@
+{
+  "name": "delphi-monorepo",
+  "private": true,
+  "scripts": {
+    "dev": "npm --prefix agent/web run dev",
+    "build": "npm --prefix agent/web run build",
+    "start": "npm --prefix agent/web run start",
+    "lint": "npm --prefix agent/web run lint"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
