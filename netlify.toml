@@ -1,0 +1,6 @@
+[build]
+  command = "npm --prefix DELPHI/agent/web run build"
+  publish = "DELPHI/agent/web/.next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
