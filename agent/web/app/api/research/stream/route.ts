@@ -94,12 +94,12 @@ export async function POST(req: Request) {
                 runOpenAIReview(query, p1).catch(() => null),
                 runAnthropicReview(query, p1).catch(() => null),
               ])
-            : Promise.resolve([null, null]),
+            : Promise.resolve([null, null] as (ProviderReview | null)[]),
         ]);
 
         const p2med = [...wk, ...ss].map(s => scoreSource(s, query, "medium", { seenSources: p1, predictive }));
         const p2 = [...p1, ...p2med];
-        const rev2 = aiP2.filter((r): r is ProviderReview => Boolean(r?.answer));
+        const rev2: ProviderReview[] = aiP2.filter((r): r is ProviderReview => Boolean(r && r.answer));
         const p2Confidence = computeConfidence(p2, rev2, query);
         const p2HighFresh = p2.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
 
@@ -142,12 +142,12 @@ export async function POST(req: Request) {
                 runOpenAIReview(query, p2).catch(() => null),
                 runAnthropicReview(query, p2).catch(() => null),
               ])
-            : Promise.resolve([null, null]),
+            : Promise.resolve([null, null] as (ProviderReview | null)[]),
         ]);
 
         const p3low = [...ol, ...se, ...hn].map(s => scoreSource(s, query, "low", { seenSources: p2, predictive }));
         const p3 = [...p2, ...p3low];
-        const revFinal = dedupeReviews(rev2, aiP3.filter((r): r is ProviderReview => Boolean(r?.answer)));
+        const revFinal = dedupeReviews(rev2, aiP3.filter((r): r is ProviderReview => Boolean(r && r.answer)));
 
         const highCount = p3.filter(s => s.reliability >= 0.72).length;
         const lowCount  = p3.filter(s => s.reliability < 0.5).length;

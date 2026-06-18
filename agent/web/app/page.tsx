@@ -14,8 +14,20 @@ const CLOCK_RINGS = [
   { id: "h",   name: "hr",  color: "#d946ef", periodS: 43200 },
 ];
 
-const RING_BASE = 42;   // innermost ring diameter px
-const RING_STEP = 18;   // px per ring step
+const RING_BASE = 54;   // innermost ring diameter px
+const RING_STEP = 26;   // px per ring step — wider gap so badges stay readable
+
+// Pull a short, glanceable value for the on-ring badge.
+// Prefers a number in the sublabel/label, else a stripped short label.
+function compactWheelValue(w: { label: string; sublabel: string }): string {
+  const subNum = w.sublabel.match(/\d+/)?.[0];
+  if (subNum) return subNum;
+  const labelNum = w.label.match(/\d+/)?.[0];
+  if (labelNum) return labelNum;
+  // strip leading emoji/symbol, keep first short token
+  const stripped = w.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+  return stripped.length <= 4 ? stripped : stripped.slice(0, 3);
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -185,18 +197,25 @@ function CompassRose({ heading }: { heading: number }) {
 
 // ─── Wheel ring ───────────────────────────────────────────────────────────────
 
-function WheelRing({ size, color, angleDeg, periodS, offsetS }: {
+function WheelRing({ size, color, angleDeg, periodS, offsetS, icon, value, name, fullLabel, active, onHover }: {
   size: number;
   color: string;
   angleDeg?: number;
   periodS?: number;
   offsetS?: number;
+  icon?: string;
+  value?: string | number;
+  name?: string;
+  fullLabel?: string;
+  active?: boolean;
+  onHover?: (on: boolean) => void;
 }) {
   const isAnim = periodS != null;
 
   const ringStyle: React.CSSProperties = isAnim
     ? {
         width: size, height: size, borderColor: color,
+        borderWidth: active ? 3 : undefined,
         animationName: "ring-spin",
         animationDuration: `${periodS}s`,
         animationDelay: `-${offsetS ?? 0}s`,
@@ -206,13 +225,39 @@ function WheelRing({ size, color, angleDeg, periodS, offsetS }: {
       }
     : {
         width: size, height: size, borderColor: color,
+        borderWidth: active ? 3 : undefined,
+        boxShadow: active ? `0 0 8px 1px ${color}` : undefined,
         transform: `translate(-50%, -50%) rotate(${angleDeg ?? 0}deg)`,
       };
 
+  const hasLabel = icon != null || value != null;
+
   return (
     <div className="cp-ring-anchor">
-      <div className="cp-ring" style={ringStyle}>
-        <div className="cp-ring-dot" style={{ background: color, boxShadow: `0 0 5px 1px ${color}88` }}/>
+      <div
+        className={`cp-ring${active ? " cp-ring-active" : ""}`}
+        style={ringStyle}
+        onMouseEnter={onHover ? () => onHover(true) : undefined}
+        onMouseLeave={onHover ? () => onHover(false) : undefined}
+      >
+        <div className="cp-ring-dot" style={{ background: color, boxShadow: `0 0 5px 1px ${color}88` }}>
+          {hasLabel && (
+            // counter-rotate so the badge stays upright while the ring is rotated
+            <span
+              className={`cp-ring-badge${active ? " cp-ring-badge-active" : ""}`}
+              style={{
+                transform: `rotate(${-(angleDeg ?? 0)}deg)`,
+                borderColor: color,
+                color,
+                background: active ? color : undefined,
+              }}
+            >
+              {icon && <span className="cp-ring-badge-icon">{icon}</span>}
+              {value != null && <span className="cp-ring-badge-val">{value}</span>}
+              {active && fullLabel && <span className="cp-ring-badge-full">{name ? `${name}: ` : ""}{fullLabel}</span>}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -229,6 +274,7 @@ export default function Home() {
   const [sigLoading, setSigLoading] = useState(false);
   const [manualHeading, setManualHeading] = useState(180);
   const [wheelZoom, setWheelZoom] = useState(1);
+  const [hoverRing, setHoverRing] = useState<string | null>(null);
 
   const [query, setQuery]       = useState("");
   const [res, setRes]           = useState<StreamState | null>(null);
@@ -367,7 +413,7 @@ export default function Home() {
   const clockCount     = CLOCK_RINGS.length;
   const totalRings     = clockCount + (weatherRing ? 1 : 0) + calendarCount;
   const outerDiameter  = RING_BASE + (totalRings - 1) * RING_STEP;
-  const containerH     = Math.ceil(outerDiameter / 2) + 6;
+  const containerH     = Math.ceil(outerDiameter / 2) + 16;
   const containerW     = outerDiameter + 8;
 
   const activeHeading = signals?.heading ?? manualHeading;
@@ -529,6 +575,12 @@ export default function Home() {
                     size={RING_BASE + (clockCount + (weatherRing ? 1 : 0) + i) * RING_STEP}
                     color={w.color}
                     angleDeg={w.angleDeg}
+                    icon={w.icon}
+                    value={compactWheelValue(w)}
+                    name={w.name}
+                    fullLabel={w.label}
+                    active={hoverRing === w.id}
+                    onHover={(on) => setHoverRing(on ? w.id : null)}
                   />
                 ))}
               </div>
@@ -549,7 +601,12 @@ export default function Home() {
                 </span>
               )}
               {calendarWheels.map(w => (
-                <span key={w.id} className="cp-rl-item">
+                <span
+                  key={w.id}
+                  className={`cp-rl-item cp-rl-link${hoverRing === w.id ? " cp-rl-active" : ""}`}
+                  onMouseEnter={() => setHoverRing(w.id)}
+                  onMouseLeave={() => setHoverRing(null)}
+                >
                   <span className="cp-rl-dot" style={{ background: w.color }}/>
                   <span>{w.icon}</span>
                   <span className="cp-rl-name">{w.name}:</span>

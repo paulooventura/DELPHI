@@ -200,6 +200,8 @@ html,body {
   position: absolute;
   border: 1.5px solid;
   border-radius: 50%;
+  cursor: pointer;
+  transition: border-width 0.12s ease, box-shadow 0.12s ease;
   /* default positioning for NON-animated rings via inline transform */
 }
 
@@ -213,6 +215,50 @@ html,body {
   height: 5px;
   border-radius: 50%;
 }
+
+/* Glanceable icon + number badge that rides on the dot */
+.cp-ring-badge {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform-origin: center bottom;
+  /* base transform set inline (counter-rotation); translate centers it */
+  margin-left: -50%;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 4px;
+  height: 15px;
+  border: 1.5px solid;
+  border-radius: 8px;
+  background: rgba(8, 13, 24, 0.92);
+  font-size: 9.5px;
+  line-height: 1;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 2;
+  transition: height 0.12s ease, font-size 0.12s ease;
+}
+.cp-ring-badge-icon { font-size: 10.5px; }
+.cp-ring-badge-val  { letter-spacing: 0.2px; }
+
+/* Expanded badge on hover — shows the full label, sits above the rest */
+.cp-ring-badge-active {
+  height: 18px;
+  padding: 2px 7px;
+  font-size: 11px;
+  color: #07101f !important;
+  z-index: 20;
+  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
+}
+.cp-ring-badge-full {
+  margin-left: 2px;
+  font-weight: 700;
+}
+
+/* Highlighted ring */
+.cp-ring-active { z-index: 15; }
 
 /* CSS animation for clock wheels */
 @keyframes ring-spin {
@@ -230,6 +276,8 @@ html,body {
   color: var(--ink-dim);
 }
 .cp-rl-item { display: inline-flex; align-items: center; gap: 0.28rem; }
+.cp-rl-link { cursor: pointer; border-radius: 5px; padding: 1px 4px; transition: background 0.12s ease; }
+.cp-rl-link:hover, .cp-rl-active { background: rgba(80, 130, 200, 0.18); }
 .cp-rl-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .cp-rl-name { color: var(--ink-faint); }
 

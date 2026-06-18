@@ -95,15 +95,43 @@ function queryTokens(query: string): string[] {
     .filter((t) => t.length > 2 && !STOP_WORDS.has(t));
 }
 
+function stem(token: string): string {
+  // light stemmer: strip common inflectional suffixes for fuzzy matching
+  return token
+    .replace(/(ies)$/, "y")
+    .replace(/(sses|ches|shes|xes)$/, "")
+    .replace(/(ing|edly|edly|ed|ly|es|s)$/, "")
+    .replace(/(ation|ising|izing|ise|ize)$/, "")
+    .slice(0, 12);
+}
+
 function scoreRelevance(query: string, title: string, snippet: string): number {
   const tokens = queryTokens(query);
   if (tokens.length === 0) return 0.45;
+  const titleL = title.toLowerCase();
   const haystack = `${title} ${snippet}`.toLowerCase();
-  const overlap = tokens.filter((t) => haystack.includes(t)).length;
-  const density = overlap / tokens.length;
-  const titleHits = tokens.filter((t) => title.toLowerCase().includes(t)).length;
+  const hayStems = new Set(haystack.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).map(stem));
+
+  // token-level overlap, exact preferred, stem as fallback
+  let matched = 0;
+  let titleHits = 0;
+  for (const t of tokens) {
+    const exact = haystack.includes(t);
+    const stemmed = exact || hayStems.has(stem(t));
+    if (stemmed) matched += exact ? 1 : 0.6;
+    if (titleL.includes(t)) titleHits++;
+  }
+  const density = matched / tokens.length;
   const titleBoost = Math.min(0.22, titleHits * 0.06);
-  return Math.max(0.05, Math.min(0.98, density * 0.78 + titleBoost));
+
+  // phrase bonus: reward contiguous query bigrams appearing verbatim
+  let phraseBonus = 0;
+  for (let i = 0; i < tokens.length - 1; i++) {
+    if (haystack.includes(`${tokens[i]} ${tokens[i + 1]}`)) phraseBonus += 0.05;
+  }
+  phraseBonus = Math.min(0.16, phraseBonus);
+
+  return Math.max(0.05, Math.min(0.98, density * 0.66 + titleBoost + phraseBonus));
 }
 
 function extractPublishedDate(item: { title: string; snippet: string; source: string }): string | null {
@@ -393,19 +421,108 @@ export async function runAnthropicReview(query: string, sources: SourceItem[]): 
   }
 }
 
-function topicTerms(sources: SourceItem[]): string[] {
-  const freq: Record<string, number> = {};
+function topicTerms(sources: SourceItem[], query = ""): string[] {
+  const qStems = new Set(queryTokens(query).map(stem));
+  const uni: Record<string, number> = {};
+  const bi: Record<string, number> = {};
+  const docFreq: Record<string, number> = {};
+
   for (const s of sources) {
-    const text = `${s.title} ${s.snippet}`.toLowerCase().replace(/[^a-z0-9\s]/g, " ");
-    for (const t of text.split(/\s+/)) {
-      if (t.length < 4 || STOP_WORDS.has(t)) continue;
-      freq[t] = (freq[t] ?? 0) + 1;
+    const words = `${s.title} ${s.snippet}`
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length >= 4 && !STOP_WORDS.has(t));
+    const seen = new Set<string>();
+    for (let i = 0; i < words.length; i++) {
+      const w = words[i];
+      uni[w] = (uni[w] ?? 0) + 1;
+      if (!seen.has(w)) { docFreq[w] = (docFreq[w] ?? 0) + 1; seen.add(w); }
+      if (i < words.length - 1) {
+        const next = words[i + 1];
+        if (next.length >= 4 && !STOP_WORDS.has(next)) {
+          const bigram = `${w} ${next}`;
+          bi[bigram] = (bi[bigram] ?? 0) + 1;
+        }
+      }
     }
   }
-  return Object.entries(freq)
+
+  // Score: corroboration (appears in many distinct sources) beats raw count,
+  // and terms tied to the query get a boost. Bigrams are weighted higher.
+  const scored: Array<[string, number]> = [];
+  for (const [term, count] of Object.entries(uni)) {
+    const corroboration = docFreq[term] ?? 1;
+    const queryTie = qStems.has(stem(term)) ? 1.6 : 1;
+    scored.push([term, count * 0.4 + corroboration * 1.1 * queryTie]);
+  }
+  for (const [term, count] of Object.entries(bi)) {
+    if (count < 2) continue; // bigrams only matter if repeated
+    scored.push([term, count * 2.2]);
+  }
+
+  return scored
     .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
+    .filter(([t], i, arr) => arr.findIndex(([o]) => o.includes(t) && o !== t) === -1)
+    .slice(0, 6)
     .map(([term]) => term);
+}
+
+// How many distinct sources corroborate the same content tokens — a real
+// signal that a claim is supported rather than appearing once.
+function corroborationStrength(sources: SourceItem[]): number {
+  if (sources.length < 2) return 0;
+  const docTokens = sources.map(
+    (s) =>
+      new Set(
+        `${s.title} ${s.snippet}`
+          .toLowerCase()
+          .replace(/[^a-z0-9\s]/g, " ")
+          .split(/\s+/)
+          .filter((t) => t.length >= 5 && !STOP_WORDS.has(t)),
+      ),
+  );
+  const tokenDocCount: Record<string, number> = {};
+  for (const set of docTokens) {
+    for (const t of set) tokenDocCount[t] = (tokenDocCount[t] ?? 0) + 1;
+  }
+  const corroborated = Object.values(tokenDocCount).filter((c) => c >= 3).length;
+  return Math.min(0.12, corroborated * 0.012);
+}
+
+// Pull the most query-relevant sentence fragments to ground the answer in
+// actual source content instead of just provider names.
+function extractClaims(query: string, sources: SourceItem[], limit = 3): string[] {
+  const qTokens = queryTokens(query);
+  if (qTokens.length === 0) return [];
+  const candidates: Array<{ text: string; score: number }> = [];
+
+  for (const s of sources.slice(0, 12)) {
+    const sentences = s.snippet
+      .replace(/\s+/g, " ")
+      .split(/(?<=[.!?])\s+|\s\|\s/)
+      .map((x) => x.trim())
+      .filter((x) => x.length >= 24 && x.length <= 240 && /[a-z]{4,}/i.test(x));
+    for (const sent of sentences) {
+      const low = sent.toLowerCase();
+      const hits = qTokens.filter((t) => low.includes(t) || low.includes(stem(t))).length;
+      if (hits === 0) continue;
+      // weight by query overlap and the source's reliability
+      const score = (hits / qTokens.length) * 0.7 + s.reliability * 0.3;
+      candidates.push({ text: sent, score });
+    }
+  }
+
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const c of candidates.sort((a, b) => b.score - a.score)) {
+    const key = c.text.toLowerCase().slice(0, 40);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(c.text);
+    if (out.length >= limit) break;
+  }
+  return out;
 }
 
 function sourceDiversityBoost(sources: SourceItem[]): number {
@@ -435,8 +552,10 @@ export function buildShortAnswer(
   const high = sorted.filter((s) => s.reliability >= 0.72);
   const freshHigh = high.filter((s) => (s.ageDays ?? 10_000) <= 365);
   const providers = [...new Set(sorted.slice(0, 8).map((s) => s.source))].join(", ");
-  const terms = topicTerms(sorted);
+  const terms = topicTerms(sorted, query);
+  const claims = extractClaims(query, sorted, 2);
 
+  // AI peer review, when available, is the strongest synthesis.
   if (reviews.length > 0) {
     const best = [...reviews].sort((a, b) => b.confidence - a.confidence)[0];
     const uncertainty = predictiveUncertaintyNote(query, freshHigh);
@@ -449,13 +568,19 @@ export function buildShortAnswer(
     return `${best.answer}${evidenceLine}${uncertainty ? ` ${uncertainty}` : ""}${isPartial ? " [Refining...]" : ""}`;
   }
 
+  // No AI review: ground the synthesis in actual source content.
+  const corroborated = sources.filter((s) => s.relevance != null && s.relevance >= 0.4).length;
+  const evidencePhrase = claims.length > 0
+    ? ` Key finding: ${claims[0]}${claims[1] ? ` Also: ${claims[1]}` : ""}`
+    : "";
+
   if (freshHigh.length >= 3) {
-    return `Evidence synthesis from ${providers}: strongest agreement centers on ${terms.slice(0, 3).join(", ")}. ${freshHigh.length} recent high-authority sources align.${isPartial ? " [Peer review in progress...]" : ""}`;
+    return `Across ${providers}, ${corroborated} relevant sources converge on ${terms.slice(0, 3).join(", ")}.${evidencePhrase} ${freshHigh.length} recent high-authority sources align.${isPartial ? " [Peer review in progress...]" : ""}`;
   }
   if (high.length >= 2) {
-    return `Moderate evidence from ${providers}. Core signals: ${terms.slice(0, 3).join(", ")}. Reliability is constrained by source freshness.${isPartial ? " [Expanding...]" : ""}`;
+    return `Moderate evidence from ${providers} on ${terms.slice(0, 3).join(", ")}.${evidencePhrase} Reliability is constrained by source freshness.${isPartial ? " [Expanding...]" : ""}`;
   }
-  return `Directional only: source quality/freshness is limited across ${providers}. Use this as hypothesis generation, not firm conclusion.${isPartial ? " [Searching for stronger sources...]" : ""}`;
+  return `Directional only across ${providers}: ${terms.slice(0, 3).join(", ")}.${evidencePhrase} Treat as hypothesis generation, not firm conclusion.${isPartial ? " [Searching for stronger sources...]" : ""}`;
 }
 
 export function computeConfidence(sources: SourceItem[], reviews: ProviderReview[], query?: string): number {
@@ -465,7 +590,11 @@ export function computeConfidence(sources: SourceItem[], reviews: ProviderReview
   const top = [...sources].sort((a, b) => b.reliability - a.reliability).slice(0, 10);
   const srcReliability = top.reduce((sum, s) => sum + s.reliability, 0) / top.length;
   const srcFreshness = top.reduce((sum, s) => sum + (s.freshness ?? 0.4), 0) / top.length;
-  const base = srcReliability * 0.64 + srcFreshness * 0.24 + sourceDiversityBoost(top);
+  const base =
+    srcReliability * 0.6 +
+    srcFreshness * 0.22 +
+    sourceDiversityBoost(top) +
+    corroborationStrength(top);
 
   const reviewConfidence =
     reviews.length > 0
