@@ -8,6 +8,8 @@ import {
   type SourceItem, type ProviderReview,
 } from "../../../../lib/researchEngine";
 
+const PREDICTIVE_RE = /\b(win|winner|predict|forecast|odds|chances|likely|next|future|will be|who is going to|who will)\b/i;
+
 async function safely<T>(p: Promise<T[]>): Promise<T[]> {
   return p.catch(() => []);
 }
@@ -35,10 +37,11 @@ export async function POST(req: Request) {
       }
 
       const deadline = Date.now() + 57000;
+      const predictive = PREDICTIVE_RE.test(query);
 
       try {
         // ── PHASE 1: high-tier academic sources ──────────────────────────
-        emit({ phase: 1, status: "Scanning primary academic databases…", answer: null });
+        emit({ phase: 1, status: "Scanning primary academic databases (efficiency-first)…", answer: null });
 
         const [cr, oa, pm, ax] = await Promise.all([
           safely(crossrefSources(query)),
@@ -48,59 +51,101 @@ export async function POST(req: Request) {
         ]);
 
         const p1raw = [...cr, ...oa, ...pm, ...ax];
-        const p1 = p1raw.map(s => scoreSource(s, query, "high", { predictive: /\b(win|winner|predict|forecast|odds|chances|likely|next|future|will be|who is going to|who will)\b/i.test(query) }));
+        const p1 = p1raw.map(s => scoreSource(s, query, "high", { predictive }));
+        const p1Confidence = computeConfidence(p1, [], query);
+        const p1HighFresh = p1.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
 
         emit({
           phase: 1,
           status: `Phase 1 complete — ${p1.length} sources`,
           answer: buildShortAnswer(query, p1, [], true),
-          confidence: computeConfidence(p1, [], query),
+          confidence: p1Confidence,
           sources: p1.sort((a, b) => b.reliability - a.reliability).slice(0, 8),
           peerReview: [],
           report: buildReport(p1, [], "Phase 1 - primary sources only", query),
         });
 
+        // Shortcut: stop immediately when primary evidence is already strong.
+        if (!predictive && p1Confidence >= 0.75 && p1HighFresh >= 4) {
+          emit({
+            phase: 1,
+            complete: true,
+            status: "Complete - strong convergence reached in primary sources",
+            answer: buildShortAnswer(query, p1, [], false),
+            confidence: p1Confidence,
+            sources: p1.sort((a, b) => b.reliability - a.reliability).slice(0, 12),
+            peerReview: [],
+            report: buildReport(p1, [], "Early stop: high-confidence primary-source convergence.", query),
+          });
+          return;
+        }
+
         if (Date.now() > deadline) { done = true; controller.close(); return; }
 
         // ── PHASE 2: medium-tier + AI review ─────────────────────────────
-        emit({ phase: 2, status: "Expanding to secondary sources + peer review…", answer: null });
+        emit({ phase: 2, status: "Expanding to secondary sources and selective peer review…", answer: null });
+
+        const runAiPhase2 = predictive || p1Confidence < 0.72;
 
         const [[wk, ss], aiP2] = await Promise.all([
           Promise.all([safely(wikipediaSources(query)), safely(semanticScholarSources(query))]),
-          Promise.all([
-            runOpenAIReview(query, p1).catch(() => null),
-            runAnthropicReview(query, p1).catch(() => null),
-          ]),
+          runAiPhase2
+            ? Promise.all([
+                runOpenAIReview(query, p1).catch(() => null),
+                runAnthropicReview(query, p1).catch(() => null),
+              ])
+            : Promise.resolve([null, null]),
         ]);
 
-        const p2med = [...wk, ...ss].map(s => scoreSource(s, query, "medium", { seenSources: p1, predictive: /\b(win|winner|predict|forecast|odds|chances|likely|next|future|will be|who is going to|who will)\b/i.test(query) }));
+        const p2med = [...wk, ...ss].map(s => scoreSource(s, query, "medium", { seenSources: p1, predictive }));
         const p2 = [...p1, ...p2med];
         const rev2 = aiP2.filter((r): r is ProviderReview => Boolean(r?.answer));
+        const p2Confidence = computeConfidence(p2, rev2, query);
+        const p2HighFresh = p2.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
 
         emit({
           phase: 2,
           status: `Phase 2 complete — ${p2.length} sources, ${rev2.length} AI reviews`,
           answer: buildShortAnswer(query, p2, rev2, true),
-          confidence: computeConfidence(p2, rev2, query),
+          confidence: p2Confidence,
           sources: p2.sort((a, b) => b.reliability - a.reliability).slice(0, 10),
           peerReview: rev2,
           report: buildReport(p2, rev2, "Phase 2 - secondary expansion", query),
         });
+
+        // Shortcut: stop before low-tier crawl if evidence is already strong.
+        if (!predictive && p2Confidence >= 0.77 && p2HighFresh >= 5) {
+          emit({
+            phase: 2,
+            complete: true,
+            status: "Complete - enough evidence gathered without low-tier crawl",
+            answer: buildShortAnswer(query, p2, rev2, false),
+            confidence: p2Confidence,
+            sources: p2.sort((a, b) => b.reliability - a.reliability).slice(0, 14),
+            peerReview: rev2,
+            report: buildReport(p2, rev2, "Early stop: medium-phase confidence threshold achieved.", query),
+          });
+          return;
+        }
 
         if (Date.now() > deadline) { done = true; controller.close(); return; }
 
         // ── PHASE 3: low-tier + re-review + final ────────────────────────
         emit({ phase: 3, status: "Deep scan + synthesising final answer…", answer: null });
 
+        const runAiPhase3 = predictive || p2Confidence < 0.7;
+
         const [[ol, se, hn], aiP3] = await Promise.all([
           Promise.all([safely(openLibrarySources(query)), safely(stackExchangeSources(query)), safely(hackerNewsSources(query))]),
-          Promise.all([
-            runOpenAIReview(query, p2).catch(() => null),
-            runAnthropicReview(query, p2).catch(() => null),
-          ]),
+          runAiPhase3
+            ? Promise.all([
+                runOpenAIReview(query, p2).catch(() => null),
+                runAnthropicReview(query, p2).catch(() => null),
+              ])
+            : Promise.resolve([null, null]),
         ]);
 
-        const p3low = [...ol, ...se, ...hn].map(s => scoreSource(s, query, "low", { seenSources: p2, predictive: /\b(win|winner|predict|forecast|odds|chances|likely|next|future|will be|who is going to|who will)\b/i.test(query) }));
+        const p3low = [...ol, ...se, ...hn].map(s => scoreSource(s, query, "low", { seenSources: p2, predictive }));
         const p3 = [...p2, ...p3low];
         const revFinal = dedupeReviews(rev2, aiP3.filter((r): r is ProviderReview => Boolean(r?.answer)));
 

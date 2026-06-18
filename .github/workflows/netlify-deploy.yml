@@ -14,6 +14,15 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
+      - name: Validate Netlify secrets
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "Missing NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID. Configure repository secrets before deploy."
+            exit 1
+          fi
       - name: Install web deps
         run: npm --prefix agent/web install
       - name: Deploy to Netlify
