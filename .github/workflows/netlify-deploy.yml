@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: '18'
       - name: Install web deps
-        run: npm --prefix DELPHI/agent/web install
+        run: npm --prefix agent/web install
       - name: Deploy to Netlify
         uses: netlify/actions/cli@master
         with:
