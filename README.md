@@ -21,6 +21,8 @@ npm run dev
 
 Deploying to GitHub + Netlify
 
+This project is built to be local-first and cloud-ready. The UI and intelligence are self-contained in `agent/web`, so the same app can run locally and also deploy to `palotino.netlify.app` without depending on paid APIs.
+
 1. Initialize a git repo and push to GitHub:
 
 ```bash
@@ -32,7 +34,7 @@ git remote add origin git@github.com:YOUR_USER/YOUR_REPO.git
 git push -u origin main
 ```
 
-2. On Netlify, create a new site from GitHub and connect the repository. Set the build command to:
+2. On Netlify, connect this repository to the existing site `palotino.netlify.app`. Set the build command to:
 
 ```
 npm --prefix DELPHI/agent/web run build
@@ -44,12 +46,22 @@ and the publish directory to:
 DELPHI/agent/web/.next
 ```
 
-3. (Optional) Add the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` as GitHub Secrets to allow automatic deploys via workflow.
+3. Add the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` as GitHub Secrets so the workflow can deploy to `palotino.netlify.app` automatically.
 
 Secrets required for the workflow:
 - `NETLIFY_AUTH_TOKEN`
 - `NETLIFY_SITE_ID`
 
-The repository includes `netlify.toml` and a GitHub Actions workflow to deploy on push when the secrets are configured.
+The repository includes `netlify.toml` and a GitHub Actions workflow that deploys to `palotino.netlify.app` on push to `main` and also on a 10-minute schedule so the cloud site stays synchronized.
 
-If you want, I can create the GitHub repo for you (you'll need to provide an access token), or guide you through connecting Netlify.
+Local usage:
+
+```bash
+cd DELPHI/agent/web
+npm install
+npm run dev
+```
+
+Open `http://localhost:3000` for the same local UI and intelligence.
+
+No external credit-based or API-token-based services are required by default. The app currently runs using built-in local intelligence logic, so it remains lightweight and free to use.

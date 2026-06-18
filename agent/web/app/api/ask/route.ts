@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server";
+import { runProwler } from "../../../lib/runProwler";
 
 export async function POST(request: Request) {
   try {
     const body = await request.json();
+    const query = typeof body.query === "string" ? body.query : "";
 
-    const res = await fetch("http://localhost:3001/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-    return NextResponse.json(data, { status: res.status });
+    const result = await runProwler(query);
+    return NextResponse.json(result);
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });
   }
