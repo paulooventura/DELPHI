@@ -1,3 +1,4 @@
+import { NextResponse } from "next/server";
 import {
   crossrefSources, openAlexSources, pubmedSources, arxivSources,
   semanticScholarSources, wikipediaSources, wikidataSources, duckDuckGoSources,
@@ -7,6 +8,7 @@ import {
 } from "../../../../lib/researchEngine";
 
 const PREDICTIVE_RE = /\b(win|winner|predict|forecast|odds|chances|likely|next|future|will be|who is going to|who will)\b/i;
+const LOCAL_REALTIME_RE = /\b(weather|temperature|rain|forecast|sports score|restaurant|bars near|traffic|local news)\b/i;
 
 // ── Real-time / live-data queries the static source set CANNOT answer.
 // Crossref, arXiv, PubMed, OpenAlex, Wikipedia etc. have no live feeds, so a
@@ -39,6 +41,21 @@ export async function POST(req: Request) {
   const encoder = new TextEncoder();
   let done = false;
 
+  // 1. Intercept real-time and out-of-scope requests immediately with a single-phrase response
+  if (LOCAL_REALTIME_RE.test(query)) {
+    return NextResponse.json({
+      phase: 1,
+      complete: true,
+      status: "Out of scope",
+      answer: "This literature engine handles deep academic research; please use a standard assistant for live web utilities like weather.",
+      confidence: 0,
+      sources: [],
+      peerReview: [],
+      report: "Intercepted real-time query."
+    });
+  }
+
+  // 2. Continuous stream logic for deep academic searches
   const stream = new ReadableStream({
     async start(controller) {
       function emit(data: object) {
@@ -101,6 +118,21 @@ export async function POST(req: Request) {
         const p1Confidence = computeConfidence(p1, query);
         const p1HighFresh = p1.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
 
+        // Early fallback check if no academic records match
+        if (p1.length === 0 || p1Confidence < 0.15) {
+          emit({
+            phase: 1,
+            complete: true,
+            status: "No verified academic or primary records found for this query.",
+            answer: "The research engine could not locate sufficiently reliable, verified data matching your specific request. Please refine or broaden your query parameters.",
+            confidence: 0,
+            sources: [],
+            peerReview: [],
+            report: "Halted: Query does not align with active knowledge domains.",
+          });
+          return;
+        }
+
         emit({
           phase: 1,
           status: `Phase 1 complete — ${p1.length} sources (${relevantCount(p1)} on-topic)${failures.length ? `, providers unavailable: ${failures.join(", ")}` : ""}`,
@@ -141,6 +173,21 @@ export async function POST(req: Request) {
         const p2 = [...p1, ...p2med];
         const p2Confidence = computeConfidence(p2, query);
         const p2HighFresh = p2.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
+
+        // Halt if data drops below safe thresholds during expansion
+        if (p2Confidence < 0.35) {
+          emit({
+            phase: 2,
+            complete: true,
+            status: "Halted: Secondary source divergence detected.",
+            answer: "Insufficient reliable documentation found. Results cannot be verified with high structural confidence.",
+            confidence: p2Confidence,
+            sources: p2.sort((a, b) => b.reliability - a.reliability).slice(0, 5),
+            peerReview: rev2,
+            report: "Halted at noise boundary: Secondary expansion failed convergence thresholds.",
+          });
+          return;
+        }
 
         emit({
           phase: 2,
