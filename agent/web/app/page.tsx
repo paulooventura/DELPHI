@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { starsInDirection, relevantConstellations, type SkyObject, type ConstellationHit } from "../lib/starmap";
-import type { ProviderReview, SourceItem, ResearchReport } from "../lib/researchEngine";
+import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
+import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -16,6 +17,37 @@ const CLOCK_RINGS = [
 
 const RING_BASE = 54;   // innermost ring diameter px
 const RING_STEP = 26;   // px per ring step — wider gap so badges stay readable
+
+// ─── Sensor toggles ───────────────────────────────────────────────────────────
+
+type SensorToggles = {
+  skyMap: boolean;
+  compass: boolean;
+  location: boolean;
+  heading: boolean;
+  network: boolean;
+  emf: boolean;
+};
+
+const DEFAULT_TOGGLES: SensorToggles = {
+  skyMap: true,
+  compass: true,
+  location: true,
+  heading: true,
+  network: true,
+  emf: false, // opt-in: magnetometer permission prompts are intrusive
+};
+
+const TOGGLES_STORAGE_KEY = "cp-sensor-toggles";
+
+const SENSOR_TOGGLE_DEFS: Array<{ key: keyof SensorToggles; label: string }> = [
+  { key: "skyMap",   label: "Sky Map" },
+  { key: "compass",  label: "Compass" },
+  { key: "location", label: "Location" },
+  { key: "heading",  label: "Heading" },
+  { key: "network",  label: "Network" },
+  { key: "emf",      label: "EMF" },
+];
 
 // Pull a short, glanceable value for the on-ring badge.
 // Prefers a number in the sublabel/label, else a stripped short label.
@@ -36,18 +68,20 @@ type Signals = {
   lon: number | null;
   heading: number | null;
   network: string | null;
+  emfUt: number | null;
 };
 
 type StreamState = {
   phase: number;
   status: string;
   complete?: boolean;
+  insufficientEvidence?: boolean;
   error?: string;
   answer?: string;
   confidence?: number;
   sources?: SourceItem[];
   peerReview?: ProviderReview[];
-  report?: ResearchReport;
+  report?: ResearchReport | null;
 };
 
 // ─── Sky Map ──────────────────────────────────────────────────────────────────
@@ -275,6 +309,7 @@ export default function Home() {
   const [manualHeading, setManualHeading] = useState(180);
   const [wheelZoom, setWheelZoom] = useState(1);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
+  const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
 
   const [query, setQuery]       = useState("");
   const [res, setRes]           = useState<StreamState | null>(null);
@@ -282,6 +317,7 @@ export default function Home() {
   const abortRef = useRef<AbortController | null>(null);
   const pinchStartRef = useRef<number | null>(null);
   const pinchZoomRef = useRef(1);
+  const headingCleanupRef = useRef<(() => void) | null>(null);
 
   // ── Clock offsets: computed client-side only (no SSR mismatch)
   const [clockOffsets, setClockOffsets] = useState<{ ms: number; s: number; min: number; h: number } | null>(null);
@@ -306,6 +342,11 @@ export default function Home() {
     return () => clearInterval(id);
   }, []);
 
+  // ── Sensor toggles: persist on every change (initial load happens in captureSensors' mount effect below).
+  useEffect(() => {
+    try { localStorage.setItem(TOGGLES_STORAGE_KEY, JSON.stringify(toggles)); } catch {}
+  }, [toggles]);
+
   // ── Fetch cycles
   const loadCycles = useCallback(async (lat?: number, lon?: number) => {
     const q = lat != null ? `?lat=${lat}&lon=${lon}` : "";
@@ -315,54 +356,100 @@ export default function Home() {
 
   useEffect(() => { void loadCycles(); }, [loadCycles]);
 
-  // ── Refresh cadence: keep sky/cycles current every minute.
+  // ── Refresh cadence: keep sky/cycles current every minute. Heading is a
+  // continuous live stream (see startHeadingWatch), not a periodic sample.
   useEffect(() => {
     const id = setInterval(() => {
       setMinuteKey(k => k + 1);
-      if (!signals?.heading || !signals?.lat || !signals?.lon) {
-        void captureSensors();
-      }
+      const needsCapture =
+        (toggles.location && (signals?.lat == null || signals?.lon == null)) ||
+        (toggles.network && !signals?.network) ||
+        (toggles.emf && signals?.emfUt == null);
+      if (needsCapture) void captureSensors();
       void loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined);
     }, 60000);
     return () => clearInterval(id);
-  }, [signals?.heading, signals?.lat, signals?.lon, loadCycles]);
+  }, [signals?.lat, signals?.lon, signals?.network, signals?.emfUt, toggles, loadCycles]);
 
-  // ── Capture signals
-  async function captureSensors() {
+  // ── Capture one-shot signals: each piece is requested only when its toggle is on.
+  // Heading is excluded here — it's a continuous stream, see startHeadingWatch.
+  async function captureSensors(t: SensorToggles = toggles) {
     setSigLoading(true);
     try {
-      let lat: number | null = null, lon: number | null = null;
-      if ("geolocation" in navigator) {
-        await new Promise<void>(resolve => {
-          navigator.geolocation.getCurrentPosition(
-            p => { lat = p.coords.latitude; lon = p.coords.longitude; resolve(); },
-            () => resolve(),
-            { timeout: 7000, enableHighAccuracy: true },
-          );
-        });
-      }
-      let heading: number | null = null;
-      await new Promise<void>(resolve => {
-        const fn = (e: DeviceOrientationEvent & { webkitCompassHeading?: number }) => {
-          heading = typeof e.webkitCompassHeading === "number"
-            ? e.webkitCompassHeading
-            : typeof e.alpha === "number" ? (360 - e.alpha) % 360 : null;
-          window.removeEventListener("deviceorientation", fn as EventListener);
-          resolve();
-        };
-        window.addEventListener("deviceorientation", fn as EventListener, { once: true });
-        setTimeout(() => { window.removeEventListener("deviceorientation", fn as EventListener); resolve(); }, 2500);
-      });
-      const nav = navigator as Navigator & { connection?: { effectiveType?: string } };
-      setSignals({ lat, lon, heading, network: nav.connection?.effectiveType ?? null });
-      if (lat != null && lon != null) void loadCycles(lat, lon);
+      const [location, emf] = await Promise.all([
+        t.location ? getLocation() : Promise.resolve({ latitude: null, longitude: null, accuracyM: null }),
+        t.emf ? getMagneticField() : Promise.resolve({ magneticFieldUt: null, method: "disabled" }),
+      ]);
+      const network = t.network ? getNetworkInfo() : { effectiveType: null, downlinkMbps: null, rttMs: null, hint5G: "" };
+      setSignals(prev => ({
+        lat: location.latitude,
+        lon: location.longitude,
+        heading: prev?.heading ?? null,
+        network: network.effectiveType,
+        emfUt: emf.magneticFieldUt,
+      }));
+      if (location.latitude != null && location.longitude != null) void loadCycles(location.latitude, location.longitude);
     } finally {
       setSigLoading(false);
     }
   }
 
+  // ── Live heading: a continuous "deviceorientation" subscription so the
+  // compass dial and sky map rotate in real time as the device turns.
+  // iOS 13+ requires requestOrientationPermission() to run inside a user
+  // gesture (a click), so this must be called directly from onClick handlers,
+  // not from inside an effect.
+  function stopHeadingWatch() {
+    headingCleanupRef.current?.();
+    headingCleanupRef.current = null;
+  }
+
+  async function startHeadingWatch() {
+    stopHeadingWatch();
+    const allowed = await requestOrientationPermission();
+    if (!allowed) return;
+    headingCleanupRef.current = watchCompassHeading(heading => {
+      setSignals(prev => prev ? { ...prev, heading } : { lat: null, lon: null, network: null, emfUt: null, heading });
+    });
+  }
+
+  // ── Flip a sensor toggle: clear its stale reading when turning off, re-capture when turning on.
+  function setSensorEnabled(key: keyof SensorToggles, enabled: boolean) {
+    setToggles(prev => ({ ...prev, [key]: enabled }));
+    if (key === "skyMap" || key === "compass") return;
+    if (key === "heading") {
+      if (enabled) void startHeadingWatch();
+      else {
+        stopHeadingWatch();
+        setSignals(prev => prev ? { ...prev, heading: null } : prev);
+      }
+      return;
+    }
+    if (!enabled) {
+      setSignals(prev => {
+        if (!prev) return prev;
+        if (key === "location") return { ...prev, lat: null, lon: null };
+        if (key === "network") return { ...prev, network: null };
+        if (key === "emf") return { ...prev, emfUt: null };
+        return prev;
+      });
+    } else {
+      void captureSensors();
+    }
+  }
+
   useEffect(() => {
-    void captureSensors();
+    let initial = DEFAULT_TOGGLES;
+    try {
+      const raw = localStorage.getItem(TOGGLES_STORAGE_KEY);
+      if (raw) initial = { ...DEFAULT_TOGGLES, ...JSON.parse(raw) };
+    } catch {}
+    setToggles(initial);
+    void captureSensors(initial);
+    // Auto-starts on Android (no permission prompt needed); on iOS this
+    // silently no-ops until the user taps "Locate Me" or the Heading toggle.
+    if (initial.heading) void startHeadingWatch();
+    return () => stopHeadingWatch();
   }, []);
 
   // ── Streaming research
@@ -482,45 +569,83 @@ export default function Home() {
           <section className="cp-card cp-sky-card">
             <div className="cp-card-head">
               <h2 className="cp-card-title">Sky Map</h2>
-              <button className="cp-btn cp-btn-sm" onClick={captureSensors} disabled={sigLoading}>
+              <button
+                className="cp-btn cp-btn-sm"
+                onClick={() => { if (toggles.heading) void startHeadingWatch(); void captureSensors(); }}
+                disabled={sigLoading}
+              >
                 {sigLoading ? "…" : "📍 Locate Me"}
               </button>
             </div>
 
+            {/* Sensor on/off controls — full control over what the app touches */}
+            <div className="cp-sensor-toggles">
+              {SENSOR_TOGGLE_DEFS.map(t => (
+                <button
+                  key={t.key}
+                  className={`cp-toggle${toggles[t.key] ? " cp-toggle-on" : ""}`}
+                  onClick={() => setSensorEnabled(t.key, !toggles[t.key])}
+                  title={`${t.label}: ${toggles[t.key] ? "on" : "off"}`}
+                >
+                  {t.label}
+                </button>
+              ))}
+            </div>
+
             {/* Sky map SVG (rectangle above wheels) */}
-            <SkyMapSVG
-              lat={signals?.lat ?? 36.1627}
-              lon={signals?.lon ?? -86.7816}
-              heading={activeHeading}
-              minuteKey={minuteKey}
-            />
+            {toggles.skyMap ? (
+              <SkyMapSVG
+                lat={signals?.lat ?? 36.1627}
+                lon={signals?.lon ?? -86.7816}
+                heading={activeHeading}
+                minuteKey={minuteKey}
+              />
+            ) : (
+              <p className="cp-muted cp-sensor-off">Sky Map disabled.</p>
+            )}
 
             {/* Compass row */}
             <div className="cp-compass-row">
-              <CompassRose heading={activeHeading}/>
-              <div className="cp-compass-controls">
-                {signals?.heading != null ? (
-                  <p className="cp-muted">↗ Live heading: {signals.heading.toFixed(1)}°</p>
-                ) : (
-                  <label className="cp-dir-label">
-                    <span>Direction</span>
-                    <input
-                      type="range" min={0} max={359} value={manualHeading}
-                      onChange={e => setManualHeading(Number(e.target.value))}
-                      className="cp-dir-range"
-                    />
-                    <span>{manualHeading}°</span>
-                  </label>
-                )}
-                {!hasLiveHeading && <p className="cp-muted">Desktop fallback active: facing South by default (180°).</p>}
-                {signals?.lat != null && (
-                  <p className="cp-muted">{signals.lat.toFixed(3)}°, {signals.lon?.toFixed(3)}°</p>
-                )}
-                {!hasLiveLocation && <p className="cp-muted">Location fallback active. Auto-refreshing every 1 minute.</p>}
-                {signals?.network && (
-                  <p className="cp-muted">Network: {signals.network}</p>
-                )}
-              </div>
+              {toggles.compass ? (
+                <>
+                  <CompassRose heading={activeHeading}/>
+                  <div className="cp-compass-controls">
+                    {signals?.heading != null ? (
+                      <p className="cp-muted">↗ Live heading: {signals.heading.toFixed(1)}°</p>
+                    ) : (
+                      <label className="cp-dir-label">
+                        <span>Direction</span>
+                        <input
+                          type="range" min={0} max={359} value={manualHeading}
+                          onChange={e => setManualHeading(Number(e.target.value))}
+                          className="cp-dir-range"
+                        />
+                        <span>{manualHeading}°</span>
+                      </label>
+                    )}
+                    {!hasLiveHeading && <p className="cp-muted">Desktop fallback active: facing South by default (180°).</p>}
+                  </div>
+                </>
+              ) : (
+                <p className="cp-muted cp-sensor-off">Compass disabled.</p>
+              )}
+            </div>
+
+            {/* Sensor readouts — independent of the Sky Map/Compass widgets above */}
+            <div className="cp-signal-readouts">
+              {toggles.location && signals?.lat != null && (
+                <p className="cp-muted">{signals.lat.toFixed(3)}°, {signals.lon?.toFixed(3)}°</p>
+              )}
+              {toggles.location && !hasLiveLocation && (
+                <p className="cp-muted">Location fallback active. Auto-refreshing every 1 minute.</p>
+              )}
+              {!toggles.location && <p className="cp-muted cp-sensor-off">Location disabled.</p>}
+              {toggles.network && signals?.network && (
+                <p className="cp-muted">Network: {signals.network}</p>
+              )}
+              {toggles.emf && signals?.emfUt != null && (
+                <p className="cp-muted">EMF: {signals.emfUt.toFixed(1)} µT</p>
+              )}
             </div>
           </section>
 
@@ -682,7 +807,8 @@ export default function Home() {
             <section className="cp-card cp-research-out">
               <div className="cp-card-head">
                 <h2 className="cp-card-title">Output</h2>
-                {res.complete && <span className="cp-badge-ok">Done</span>}
+                {res.complete && res.insufficientEvidence && <span className="cp-badge-warn">Insufficient evidence</span>}
+                {res.complete && !res.insufficientEvidence && <span className="cp-badge-ok">Done</span>}
                 {resLoading && !res.complete && <span className="cp-badge-run">Live</span>}
               </div>
 
@@ -707,7 +833,7 @@ export default function Home() {
 
               {!!res.peerReview?.length && (
                 <div className="cp-peer">
-                  <p className="cp-label">AI Peer Review</p>
+                  <p className="cp-label">AI Cross-Check ({res.peerReview.length} model{res.peerReview.length === 1 ? "" : "s"} — uses your own API key)</p>
                   {res.peerReview.map((r, i) => (
                     <div key={i} className="cp-peer-item">
                       <div className="cp-peer-head"><strong>{r.provider}</strong><span>{(r.confidence * 100).toFixed(0)}%</span></div>
@@ -722,6 +848,9 @@ export default function Home() {
                   <summary>Crawl Report — {res.report.acceptedSources} accepted · {res.report.rejectedSources} filtered</summary>
                   <p className="cp-report-stop">{res.report.stopReason}</p>
                   <p className="cp-report-stop">Avg freshness: {(res.report.avgFreshness * 100).toFixed(0)}% · {res.report.uncertaintyNote}</p>
+                  {!!res.report.aiProvidersConsulted?.length && (
+                    <p className="cp-report-stop">AI models consulted: {res.report.aiProvidersConsulted.join(", ")}</p>
+                  )}
                   <div className="cp-provider-grid">
                     {res.report.searchedProviders.map((p, i) => (
                       <div key={i} className={`cp-provider-item cp-tier-${p.tier}`}>

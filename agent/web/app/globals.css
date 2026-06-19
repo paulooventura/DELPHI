@@ -115,6 +115,7 @@ html,body {
 .cp-phase-badge { background: rgba(91,143,249,0.14); color: var(--accent); border-radius: 5px; padding: 0.08rem 0.35rem; font-size: 0.7rem; }
 .cp-badge-ok  { background: rgba(61,214,140,0.14); color: var(--ok);   border-radius: 5px; padding: 0.12rem 0.42rem; font-size: 0.73rem; }
 .cp-badge-run { background: rgba(240,180,41,0.14);  color: var(--gold); border-radius: 5px; padding: 0.12rem 0.42rem; font-size: 0.73rem; animation: blink 1.3s ease-in-out infinite; }
+.cp-badge-warn { background: rgba(224,80,80,0.14);  color: var(--warn); border-radius: 5px; padding: 0.12rem 0.42rem; font-size: 0.73rem; }
 .cp-muted  { color: var(--ink-dim); font-size: 0.85rem; }
 .cp-label  { font-size: 0.69rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--ink-dim); margin-bottom: 0.28rem; }
 .cp-error  { color: var(--warn); font-size: 0.86rem; }
@@ -155,6 +156,18 @@ html,body {
 .cp-compass-controls { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; justify-content: center; }
 .cp-dir-label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--ink-dim); }
 .cp-dir-range { width: 100%; accent-color: var(--accent); height: 4px; }
+
+/* ─── Sensor toggles ──────────────────────────────────────────────────────── */
+.cp-sensor-toggles { display: flex; flex-wrap: wrap; gap: 0.32rem; margin-bottom: 0.55rem; }
+.cp-toggle {
+  border: 1px solid var(--border); border-radius: 999px; padding: 0.22rem 0.6rem;
+  font-size: 0.71rem; font-weight: 600; cursor: pointer; background: transparent;
+  color: var(--ink-dim); transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.cp-toggle:hover { border-color: var(--accent); }
+.cp-toggle-on { border-color: var(--ok); color: var(--ok); background: rgba(61,214,140,0.1); }
+.cp-signal-readouts { display: flex; flex-direction: column; gap: 0.18rem; margin-top: 0.5rem; }
+.cp-sensor-off { font-style: italic; opacity: 0.75; }
 
 /* ═══════════════════════════════════════════════════════════════════════════
    SEMICIRCLE WHEELS

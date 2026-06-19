@@ -4,15 +4,6 @@ This repository contains the Cosmos Prowler backend and Next.js frontend.
 
 Quick dev
 
-- Start backend (from G:/DELPHI):
-
-```bash
-cd DELPHI
-npx ts-node server.ts
-```
-
-- Start frontend (from repo root):
-
 ```bash
 cd DELPHI/agent/web
 npm install
@@ -64,4 +55,16 @@ npm run dev
 
 Open `http://localhost:3000` for the same local UI and intelligence.
 
-No external credit-based or API-token-based services are required by default. The app currently runs using built-in local intelligence logic, so it remains lightweight and free to use.
+No external credit-based or API-token-based services are required by default. The Research Console scavenges only free, no-key sources (Crossref, PubMed, arXiv, OpenAlex, Semantic Scholar, Wikipedia, Wikidata, DuckDuckGo, OpenLibrary, Stack Exchange, HackerNews, Reddit) and cross-references them with local logic, so it stays free and lightweight by default.
+
+Optional: AI cross-check
+
+If you already have your own API key(s) for OpenAI, Anthropic, and/or Google Gemini, set any of the following in `agent/web/.env.local` to have the Research Console additionally cross-check its free-source findings against those models (every key you provide gets queried, not just one):
+
+```
+OPENAI_API_KEY=...
+ANTHROPIC_API_KEY=...
+GEMINI_API_KEY=...
+```
+
+These are entirely optional — with none set, zero paid calls are ever made. The app only spends a key's quota you've explicitly provided, and only on the final synthesis step (not every phase).

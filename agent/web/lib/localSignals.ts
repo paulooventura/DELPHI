@@ -1,13 +1,8 @@
 export type LocalSignals = {
-  capturedAt: string;
   location: {
     latitude: number | null;
     longitude: number | null;
     accuracyM: number | null;
-  };
-  compass: {
-    headingDeg: number | null;
-    method: string;
   };
   emf: {
     magneticFieldUt: number | null;
@@ -19,15 +14,14 @@ export type LocalSignals = {
     rttMs: number | null;
     hint5G: string;
   };
-  thermal: {
-    ambientC: number | null;
-    note: string;
-  };
-  limitations: string[];
 };
 
 type DeviceOrientationEventWithCompass = DeviceOrientationEvent & {
   webkitCompassHeading?: number;
+};
+
+type DeviceOrientationEventStatic = {
+  requestPermission?: () => Promise<"granted" | "denied">;
 };
 
 type NetworkInformation = {
@@ -55,7 +49,7 @@ type WindowWithSensors = Window & {
   Magnetometer?: new (opts?: { frequency?: number }) => MagnetometerReading;
 };
 
-function getNetworkInfo(): LocalSignals["network"] {
+export function getNetworkInfo(): LocalSignals["network"] {
   const nav = navigator as NavigatorWithNetwork;
   const conn = nav.connection ?? nav.mozConnection ?? nav.webkitConnection;
   const effectiveType = conn?.effectiveType ?? null;
@@ -69,7 +63,7 @@ function getNetworkInfo(): LocalSignals["network"] {
   return { effectiveType, downlinkMbps, rttMs, hint5G };
 }
 
-async function getLocation(): Promise<LocalSignals["location"]> {
+export async function getLocation(): Promise<LocalSignals["location"]> {
   if (!("geolocation" in navigator)) {
     return { latitude: null, longitude: null, accuracyM: null };
   }
@@ -89,32 +83,37 @@ async function getLocation(): Promise<LocalSignals["location"]> {
   });
 }
 
-async function getCompassHeading(): Promise<LocalSignals["compass"]> {
-  return new Promise((resolve) => {
-    const onOrientation = (event: Event) => {
-      const e = event as DeviceOrientationEventWithCompass;
-      let heading = typeof e.webkitCompassHeading === "number" ? e.webkitCompassHeading : null;
-
-      if (heading === null && typeof e.alpha === "number") {
-        heading = (360 - e.alpha) % 360;
-      }
-
-      window.removeEventListener("deviceorientation", onOrientation);
-      resolve({
-        headingDeg: heading,
-        method: heading === null ? "unavailable" : "deviceorientation",
-      });
-    };
-
-    window.addEventListener("deviceorientation", onOrientation, { once: true });
-    window.setTimeout(() => {
-      window.removeEventListener("deviceorientation", onOrientation);
-      resolve({ headingDeg: null, method: "timeout" });
-    }, 2500);
-  });
+// iOS 13+ requires this to be called from a user gesture (a click handler,
+// not an effect) before "deviceorientation" will ever fire. Other browsers
+// don't expose requestPermission at all, so this resolves true immediately.
+export async function requestOrientationPermission(): Promise<boolean> {
+  const DOE = (typeof DeviceOrientationEvent !== "undefined" ? DeviceOrientationEvent : undefined) as
+    (typeof DeviceOrientationEvent & DeviceOrientationEventStatic) | undefined;
+  if (DOE && typeof DOE.requestPermission === "function") {
+    try {
+      return (await DOE.requestPermission()) === "granted";
+    } catch {
+      return false;
+    }
+  }
+  return typeof window !== "undefined" && "DeviceOrientationEvent" in window;
 }
 
-async function getMagneticField(): Promise<LocalSignals["emf"]> {
+// Continuous heading stream — call requestOrientationPermission() first.
+// Returns an unsubscribe function.
+export function watchCompassHeading(onHeading: (headingDeg: number | null) => void): () => void {
+  const onOrientation = (event: Event) => {
+    const e = event as DeviceOrientationEventWithCompass;
+    const heading = typeof e.webkitCompassHeading === "number"
+      ? e.webkitCompassHeading
+      : typeof e.alpha === "number" ? (360 - e.alpha) % 360 : null;
+    onHeading(heading);
+  };
+  window.addEventListener("deviceorientation", onOrientation);
+  return () => window.removeEventListener("deviceorientation", onOrientation);
+}
+
+export async function getMagneticField(): Promise<LocalSignals["emf"]> {
   const w = window as WindowWithSensors;
   const MagnetometerCtor = w.Magnetometer;
   if (!MagnetometerCtor) {
@@ -140,30 +139,4 @@ async function getMagneticField(): Promise<LocalSignals["emf"]> {
       resolve({ magneticFieldUt: null, method: "magnetometer-denied" });
     }
   });
-}
-
-export async function captureLocalSignals(): Promise<LocalSignals> {
-  const [location, compass, emf] = await Promise.all([
-    getLocation(),
-    getCompassHeading(),
-    getMagneticField(),
-  ]);
-
-  const network = getNetworkInfo();
-
-  return {
-    capturedAt: new Date().toISOString(),
-    location,
-    compass,
-    emf,
-    network,
-    thermal: {
-      ambientC: null,
-      note: "Browser runtime does not expose precise local thermal sensor data.",
-    },
-    limitations: [
-      "Precise heat, 5G radio metrics, and calibrated EMF need dedicated hardware integrations.",
-      "Web APIs provide directional and connectivity hints, not certified field instrumentation.",
-    ],
-  };
 }

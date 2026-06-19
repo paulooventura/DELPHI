@@ -13,6 +13,13 @@ export type SourceItem = {
   freshness?: number;
 };
 
+// Optional multi-model AI cross-check. Each provider only fires when the
+// user has configured their OWN API key for it (OPENAI_API_KEY /
+// ANTHROPIC_API_KEY / GEMINI_API_KEY) — with no keys set, zero paid calls
+// are made and the engine is exactly as free as it was before. When keys
+// ARE present, every configured provider is queried (not just one), so the
+// final answer is cross-checked across whichever models the user has
+// access to, not locked to a single vendor.
 export type ProviderReview = {
   provider: string;
   answer: string;
@@ -37,6 +44,7 @@ export type ResearchReport = {
   avgFreshness: number;
   predictiveQuery: boolean;
   uncertaintyNote: string;
+  aiProvidersConsulted: string[];
 };
 
 export type ResearchResult = {
@@ -44,7 +52,6 @@ export type ResearchResult = {
   answer: string;
   confidence: number;
   sources: SourceItem[];
-  peerReview: ProviderReview[];
   notes: string[];
   report: ResearchReport;
 };
@@ -58,33 +65,41 @@ const SOURCE_AUTHORITY: Record<string, number> = {
   OpenAlex: 0.83,
   SemanticScholar: 0.84,
   Wikipedia: 0.62,
+  Wikidata: 0.6,
+  DuckDuckGo: 0.55,
   OpenLibrary: 0.58,
   StackOverflow: 0.52,
   HackerNews: 0.44,
+  Reddit: 0.4,
 };
 
 const STOP_WORDS = new Set([
   "the", "a", "an", "and", "or", "in", "of", "to", "is", "are", "was", "for", "with", "from", "by", "this", "that", "which", "have", "been", "will", "can", "not", "also", "its", "their", "they", "about", "who", "what", "when", "where", "why", "how", "does", "did", "than", "into", "over", "under", "across", "after", "before", "between", "during", "through", "would", "could", "should",
 ]);
 
+// One cheap retry on transient failure (timeout/network/5xx) so a single flaky
+// request doesn't silently zero out an entire free provider's results.
+async function withRetry<T>(attempt: () => Promise<T | null>): Promise<T | null> {
+  const first = await attempt().catch(() => null);
+  if (first !== null) return first;
+  await new Promise((r) => setTimeout(r, 350));
+  return attempt().catch(() => null);
+}
+
 export async function safeJson<T>(url: string): Promise<T | null> {
-  try {
+  return withRetry(async () => {
     const res = await fetch(url, { headers: { "User-Agent": "DELPHI-Research/1.0" }, signal: AbortSignal.timeout(9000) });
     if (!res.ok) return null;
     return res.json() as Promise<T>;
-  } catch {
-    return null;
-  }
+  });
 }
 
 export async function safeText(url: string): Promise<string | null> {
-  try {
+  return withRetry(async () => {
     const res = await fetch(url, { headers: { "User-Agent": "DELPHI-Research/1.0" }, signal: AbortSignal.timeout(9000) });
     if (!res.ok) return null;
     return res.text();
-  } catch {
-    return null;
-  }
+  });
 }
 
 function queryTokens(query: string): string[] {
@@ -179,6 +194,16 @@ function predictiveRisk(query: string): boolean {
   return /\b(win|winner|predict|forecast|odds|chances|likely|next|future|will be|who is going to|who will)\b/i.test(query);
 }
 
+// Conversational/advice/social questions ("how do I politely tell...",
+// "what should I say to...") have no real academic literature behind them —
+// Crossref/PubMed/arXiv/OpenAlex/SemanticScholar will only ever return noise
+// for these (matched on a stray shared word, not real topical relevance).
+// Detecting this upfront skips those calls entirely: cheaper, and it removes
+// the noise at the source instead of relying solely on post-hoc filtering.
+export function isConversationalQuery(query: string): boolean {
+  return /\b(how (do|can|should) i|how to (politely|tactfully|nicely|kindly|gracefully)|politely|tactfully|gracefully|decline|say no to|turn down|wording|word this|what should i say|how should i (tell|say|word|phrase)|tell (him|her|them|someone)|break up with|apologi[sz]e to|ask (him|her|them) (out|for))\b/i.test(query);
+}
+
 function sourceAuthority(source: string): number {
   return SOURCE_AUTHORITY[source] ?? 0.45;
 }
@@ -226,6 +251,15 @@ export function scoreSource(
     authority * 0.2 +
     methodBoost -
     novelty;
+
+  // Hard relevance gate: a high-authority/high-tier source on a topic the
+  // query never actually touches (e.g. an astrophysics paper matched on the
+  // single word "event" in an etiquette question) must NOT clear the
+  // acceptance floor just because tier/authority/freshness are high. Without
+  // this, the tier base score alone (0.3-0.54) can exceed RELIABILITY_FLOOR
+  // regardless of how irrelevant the content actually is.
+  const relevanceGate = Math.max(0.12, Math.min(1, (relevance - 0.08) / 0.32));
+  reliability *= relevanceGate;
 
   if (predictive) {
     const stalePenalty = ageDays == null ? 0.06 : ageDays > 365 ? 0.18 : ageDays > 120 ? 0.08 : 0;
@@ -290,6 +324,17 @@ export async function pubmedSources(query: string): Promise<Array<Omit<SourceIte
   });
 }
 
+// Truncate at a word boundary with a visible "…" instead of a hard mid-word
+// cut — a sliced-off "...total respons" looks broken and, worse, can read
+// like a complete sentence to the claim extractor below since it never
+// reaches a period.
+function truncateClean(text: string, maxLen: number): string {
+  if (text.length <= maxLen) return text;
+  const cut = text.slice(0, maxLen);
+  const lastSpace = cut.lastIndexOf(" ");
+  return (lastSpace > maxLen * 0.6 ? cut.slice(0, lastSpace) : cut) + "…";
+}
+
 export async function arxivSources(query: string): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
   const xml = await safeText(`https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(query)}&start=0&max_results=6`);
   if (!xml) return [];
@@ -297,7 +342,10 @@ export async function arxivSources(query: string): Promise<Array<Omit<SourceItem
     .map((entry) => ({
       title: (entry.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "Untitled").replace(/\s+/g, " ").trim(),
       url: entry.match(/<id>([\s\S]*?)<\/id>/)?.[1]?.trim() ?? "",
-      snippet: `arXiv: ${(entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1] ?? "").replace(/\s+/g, " ").trim().slice(0, 220)}`,
+      // No "arXiv: " label here — the source field already carries that, and
+      // a literal "arXiv: " prefix would otherwise leak straight into any
+      // quoted answer text.
+      snippet: truncateClean((entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1] ?? "").replace(/\s+/g, " ").trim(), 220),
       source: "arXiv",
       publishedAt: entry.match(/<published>([\s\S]*?)<\/published>/)?.[1]?.trim() ?? null,
     }))
@@ -310,7 +358,7 @@ export async function semanticScholarSources(query: string): Promise<Array<Omit<
     .map((it: any) => ({
       title: it.title ?? "Untitled",
       url: it.url ?? "",
-      snippet: `Year: ${it.year ?? "n/a"} | Citations: ${it.citationCount ?? 0} | ${String(it.abstract ?? "").slice(0, 200)}`,
+      snippet: `Year: ${it.year ?? "n/a"} | Citations: ${it.citationCount ?? 0} | ${truncateClean(String(it.abstract ?? ""), 200)}`,
       source: "SemanticScholar",
       publishedAt: it.year ? `${it.year}-07-01` : null,
     }))
@@ -328,6 +376,50 @@ export async function wikipediaSources(query: string): Promise<Array<Omit<Source
   }));
 }
 
+// Free, no-API-key general-knowledge sources — widen coverage beyond academic/tech.
+
+export async function duckDuckGoSources(query: string): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
+  const data = await safeJson<any>(`https://api.duckduckgo.com/?q=${encodeURIComponent(query)}&format=json&no_html=1&skip_disambig=1`);
+  if (!data) return [];
+  const out: Array<Omit<SourceItem, "reliability" | "tier">> = [];
+
+  if (data.AbstractText && data.AbstractURL) {
+    out.push({
+      title: data.Heading || query,
+      url: data.AbstractURL,
+      snippet: data.AbstractText,
+      source: "DuckDuckGo",
+      publishedAt: null,
+    });
+  }
+
+  for (const topic of (data.RelatedTopics ?? []).slice(0, 5)) {
+    if (!topic?.FirstURL || !topic?.Text) continue;
+    out.push({
+      title: topic.Text.split(" - ")[0]?.slice(0, 90) || topic.Text.slice(0, 90),
+      url: topic.FirstURL,
+      snippet: topic.Text,
+      source: "DuckDuckGo",
+      publishedAt: null,
+    });
+  }
+
+  return out;
+}
+
+export async function wikidataSources(query: string): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
+  const data = await safeJson<any>(`https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(query)}&language=en&format=json&limit=5`);
+  return (data?.search ?? [])
+    .map((it: any) => ({
+      title: it.label ?? "Untitled",
+      url: it.concepturi ?? (it.id ? `https://www.wikidata.org/wiki/${it.id}` : ""),
+      snippet: it.description ?? "Wikidata entity",
+      source: "Wikidata",
+      publishedAt: null,
+    }))
+    .filter((it: any) => it.url);
+}
+
 export async function openLibrarySources(query: string): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
   const data = await safeJson<any>(`https://openlibrary.org/search.json?q=${encodeURIComponent(query)}&limit=5`);
   return (data?.docs ?? [])
@@ -341,16 +433,44 @@ export async function openLibrarySources(query: string): Promise<Array<Omit<Sour
     .filter((it: any) => it.url);
 }
 
-export async function stackExchangeSources(query: string): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
-  const data = await safeJson<any>(`https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=relevance&accepted=True&site=stackoverflow&q=${encodeURIComponent(query)}&pagesize=5`);
+export async function stackExchangeSources(query: string, site = "stackoverflow"): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
+  const data = await safeJson<any>(`https://api.stackexchange.com/2.3/search/advanced?order=desc&sort=relevance&accepted=True&site=${site}&q=${encodeURIComponent(query)}&pagesize=5`);
   return (data?.items ?? [])
     .map((it: any) => ({
       title: it.title ?? "Untitled",
       url: it.link ?? "",
       snippet: `Score: ${it.score ?? 0} | Answers: ${it.answer_count ?? 0} | Created: ${it.creation_date ? new Date(it.creation_date * 1000).toISOString().slice(0, 10) : "n/a"}`,
-      source: "StackOverflow",
+      source: site === "stackoverflow" ? "StackOverflow" : `StackExchange/${site}`,
       publishedAt: it.creation_date ? new Date(it.creation_date * 1000).toISOString() : null,
     }))
+    .filter((it: any) => it.url);
+}
+
+// Picks the Stack Exchange network site(s) actually likely to carry relevant
+// content for this kind of question, instead of always defaulting to
+// StackOverflow (tech-only — useless for "how do I tell someone..." questions).
+export async function multiSiteStackExchangeSources(query: string, conversational: boolean): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
+  const sites = conversational ? ["interpersonal", "workplace"] : ["stackoverflow"];
+  const results = await Promise.all(sites.map((site) => stackExchangeSources(query, site)));
+  return results.flat();
+}
+
+// Real human discussion/advice — the genuinely "open web" complement to the
+// structured reference APIs above. Only worth the request for conversational
+// questions; for factual/academic queries it's mostly noise.
+export async function redditSources(query: string): Promise<Array<Omit<SourceItem, "reliability" | "tier">>> {
+  const data = await safeJson<any>(`https://www.reddit.com/search.json?q=${encodeURIComponent(query)}&limit=6&sort=relevance`);
+  return (data?.data?.children ?? [])
+    .map((c: any) => {
+      const d = c?.data ?? {};
+      return {
+        title: d.title ?? "Untitled",
+        url: d.permalink ? `https://www.reddit.com${d.permalink}` : (d.url ?? ""),
+        snippet: `r/${d.subreddit ?? "unknown"} | Score: ${d.score ?? 0} | Comments: ${d.num_comments ?? 0} | ${truncateClean(String(d.selftext ?? ""), 200)}`,
+        source: "Reddit",
+        publishedAt: d.created_utc ? new Date(d.created_utc * 1000).toISOString() : null,
+      };
+    })
     .filter((it: any) => it.url);
 }
 
@@ -367,6 +487,9 @@ export async function hackerNewsSources(query: string): Promise<Array<Omit<Sourc
     .filter((it: any) => it.url);
 }
 
+const AI_REVIEW_PROMPT = (query: string, sources: SourceItem[]) =>
+  `Q: ${query}\nSources:\n${sources.slice(0, 10).map((s) => `- ${s.title} (${s.source}, rel ${s.reliability.toFixed(2)}): ${s.snippet.slice(0, 140)}`).join("\n")}\nReturn ONLY JSON: {"answer":"2-4 sentence synthesis","confidence":0.0}`;
+
 export async function runOpenAIReview(query: string, sources: SourceItem[]): Promise<ProviderReview | null> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) return null;
@@ -379,10 +502,7 @@ export async function runOpenAIReview(query: string, sources: SourceItem[]): Pro
         model: process.env.OPENAI_MODEL ?? "gpt-4o-mini",
         messages: [
           { role: "system", content: "Strict researcher. Return ONLY JSON: {\"answer\":\"2-4 sentence synthesis\",\"confidence\":0.0}" },
-          {
-            role: "user",
-            content: `Q: ${query}\nSources:\n${sources.slice(0, 10).map((s) => `- ${s.title} (${s.source}, rel ${s.reliability.toFixed(2)}): ${s.snippet.slice(0, 140)}`).join("\n")}`,
-          },
+          { role: "user", content: AI_REVIEW_PROMPT(query, sources) },
         ],
         temperature: 0.12,
         response_format: { type: "json_object" },
@@ -409,7 +529,7 @@ export async function runAnthropicReview(query: string, sources: SourceItem[]): 
         model: process.env.ANTHROPIC_MODEL ?? "claude-3-5-haiku-latest",
         max_tokens: 360,
         temperature: 0.12,
-        messages: [{ role: "user", content: `Q: ${query}\nSources:\n${sources.slice(0, 10).map((s) => `- ${s.title} (${s.source}, rel ${s.reliability.toFixed(2)}): ${s.snippet.slice(0, 140)}`).join("\n")}\nReturn ONLY JSON: {"answer":"2-4 sentence synthesis","confidence":0.0}` }],
+        messages: [{ role: "user", content: AI_REVIEW_PROMPT(query, sources) }],
       }),
     });
     if (!res.ok) return null;
@@ -421,51 +541,67 @@ export async function runAnthropicReview(query: string, sources: SourceItem[]): 
   }
 }
 
-function topicTerms(sources: SourceItem[], query = ""): string[] {
-  const qStems = new Set(queryTokens(query).map(stem));
-  const uni: Record<string, number> = {};
-  const bi: Record<string, number> = {};
-  const docFreq: Record<string, number> = {};
-
-  for (const s of sources) {
-    const words = `${s.title} ${s.snippet}`
-      .toLowerCase()
-      .replace(/[^a-z0-9\s]/g, " ")
-      .split(/\s+/)
-      .filter((t) => t.length >= 4 && !STOP_WORDS.has(t));
-    const seen = new Set<string>();
-    for (let i = 0; i < words.length; i++) {
-      const w = words[i];
-      uni[w] = (uni[w] ?? 0) + 1;
-      if (!seen.has(w)) { docFreq[w] = (docFreq[w] ?? 0) + 1; seen.add(w); }
-      if (i < words.length - 1) {
-        const next = words[i + 1];
-        if (next.length >= 4 && !STOP_WORDS.has(next)) {
-          const bigram = `${w} ${next}`;
-          bi[bigram] = (bi[bigram] ?? 0) + 1;
-        }
-      }
-    }
+export async function runGeminiReview(query: string, sources: SourceItem[]): Promise<ProviderReview | null> {
+  const key = process.env.GEMINI_API_KEY;
+  if (!key) return null;
+  try {
+    const model = process.env.GEMINI_MODEL ?? "gemini-2.0-flash";
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${key}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(12000),
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: AI_REVIEW_PROMPT(query, sources) }] }],
+        generationConfig: { temperature: 0.12, responseMimeType: "application/json" },
+      }),
+    });
+    if (!res.ok) return null;
+    const json = await res.json();
+    const text = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? "{}";
+    const parsed = JSON.parse(text);
+    return { provider: "Gemini", answer: String(parsed.answer ?? ""), confidence: Number(parsed.confidence ?? 0.58) };
+  } catch {
+    return null;
   }
+}
 
-  // Score: corroboration (appears in many distinct sources) beats raw count,
-  // and terms tied to the query get a boost. Bigrams are weighted higher.
-  const scored: Array<[string, number]> = [];
-  for (const [term, count] of Object.entries(uni)) {
-    const corroboration = docFreq[term] ?? 1;
-    const queryTie = qStems.has(stem(term)) ? 1.6 : 1;
-    scored.push([term, count * 0.4 + corroboration * 1.1 * queryTie]);
-  }
-  for (const [term, count] of Object.entries(bi)) {
-    if (count < 2) continue; // bigrams only matter if repeated
-    scored.push([term, count * 2.2]);
-  }
+// Query every AI provider the user has a key configured for — never just
+// one. Returns [] (zero cost) when no keys are set at all.
+export async function runAllAvailableAiReviews(query: string, sources: SourceItem[]): Promise<ProviderReview[]> {
+  const results = await Promise.all([
+    runOpenAIReview(query, sources).catch(() => null),
+    runAnthropicReview(query, sources).catch(() => null),
+    runGeminiReview(query, sources).catch(() => null),
+  ]);
+  return results.filter((r): r is ProviderReview => Boolean(r && r.answer));
+}
 
-  return scored
-    .sort((a, b) => b[1] - a[1])
-    .filter(([t], i, arr) => arr.findIndex(([o]) => o.includes(t) && o !== t) === -1)
-    .slice(0, 6)
-    .map(([term]) => term);
+// Merge multiple independent AI answers into one clean lead statement —
+// the answer text itself stays just the content, no hedge-text about which
+// models were consulted. Cross-model AGREEMENT still matters, but it's
+// expressed as a confidence adjustment (see computeConfidence) instead of
+// prose stuffed into the answer, so the percentage is the honesty signal.
+function mergeAiReviews(reviews: ProviderReview[]): { text: string; confidence: number } {
+  const sorted = [...reviews].sort((a, b) => b.confidence - a.confidence);
+  const lead = sorted[0];
+  if (reviews.length === 1) return { text: lead.answer, confidence: lead.confidence };
+
+  const leadTokens = new Set(
+    lead.answer.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((t) => t.length >= 5),
+  );
+  const agreeingCount = sorted.slice(1).filter((r) => {
+    const tokens = new Set(r.answer.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((t) => t.length >= 5));
+    let overlap = 0;
+    leadTokens.forEach((t) => { if (tokens.has(t)) overlap++; });
+    return overlap / Math.max(1, Math.min(leadTokens.size, tokens.size)) >= 0.3;
+  }).length;
+
+  const avgConfidence = reviews.reduce((sum, r) => sum + r.confidence, 0) / reviews.length;
+  const agreementRatio = agreeingCount / (reviews.length - 1);
+  // Reward real cross-model agreement, penalize divergence — this is the
+  // numeric form of "do the models actually corroborate each other."
+  const confidence = Math.max(0.1, Math.min(0.97, avgConfidence + (agreementRatio - 0.5) * 0.16));
+  return { text: lead.answer, confidence };
 }
 
 // How many distinct sources corroborate the same content tokens — a real
@@ -490,36 +626,70 @@ function corroborationStrength(sources: SourceItem[]): number {
   return Math.min(0.12, corroborated * 0.012);
 }
 
-// Pull the most query-relevant sentence fragments to ground the answer in
-// actual source content instead of just provider names.
-function extractClaims(query: string, sources: SourceItem[], limit = 3): string[] {
+// How many OTHER, distinct-provider sources echo the same significant tokens
+// as a claim fragment — the basis for "curate into one synthesized truth"
+// rather than just picking whichever source happens to rank highest.
+function corroborationCountForClaim(claim: string, originSource: string, sources: SourceItem[]): number {
+  const claimTokens = new Set(
+    claim.toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((t) => t.length >= 5 && !STOP_WORDS.has(t)),
+  );
+  if (claimTokens.size === 0) return 0;
+  const seenProviders = new Set<string>();
+  for (const s of sources) {
+    if (s.source === originSource || seenProviders.has(s.source)) continue;
+    const text = `${s.title} ${s.snippet}`.toLowerCase();
+    const hits = [...claimTokens].filter((t) => text.includes(t)).length;
+    if (hits / claimTokens.size >= 0.5) seenProviders.add(s.source);
+  }
+  return seenProviders.size;
+}
+
+// Pull the most query-relevant, most cross-source-corroborated sentence
+// fragments to ground the answer in actual source content instead of just
+// echoing a single provider's wording.
+function extractClaims(query: string, sources: SourceItem[], limit = 3): Array<{ text: string; corroboration: number }> {
   const qTokens = queryTokens(query);
   if (qTokens.length === 0) return [];
-  const candidates: Array<{ text: string; score: number }> = [];
+  const candidates: Array<{ text: string; score: number; source: string }> = [];
 
-  for (const s of sources.slice(0, 12)) {
+  // Only pull claims from sources that are themselves topically on-target —
+  // a single coincidental word shared with an off-topic high-authority paper
+  // (e.g. "event" matching a gravitational-wave detection paper) must not be
+  // promoted into the headline answer just because that source ranks high.
+  for (const s of sources.filter((x) => (x.relevance ?? 0) >= 0.3).slice(0, 14)) {
     const sentences = s.snippet
       .replace(/\s+/g, " ")
       .split(/(?<=[.!?])\s+|\s\|\s/)
       .map((x) => x.trim())
-      .filter((x) => x.length >= 24 && x.length <= 240 && /[a-z]{4,}/i.test(x));
+      // Require real terminal punctuation — a fragment with none is either
+      // mid-truncation or a metadata label, not a complete, quotable claim.
+      .filter((x) => x.length >= 24 && x.length <= 240 && /[a-z]{4,}/i.test(x) && /[.!?]$/.test(x));
     for (const sent of sentences) {
       const low = sent.toLowerCase();
       const hits = qTokens.filter((t) => low.includes(t) || low.includes(stem(t))).length;
-      if (hits === 0) continue;
+      // Require a real fraction of the query's meaningful words to appear,
+      // not just one — one shared word out of eight is noise, not a claim.
+      if (hits / qTokens.length < 0.34) continue;
       // weight by query overlap and the source's reliability
       const score = (hits / qTokens.length) * 0.7 + s.reliability * 0.3;
-      candidates.push({ text: sent, score });
+      candidates.push({ text: sent, score, source: s.source });
     }
   }
 
-  const out: string[] = [];
+  const scored = candidates.map((c) => ({
+    ...c,
+    corroboration: corroborationCountForClaim(c.text, c.source, sources),
+  }));
+
+  const out: Array<{ text: string; corroboration: number }> = [];
   const seen = new Set<string>();
-  for (const c of candidates.sort((a, b) => b.score - a.score)) {
+  // Corroborated claims (echoed by other providers) win over a single
+  // source's highest-relevance sentence — this is the "curated truth" pass.
+  for (const c of scored.sort((a, b) => (b.score + b.corroboration * 0.15) - (a.score + a.corroboration * 0.15))) {
     const key = c.text.toLowerCase().slice(0, 40);
     if (seen.has(key)) continue;
     seen.add(key);
-    out.push(c.text);
+    out.push({ text: c.text, corroboration: c.corroboration });
     if (out.length >= limit) break;
   }
   return out;
@@ -530,83 +700,82 @@ function sourceDiversityBoost(sources: SourceItem[]): number {
   return Math.min(0.12, distinct * 0.017);
 }
 
-function predictiveUncertaintyNote(query: string, topFreshHigh: SourceItem[]): string {
-  if (!predictiveRisk(query)) return "";
-  if (topFreshHigh.length === 0) {
-    return "This is a predictive question; no recent high-authority evidence was found, so uncertainty is high.";
-  }
-  const avgAge = topFreshHigh.reduce((sum, s) => sum + (s.ageDays ?? 3650), 0) / topFreshHigh.length;
-  if (avgAge > 365) return "Predictive question with mostly older evidence; treat this as directional, not deterministic.";
-  return "Predictive question: this is an evidence-based estimate, not a guaranteed outcome.";
-}
-
+// The Answer box shows ONLY the direct answer — no provider names, source
+// counts, or "Across X, Y converge on..." narration. How much to trust it
+// is the confidence percentage's job (see computeConfidence), not prose
+// hedging stuffed into the answer text itself.
 export function buildShortAnswer(
   query: string,
   sources: SourceItem[],
-  reviews: ProviderReview[],
   isPartial = false,
+  reviews: ProviderReview[] = [],
 ): string {
-  if (sources.length === 0) return `Initialising search for \"${query}\"...`;
-
   const sorted = [...sources].sort((a, b) => b.reliability - a.reliability);
-  const high = sorted.filter((s) => s.reliability >= 0.72);
-  const freshHigh = high.filter((s) => (s.ageDays ?? 10_000) <= 365);
-  const providers = [...new Set(sorted.slice(0, 8).map((s) => s.source))].join(", ");
-  const terms = topicTerms(sorted, query);
-  const claims = extractClaims(query, sorted, 2);
+  const wellMatched = sorted.filter((s) => (s.relevance ?? 0) >= 0.3);
 
-  // AI peer review, when available, is the strongest synthesis.
+  // Multi-model AI cross-check — only runs when the user has their own
+  // key(s) configured. This is exactly the path that rescues
+  // conversational/advice questions the free databases alone have no real
+  // material for.
   if (reviews.length > 0) {
-    const best = [...reviews].sort((a, b) => b.confidence - a.confidence)[0];
-    const uncertainty = predictiveUncertaintyNote(query, freshHigh);
-    const evidenceLine =
-      freshHigh.length > 0
-        ? ` Built on ${freshHigh.length} recent high-authority sources.`
-        : high.length > 0
-          ? " Evidence exists but freshness is limited."
-          : " High-authority evidence is sparse.";
-    return `${best.answer}${evidenceLine}${uncertainty ? ` ${uncertainty}` : ""}${isPartial ? " [Refining...]" : ""}`;
+    return `${mergeAiReviews(reviews).text}${isPartial ? " [Refining...]" : ""}`;
   }
 
-  // No AI review: ground the synthesis in actual source content.
-  const corroborated = sources.filter((s) => s.relevance != null && s.relevance >= 0.4).length;
-  const evidencePhrase = claims.length > 0
-    ? ` Key finding: ${claims[0]}${claims[1] ? ` Also: ${claims[1]}` : ""}`
-    : "";
+  if (sources.length === 0) return `Searching for "${query}"…`;
 
-  if (freshHigh.length >= 3) {
-    return `Across ${providers}, ${corroborated} relevant sources converge on ${terms.slice(0, 3).join(", ")}.${evidencePhrase} ${freshHigh.length} recent high-authority sources align.${isPartial ? " [Peer review in progress...]" : ""}`;
+  // Honesty check: if nothing in the whole pool is actually on-topic, say so
+  // plainly — no fabricated sentence out of tangential keyword matches. This
+  // matters most for conversational/advice questions ("how do I politely
+  // tell a venue...") that academic and reference databases simply don't
+  // carry good material for.
+  if (wellMatched.length === 0) {
+    return `I don't have reliable evidence to answer this — the free sources this engine searches didn't return anything genuinely on-topic for "${query}".${isPartial ? " Still searching…" : ""}`;
   }
-  if (high.length >= 2) {
-    return `Moderate evidence from ${providers} on ${terms.slice(0, 3).join(", ")}.${evidencePhrase} Reliability is constrained by source freshness.${isPartial ? " [Expanding...]" : ""}`;
+
+  // Curate one direct answer out of the free sources: prefer claims that
+  // multiple distinct providers independently echo over a single source's
+  // wording — this is the "merge into one version of the truth" pass.
+  const claims = extractClaims(query, sorted, 2);
+  if (claims.length === 0) {
+    return `Found sources related to "${query}", but nothing specific enough to quote as a direct answer — see the sources below for the full content.${isPartial ? " Still searching…" : ""}`;
   }
-  return `Directional only across ${providers}: ${terms.slice(0, 3).join(", ")}.${evidencePhrase} Treat as hypothesis generation, not firm conclusion.${isPartial ? " [Searching for stronger sources...]" : ""}`;
+
+  const lead = claims[0].text;
+  const second = claims[1] && claims[1].text.toLowerCase() !== lead.toLowerCase() ? ` ${claims[1].text}` : "";
+  return `${lead}${second}${isPartial ? " [Refining…]" : ""}`;
 }
 
-export function computeConfidence(sources: SourceItem[], reviews: ProviderReview[], query?: string): number {
-  if (sources.length === 0) return 0.22;
+export function computeConfidence(sources: SourceItem[], query?: string, reviews: ProviderReview[] = []): number {
+  if (sources.length === 0 && reviews.length === 0) return 0.22;
   const predictive = predictiveRisk(query ?? "");
 
   const top = [...sources].sort((a, b) => b.reliability - a.reliability).slice(0, 10);
-  const srcReliability = top.reduce((sum, s) => sum + s.reliability, 0) / top.length;
-  const srcFreshness = top.reduce((sum, s) => sum + (s.freshness ?? 0.4), 0) / top.length;
-  const base =
+  const srcReliability = top.length > 0 ? top.reduce((sum, s) => sum + s.reliability, 0) / top.length : 0.3;
+  const srcFreshness = top.length > 0 ? top.reduce((sum, s) => sum + (s.freshness ?? 0.4), 0) / top.length : 0.4;
+  const avgRelevance = top.length > 0 ? top.reduce((sum, s) => sum + (s.relevance ?? 0), 0) / top.length : 0;
+  const conf0 =
     srcReliability * 0.6 +
     srcFreshness * 0.22 +
     sourceDiversityBoost(top) +
     corroborationStrength(top);
 
-  const reviewConfidence =
-    reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.confidence, 0) / reviews.length
-      : base;
-
-  let conf = base * 0.72 + reviewConfidence * 0.28;
+  let conf = conf0;
+  if (reviews.length > 0) {
+    // AI cross-check available: blend free-evidence confidence with the
+    // models' own (already adjusted for cross-model agreement/divergence in
+    // mergeAiReviews) — both matter, neither alone overrides the other.
+    const aiConf = mergeAiReviews(reviews).confidence;
+    conf = conf0 * 0.45 + aiConf * 0.55;
+  } else if (avgRelevance < 0.28) {
+    // Don't let a confident-looking badge survive on tangentially-matched
+    // sources — if the top sources aren't actually on-topic, neither is the answer.
+    conf = Math.min(conf, 0.32);
+  }
   if (predictive) conf *= 0.84;
   return Math.max(0.14, Math.min(predictive ? 0.78 : 0.96, conf));
 }
 
-export function buildReport(sources: SourceItem[], _reviews: ProviderReview[], stopReason: string, query?: string): ResearchReport {
+export function buildReport(sources: SourceItem[], stopReason: string, query?: string, reviews: ProviderReview[] = []): ResearchReport {
   const runs: Record<string, ProviderRun> = {};
   for (const s of sources) {
     if (!runs[s.source]) {
@@ -650,5 +819,6 @@ export function buildReport(sources: SourceItem[], _reviews: ProviderReview[], s
     avgFreshness,
     predictiveQuery: predictive,
     uncertaintyNote,
+    aiProvidersConsulted: reviews.map((r) => r.provider),
   };
 }
