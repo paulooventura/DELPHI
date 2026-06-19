@@ -187,11 +187,14 @@ html,body {
 
 .cp-wheel-viewport {
   overflow: auto;
-  border: 1px solid #1a2438;
+  border: 1px solid #4a3a22;
   border-radius: 10px;
-  background: radial-gradient(circle at 50% 100%, rgba(24, 52, 85, 0.25), rgba(10, 15, 28, 0.2) 42%, rgba(10, 15, 28, 0.85) 85%);
-  padding: 0.3rem 0.2rem 0.2rem;
+  background:
+    radial-gradient(circle at 50% 100%, rgba(120, 88, 40, 0.22), rgba(20, 14, 8, 0.35) 38%, rgba(8, 6, 4, 0.92) 82%),
+    repeating-linear-gradient(90deg, rgba(90, 70, 35, 0.06) 0 2px, transparent 2px 6px);
+  padding: 0.35rem 0.25rem 0.25rem;
   touch-action: none;
+  box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .cp-wheel-controls {
@@ -200,7 +203,6 @@ html,body {
   align-items: center;
 }
 
-/* Zero-size anchor positioned at the bottom-centre */
 .cp-ring-anchor {
   position: absolute;
   left: 50%;
@@ -210,72 +212,140 @@ html,body {
   overflow: visible;
 }
 
-/* The ring itself — a circle centred on the anchor point */
-.cp-ring {
+/* Steampunk mechanical dial */
+.cp-steam-ring-wrap {
   position: absolute;
-  border: 1.5px solid;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: border-width 0.12s ease, box-shadow 0.12s ease;
-  /* default positioning for NON-animated rings via inline transform */
+  left: 0;
+  top: 0;
+  pointer-events: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.55));
+  transition: filter 0.15s ease, z-index 0s;
 }
 
-/* Dot indicator at 12 o'clock of the ring — travels with rotation */
-.cp-ring-dot {
-  position: absolute;
-  top: 3px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+.cp-steam-dial {
+  width: 100%;
+  height: 100%;
+  transform-origin: center center;
 }
 
-/* Glanceable icon + number badge that rides on the dot */
-.cp-ring-badge {
+.cp-steam-gauge {
   position: absolute;
-  bottom: 100%;
   left: 50%;
+  top: -2px;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
   transform-origin: center bottom;
-  /* base transform set inline (counter-rotation); translate centers it */
-  margin-left: -50%;
+}
+
+.cp-steam-needle {
+  width: 2px;
+  height: 9px;
+  border-radius: 1px;
+  margin-bottom: 1px;
+  box-shadow: 0 0 4px rgba(255, 200, 80, 0.35);
+}
+
+.cp-steam-gauge-plate {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 2px;
-  padding: 1px 4px;
-  height: 15px;
-  border: 1.5px solid;
-  border-radius: 8px;
-  background: rgba(8, 13, 24, 0.92);
-  font-size: 9.5px;
+  gap: 3px;
+  padding: 2px 7px 2px 6px;
+  min-height: 18px;
+  border: 1.5px solid #c9a227;
+  border-radius: 3px;
+  background: linear-gradient(180deg, #3d3428 0%, #1a1510 55%, #0d0a08 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(232, 200, 114, 0.25),
+    0 2px 6px rgba(0, 0, 0, 0.55);
+  font-family: Georgia, "Times New Roman", serif;
+  white-space: nowrap;
+}
+
+.cp-steam-gauge-screw {
+  position: absolute;
+  top: 50%;
+  width: 3px;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e8c872, #5a4a2a);
+  box-shadow: inset 0 0 1px #000;
+}
+.cp-steam-gauge-screw-l { left: 2px; }
+.cp-steam-gauge-screw-r { right: 2px; }
+
+.cp-steam-gauge-icon {
+  font-size: 11px;
   line-height: 1;
+  filter: drop-shadow(0 0 2px rgba(255, 200, 100, 0.35));
+}
+
+.cp-steam-gauge-val {
+  font-size: 11px;
+  font-weight: 800;
+  color: #e8c872;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-steam-gauge-unit {
+  font-size: 7px;
+  font-weight: 700;
+  color: #8b7355;
+  letter-spacing: 0.12em;
+  margin-left: 1px;
+}
+
+.cp-steam-gauge-active .cp-steam-gauge-plate {
+  border-width: 2px;
+  box-shadow:
+    inset 0 1px 0 rgba(232, 200, 114, 0.35),
+    0 0 10px rgba(201, 162, 39, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.6);
+}
+
+.cp-steam-tooltip {
+  position: absolute;
+  left: 50%;
+  top: -28px;
+  z-index: 22;
+  padding: 2px 8px;
+  border: 1px solid #8b6914;
+  border-radius: 4px;
+  background: rgba(26, 21, 16, 0.95);
+  color: #e8c872;
+  font-size: 10px;
   font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
-  z-index: 2;
-  transition: height 0.12s ease, font-size 0.12s ease;
-}
-.cp-ring-badge-icon { font-size: 10.5px; }
-.cp-ring-badge-val  { letter-spacing: 0.2px; }
-
-/* Expanded badge on hover — shows the full label, sits above the rest */
-.cp-ring-badge-active {
-  height: 18px;
-  padding: 2px 7px;
-  font-size: 11px;
-  color: #07101f !important;
-  z-index: 20;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.5);
-}
-.cp-ring-badge-full {
-  margin-left: 2px;
-  font-weight: 700;
+  transform-origin: center bottom;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
 }
 
-/* Highlighted ring */
-.cp-ring-active { z-index: 15; }
+.cp-steam-hub {
+  position: absolute;
+  left: 50%;
+  bottom: -4px;
+  transform: translateX(-50%);
+  z-index: 30;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+}
 
-/* CSS animation for clock wheels */
+.cp-ring-active {
+  z-index: 15;
+  filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.45)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
+}
+
+@keyframes steam-dial-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* legacy alias kept for safety */
 @keyframes ring-spin {
   from { transform: translate(-50%, -50%) rotate(0deg); }
   to   { transform: translate(-50%, -50%) rotate(360deg); }
@@ -293,7 +363,7 @@ html,body {
 .cp-rl-item { display: inline-flex; align-items: center; gap: 0.28rem; }
 .cp-rl-link { cursor: pointer; border-radius: 5px; padding: 1px 4px; transition: background 0.12s ease; }
 .cp-rl-link:hover, .cp-rl-active { background: rgba(80, 130, 200, 0.18); }
-.cp-rl-dot  { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.cp-rl-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; border: 1px solid #8b6914; box-shadow: inset 0 0 2px rgba(232, 200, 114, 0.35); }
 .cp-rl-name { color: var(--ink-faint); }
 
 /* ─── Cycle quick values ──────────────────────────────────────────────────── */

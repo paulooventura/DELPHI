@@ -6,14 +6,15 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { starsInDirection, relevantConstellations, type SkyObject, type ConstellationHit } from "../lib/starmap";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
+import { SteampunkWheelRing } from "../components/SteampunkWheelRing";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CLOCK_RINGS = [
-  { id: "ms",  name: "ms",  color: "#fbbf24", periodS: 1     },
-  { id: "s",   name: "sec", color: "#f97316", periodS: 60    },
-  { id: "min", name: "min", color: "#ef4444", periodS: 3600  },
-  { id: "h",   name: "hr",  color: "#d946ef", periodS: 43200 },
+  { id: "ms",  name: "ms",  color: "#fbbf24", periodS: 1,     icon: "⚙", unit: "MS"  },
+  { id: "s",   name: "sec", color: "#f97316", periodS: 60,    icon: "◷", unit: "SEC" },
+  { id: "min", name: "min", color: "#ef4444", periodS: 3600,  icon: "⏱", unit: "MIN" },
+  { id: "h",   name: "hr",  color: "#d946ef", periodS: 43200, icon: "🕰", unit: "HR"  },
 ];
 
 const RING_BASE = 54;   // innermost ring diameter px
@@ -236,74 +237,6 @@ function CompassRose({ heading }: { heading: number }) {
         <circle cx={42} cy={42} r={3.5} fill="#0e1a2a" stroke="#2a4060" strokeWidth="1.2"/>
       </svg>
       <span className="cp-compass-deg">{Math.round(heading)}°</span>
-    </div>
-  );
-}
-
-// ─── Wheel ring ───────────────────────────────────────────────────────────────
-
-function WheelRing({ size, color, angleDeg, periodS, offsetS, icon, value, name, fullLabel, active, onHover }: {
-  size: number;
-  color: string;
-  angleDeg?: number;
-  periodS?: number;
-  offsetS?: number;
-  icon?: string;
-  value?: string | number;
-  name?: string;
-  fullLabel?: string;
-  active?: boolean;
-  onHover?: (on: boolean) => void;
-}) {
-  const isAnim = periodS != null;
-
-  const ringStyle: React.CSSProperties = isAnim
-    ? {
-        width: size, height: size, borderColor: color,
-        borderWidth: active ? 3 : undefined,
-        animationName: "ring-spin",
-        animationDuration: `${periodS}s`,
-        animationDelay: `-${offsetS ?? 0}s`,
-        animationTimingFunction: "linear",
-        animationIterationCount: "infinite",
-        animationFillMode: "both",
-      }
-    : {
-        width: size, height: size, borderColor: color,
-        borderWidth: active ? 3 : undefined,
-        boxShadow: active ? `0 0 8px 1px ${color}` : undefined,
-        transform: `translate(-50%, -50%) rotate(${angleDeg ?? 0}deg)`,
-      };
-
-  const hasLabel = icon != null || value != null;
-
-  return (
-    <div className="cp-ring-anchor">
-      <div
-        className={`cp-ring${active ? " cp-ring-active" : ""}`}
-        style={ringStyle}
-        onMouseEnter={onHover ? () => onHover(true) : undefined}
-        onMouseLeave={onHover ? () => onHover(false) : undefined}
-      >
-        <div className="cp-ring-dot" style={{ background: color, boxShadow: `0 0 5px 1px ${color}88` }}>
-          {hasLabel && (
-            // counter-rotate so the badge stays upright while the ring is rotated
-            <span
-              className={`cp-ring-badge${active ? " cp-ring-badge-active" : ""}`}
-              style={{
-                transform: `rotate(${-(angleDeg ?? 0)}deg)`,
-                borderColor: color,
-                color,
-                background: active ? color : undefined,
-              }}
-            >
-              {icon && <span className="cp-ring-badge-icon">{icon}</span>}
-              {value != null && <span className="cp-ring-badge-val">{value}</span>}
-              {active && fullLabel && <span className="cp-ring-badge-full">{name ? `${name}: ` : ""}{fullLabel}</span>}
-            </span>
-          )}
-        </div>
-      </div>
     </div>
   );
 }
@@ -592,6 +525,10 @@ export default function Home() {
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
 
+  const clockTickLabels = ["12", "3", "6", "9"];
+  const clockFaceLabels = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
+  const secMinLabels = ["0", "15", "30", "45"];
+
   return (
     <main className="cp-shell">
 
@@ -726,30 +663,57 @@ export default function Home() {
                 className="cp-semicircle"
                 style={{ height: containerH, maxWidth: containerW, transform: `scale(${wheelZoom})` }}
               >
-                {/* Clock rings — CSS animated (no JS re-render) */}
-                {clockOffsets && CLOCK_RINGS.map((cr, i) => (
-                  <WheelRing
-                    key={cr.id}
-                    size={RING_BASE + i * RING_STEP}
-                    color={cr.color}
-                    periodS={cr.periodS}
-                    offsetS={clockOffsets[cr.id as keyof typeof clockOffsets]}
-                  />
-                ))}
+                <div className="cp-steam-hub" aria-hidden>
+                  <svg width="36" height="36" viewBox="0 0 36 36">
+                    <circle cx="18" cy="18" r="14" fill="#1a1510" stroke="#c9a227" strokeWidth="1.5" />
+                    {[0, 60, 120, 180, 240, 300].map((d) => {
+                      const rad = ((d - 90) * Math.PI) / 180;
+                      return (
+                        <line key={d} x1={18} y1={18} x2={18 + Math.cos(rad) * 11} y2={18 + Math.sin(rad) * 11} stroke="#8b6914" strokeWidth="1.2" />
+                      );
+                    })}
+                    <circle cx="18" cy="18" r="4" fill="#c9a227" />
+                  </svg>
+                </div>
 
-                {/* Weather ring */}
+                {clockOffsets && CLOCK_RINGS.map((cr, i) => {
+                  const val =
+                    cr.id === "ms" ? String(now.getMilliseconds()).padStart(3, "0")
+                    : cr.id === "s" ? ss
+                    : cr.id === "min" ? mm
+                    : hh;
+                  return (
+                    <SteampunkWheelRing
+                      key={cr.id}
+                      size={RING_BASE + i * RING_STEP}
+                      color={cr.color}
+                      periodS={cr.periodS}
+                      offsetS={clockOffsets[cr.id as keyof typeof clockOffsets]}
+                      icon={cr.icon}
+                      value={val}
+                      unit={cr.unit}
+                      tickCount={cr.id === "ms" ? 10 : 12}
+                      tickLabels={cr.id === "h" ? clockFaceLabels : cr.id === "ms" ? ["0", "2", "4", "6", "8"] : secMinLabels}
+                    />
+                  );
+                })}
+
                 {weatherRing && (
-                  <WheelRing
+                  <SteampunkWheelRing
                     key="weather"
                     size={RING_BASE + clockCount * RING_STEP}
                     color="#22d3ee"
                     angleDeg={0}
+                    icon={weatherRing.emoji}
+                    value={weatherRing.tempC != null ? `${Math.round(weatherRing.tempC)}°` : "—"}
+                    unit="WX"
+                    tickCount={8}
+                    tickLabels={clockTickLabels}
                   />
                 )}
 
-                {/* Calendar rings */}
                 {calendarWheels.map((w, i) => (
-                  <WheelRing
+                  <SteampunkWheelRing
                     key={w.id}
                     size={RING_BASE + (clockCount + (weatherRing ? 1 : 0) + i) * RING_STEP}
                     color={w.color}
@@ -758,6 +722,9 @@ export default function Home() {
                     value={compactWheelValue(w)}
                     name={w.name}
                     fullLabel={w.label}
+                    unit={w.name.slice(0, 3).toUpperCase()}
+                    tickCount={16}
+                    tickLabels={clockTickLabels}
                     active={hoverRing === w.id}
                     onHover={(on) => setHoverRing(on ? w.id : null)}
                   />
