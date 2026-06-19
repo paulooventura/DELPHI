@@ -20,7 +20,7 @@ export type ConstellationHit = {
   score: number;
 };
 
-const STAR_TO_CONSTELLATION: Record<string, string> = {
+export const STAR_TO_CONSTELLATION: Record<string, string> = {
   "Sirius": "Canis Major",
   "Canopus": "Carina",
   "Arcturus": "Bootes",

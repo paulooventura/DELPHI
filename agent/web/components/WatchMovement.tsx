@@ -12,6 +12,7 @@ export type WatchMovementProps = {
   calendarWheels: CalendarWheel[];
   hoverId: string | null;
   onHover: (id: string | null) => void;
+  glass?: boolean;
 };
 
 const CLOCK_IDS = ["ms", "s", "min", "h"] as const;
@@ -79,6 +80,7 @@ function SemicircleRing({
   cy,
   spec,
   active,
+  glass,
   onEnter,
   onLeave,
 }: {
@@ -86,6 +88,7 @@ function SemicircleRing({
   cy: number;
   spec: RingSpec;
   active: boolean;
+  glass?: boolean;
   onEnter: () => void;
   onLeave: () => void;
 }) {
@@ -146,12 +149,16 @@ function SemicircleRing({
   const hy = cy + Math.sin(handRad) * handLen;
   const labelY = cy - r + band * 0.35;
 
+  const ringOpacity = glass ? 0.58 : 1;
+  const plateFill = glass ? "rgba(14, 17, 32, 0.72)" : "#1a1510";
+
   return (
     <g
       className={`cp-watch-ring${active ? " cp-watch-ring-active" : ""}`}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
       style={{ cursor: "pointer" }}
+      opacity={ringOpacity}
     >
       <defs>
         <linearGradient id={`br-${uid}`} x1="0" y1="0" x2="1" y2="1">
@@ -162,8 +169,8 @@ function SemicircleRing({
       </defs>
 
       {/* brass band */}
-      <path d={arcPath} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} strokeLinecap="round" />
-      <path d={arcPath} fill="none" stroke="#1a1510" strokeWidth={band - 2.5} strokeLinecap="round" opacity={0.85} />
+      <path d={arcPath} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} strokeLinecap="round" opacity={glass ? 0.75 : 1} />
+      <path d={arcPath} fill="none" stroke="#1a1510" strokeWidth={band - 2.5} strokeLinecap="round" opacity={glass ? 0.35 : 0.85} />
 
       {ticks}
 
@@ -173,8 +180,8 @@ function SemicircleRing({
       <circle cx={cx} cy={cy} r={Math.max(2.5, r * 0.045)} fill="#1a1510" stroke="#c9a227" strokeWidth={0.8} />
 
       {/* readout plate at top of ring */}
-      <g transform={`translate(${cx}, ${labelY})`}>
-        <rect x={-22} y={-8} width={44} height={14} rx={2} fill="#1a1510" stroke={spec.color} strokeWidth={1} />
+      <g transform={`translate(${cx}, ${labelY})`} opacity={glass ? 0.92 : 1}>
+        <rect x={-22} y={-8} width={44} height={14} rx={2} fill={plateFill} stroke={spec.color} strokeWidth={1} />
         <text x={-16} y={2} fontSize={8} textAnchor="middle">{spec.icon}</text>
         <text x={2} y={2} fontSize={8} fill="#e8c872" fontWeight={700} textAnchor="middle" fontFamily="Georgia, serif">{spec.label}</text>
         <text x={16} y={2} fontSize={6} fill="#8b7355" textAnchor="middle">{spec.unit}</text>
@@ -183,7 +190,7 @@ function SemicircleRing({
   );
 }
 
-export function WatchMovement({ animMs, now, weather, calendarWheels, hoverId, onHover }: WatchMovementProps) {
+export function WatchMovement({ animMs, now, weather, calendarWheels, hoverId, onHover, glass = false }: WatchMovementProps) {
   const cx = 200;
   const cy = 198;
   const hubSpin = ((animMs / 1000) / 8) * 360;
@@ -237,23 +244,26 @@ export function WatchMovement({ animMs, now, weather, calendarWheels, hoverId, o
   return (
     <svg
       viewBox="0 0 400 210"
-      className="cp-watch-movement"
+      className={`cp-watch-movement${glass ? " cp-watch-movement-glass" : ""}`}
       role="img"
       aria-label="Cycle wheels watch movement"
     >
-      <defs>
-        <radialGradient id="watch-bg" cx="50%" cy="95%" r="75%">
-          <stop offset="0%" stopColor="#2a2218" />
-          <stop offset="55%" stopColor="#12100c" />
-          <stop offset="100%" stopColor="#080604" />
-        </radialGradient>
-      </defs>
-
-      <rect x={0} y={0} width={400} height={210} fill="url(#watch-bg)" rx={8} />
+      {!glass && (
+        <>
+          <defs>
+            <radialGradient id="watch-bg" cx="50%" cy="95%" r="75%">
+              <stop offset="0%" stopColor="#2a2218" />
+              <stop offset="55%" stopColor="#12100c" />
+              <stop offset="100%" stopColor="#080604" />
+            </radialGradient>
+          </defs>
+          <rect x={0} y={0} width={400} height={210} fill="url(#watch-bg)" rx={8} />
+        </>
+      )}
 
       {/* base plate screws */}
       {[80, 200, 320].map((x) => (
-        <circle key={x} cx={x} cy={196} r={2.5} fill="#1a1510" stroke="#8b6914" strokeWidth={0.6} />
+        <circle key={x} cx={x} cy={196} r={2.5} fill="#1a1510" stroke="#8b6914" strokeWidth={0.6} opacity={glass ? 0.45 : 1} />
       ))}
 
       {rings.map((spec) => (
@@ -263,13 +273,14 @@ export function WatchMovement({ animMs, now, weather, calendarWheels, hoverId, o
           cy={cy}
           spec={spec}
           active={hoverId === spec.id}
+          glass={glass}
           onEnter={() => onHover(spec.id)}
           onLeave={() => onHover(null)}
         />
       ))}
 
       {/* central hub + meshing pinions */}
-      <g transform={`rotate(${hubSpin} ${cx} ${cy})`}>
+      <g transform={`rotate(${hubSpin} ${cx} ${cy})`} opacity={glass ? 0.62 : 1}>
         {[0, 120, 240].map((d) => {
           const rad = ((d - 90) * Math.PI) / 180;
           return (
@@ -280,7 +291,7 @@ export function WatchMovement({ animMs, now, weather, calendarWheels, hoverId, o
         <circle cx={cx} cy={cy} r={4} fill="#c9a227" />
       </g>
 
-      <g transform={`rotate(${-hubSpin * 1.4} ${cx + 22} ${cy - 6})`}>
+      <g transform={`rotate(${-hubSpin * 1.4} ${cx + 22} ${cy - 6})`} opacity={glass ? 0.62 : 1}>
         <circle cx={cx + 22} cy={cy - 6} r={7} fill="#2a2218" stroke="#b8860b" strokeWidth={1} />
         {[0, 90, 180, 270].map((d) => {
           const rad = ((d - 90) * Math.PI) / 180;

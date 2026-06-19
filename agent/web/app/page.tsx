@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
-import { starsInDirection, relevantConstellations, type SkyObject, type ConstellationHit } from "../lib/starmap";
+import { starsInDirection, relevantConstellations, STAR_TO_CONSTELLATION, type SkyObject, type ConstellationHit } from "../lib/starmap";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
 import { WatchMovement } from "../components/WatchMovement";
@@ -80,11 +80,14 @@ type StreamState = {
 
 // ─── Sky Map ──────────────────────────────────────────────────────────────────
 
-function SkyMapSVG({ lat, lon, heading, minuteKey }: {
+function SkyMapSVG({ lat, lon, heading, minuteKey, variant = "standalone" }: {
   lat: number; lon: number; heading: number; minuteKey: number;
+  variant?: "standalone" | "background" | "legend";
 }) {
   const W = 320, H = 168;
   const FOV_AZ = 85, FOV_ALT = 90;
+  const isBg = variant === "background";
+  const isLegend = variant === "legend";
 
   const stars: SkyObject[] = useMemo(
     () => starsInDirection(lat, lon, heading, new Date(), FOV_AZ, 3.5),
@@ -107,70 +110,138 @@ function SkyMapSVG({ lat, lon, heading, minuteKey }: {
   const CARD_LBLS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const bearing   = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(heading / 22.5) % 16];
 
-  return (
-    <div className="cp-skymap-wrap">
-      <svg viewBox={`0 0 ${W} ${H}`} width="100%" className="cp-skymap">
-        <defs>
-          <linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#010409"/>
-            <stop offset="70%" stopColor="#08192e"/>
-            <stop offset="100%" stopColor="#12253d"/>
-          </linearGradient>
-        </defs>
-        <rect width={W} height={H} fill="url(#skyg)" rx="6"/>
+  const starsByConstellation = useMemo(() => {
+    const groups = new Map<string, SkyObject[]>();
+    for (const star of stars) {
+      const cName = STAR_TO_CONSTELLATION[star.name];
+      if (!cName) continue;
+      const list = groups.get(cName) ?? [];
+      list.push(star);
+      groups.set(cName, list);
+    }
+    return groups;
+  }, [stars]);
 
-        {[15, 30, 45, 60, 75].map(alt => {
-          const y = H - (alt / FOV_ALT) * H;
-          return <line key={alt} x1={0} y1={y} x2={W} y2={y} stroke="#0c2236" strokeWidth={1} strokeDasharray="3,9"/>;
-        })}
-
-        {/* Horizon and zenith references */}
-        <line x1={0} y1={H} x2={W} y2={H} stroke="#35506d" strokeWidth={1.2}/>
-        <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6"/>
-        <text x={6} y={H - 4} fontSize="7" fill="#4a6c88">Horizon</text>
-        <text x={W - 8} y={9} fontSize="7" fill="#4a6c88" textAnchor="end">Zenith</text>
-
-        {CARD_AZS.map((cAz, ci) => {
-          const dAz = ((cAz - heading + 540) % 360) - 180;
-          if (Math.abs(dAz) > FOV_AZ / 2 + 8) return null;
-          const x = (dAz / FOV_AZ + 0.5) * W;
-          const isPrimary = ci % 2 === 0;
-          return (
-            <g key={ci}>
-              <line x1={x} y1={H - (isPrimary ? 14 : 8)} x2={x} y2={H} stroke={isPrimary ? "#1e4d70" : "#102840"} strokeWidth={1}/>
-              {isPrimary && <text x={x} y={H - 17} textAnchor="middle" fontSize="7" fill="#2e6080" fontWeight="700">{CARD_LBLS[ci]}</text>}
-            </g>
-          );
-        })}
-
-        {stars.map(star => {
-          const [x, y] = toXY(star.az, star.alt);
-          if (x < -18 || x > W + 18 || y < -18 || y > H + 18) return null;
-          const r = Math.max(0.9, (3.6 - star.mag) * 1.15 + 0.9);
-          const op = Math.min(1, 0.45 + (3.6 - star.mag) / 5.5);
-          const fill = star.mag < 0.5 ? "#fffff5" : star.mag < 1.5 ? "#eef5ff" : "#d5e8ff";
-          return (
-            <g key={star.name}>
-              <circle cx={x} cy={y} r={r * 2.4} fill={`rgba(100,170,255,${op * 0.09})`}/>
-              <circle cx={x} cy={y} r={r} fill={fill} opacity={op}/>
-              {star.mag < 1.8 && (
-                <text x={x + r + 2.5} y={y + 3.5} fontSize="5.5" fill={`rgba(110,175,220,${op * 0.8})`}>{star.name}</text>
-              )}
-            </g>
-          );
-        })}
-
-        <text x={W / 2} y={11} textAnchor="middle" fontSize="8.5" fill="#3a7898">
-          {`↑ ${Math.round(heading)}°  ${bearing}`}
-        </text>
-
-        {stars.length === 0 && (
-          <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="10" fill="#203045">
-            No bright stars above horizon in this direction
-          </text>
+  const svg = (
+    <svg
+      viewBox={`0 0 ${W} ${H}`}
+      width="100%"
+      height={isBg ? "100%" : undefined}
+      preserveAspectRatio={isBg ? "xMidYMid slice" : undefined}
+      className={`cp-skymap${isBg ? " cp-skymap-bg" : ""}`}
+    >
+      <defs>
+        <linearGradient id={isBg ? "skyg-bg" : "skyg"} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="#010409"/>
+          <stop offset="70%" stopColor="#08192e"/>
+          <stop offset="100%" stopColor="#12253d"/>
+        </linearGradient>
+        {isBg && (
+          <radialGradient id="skyg-vignette" cx="50%" cy="88%" r="72%">
+            <stop offset="55%" stopColor="rgba(0,0,0,0)" />
+            <stop offset="100%" stopColor="rgba(0,0,0,0.55)" />
+          </radialGradient>
         )}
-      </svg>
+      </defs>
+      <rect width={W} height={H} fill={`url(#${isBg ? "skyg-bg" : "skyg"})`} rx={isBg ? 0 : 6}/>
+      {isBg && <rect width={W} height={H} fill="url(#skyg-vignette)" />}
 
+      {[15, 30, 45, 60, 75].map(alt => {
+        const y = H - (alt / FOV_ALT) * H;
+        return (
+          <line
+            key={alt}
+            x1={0} y1={y} x2={W} y2={y}
+            stroke={isBg ? "#143248" : "#0c2236"}
+            strokeWidth={1}
+            strokeDasharray="3,9"
+            opacity={isBg ? 0.85 : 1}
+          />
+        );
+      })}
+
+      <line x1={0} y1={H} x2={W} y2={H} stroke="#35506d" strokeWidth={1.2} opacity={isBg ? 0.9 : 1}/>
+      <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6" opacity={isBg ? 0.75 : 1}/>
+      {!isBg && (
+        <>
+          <text x={6} y={H - 4} fontSize="7" fill="#4a6c88">Horizon</text>
+          <text x={W - 8} y={9} fontSize="7" fill="#4a6c88" textAnchor="end">Zenith</text>
+        </>
+      )}
+
+      {CARD_AZS.map((cAz, ci) => {
+        const dAz = ((cAz - heading + 540) % 360) - 180;
+        if (Math.abs(dAz) > FOV_AZ / 2 + 8) return null;
+        const x = (dAz / FOV_AZ + 0.5) * W;
+        const isPrimary = ci % 2 === 0;
+        return (
+          <g key={ci} opacity={isBg ? 0.8 : 1}>
+            <line x1={x} y1={H - (isPrimary ? 14 : 8)} x2={x} y2={H} stroke={isPrimary ? "#1e4d70" : "#102840"} strokeWidth={1}/>
+            {isPrimary && (
+              <text x={x} y={H - 17} textAnchor="middle" fontSize={isBg ? 8 : 7} fill="#2e6080" fontWeight="700">
+                {CARD_LBLS[ci]}
+              </text>
+            )}
+          </g>
+        );
+      })}
+
+      {/* faint constellation stick figures from visible stars */}
+      {isBg && Array.from(starsByConstellation.entries()).map(([name, group]) => {
+        if (group.length < 2) return null;
+        const sorted = [...group].sort((a, b) => a.az - b.az);
+        const points = sorted
+          .map(s => toXY(s.az, s.alt))
+          .filter(([x, y]) => x >= -8 && x <= W + 8 && y >= -8 && y <= H + 8);
+        if (points.length < 2) return null;
+        const d = points.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
+        const [lx, ly] = toXY(
+          sorted.reduce((s, st) => s + st.az, 0) / sorted.length,
+          sorted.reduce((s, st) => s + st.alt, 0) / sorted.length,
+        );
+        return (
+          <g key={name} opacity={0.55}>
+            <path d={d} fill="none" stroke="#5a9ec8" strokeWidth={0.9} strokeDasharray="2,3" />
+            <text x={lx} y={ly - 4} textAnchor="middle" fontSize={7.5} fill="#6eb8e8" fontWeight="600">
+              {name}
+            </text>
+          </g>
+        );
+      })}
+
+      {stars.map(star => {
+        const [x, y] = toXY(star.az, star.alt);
+        if (x < -18 || x > W + 18 || y < -18 || y > H + 18) return null;
+        const r = Math.max(0.9, (3.6 - star.mag) * 1.15 + 0.9) * (isBg ? 1.15 : 1);
+        const op = Math.min(1, (0.45 + (3.6 - star.mag) / 5.5) * (isBg ? 1.25 : 1));
+        const fill = star.mag < 0.5 ? "#fffff5" : star.mag < 1.5 ? "#eef5ff" : "#d5e8ff";
+        return (
+          <g key={star.name}>
+            <circle cx={x} cy={y} r={r * 2.4} fill={`rgba(100,170,255,${op * (isBg ? 0.14 : 0.09)})`}/>
+            <circle cx={x} cy={y} r={r} fill={fill} opacity={op}/>
+            {!isBg && star.mag < 1.8 && (
+              <text x={x + r + 2.5} y={y + 3.5} fontSize="5.5" fill={`rgba(110,175,220,${op * 0.8})`}>{star.name}</text>
+            )}
+          </g>
+        );
+      })}
+
+      <text x={W / 2} y={11} textAnchor="middle" fontSize={isBg ? 9.5 : 8.5} fill="#4a9cc4" opacity={isBg ? 0.95 : 1}>
+        {`↑ ${Math.round(heading)}°  ${bearing}`}
+      </text>
+
+      {stars.length === 0 && (
+        <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="10" fill="#203045">
+          No bright stars above horizon in this direction
+        </text>
+      )}
+    </svg>
+  );
+
+  if (isBg) return svg;
+
+  const legend = (
+    <>
       <div className="cp-constellations">
         {constellations.length > 0
           ? constellations.map(c => (
@@ -183,6 +254,17 @@ function SkyMapSVG({ lat, lon, heading, minuteKey }: {
       <p className="cp-muted cp-skymap-meta">
         {stars.length} bright star{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing}
       </p>
+    </>
+  );
+
+  if (isLegend) {
+    return <div className="cp-skymap-wrap cp-skymap-legend">{legend}</div>;
+  }
+
+  return (
+    <div className="cp-skymap-wrap">
+      {svg}
+      {legend}
     </div>
   );
 }
@@ -511,7 +593,7 @@ export default function Home() {
     <main className="cp-shell">
       <div className="cp-stack">
 
-        {/* ── 1. CYCLE WHEELS (hero) ─────────────────────────────────────── */}
+        {/* ── 1. CYCLE WHEELS + SKY (hero) ───────────────────────────────── */}
         <section className="cp-hero-wheel">
           <div className="cp-hero-wheel-head">
             <h1 className="cp-hero-title">Cycle Wheels</h1>
@@ -522,6 +604,16 @@ export default function Home() {
               <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(1)}>Reset</button>
               <button className="cp-btn cp-btn-sm"
                 onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
+              <button
+                className="cp-btn cp-btn-sm"
+                onClick={() => {
+                  if (toggles.heading) void startHeadingWatch();
+                  void captureSensors();
+                }}
+                disabled={sigLoading}
+              >
+                {sigLoading ? "…" : "📍 Locate"}
+              </button>
             </div>
           </div>
 
@@ -532,15 +624,32 @@ export default function Home() {
             onTouchMove={onTouchMoveZoom}
             onTouchEnd={onTouchEndZoom}
           >
-            <div className="cp-watch-scaler" style={{ transform: `scale(${wheelZoom})` }}>
-              <WatchMovement
-                animMs={animNow.getTime()}
-                now={animNow}
-                weather={weatherRing}
-                calendarWheels={calendarWheels}
-                hoverId={hoverRing}
-                onHover={setHoverRing}
-              />
+            <div className="cp-hero-composite">
+              {toggles.skyMap ? (
+                <div className="cp-hero-skymap" aria-hidden>
+                  <SkyMapSVG
+                    variant="background"
+                    lat={mapLat}
+                    lon={mapLon}
+                    heading={activeHeading}
+                    minuteKey={minuteKey}
+                  />
+                </div>
+              ) : (
+                <div className="cp-hero-skymap cp-hero-skymap-off" aria-hidden />
+              )}
+
+              <div className="cp-watch-scaler cp-watch-overlay" style={{ transform: `scale(${wheelZoom})` }}>
+                <WatchMovement
+                  glass
+                  animMs={animNow.getTime()}
+                  now={animNow}
+                  weather={weatherRing}
+                  calendarWheels={calendarWheels}
+                  hoverId={hoverRing}
+                  onHover={setHoverRing}
+                />
+              </div>
             </div>
           </div>
         </section>
@@ -555,20 +664,10 @@ export default function Home() {
           </div>
         </div>
 
-        {/* ── 3. SKY MAP ─────────────────────────────────────────────────── */}
+        {/* ── 3. SKY & COMPASS ───────────────────────────────────────────── */}
         <section className="cp-card cp-sky-card">
           <div className="cp-card-head">
-            <h2 className="cp-card-title">Sky Map</h2>
-            <button
-              className="cp-btn cp-btn-sm"
-              onClick={() => {
-                if (toggles.heading) void startHeadingWatch();
-                void captureSensors();
-              }}
-              disabled={sigLoading}
-            >
-              {sigLoading ? "…" : "📍 Locate Me"}
-            </button>
+            <h2 className="cp-card-title">Sky &amp; Compass</h2>
           </div>
 
           <div className="cp-sensor-toggles">
@@ -584,15 +683,8 @@ export default function Home() {
             ))}
           </div>
 
-          {toggles.skyMap ? (
-            <SkyMapSVG
-              lat={mapLat}
-              lon={mapLon}
-              heading={activeHeading}
-              minuteKey={minuteKey}
-            />
-          ) : (
-            <p className="cp-muted cp-sensor-off">Sky Map disabled.</p>
+          {!toggles.skyMap && (
+            <p className="cp-muted cp-sensor-off">Sky map background hidden — enable Sky Map to see stars behind the wheels.</p>
           )}
 
           <div className="cp-compass-row">
@@ -623,6 +715,16 @@ export default function Home() {
               <p className="cp-muted cp-sensor-off">Compass disabled.</p>
             )}
           </div>
+
+          {toggles.skyMap && (
+            <SkyMapSVG
+              variant="legend"
+              lat={mapLat}
+              lon={mapLon}
+              heading={activeHeading}
+              minuteKey={minuteKey}
+            />
+          )}
 
           <div className="cp-signal-readouts">
             {toggles.location && signals?.lat != null && (
