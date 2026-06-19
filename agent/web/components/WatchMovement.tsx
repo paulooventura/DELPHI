@@ -4,10 +4,11 @@ import { useId } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 
 export type CalendarWheel = CycleSnapshot["wheelLayers"][number];
+export type GregorianInfo = CycleSnapshot["gregorian"];
 
 export type WatchMovementProps = {
-  animMs: number;
   now: Date;
+  gregorian: GregorianInfo | null;
   weather: CycleSnapshot["weather"] | null;
   calendarWheels: CalendarWheel[];
   hoverId: string | null;
@@ -18,27 +19,48 @@ export type WatchMovementProps = {
   showCompass?: boolean;
 };
 
-const CLOCK_IDS = ["ms", "s", "min", "h"] as const;
-const CLOCK_META: Record<(typeof CLOCK_IDS)[number], { color: string }> = {
-  ms:  { color: "#fbbf24" },
-  s:   { color: "#f97316" },
-  min: { color: "#ef4444" },
-  h:   { color: "#d946ef" },
+type RingSpec = {
+  id: string;
+  radius: number;
+  color: string;
+  nowAngle: number;
+  /** Numeric labels placed evenly on the arc (empty = tick marks only) */
+  labels: string[];
+  tickCount: number;
 };
 
-/** Degrees clockwise from 12 o'clock — current instant on this ring */
-function ringAngle(clockId: string, d: Date): number {
-  const ms = d.getMilliseconds();
-  const sec = d.getSeconds() + ms / 1000;
-  const min = d.getMinutes() + sec / 60;
-  const hr = (d.getHours() % 12) + min / 60;
-  switch (clockId) {
-    case "ms": return (ms / 1000) * 360;
-    case "s": return (sec / 60) * 360;
-    case "min": return (min / 60) * 360;
-    case "h": return (hr / 12) * 360;
-    default: return 0;
+function tickRad(i: number, count: number): number {
+  return Math.PI + (i / count) * Math.PI;
+}
+
+function buildNumericLabels(max: number, step: number, pad = 0): string[] {
+  const out: string[] = [];
+  for (let v = 0; v <= max; v += step) {
+    out.push(pad > 0 ? String(v).padStart(pad, "0") : String(v));
   }
+  return out;
+}
+
+function msAngle(d: Date): number {
+  return ((d.getMilliseconds() % 100) / 100) * 360;
+}
+
+function secAngle(d: Date): number {
+  const sec = d.getSeconds() + d.getMilliseconds() / 1000;
+  return (sec / 60) * 360;
+}
+
+function minAngle(d: Date): number {
+  const sec = d.getSeconds() + d.getMilliseconds() / 1000;
+  const min = d.getMinutes() + sec / 60;
+  return (min / 60) * 360;
+}
+
+function hourAngle(d: Date): number {
+  const sec = d.getSeconds() + d.getMilliseconds() / 1000;
+  const min = d.getMinutes() + sec / 60;
+  const hr = d.getHours() + min / 60;
+  return (hr / 24) * 360;
 }
 
 function cycleAngle(periodDays: number, d: Date): number {
@@ -48,28 +70,28 @@ function cycleAngle(periodDays: number, d: Date): number {
   return ((d.getTime() % periodMs) / periodMs) * 360;
 }
 
-function compactVal(w: CalendarWheel): string {
-  const subNum = w.sublabel.match(/\d+/)?.[0];
-  if (subNum) return subNum;
-  const labelNum = w.label.match(/\d+/)?.[0];
-  if (labelNum) return labelNum;
-  const stripped = w.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
-  return stripped.length <= 4 ? stripped : stripped.slice(0, 3);
+function daysInMonth(year: number, monthNum: number): number {
+  return new Date(year, monthNum, 0).getDate();
 }
 
-type RingSpec = {
-  id: string;
-  radius: number;
-  color: string;
-  nowAngle: number;
-  tickLabels: string[];
-  tickCount: number;
-};
-
-/** Map tick index → SVG angle (radians), semicircle left→right over top */
-function tickRad(i: number, count: number): number {
-  return Math.PI + (i / count) * Math.PI;
-}
+const COMPASS_DIRS: Array<{ deg: number; label: string; major: boolean }> = [
+  { deg: 0, label: "N", major: true },
+  { deg: 22.5, label: "NNE", major: false },
+  { deg: 45, label: "NE", major: true },
+  { deg: 67.5, label: "ENE", major: false },
+  { deg: 90, label: "E", major: true },
+  { deg: 112.5, label: "ESE", major: false },
+  { deg: 135, label: "SE", major: true },
+  { deg: 157.5, label: "SSE", major: false },
+  { deg: 180, label: "S", major: true },
+  { deg: 202.5, label: "SSW", major: false },
+  { deg: 225, label: "SW", major: true },
+  { deg: 247.5, label: "WSW", major: false },
+  { deg: 270, label: "W", major: true },
+  { deg: 292.5, label: "WNW", major: false },
+  { deg: 315, label: "NW", major: true },
+  { deg: 337.5, label: "NNW", major: false },
+];
 
 function HubCompass({
   cx,
@@ -86,43 +108,54 @@ function HubCompass({
   showCompass: boolean;
   glass?: boolean;
 }) {
-  const r = 20;
+  const r = 26;
   const needle = showCompass ? heading : 0;
-  const op = glass ? 0.88 : 1;
+  const op = glass ? 0.92 : 1;
 
   return (
     <g opacity={op}>
-      <circle cx={cx} cy={cy} r={r + 3} fill="rgba(8,12,20,0.75)" stroke="#c9a227" strokeWidth={1.2} />
-      <circle cx={cx} cy={cy} r={r} fill="none" stroke="#2a4060" strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={r + 4} fill="rgba(6,10,18,0.82)" stroke="#c9a227" strokeWidth={1.4} />
+      <circle cx={cx} cy={cy} r={r} fill="rgba(8,14,24,0.6)" stroke="#2a4868" strokeWidth={1} />
 
-      {["N", "E", "S", "W"].map((label, i) => {
-        const ang = ((i * 90 - 90) * Math.PI) / 180;
-        const lx = cx + Math.cos(ang) * (r - 4);
-        const ly = cy + Math.sin(ang) * (r - 4);
+      {COMPASS_DIRS.map(({ deg, label, major }) => {
+        const rad = ((deg - 90) * Math.PI) / 180;
+        const inner = r - (major ? 5 : 7);
+        const outer = r - 1;
         return (
-          <text
-            key={label}
-            x={lx}
-            y={ly + 2}
-            textAnchor="middle"
-            fontSize={label === "N" ? 7 : 5.5}
-            fill={label === "N" ? "#ef4444" : "#4a7090"}
-            fontWeight={label === "N" ? 700 : 500}
-          >
-            {label}
-          </text>
+          <g key={label}>
+            <line
+              x1={cx + Math.cos(rad) * inner}
+              y1={cy + Math.sin(rad) * inner}
+              x2={cx + Math.cos(rad) * outer}
+              y2={cy + Math.sin(rad) * outer}
+              stroke={label === "N" ? "#ef4444" : major ? "#4a7090" : "#2a4058"}
+              strokeWidth={major ? 1.3 : 0.7}
+            />
+            {(major || label === "N") && (
+              <text
+                x={cx + Math.cos(rad) * (r - 9)}
+                y={cy + Math.sin(rad) * (r - 9) + 2}
+                textAnchor="middle"
+                fontSize={label === "N" ? 7.5 : major ? 5.5 : 4}
+                fill={label === "N" ? "#ef4444" : "#5a8cb0"}
+                fontWeight={label === "N" ? 800 : major ? 600 : 400}
+              >
+                {label}
+              </text>
+            )}
+          </g>
         );
       })}
 
       <g transform={`rotate(${needle} ${cx} ${cy})`}>
-        <polygon points={`${cx},${cy - r + 3} ${cx + 2.5},${cy + 2} ${cx - 2.5},${cy + 2}`} fill="#ef4444" opacity={0.95} />
-        <polygon points={`${cx},${cy + r - 3} ${cx + 2},${cy - 1} ${cx - 2},${cy - 1}`} fill="#2a4a6a" opacity={0.8} />
+        <polygon points={`${cx},${cy - r + 4} ${cx + 3},${cy + 3} ${cx - 3},${cy + 3}`} fill="#ef4444" opacity={0.95} />
+        <polygon points={`${cx},${cy + r - 4} ${cx + 2.5},${cy - 1} ${cx - 2.5},${cy - 1}`} fill="#3a6080" opacity={0.85} />
       </g>
 
-      <circle cx={cx} cy={cy} r={2.5} fill="#c9a227" />
+      <circle cx={cx} cy={cy} r={3} fill="#c9a227" stroke="#8b6914" strokeWidth={0.6} />
 
       {emfUt != null && (
-        <text x={cx} y={cy + r + 10} textAnchor="middle" fontSize={6.5} fill="#7dd3fc" fontFamily="monospace">
+        <text x={cx} y={cy + r + 11} textAnchor="middle" fontSize={6.5} fill="#7dd3fc" fontFamily="monospace">
           {emfUt.toFixed(1)} µT
         </text>
       )}
@@ -149,16 +182,17 @@ function RotatingDialRing({
 }) {
   const uid = useId().replace(/:/g, "");
   const r = spec.radius;
-  const band = Math.max(4, r * 0.085);
+  const band = Math.max(3.5, r * 0.082);
   const inner = r - band;
   const arcPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
-  const ringOpacity = glass ? 0.55 : 0.92;
+  const ringOpacity = glass ? 0.52 : 0.9;
   const dialSpin = -spec.nowAngle;
+  const labelCount = spec.labels.length;
 
   const ticks = [];
   for (let i = 0; i <= spec.tickCount; i++) {
     const ang = tickRad(i, spec.tickCount);
-    const major = i % Math.max(1, Math.floor(spec.tickCount / 4)) === 0 || i === spec.tickCount;
+    const major = i % Math.max(1, Math.floor(spec.tickCount / (labelCount > 1 ? labelCount - 1 : 4))) === 0;
     ticks.push(
       <line
         key={`t${i}`}
@@ -167,33 +201,36 @@ function RotatingDialRing({
         x2={cx + Math.cos(ang) * (r - 0.5)}
         y2={cy + Math.sin(ang) * (r - 0.5)}
         stroke={major ? spec.color : "#5a4a32"}
-        strokeWidth={major ? 1.1 : 0.55}
+        strokeWidth={major ? 1 : 0.5}
         strokeLinecap="round"
-        opacity={major ? 0.95 : 0.55}
+        opacity={major ? 0.9 : 0.45}
       />,
     );
 
-    const labelIdx = Math.round((i / spec.tickCount) * Math.max(0, spec.tickLabels.length - 1));
-    if (major && spec.tickLabels[labelIdx] && r > 22) {
-      const lr = inner - band * 0.42;
-      const lx = cx + Math.cos(ang) * lr;
-      const ly = cy + Math.sin(ang) * lr;
-      ticks.push(
-        <text
-          key={`l${i}`}
-          x={lx}
-          y={ly}
-          textAnchor="middle"
-          dominantBaseline="middle"
-          fontSize={Math.max(5, r * 0.095)}
-          fill="#e8c872"
-          fontFamily="Georgia, serif"
-          fontWeight={600}
-          opacity={0.9}
-        >
-          {spec.tickLabels[labelIdx]}
-        </text>,
-      );
+    if (major && labelCount > 0 && r > 20) {
+      const labelIdx = Math.min(labelCount - 1, Math.round((i / spec.tickCount) * (labelCount - 1)));
+      const txt = spec.labels[labelIdx];
+      if (txt) {
+        const lr = inner - band * 0.38;
+        const lx = cx + Math.cos(ang) * lr;
+        const ly = cy + Math.sin(ang) * lr;
+        ticks.push(
+          <text
+            key={`l${i}`}
+            x={lx}
+            y={ly}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={Math.max(4.5, Math.min(7.5, r * 0.088))}
+            fill="#e8c872"
+            fontFamily="Georgia, serif"
+            fontWeight={600}
+            opacity={0.92}
+          >
+            {txt}
+          </text>,
+        );
+      }
     }
   }
 
@@ -207,27 +244,25 @@ function RotatingDialRing({
     >
       <defs>
         <linearGradient id={`br-${uid}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#e8c872" stopOpacity={glass ? 0.7 : 1} />
-          <stop offset="50%" stopColor={spec.color} stopOpacity={glass ? 0.65 : 0.95} />
-          <stop offset="100%" stopColor="#5a4a22" stopOpacity={glass ? 0.6 : 1} />
+          <stop offset="0%" stopColor="#e8c872" stopOpacity={glass ? 0.65 : 1} />
+          <stop offset="50%" stopColor={spec.color} stopOpacity={glass ? 0.6 : 0.95} />
+          <stop offset="100%" stopColor="#5a4a22" stopOpacity={glass ? 0.55 : 1} />
         </linearGradient>
       </defs>
 
-      {/* rotating dial — current value spins to north (12 o'clock) */}
       <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
         <path d={arcPath} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} strokeLinecap="round" />
-        <path d={arcPath} fill="none" stroke="#0a0806" strokeWidth={band - 2} strokeLinecap="round" opacity={glass ? 0.25 : 0.5} />
+        <path d={arcPath} fill="none" stroke="#0a0806" strokeWidth={band - 1.8} strokeLinecap="round" opacity={glass ? 0.2 : 0.45} />
         {ticks}
       </g>
 
-      {/* fixed "now" notch at top of this ring */}
       <line
         x1={cx}
         y1={cy - inner + 1}
         x2={cx}
         y2={cy - r - 1}
         stroke="#f0d060"
-        strokeWidth={1.4}
+        strokeWidth={1.3}
         strokeLinecap="round"
         opacity={0.95}
       />
@@ -235,23 +270,9 @@ function RotatingDialRing({
   );
 }
 
-function clockTickLabels(clockId: string): { labels: string[]; count: number } {
-  switch (clockId) {
-    case "ms": return { labels: ["0", "250", "500", "750"], count: 10 };
-    case "s": return { labels: ["0", "15", "30", "45"], count: 12 };
-    case "min": return { labels: ["0", "15", "30", "45"], count: 12 };
-    case "h": return { labels: ["12", "3", "6", "9"], count: 12 };
-    default: return { labels: [], count: 8 };
-  }
-}
-
-function calendarTickLabels(_w: CalendarWheel): { labels: string[]; count: number } {
-  return { labels: [], count: 8 };
-}
-
 export function WatchMovement({
-  animMs,
   now,
+  gregorian,
   weather,
   calendarWheels,
   hoverId,
@@ -263,48 +284,121 @@ export function WatchMovement({
 }: WatchMovementProps) {
   const cx = 200;
   const cy = 198;
-
+  const hubR = 26;
   const rings: RingSpec[] = [];
-  const hubR = 24;
   let ri = 0;
 
-  const addRing = (spec: Omit<RingSpec, "radius"> & { radius?: number }) => {
-    rings.push({
-      ...spec,
-      radius: spec.radius ?? hubR + 14 + ri * 11,
-    });
+  const addRing = (spec: Omit<RingSpec, "radius">) => {
+    rings.push({ ...spec, radius: hubR + 10 + ri * 7.5 });
     ri++;
   };
 
-  CLOCK_IDS.forEach((id) => {
-    const { labels, count } = clockTickLabels(id);
-    addRing({
-      id,
-      color: CLOCK_META[id].color,
-      nowAngle: ringAngle(id, now),
-      tickLabels: labels,
-      tickCount: count,
-    });
+  // ── Time rings (inner → outer)
+  addRing({
+    id: "ms",
+    color: "#fbbf24",
+    nowAngle: msAngle(now),
+    labels: buildNumericLabels(90, 10, 2),
+    tickCount: 10,
   });
+
+  addRing({
+    id: "s",
+    color: "#f97316",
+    nowAngle: secAngle(now),
+    labels: buildNumericLabels(45, 15, 2),
+    tickCount: 12,
+  });
+
+  addRing({
+    id: "min",
+    color: "#ef4444",
+    nowAngle: minAngle(now),
+    labels: buildNumericLabels(45, 15, 2),
+    tickCount: 12,
+  });
+
+  addRing({
+    id: "h",
+    color: "#d946ef",
+    nowAngle: hourAngle(now),
+    labels: ["0", "6", "12", "18"],
+    tickCount: 12,
+  });
+
+  // ── Gregorian date rings
+  if (gregorian) {
+    const dim = daysInMonth(gregorian.year, gregorian.monthNum);
+    const weekdayIdx = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(gregorian.weekday);
+    const wd = weekdayIdx >= 0 ? weekdayIdx : now.getDay();
+
+    addRing({
+      id: "weekday",
+      color: "#94a3b8",
+      nowAngle: (wd / 7) * 360,
+      labels: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      tickCount: 7,
+    });
+
+    addRing({
+      id: "month",
+      color: "#a78bfa",
+      nowAngle: ((gregorian.monthNum - 1 + (gregorian.day - 1) / dim) / 12) * 360,
+      labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      tickCount: 12,
+    });
+
+    addRing({
+      id: "day",
+      color: "#c084fc",
+      nowAngle: ((gregorian.day - 1 + now.getHours() / 24) / dim) * 360,
+      labels: buildNumericLabels(30, 10, 0),
+      tickCount: 10,
+    });
+
+    addRing({
+      id: "year",
+      color: "#818cf8",
+      nowAngle: (gregorian.dayOfYear / 365) * 360,
+      labels: [String(gregorian.year)],
+      tickCount: 4,
+    });
+
+    addRing({
+      id: "week",
+      color: "#60a5fa",
+      nowAngle: (gregorian.weekOfYear / 52) * 360,
+      labels: buildNumericLabels(52, 13, 0).map(v => `W${v}`),
+      tickCount: 8,
+    });
+
+    addRing({
+      id: "doy",
+      color: "#38bdf8",
+      nowAngle: (gregorian.dayOfYear / 365) * 360,
+      labels: ["D1", "D91", "D182", "D273"],
+      tickCount: 8,
+    });
+  }
 
   if (weather) {
     addRing({
       id: "weather",
       color: "#22d3ee",
       nowAngle: cycleAngle(1, now),
-      tickLabels: weather.tempC != null ? [`${Math.round(weather.tempC)}°`, "—", "—", "—"] : ["—", "—", "—", "—"],
-      tickCount: 8,
+      labels: weather.tempC != null ? [`${Math.round(weather.tempC)}°`] : [],
+      tickCount: 6,
     });
   }
 
   calendarWheels.forEach((w) => {
-    const { labels, count } = calendarTickLabels(w);
+    const subNum = w.sublabel.match(/\d+/)?.[0];
     addRing({
       id: w.id,
       color: w.color,
       nowAngle: cycleAngle(w.periodDays, now),
-      tickLabels: labels,
-      tickCount: count,
+      labels: subNum ? [subNum] : [],
+      tickCount: 6,
     });
   });
 
@@ -328,7 +422,6 @@ export function WatchMovement({
         </>
       )}
 
-      {/* outer rings first (paint order: inside on top) */}
       {[...rings].reverse().map((spec) => (
         <RotatingDialRing
           key={spec.id}
@@ -342,7 +435,6 @@ export function WatchMovement({
         />
       ))}
 
-      {/* center compass + EMF */}
       <HubCompass
         cx={cx}
         cy={cy}

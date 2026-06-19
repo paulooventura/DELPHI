@@ -11,10 +11,19 @@ import { WatchMovement } from "../components/WatchMovement";
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CLOCK_RINGS = [
-  { id: "ms",  name: "ms",  color: "#fbbf24", icon: "⚙" },
-  { id: "s",   name: "sec", color: "#f97316", icon: "◷" },
-  { id: "min", name: "min", color: "#ef4444", icon: "⏱" },
-  { id: "h",   name: "hr",  color: "#d946ef", icon: "🕰" },
+  { id: "ms",  name: "ms (0–99)", color: "#fbbf24" },
+  { id: "s",   name: "sec", color: "#f97316" },
+  { id: "min", name: "min", color: "#ef4444" },
+  { id: "h",   name: "hr",  color: "#d946ef" },
+];
+
+const DATE_RINGS = [
+  { id: "weekday", name: "weekday", color: "#94a3b8" },
+  { id: "month",   name: "month",   color: "#a78bfa" },
+  { id: "day",     name: "day",     color: "#c084fc" },
+  { id: "year",    name: "year",    color: "#818cf8" },
+  { id: "week",    name: "week",    color: "#60a5fa" },
+  { id: "doy",     name: "day-of-year", color: "#38bdf8" },
 ];
 
 // ─── Sensor toggles ───────────────────────────────────────────────────────────
@@ -271,45 +280,6 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
     <div className="cp-skymap-wrap">
       {svg}
       {legend}
-    </div>
-  );
-}
-
-// ─── Compass Rose ─────────────────────────────────────────────────────────────
-
-function CompassRose({ heading }: { heading: number }) {
-  const DIRS = ["N","NE","E","SE","S","SW","W","NW"];
-  return (
-    <div className="cp-compass">
-      <svg viewBox="0 0 84 84" width="84" height="84">
-        <circle cx={42} cy={42} r={38} fill="none" stroke="#142230" strokeWidth="1.5"/>
-        {DIRS.map((d, i) => {
-          const a   = i * 45;
-          const rad = (a - 90) * (Math.PI / 180);
-          const r1 = 26, r2 = 34;
-          const x1 = 42 + r1 * Math.cos(rad), y1 = 42 + r1 * Math.sin(rad);
-          const x2 = 42 + r2 * Math.cos(rad), y2 = 42 + r2 * Math.sin(rad);
-          const isPrimary = d.length === 1;
-          return (
-            <g key={d}>
-              <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={d === "N" ? "#ef4444" : "#203855"} strokeWidth={isPrimary ? 1.5 : 1}/>
-              <text
-                x={42 + 40 * Math.cos(rad)} y={42 + 40 * Math.sin(rad) + 2.5}
-                textAnchor="middle" fontSize={isPrimary ? 8.5 : 6.5}
-                fill={d === "N" ? "#ef4444" : "#3a6080"}
-                fontWeight={isPrimary ? "700" : "400"}
-              >{d}</text>
-            </g>
-          );
-        })}
-        {/* needle */}
-        <g transform={`rotate(${heading} 42 42)`}>
-          <polygon points="42,6 44,38 40,38"  fill="#ef4444" opacity="0.9"/>
-          <polygon points="42,78 44,46 40,46" fill="#2a4a6a" opacity="0.75"/>
-        </g>
-        <circle cx={42} cy={42} r={3.5} fill="#0e1a2a" stroke="#2a4060" strokeWidth="1.2"/>
-      </svg>
-      <span className="cp-compass-deg">{Math.round(heading)}°</span>
     </div>
   );
 }
@@ -591,11 +561,6 @@ export default function Home() {
     pinchStartRef.current = null;
   }
 
-  // Time display
-  const hh = String(now.getHours()).padStart(2, "0");
-  const mm = String(now.getMinutes()).padStart(2, "0");
-  const ss = String(now.getSeconds()).padStart(2, "0");
-
   return (
     <main className="cp-shell">
       <div className="cp-stack">
@@ -650,8 +615,8 @@ export default function Home() {
               <div className="cp-watch-scaler cp-watch-overlay" style={{ transform: `scale(${wheelZoom})` }}>
                 <WatchMovement
                   glass
-                  animMs={animNow.getTime()}
                   now={animNow}
+                  gregorian={cycles?.gregorian ?? null}
                   weather={weatherRing}
                   calendarWheels={calendarWheels}
                   hoverId={hoverRing}
@@ -665,20 +630,10 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── 2. CLOCK ───────────────────────────────────────────────────── */}
-        <div className="cp-clock-bar cp-clock-bar-inline">
-          <div className="cp-clock-time">{hh}<span className="cp-clock-colon">:</span>{mm}<span className="cp-clock-colon">:</span>{ss}</div>
-          <div className="cp-clock-meta">
-            {cycles
-              ? `${cycles.gregorian.weekday}, ${cycles.gregorian.month} ${cycles.gregorian.day} ${cycles.gregorian.year}  ·  W${cycles.gregorian.weekOfYear}  ·  D${cycles.gregorian.dayOfYear}`
-              : "Loading…"}
-          </div>
-        </div>
-
-        {/* ── 3. SKY & COMPASS ───────────────────────────────────────────── */}
+        {/* ── 2. SKY CONTROLS ────────────────────────────────────────────── */}
         <section className="cp-card cp-sky-card">
           <div className="cp-card-head">
-            <h2 className="cp-card-title">Sky &amp; Compass</h2>
+            <h2 className="cp-card-title">Sky Controls</h2>
           </div>
 
           <div className="cp-sensor-toggles">
@@ -698,56 +653,36 @@ export default function Home() {
             <p className="cp-muted cp-sensor-off">Sky map background hidden — enable Sky Map to see stars behind the wheels.</p>
           )}
 
-          <div className="cp-compass-row">
-            {toggles.compass ? (
-              <>
-                <CompassRose heading={activeHeading}/>
-                <div className="cp-compass-controls">
-                  <label className="cp-dir-label">
-                    <span>{hasLiveHeading ? "Live compass" : "Direction (manual)"}</span>
-                    <input
-                      type="range" min={0} max={359}
-                      value={hasLiveHeading ? Math.round(signals!.heading!) : manualHeading}
-                      onChange={e => applyManualHeading(Number(e.target.value))}
-                      onInput={e => applyManualHeading(Number(e.currentTarget.value))}
-                      disabled={hasLiveHeading}
-                      className="cp-dir-range"
-                    />
-                    <span>{Math.round(activeHeading)}°</span>
-                  </label>
-                  <label className="cp-dir-label">
-                    <span>Sky pitch (vertical look angle)</span>
-                    <input
-                      type="range" min={5} max={85}
-                      value={Math.round(skyPitch)}
-                      onChange={e => setSkyPitch(Number(e.target.value))}
-                      className="cp-dir-range"
-                    />
-                    <span>{Math.round(skyPitch)}° altitude</span>
-                  </label>
-                  {hasLiveHeading ? (
-                    <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
-                  ) : (
-                    <p className="cp-muted">Drag direction to pan horizontally; pitch tilts the sky view up and down behind the wheels.</p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="cp-compass-controls" style={{ flex: 1 }}>
-                  <label className="cp-dir-label">
-                    <span>Sky pitch (vertical look angle)</span>
-                    <input
-                      type="range" min={5} max={85}
-                      value={Math.round(skyPitch)}
-                      onChange={e => setSkyPitch(Number(e.target.value))}
-                      className="cp-dir-range"
-                    />
-                    <span>{Math.round(skyPitch)}° altitude</span>
-                  </label>
-                </div>
-                <p className="cp-muted cp-sensor-off">Compass disabled — wheels use fixed north at top.</p>
-              </>
+          <div className="cp-compass-controls">
+            {toggles.compass && (
+              <label className="cp-dir-label">
+                <span>{hasLiveHeading ? "Live compass (wheel center)" : "Direction — wheel center compass"}</span>
+                <input
+                  type="range" min={0} max={359}
+                  value={hasLiveHeading ? Math.round(signals!.heading!) : manualHeading}
+                  onChange={e => applyManualHeading(Number(e.target.value))}
+                  onInput={e => applyManualHeading(Number(e.currentTarget.value))}
+                  disabled={hasLiveHeading}
+                  className="cp-dir-range"
+                />
+                <span>{Math.round(activeHeading)}°</span>
+              </label>
+            )}
+            {!toggles.compass && (
+              <p className="cp-muted">Compass off — wheel center shows fixed north.</p>
+            )}
+            <label className="cp-dir-label">
+              <span>Sky pitch (vertical look angle)</span>
+              <input
+                type="range" min={5} max={85}
+                value={Math.round(skyPitch)}
+                onChange={e => setSkyPitch(Number(e.target.value))}
+                className="cp-dir-range"
+              />
+              <span>{Math.round(skyPitch)}° altitude</span>
+            </label>
+            {hasLiveHeading && toggles.compass && (
+              <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
             )}
           </div>
 
@@ -782,7 +717,7 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── 4. COSMIC DATA ─────────────────────────────────────────────── */}
+        {/* ── 3. COSMIC DATA ─────────────────────────────────────────────── */}
         <section className="cp-card cp-cosmic-card">
           <h2 className="cp-card-title">Cosmic Data</h2>
 
@@ -796,6 +731,23 @@ export default function Home() {
               >
                 <span className="cp-rl-dot" style={{ background: cr.color }}/>
                 {cr.name}
+              </span>
+            ))}
+            {DATE_RINGS.map(dr => (
+              <span
+                key={dr.id}
+                className={`cp-rl-item cp-rl-link${hoverRing === dr.id ? " cp-rl-active" : ""}`}
+                onMouseEnter={() => setHoverRing(dr.id)}
+                onMouseLeave={() => setHoverRing(null)}
+              >
+                <span className="cp-rl-dot" style={{ background: dr.color }}/>
+                {dr.name}
+                {cycles && dr.id === "weekday" && `: ${cycles.gregorian.weekday}`}
+                {cycles && dr.id === "month" && `: ${cycles.gregorian.month}`}
+                {cycles && dr.id === "day" && `: ${cycles.gregorian.day}`}
+                {cycles && dr.id === "year" && `: ${cycles.gregorian.year}`}
+                {cycles && dr.id === "week" && `: W${cycles.gregorian.weekOfYear}`}
+                {cycles && dr.id === "doy" && `: D${cycles.gregorian.dayOfYear}`}
               </span>
             ))}
             {weatherRing && (
@@ -845,7 +797,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* ── 5. RESEARCH ────────────────────────────────────────────────── */}
+        {/* ── 4. RESEARCH ────────────────────────────────────────────────── */}
         <section className="cp-card">
           <h2 className="cp-card-title">Research Console</h2>
           <textarea
