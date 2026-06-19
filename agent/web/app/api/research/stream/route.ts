@@ -231,3 +231,11 @@ export async function POST(req: Request) {
     },
   });
 }
+import { NextResponse } from "next/server";
+
+export async function POST() {
+  return NextResponse.json(
+    { error: "Use /api/research/stream for research results." },
+    { status: 410 },
+  );
+}
