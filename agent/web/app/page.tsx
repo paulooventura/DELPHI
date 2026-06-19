@@ -80,12 +80,13 @@ type StreamState = {
 
 // ─── Sky Map ──────────────────────────────────────────────────────────────────
 
-function SkyMapSVG({ lat, lon, heading, minuteKey, variant = "standalone" }: {
-  lat: number; lon: number; heading: number; minuteKey: number;
+function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalone" }: {
+  lat: number; lon: number; heading: number; pitchDeg: number; minuteKey: number;
   variant?: "standalone" | "background" | "legend";
 }) {
   const W = 320, H = 168;
-  const FOV_AZ = 85, FOV_ALT = 90;
+  const FOV_AZ = 85;
+  const FOV_ALT_HALF = 42;
   const isBg = variant === "background";
   const isLegend = variant === "legend";
 
@@ -103,7 +104,10 @@ function SkyMapSVG({ lat, lon, heading, minuteKey, variant = "standalone" }: {
 
   function toXY(az: number, alt: number): [number, number] {
     const dAz = ((az - heading + 540) % 360) - 180;
-    return [(dAz / FOV_AZ + 0.5) * W, H - (alt / FOV_ALT) * H];
+    const dAlt = alt - pitchDeg;
+    const x = (dAz / FOV_AZ + 0.5) * W;
+    const y = H / 2 - (dAlt / FOV_ALT_HALF) * (H / 2);
+    return [x, y];
   }
 
   const CARD_AZS  = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -146,27 +150,29 @@ function SkyMapSVG({ lat, lon, heading, minuteKey, variant = "standalone" }: {
       <rect width={W} height={H} fill={`url(#${isBg ? "skyg-bg" : "skyg"})`} rx={isBg ? 0 : 6}/>
       {isBg && <rect width={W} height={H} fill="url(#skyg-vignette)" />}
 
-      {[15, 30, 45, 60, 75].map(alt => {
-        const y = H - (alt / FOV_ALT) * H;
+      {[0, 15, 30, 45, 60, 75, 90].map(alt => {
+        const y = H / 2 - ((alt - pitchDeg) / FOV_ALT_HALF) * (H / 2);
+        if (y < -4 || y > H + 4) return null;
+        const isHorizon = alt === 0;
         return (
-          <line
-            key={alt}
-            x1={0} y1={y} x2={W} y2={y}
-            stroke={isBg ? "#143248" : "#0c2236"}
-            strokeWidth={1}
-            strokeDasharray="3,9"
-            opacity={isBg ? 0.85 : 1}
-          />
+          <g key={alt}>
+            <line
+              x1={0} y1={y} x2={W} y2={y}
+              stroke={isHorizon ? "#35506d" : isBg ? "#143248" : "#0c2236"}
+              strokeWidth={isHorizon ? 1.2 : 1}
+              strokeDasharray={isHorizon ? undefined : "3,9"}
+              opacity={isBg ? 0.85 : 1}
+            />
+            <text x={4} y={y - 2} fontSize={isBg ? 7 : 6.5} fill={isHorizon ? "#5a8cb0" : "#3a5870"}>
+              {alt}°
+            </text>
+          </g>
         );
       })}
 
-      <line x1={0} y1={H} x2={W} y2={H} stroke="#35506d" strokeWidth={1.2} opacity={isBg ? 0.9 : 1}/>
       <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6" opacity={isBg ? 0.75 : 1}/>
       {!isBg && (
-        <>
-          <text x={6} y={H - 4} fontSize="7" fill="#4a6c88">Horizon</text>
-          <text x={W - 8} y={9} fontSize="7" fill="#4a6c88" textAnchor="end">Zenith</text>
-        </>
+        <text x={W - 8} y={H - 4} fontSize="7" fill="#4a6c88" textAnchor="end">Center {Math.round(pitchDeg)}° alt</text>
       )}
 
       {CARD_AZS.map((cAz, ci) => {
@@ -227,7 +233,7 @@ function SkyMapSVG({ lat, lon, heading, minuteKey, variant = "standalone" }: {
       })}
 
       <text x={W / 2} y={11} textAnchor="middle" fontSize={isBg ? 9.5 : 8.5} fill="#4a9cc4" opacity={isBg ? 0.95 : 1}>
-        {`↑ ${Math.round(heading)}°  ${bearing}`}
+        {`↑ ${Math.round(heading)}°  ${bearing}  ·  pitch ${Math.round(pitchDeg)}°`}
       </text>
 
       {stars.length === 0 && (
@@ -252,7 +258,7 @@ function SkyMapSVG({ lat, lon, heading, minuteKey, variant = "standalone" }: {
           : <span className="cp-muted">No major constellation anchors in this slice right now.</span>}
       </div>
       <p className="cp-muted cp-skymap-meta">
-        {stars.length} bright star{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing}
+        {stars.length} bright star{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing} · {Math.round(pitchDeg)}° altitude
       </p>
     </>
   );
@@ -330,6 +336,7 @@ export default function Home() {
     }
   });
   const [wheelZoom, setWheelZoom] = useState(1);
+  const [skyPitch, setSkyPitch] = useState(35);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
 
@@ -632,6 +639,7 @@ export default function Home() {
                     lat={mapLat}
                     lon={mapLon}
                     heading={activeHeading}
+                    pitchDeg={skyPitch}
                     minuteKey={minuteKey}
                   />
                 </div>
@@ -648,6 +656,9 @@ export default function Home() {
                   calendarWheels={calendarWheels}
                   hoverId={hoverRing}
                   onHover={setHoverRing}
+                  heading={activeHeading}
+                  emfUt={toggles.emf ? signals?.emfUt ?? null : null}
+                  showCompass={toggles.compass}
                 />
               </div>
             </div>
@@ -704,15 +715,39 @@ export default function Home() {
                     />
                     <span>{Math.round(activeHeading)}°</span>
                   </label>
+                  <label className="cp-dir-label">
+                    <span>Sky pitch (vertical look angle)</span>
+                    <input
+                      type="range" min={5} max={85}
+                      value={Math.round(skyPitch)}
+                      onChange={e => setSkyPitch(Number(e.target.value))}
+                      className="cp-dir-range"
+                    />
+                    <span>{Math.round(skyPitch)}° altitude</span>
+                  </label>
                   {hasLiveHeading ? (
                     <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
                   ) : (
-                    <p className="cp-muted">Drag the slider to rotate the sky map and compass (desktop fallback).</p>
+                    <p className="cp-muted">Drag direction to pan horizontally; pitch tilts the sky view up and down behind the wheels.</p>
                   )}
                 </div>
               </>
             ) : (
-              <p className="cp-muted cp-sensor-off">Compass disabled.</p>
+              <>
+                <div className="cp-compass-controls" style={{ flex: 1 }}>
+                  <label className="cp-dir-label">
+                    <span>Sky pitch (vertical look angle)</span>
+                    <input
+                      type="range" min={5} max={85}
+                      value={Math.round(skyPitch)}
+                      onChange={e => setSkyPitch(Number(e.target.value))}
+                      className="cp-dir-range"
+                    />
+                    <span>{Math.round(skyPitch)}° altitude</span>
+                  </label>
+                </div>
+                <p className="cp-muted cp-sensor-off">Compass disabled — wheels use fixed north at top.</p>
+              </>
             )}
           </div>
 
@@ -722,6 +757,7 @@ export default function Home() {
               lat={mapLat}
               lon={mapLon}
               heading={activeHeading}
+              pitchDeg={skyPitch}
               minuteKey={minuteKey}
             />
           )}
