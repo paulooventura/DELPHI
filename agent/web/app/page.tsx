@@ -468,7 +468,7 @@ export default function Home() {
   const mapLon = signals?.lon ?? FALLBACK_LON;
 
   function clampZoom(z: number) {
-    return Math.max(0.7, Math.min(2.4, z));
+    return Math.max(0.85, Math.min(2.8, z));
   }
 
   function onWheelZoom(e: React.WheelEvent<HTMLDivElement>) {
@@ -509,335 +509,320 @@ export default function Home() {
 
   return (
     <main className="cp-shell">
+      <div className="cp-stack">
 
-      {/* ── GLOBAL CLOCK BAR ─────────────────────────────────────────────── */}
-      <div className="cp-clock-bar">
-        <div className="cp-clock-time">{hh}<span className="cp-clock-colon">:</span>{mm}<span className="cp-clock-colon">:</span>{ss}</div>
-        <div className="cp-clock-meta">
-          {cycles
-            ? `${cycles.gregorian.weekday}, ${cycles.gregorian.month} ${cycles.gregorian.day} ${cycles.gregorian.year}  ·  W${cycles.gregorian.weekOfYear}  ·  D${cycles.gregorian.dayOfYear}`
-            : "Loading…"}
-        </div>
-      </div>
-
-      <div className="cp-layout">
-
-        {/* ═══ LEFT COLUMN ═══════════════════════════════════════════════════ */}
-        <div className="cp-col-left">
-
-          {/* ── Sky Map + Compass ────────────────────────────────────────── */}
-          <section className="cp-card cp-sky-card">
-            <div className="cp-card-head">
-              <h2 className="cp-card-title">Sky Map</h2>
-              <button
-                className="cp-btn cp-btn-sm"
-                onClick={() => {
-                  if (toggles.heading) void startHeadingWatch();
-                  void captureSensors();
-                }}
-                disabled={sigLoading}
-              >
-                {sigLoading ? "…" : "📍 Locate Me"}
-              </button>
+        {/* ── 1. CYCLE WHEELS (hero) ─────────────────────────────────────── */}
+        <section className="cp-hero-wheel">
+          <div className="cp-hero-wheel-head">
+            <h1 className="cp-hero-title">Cycle Wheels</h1>
+            <div className="cp-wheel-controls">
+              <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
+              <span className="cp-zoom-label">{Math.round(wheelZoom * 100)}%</span>
+              <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
+              <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(1)}>Reset</button>
+              <button className="cp-btn cp-btn-sm"
+                onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
             </div>
+          </div>
 
-            {/* Sensor on/off controls — full control over what the app touches */}
-            <div className="cp-sensor-toggles">
-              {SENSOR_TOGGLE_DEFS.map(t => (
-                <button
-                  key={t.key}
-                  className={`cp-toggle${toggles[t.key] ? " cp-toggle-on" : ""}`}
-                  onClick={() => setSensorEnabled(t.key, !toggles[t.key])}
-                  title={`${t.label}: ${toggles[t.key] ? "on" : "off"}`}
-                >
-                  {t.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Sky map SVG (rectangle above wheels) */}
-            {toggles.skyMap ? (
-              <SkyMapSVG
-                lat={mapLat}
-                lon={mapLon}
-                heading={activeHeading}
-                minuteKey={minuteKey}
+          <div
+            className="cp-wheel-viewport cp-wheel-viewport-hero"
+            onWheel={onWheelZoom}
+            onTouchStart={onTouchStartZoom}
+            onTouchMove={onTouchMoveZoom}
+            onTouchEnd={onTouchEndZoom}
+          >
+            <div className="cp-watch-scaler" style={{ transform: `scale(${wheelZoom})` }}>
+              <WatchMovement
+                animMs={animNow.getTime()}
+                now={animNow}
+                weather={weatherRing}
+                calendarWheels={calendarWheels}
+                hoverId={hoverRing}
+                onHover={setHoverRing}
               />
-            ) : (
-              <p className="cp-muted cp-sensor-off">Sky Map disabled.</p>
-            )}
-
-            {/* Compass row */}
-            <div className="cp-compass-row">
-              {toggles.compass ? (
-                <>
-                  <CompassRose heading={activeHeading}/>
-                  <div className="cp-compass-controls">
-                    <label className="cp-dir-label">
-                      <span>{hasLiveHeading ? "Live compass" : "Direction (manual)"}</span>
-                      <input
-                        type="range" min={0} max={359}
-                        value={hasLiveHeading ? Math.round(signals!.heading!) : manualHeading}
-                        onChange={e => applyManualHeading(Number(e.target.value))}
-                        onInput={e => applyManualHeading(Number(e.currentTarget.value))}
-                        disabled={hasLiveHeading}
-                        className="cp-dir-range"
-                      />
-                      <span>{Math.round(activeHeading)}°</span>
-                    </label>
-                    {hasLiveHeading ? (
-                      <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
-                    ) : (
-                      <p className="cp-muted">Drag the slider to rotate the sky map and compass (desktop fallback).</p>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className="cp-muted cp-sensor-off">Compass disabled.</p>
-              )}
             </div>
+          </div>
+        </section>
 
-            {/* Sensor readouts — independent of the Sky Map/Compass widgets above */}
-            <div className="cp-signal-readouts">
-              {toggles.location && signals?.lat != null && (
-                <p className="cp-muted">{signals.lat.toFixed(3)}°, {signals.lon?.toFixed(3)}°</p>
-              )}
-              {toggles.location && !hasLiveLocation && !locDenied && (
-                <p className="cp-muted">Using Nashville fallback coords until you tap Locate Me.</p>
-              )}
-              {toggles.location && locDenied && (
-                <p className="cp-muted">Location blocked — allow browser location for your local sky map.</p>
-              )}
-              {!toggles.location && <p className="cp-muted cp-sensor-off">Location disabled.</p>}
-              {toggles.network && signals?.network && (
-                <p className="cp-muted">Network: {signals.network}</p>
-              )}
-              {toggles.emf && signals?.emfUt != null && (
-                <p className="cp-muted">EMF: {signals.emfUt.toFixed(1)} µT</p>
-              )}
-            </div>
-          </section>
+        {/* ── 2. CLOCK ───────────────────────────────────────────────────── */}
+        <div className="cp-clock-bar cp-clock-bar-inline">
+          <div className="cp-clock-time">{hh}<span className="cp-clock-colon">:</span>{mm}<span className="cp-clock-colon">:</span>{ss}</div>
+          <div className="cp-clock-meta">
+            {cycles
+              ? `${cycles.gregorian.weekday}, ${cycles.gregorian.month} ${cycles.gregorian.day} ${cycles.gregorian.year}  ·  W${cycles.gregorian.weekOfYear}  ·  D${cycles.gregorian.dayOfYear}`
+              : "Loading…"}
+          </div>
+        </div>
 
-          {/* ── Cycle Wheels ─────────────────────────────────────────────── */}
-          <section className="cp-card cp-wheel-card">
-            <div className="cp-card-head">
-              <h2 className="cp-card-title">Cycle Wheels</h2>
-              <div className="cp-wheel-controls">
-                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
-                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(1)}>100%</button>
-                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-                <button className="cp-btn cp-btn-sm"
-                  onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
-              </div>
-            </div>
-
-            <p className="cp-muted" style={{ fontSize: "0.74rem", marginBottom: "0.38rem" }}>
-              Live watch movement — inner rings track time; outer rings track calendar cycles. Ctrl+wheel to zoom.
-            </p>
-
-            <div
-              className="cp-wheel-viewport"
-              onWheel={onWheelZoom}
-              onTouchStart={onTouchStartZoom}
-              onTouchMove={onTouchMoveZoom}
-              onTouchEnd={onTouchEndZoom}
+        {/* ── 3. SKY MAP ─────────────────────────────────────────────────── */}
+        <section className="cp-card cp-sky-card">
+          <div className="cp-card-head">
+            <h2 className="cp-card-title">Sky Map</h2>
+            <button
+              className="cp-btn cp-btn-sm"
+              onClick={() => {
+                if (toggles.heading) void startHeadingWatch();
+                void captureSensors();
+              }}
+              disabled={sigLoading}
             >
-              <div className="cp-watch-scaler" style={{ transform: `scale(${wheelZoom})` }}>
-                <WatchMovement
-                  animMs={animNow.getTime()}
-                  now={animNow}
-                  weather={weatherRing}
-                  calendarWheels={calendarWheels}
-                  hoverId={hoverRing}
-                  onHover={setHoverRing}
-                />
-              </div>
+              {sigLoading ? "…" : "📍 Locate Me"}
+            </button>
+          </div>
+
+          <div className="cp-sensor-toggles">
+            {SENSOR_TOGGLE_DEFS.map(t => (
+              <button
+                key={t.key}
+                className={`cp-toggle${toggles[t.key] ? " cp-toggle-on" : ""}`}
+                onClick={() => setSensorEnabled(t.key, !toggles[t.key])}
+                title={`${t.label}: ${toggles[t.key] ? "on" : "off"}`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
+          {toggles.skyMap ? (
+            <SkyMapSVG
+              lat={mapLat}
+              lon={mapLon}
+              heading={activeHeading}
+              minuteKey={minuteKey}
+            />
+          ) : (
+            <p className="cp-muted cp-sensor-off">Sky Map disabled.</p>
+          )}
+
+          <div className="cp-compass-row">
+            {toggles.compass ? (
+              <>
+                <CompassRose heading={activeHeading}/>
+                <div className="cp-compass-controls">
+                  <label className="cp-dir-label">
+                    <span>{hasLiveHeading ? "Live compass" : "Direction (manual)"}</span>
+                    <input
+                      type="range" min={0} max={359}
+                      value={hasLiveHeading ? Math.round(signals!.heading!) : manualHeading}
+                      onChange={e => applyManualHeading(Number(e.target.value))}
+                      onInput={e => applyManualHeading(Number(e.currentTarget.value))}
+                      disabled={hasLiveHeading}
+                      className="cp-dir-range"
+                    />
+                    <span>{Math.round(activeHeading)}°</span>
+                  </label>
+                  {hasLiveHeading ? (
+                    <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
+                  ) : (
+                    <p className="cp-muted">Drag the slider to rotate the sky map and compass (desktop fallback).</p>
+                  )}
+                </div>
+              </>
+            ) : (
+              <p className="cp-muted cp-sensor-off">Compass disabled.</p>
+            )}
+          </div>
+
+          <div className="cp-signal-readouts">
+            {toggles.location && signals?.lat != null && (
+              <p className="cp-muted">{signals.lat.toFixed(3)}°, {signals.lon?.toFixed(3)}°</p>
+            )}
+            {toggles.location && !hasLiveLocation && !locDenied && (
+              <p className="cp-muted">Using Nashville fallback coords until you tap Locate Me.</p>
+            )}
+            {toggles.location && locDenied && (
+              <p className="cp-muted">Location blocked — allow browser location for your local sky map.</p>
+            )}
+            {!toggles.location && <p className="cp-muted cp-sensor-off">Location disabled.</p>}
+            {toggles.network && signals?.network && (
+              <p className="cp-muted">Network: {signals.network}</p>
+            )}
+            {toggles.emf && signals?.emfUt != null && (
+              <p className="cp-muted">EMF: {signals.emfUt.toFixed(1)} µT</p>
+            )}
+          </div>
+        </section>
+
+        {/* ── 4. COSMIC DATA ─────────────────────────────────────────────── */}
+        <section className="cp-card cp-cosmic-card">
+          <h2 className="cp-card-title">Cosmic Data</h2>
+
+          <div className="cp-ring-legend">
+            {CLOCK_RINGS.map(cr => (
+              <span
+                key={cr.id}
+                className={`cp-rl-item cp-rl-link${hoverRing === cr.id ? " cp-rl-active" : ""}`}
+                onMouseEnter={() => setHoverRing(cr.id)}
+                onMouseLeave={() => setHoverRing(null)}
+              >
+                <span className="cp-rl-dot" style={{ background: cr.color }}/>
+                {cr.name}
+              </span>
+            ))}
+            {weatherRing && (
+              <span className="cp-rl-item">
+                <span className="cp-rl-dot" style={{ background: "#22d3ee" }}/>
+                {weatherRing.emoji} {weatherRing.condition}
+              </span>
+            )}
+            {calendarWheels.map(w => (
+              <span
+                key={w.id}
+                className={`cp-rl-item cp-rl-link${hoverRing === w.id ? " cp-rl-active" : ""}`}
+                onMouseEnter={() => setHoverRing(w.id)}
+                onMouseLeave={() => setHoverRing(null)}
+              >
+                <span className="cp-rl-dot" style={{ background: w.color }}/>
+                <span>{w.icon}</span>
+                <span className="cp-rl-name">{w.name}:</span>
+                {w.label}
+              </span>
+            ))}
+          </div>
+
+          {cycles && (
+            <div className="cp-cycle-grid">
+              <div className="cp-cv"><span>Moon</span><strong>{cycles.lunar.emoji} {cycles.lunar.phase}</strong></div>
+              <div className="cp-cv"><span>Tzolkin</span><strong>Kin {cycles.tzolkin.kin} T{cycles.tzolkin.tone} {cycles.tzolkin.sign}</strong></div>
+              <div className="cp-cv"><span>Castle</span><strong>{cycles.mayan.castleName}</strong></div>
+              <div className="cp-cv"><span>Season</span><strong>{cycles.season.emoji} {cycles.season.name}</strong></div>
+              <div className="cp-cv"><span>Chinese</span><strong>{cycles.chineseZodiac.symbol} {cycles.chineseZodiac.element} {cycles.chineseZodiac.animal}</strong></div>
+              <div className="cp-cv"><span>Zodiac</span><strong>{cycles.westernZodiac.symbol} {cycles.westernZodiac.sign}</strong></div>
+            </div>
+          )}
+
+          {cycles && (
+            <div className="cp-spectrum">
+              {cycles.spectrum.map(s => (
+                <div key={s.name} className="cp-spectrum-row">
+                  <div><strong>{s.name}</strong><p>{s.note}</p></div>
+                  <div className="cp-spectrum-meta">
+                    <span className={`cp-axis cp-axis-${s.axis}`}>{s.axis}</span>
+                    <span className="cp-score">{s.score.toFixed(2)}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* ── 5. RESEARCH ────────────────────────────────────────────────── */}
+        <section className="cp-card">
+          <h2 className="cp-card-title">Research Console</h2>
+          <textarea
+            className="cp-textarea"
+            rows={5}
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey) void runResearch(); }}
+            placeholder="Ask a research question…  Ctrl+Enter to run"
+          />
+          <div className="cp-actions">
+            <button className="cp-btn cp-btn-primary" onClick={runResearch} disabled={resLoading || !query.trim()}>
+              {resLoading
+                ? <span className="cp-loading-row"><span className="cp-spinner"/>Searching…</span>
+                : "Deep Research"}
+            </button>
+            {resLoading && (
+              <button className="cp-btn cp-btn-ghost" onClick={() => abortRef.current?.abort()}>Stop</button>
+            )}
+          </div>
+          {res?.status && (
+            <p className="cp-status-row">
+              <span className="cp-dot"/>
+              {res.status}
+              {res.phase > 0 && <span className="cp-phase-badge">Phase {res.phase}</span>}
+            </p>
+          )}
+        </section>
+
+        {res && (
+          <section className="cp-card cp-research-out">
+            <div className="cp-card-head">
+              <h2 className="cp-card-title">Output</h2>
+              {res.complete && res.insufficientEvidence && <span className="cp-badge-warn">Insufficient evidence</span>}
+              {res.complete && !res.insufficientEvidence && <span className="cp-badge-ok">Done</span>}
+              {resLoading && !res.complete && <span className="cp-badge-run">Live</span>}
             </div>
 
-            {/* Ring legend */}
-            <div className="cp-ring-legend">
-              {CLOCK_RINGS.map(cr => (
-                <span
-                  key={cr.id}
-                  className={`cp-rl-item cp-rl-link${hoverRing === cr.id ? " cp-rl-active" : ""}`}
-                  onMouseEnter={() => setHoverRing(cr.id)}
-                  onMouseLeave={() => setHoverRing(null)}
-                >
-                  <span className="cp-rl-dot" style={{ background: cr.color }}/>
-                  {cr.name}
-                </span>
-              ))}
-              {weatherRing && (
-                <span className="cp-rl-item">
-                  <span className="cp-rl-dot" style={{ background: "#22d3ee" }}/>
-                  {weatherRing.emoji} {weatherRing.condition}
-                </span>
-              )}
-              {calendarWheels.map(w => (
-                <span
-                  key={w.id}
-                  className={`cp-rl-item cp-rl-link${hoverRing === w.id ? " cp-rl-active" : ""}`}
-                  onMouseEnter={() => setHoverRing(w.id)}
-                  onMouseLeave={() => setHoverRing(null)}
-                >
-                  <span className="cp-rl-dot" style={{ background: w.color }}/>
-                  <span>{w.icon}</span>
-                  <span className="cp-rl-name">{w.name}:</span>
-                  {w.label}
-                </span>
-              ))}
-            </div>
+            {res.error && <p className="cp-error">Error: {res.error}</p>}
 
-            {/* Quick values */}
-            {cycles && (
-              <div className="cp-cycle-grid">
-                <div className="cp-cv"><span>Moon</span><strong>{cycles.lunar.emoji} {cycles.lunar.phase}</strong></div>
-                <div className="cp-cv"><span>Tzolkin</span><strong>Kin {cycles.tzolkin.kin} T{cycles.tzolkin.tone} {cycles.tzolkin.sign}</strong></div>
-                <div className="cp-cv"><span>Castle</span><strong>{cycles.mayan.castleName}</strong></div>
-                <div className="cp-cv"><span>Season</span><strong>{cycles.season.emoji} {cycles.season.name}</strong></div>
-                <div className="cp-cv"><span>Chinese</span><strong>{cycles.chineseZodiac.symbol} {cycles.chineseZodiac.element} {cycles.chineseZodiac.animal}</strong></div>
-                <div className="cp-cv"><span>Zodiac</span><strong>{cycles.westernZodiac.symbol} {cycles.westernZodiac.sign}</strong></div>
+            {res.answer && (
+              <div className="cp-answer-block">
+                <p className="cp-label">Answer</p>
+                <p className="cp-answer-text">{res.answer}</p>
+                {res.confidence != null && (
+                  <>
+                    <div className="cp-conf-bar" style={{ marginTop: 8 }}>
+                      <div className="cp-conf-fill" style={{ width: `${(res.confidence * 100).toFixed(0)}%` }}/>
+                    </div>
+                    <p className="cp-muted" style={{ fontSize: "0.71rem", marginTop: 3 }}>
+                      {(res.confidence * 100).toFixed(0)}% confidence
+                    </p>
+                  </>
+                )}
               </div>
             )}
 
-            {/* Spectrum */}
-            {cycles && (
-              <div className="cp-spectrum">
-                {cycles.spectrum.map(s => (
-                  <div key={s.name} className="cp-spectrum-row">
-                    <div><strong>{s.name}</strong><p>{s.note}</p></div>
-                    <div className="cp-spectrum-meta">
-                      <span className={`cp-axis cp-axis-${s.axis}`}>{s.axis}</span>
-                      <span className="cp-score">{s.score.toFixed(2)}</span>
-                    </div>
+            {!!res.peerReview?.length && (
+              <div className="cp-peer">
+                <p className="cp-label">AI Cross-Check ({res.peerReview.length} model{res.peerReview.length === 1 ? "" : "s"} — uses your own API key)</p>
+                {res.peerReview.map((r, i) => (
+                  <div key={i} className="cp-peer-item">
+                    <div className="cp-peer-head"><strong>{r.provider}</strong><span>{(r.confidence * 100).toFixed(0)}%</span></div>
+                    <p>{r.answer}</p>
                   </div>
                 ))}
               </div>
             )}
-          </section>
-        </div>
 
-        {/* ═══ RIGHT COLUMN ══════════════════════════════════════════════════ */}
-        <div className="cp-col-right">
-
-          {/* ── Research Console ─────────────────────────────────────────── */}
-          <section className="cp-card">
-            <h2 className="cp-card-title">Research Console</h2>
-            <textarea
-              className="cp-textarea"
-              rows={5}
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-              onKeyDown={e => { if (e.key === "Enter" && e.ctrlKey) void runResearch(); }}
-              placeholder="Ask a research question…  Ctrl+Enter to run"
-            />
-            <div className="cp-actions">
-              <button className="cp-btn cp-btn-primary" onClick={runResearch} disabled={resLoading || !query.trim()}>
-                {resLoading
-                  ? <span className="cp-loading-row"><span className="cp-spinner"/>Searching…</span>
-                  : "Deep Research"}
-              </button>
-              {resLoading && (
-                <button className="cp-btn cp-btn-ghost" onClick={() => abortRef.current?.abort()}>Stop</button>
-              )}
-            </div>
-            {res?.status && (
-              <p className="cp-status-row">
-                <span className="cp-dot"/>
-                {res.status}
-                {res.phase > 0 && <span className="cp-phase-badge">Phase {res.phase}</span>}
-              </p>
-            )}
-          </section>
-
-          {/* ── Research Output ───────────────────────────────────────────── */}
-          {res && (
-            <section className="cp-card cp-research-out">
-              <div className="cp-card-head">
-                <h2 className="cp-card-title">Output</h2>
-                {res.complete && res.insufficientEvidence && <span className="cp-badge-warn">Insufficient evidence</span>}
-                {res.complete && !res.insufficientEvidence && <span className="cp-badge-ok">Done</span>}
-                {resLoading && !res.complete && <span className="cp-badge-run">Live</span>}
-              </div>
-
-              {res.error && <p className="cp-error">Error: {res.error}</p>}
-
-              {res.answer && (
-                <div className="cp-answer-block">
-                  <p className="cp-label">Answer</p>
-                  <p className="cp-answer-text">{res.answer}</p>
-                  {res.confidence != null && (
-                    <>
-                      <div className="cp-conf-bar" style={{ marginTop: 8 }}>
-                        <div className="cp-conf-fill" style={{ width: `${(res.confidence * 100).toFixed(0)}%` }}/>
-                      </div>
-                      <p className="cp-muted" style={{ fontSize: "0.71rem", marginTop: 3 }}>
-                        {(res.confidence * 100).toFixed(0)}% confidence
-                      </p>
-                    </>
-                  )}
-                </div>
-              )}
-
-              {!!res.peerReview?.length && (
-                <div className="cp-peer">
-                  <p className="cp-label">AI Cross-Check ({res.peerReview.length} model{res.peerReview.length === 1 ? "" : "s"} — uses your own API key)</p>
-                  {res.peerReview.map((r, i) => (
-                    <div key={i} className="cp-peer-item">
-                      <div className="cp-peer-head"><strong>{r.provider}</strong><span>{(r.confidence * 100).toFixed(0)}%</span></div>
-                      <p>{r.answer}</p>
+            {res.report && (
+              <details className="cp-report">
+                <summary>Crawl Report — {res.report.acceptedSources} accepted · {res.report.rejectedSources} filtered</summary>
+                <p className="cp-report-stop">{res.report.stopReason}</p>
+                <p className="cp-report-stop">Avg freshness: {(res.report.avgFreshness * 100).toFixed(0)}% · {res.report.uncertaintyNote}</p>
+                {!!res.report.aiProvidersConsulted?.length && (
+                  <p className="cp-report-stop">AI models consulted: {res.report.aiProvidersConsulted.join(", ")}</p>
+                )}
+                <div className="cp-provider-grid">
+                  {res.report.searchedProviders.map((p, i) => (
+                    <div key={i} className={`cp-provider-item cp-tier-${p.tier}`}>
+                      <strong>{p.provider}</strong>
+                      <span>{p.tier}</span>
+                      <p>{p.accepted}/{p.fetched} · {p.avgReliability.toFixed(2)}</p>
                     </div>
                   ))}
                 </div>
-              )}
+              </details>
+            )}
 
-              {res.report && (
-                <details className="cp-report">
-                  <summary>Crawl Report — {res.report.acceptedSources} accepted · {res.report.rejectedSources} filtered</summary>
-                  <p className="cp-report-stop">{res.report.stopReason}</p>
-                  <p className="cp-report-stop">Avg freshness: {(res.report.avgFreshness * 100).toFixed(0)}% · {res.report.uncertaintyNote}</p>
-                  {!!res.report.aiProvidersConsulted?.length && (
-                    <p className="cp-report-stop">AI models consulted: {res.report.aiProvidersConsulted.join(", ")}</p>
-                  )}
-                  <div className="cp-provider-grid">
-                    {res.report.searchedProviders.map((p, i) => (
-                      <div key={i} className={`cp-provider-item cp-tier-${p.tier}`}>
-                        <strong>{p.provider}</strong>
-                        <span>{p.tier}</span>
-                        <p>{p.accepted}/{p.fetched} · {p.avgReliability.toFixed(2)}</p>
-                      </div>
-                    ))}
-                  </div>
-                </details>
-              )}
+            {!!res.sources?.length && (
+              <div className="cp-sources">
+                <p className="cp-label">Sources ({res.sources.length})</p>
+                {res.sources.slice(0, 12).map((s, i) => (
+                  <article key={i} className={`cp-source cp-source-${s.tier}`}>
+                    <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a>
+                    <div className="cp-source-meta">
+                      <span>{s.source}</span>
+                      <span className={`cp-tier-badge cp-tier-${s.tier}`}>{s.tier}</span>
+                      <span>{(s.reliability * 100).toFixed(0)}%</span>
+                      {typeof s.freshness === "number" && <span>fresh {(s.freshness * 100).toFixed(0)}%</span>}
+                      {typeof s.ageDays === "number" && <span>{s.ageDays}d old</span>}
+                    </div>
+                    <p>{s.snippet.slice(0, 170)}</p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        )}
 
-              {!!res.sources?.length && (
-                <div className="cp-sources">
-                  <p className="cp-label">Sources ({res.sources.length})</p>
-                  {res.sources.slice(0, 12).map((s, i) => (
-                    <article key={i} className={`cp-source cp-source-${s.tier}`}>
-                      <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a>
-                      <div className="cp-source-meta">
-                        <span>{s.source}</span>
-                        <span className={`cp-tier-badge cp-tier-${s.tier}`}>{s.tier}</span>
-                        <span>{(s.reliability * 100).toFixed(0)}%</span>
-                        {typeof s.freshness === "number" && <span>fresh {(s.freshness * 100).toFixed(0)}%</span>}
-                        {typeof s.ageDays === "number" && <span>{s.ageDays}d old</span>}
-                      </div>
-                      <p>{s.snippet.slice(0, 170)}</p>
-                    </article>
-                  ))}
-                </div>
-              )}
-            </section>
-          )}
-
-          {!res && (
-            <div className="cp-card cp-empty">
-              <p className="cp-muted">Type a question and click Deep Research.</p>
-            </div>
-          )}
-        </div>
+        {!res && (
+          <div className="cp-card cp-empty">
+            <p className="cp-muted">Type a question and click Deep Research.</p>
+          </div>
+        )}
       </div>
     </main>
   );

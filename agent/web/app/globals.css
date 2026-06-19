@@ -32,6 +32,51 @@ html,body {
     var(--void);
 }
 
+/* Single-column page stack */
+.cp-stack {
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding: 0.65rem 0.85rem 3rem;
+}
+
+/* ─── Hero wheel ──────────────────────────────────────────────────────────── */
+.cp-hero-wheel {
+  width: 100%;
+}
+
+.cp-hero-wheel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.45rem;
+  padding: 0 0.15rem;
+}
+
+.cp-hero-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  color: #c9a227;
+}
+
+.cp-zoom-label {
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  min-width: 2.8rem;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-cosmic-card .cp-card-title {
+  margin-bottom: 0.55rem;
+}
+
 /* ─── Clock bar ───────────────────────────────────────────────────────────── */
 .cp-clock-bar {
   display: flex;
@@ -44,6 +89,13 @@ html,body {
   position: sticky;
   top: 0;
   z-index: 20;
+}
+
+.cp-clock-bar-inline {
+  position: static;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  border-bottom: 1px solid var(--border);
 }
 .cp-clock-time {
   font-size: 2rem;
@@ -63,7 +115,7 @@ html,body {
   letter-spacing: 0.04em;
 }
 
-/* ─── Layout ──────────────────────────────────────────────────────────────── */
+/* ─── Layout (legacy helpers) ─────────────────────────────────────────────── */
 .cp-layout {
   max-width: 1180px;
   margin: 0 auto;
@@ -197,10 +249,20 @@ html,body {
   box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
+.cp-wheel-viewport-hero {
+  min-height: min(62vh, 720px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.5rem 0.75rem 0.25rem;
+  border-radius: 14px;
+  border-width: 2px;
+}
+
 .cp-watch-scaler {
   transform-origin: 50% 100%;
   width: 100%;
-  max-width: 520px;
+  max-width: none;
   margin: 0 auto;
 }
 
@@ -398,6 +460,9 @@ html,body {
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
   margin-top: 0.65rem;
+}
+@media (min-width: 640px) {
+  .cp-cycle-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 .cp-cv { background: #090b14; border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.5rem; }
 .cp-cv span { display: block; font-size: 0.65rem; color: var(--ink-faint); text-transform: uppercase; letter-spacing: 0.08em; }
