@@ -1,22 +1,23 @@
 "use client";
 
-import { useId, type ReactElement } from "react";
+import { useId, useRef, type ReactElement, type PointerEvent as ReactPointerEvent } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
+import { labelForDistanceRank } from "../lib/starmap";
 
 export type CalendarWheel = CycleSnapshot["wheelLayers"][number];
 export type GregorianInfo = CycleSnapshot["gregorian"];
 
 export type WatchMovementProps = {
   now: Date;
-  gregorian: GregorianInfo | null;
-  weather: CycleSnapshot["weather"] | null;
-  calendarWheels: CalendarWheel[];
+  cycles: CycleSnapshot | null;
   hoverId: string | null;
   onHover: (id: string | null) => void;
   glass?: boolean;
   heading?: number;
   emfUt?: number | null;
   showCompass?: boolean;
+  skyDistance?: number;
+  onSkyDistanceChange?: (rank: number) => void;
 };
 
 type RingSpec = {
@@ -76,6 +77,117 @@ function cycleAngle(periodDays: number, d: Date): number {
 
 function daysInMonth(year: number, monthNum: number): number {
   return new Date(year, monthNum, 0).getDate();
+}
+
+const TZOLKIN_SIGNS = [
+  "Imix", "Ik", "Akbal", "Kan", "Chikchan", "Kimi", "Manik", "Lamat", "Muluk", "Ok",
+  "Chuen", "Eb", "Ben", "Ix", "Men", "Kib", "Kaban", "Etznab", "Kawak", "Ajaw",
+];
+const CHINESE_SYMBOLS = ["🐀", "🐂", "🐅", "🐇", "🐉", "🐍", "🐴", "🐑", "🐒", "🐓", "🐕", "🐖"];
+const CHINESE_ANIMALS = ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"];
+const MOON_PHASE_EMOJI = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
+
+function wheelToRing(w: CalendarWheel, now: Date): Omit<RingSpec, "radius"> {
+  const short = w.label.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 6);
+  return {
+    id: w.id,
+    color: w.color,
+    nowAngle: cycleAngle(w.periodDays, now),
+    divisions: 12,
+    labelEvery: 3,
+    customLabel: i => (i === 0 ? `${w.icon}${short}` : null),
+  };
+}
+
+function buildRingSpecs(now: Date, cycles: CycleSnapshot | null): Omit<RingSpec, "radius">[] {
+  const specs: Omit<RingSpec, "radius">[] = [
+    { id: "ms", color: "#fbbf24", nowAngle: msAngle(now), divisions: 100, labelEvery: 10, labelPad: 2, dense: true },
+    { id: "s", color: "#f97316", nowAngle: secAngle(now), divisions: 60, labelEvery: 1, labelPad: 0, dense: true },
+    { id: "min", color: "#ef4444", nowAngle: minAngle(now), divisions: 60, labelEvery: 1, labelPad: 0, dense: true },
+    { id: "h", color: "#d946ef", nowAngle: hourAngle(now), divisions: 24, labelEvery: 1, labelPad: 0, dense: true },
+  ];
+
+  if (!cycles) return specs;
+
+  const g = cycles.gregorian;
+  const dim = daysInMonth(g.year, g.monthNum);
+  const weekdayIdx = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(g.weekday);
+  const wd = weekdayIdx >= 0 ? weekdayIdx : now.getDay();
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const hourly = cycles.weather?.hourly;
+
+  // Weather — hourly forecast icons (0–23)
+  specs.push({
+    id: "weather",
+    color: "#22d3ee",
+    nowAngle: hourAngle(now),
+    divisions: 24,
+    labelEvery: 1,
+    customLabel: i => hourly?.find(h => h.hour === i)?.emoji ?? (i === now.getHours() ? cycles.weather?.emoji ?? "·" : "·"),
+  });
+
+  // Day of month
+  specs.push({
+    id: "day",
+    color: "#c084fc",
+    nowAngle: ((g.day - 1 + now.getHours() / 24) / dim) * 360,
+    divisions: dim,
+    labelEvery: 1,
+    labelPad: 0,
+    dense: true,
+  });
+
+  // Weekday (outside day ring)
+  specs.push({
+    id: "weekday",
+    color: "#94a3b8",
+    nowAngle: (wd / 7) * 360,
+    divisions: 7,
+    labelEvery: 1,
+    customLabel: i => weekdays[i] ?? null,
+  });
+
+  // Chinese zodiac — icon + name
+  const cnIdx = CHINESE_ANIMALS.findIndex(a => a === cycles.chineseZodiac.animal);
+  specs.push({
+    id: "chinese-sign",
+    color: "#dc2626",
+    nowAngle: ((cnIdx >= 0 ? cnIdx : 0) / 12) * 360,
+    divisions: 12,
+    labelEvery: 1,
+    customLabel: i => `${CHINESE_SYMBOLS[i] ?? "·"}${CHINESE_ANIMALS[i]?.slice(0, 3) ?? ""}`,
+  });
+
+  // Mayan tzolkin day sign
+  const tzIdx = TZOLKIN_SIGNS.indexOf(cycles.tzolkin.sign);
+  specs.push({
+    id: "tzolkin",
+    color: "#7c3aed",
+    nowAngle: ((cycles.tzolkin.kin - 1) / 260) * 360,
+    divisions: 20,
+    labelEvery: 1,
+    customLabel: i => (i === tzIdx ? `🧭${cycles.tzolkin.sign.slice(0, 4)}` : TZOLKIN_SIGNS[i]?.slice(0, 3) ?? null),
+  });
+
+  // Moon phase
+  const phaseIdx = Math.min(7, Math.floor(cycles.lunar.fraction * 8));
+  specs.push({
+    id: "moon",
+    color: "#94a3b8",
+    nowAngle: cycles.lunar.angleDeg,
+    divisions: 8,
+    labelEvery: 1,
+    customLabel: i => (i === phaseIdx ? `${cycles.lunar.emoji}${cycles.lunar.phase.slice(0, 3)}` : MOON_PHASE_EMOJI[i] ?? null),
+  });
+
+  // Remaining calendar layers (kin, wavespell, castle, months, zodiac, season, years…)
+  const SKIP = new Set(["day", "chinese-sign", "moon"]);
+  for (const w of cycles.wheelLayers) {
+    if (SKIP.has(w.id)) continue;
+    specs.push(wheelToRing(w, now));
+  }
+
+  return specs;
 }
 
 const COMPASS_DIRS: Array<{ deg: number; label: string; major: boolean }> = [
@@ -167,6 +279,149 @@ function HubCompass({
   );
 }
 
+function DistanceDialRing({
+  cx,
+  cy,
+  radius,
+  distanceRank,
+  glass,
+  onChange,
+}: {
+  cx: number;
+  cy: number;
+  radius: number;
+  distanceRank: number;
+  glass?: boolean;
+  onChange: (rank: number) => void;
+}) {
+  const uid = useId().replace(/:/g, "");
+  const dragging = useRef(false);
+  const band = Math.max(9, radius * 0.13);
+  const inner = radius - band;
+  const midR = radius - band / 2;
+  const divisions = 100;
+  const dialSpin = -(distanceRank / divisions) * 360;
+  const ringOpacity = glass ? 0.58 : 0.92;
+  const fontSize = Math.max(3, Math.min(band * 0.65, 5.5));
+
+  function rankFromPointer(e: ReactPointerEvent<SVGGElement>) {
+    const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
+    const px = ((e.clientX - rect.left) / rect.width) * 400;
+    const py = ((e.clientY - rect.top) / rect.height) * 400;
+    const ang = (Math.atan2(py - cy, px - cx) * 180) / Math.PI + 90;
+    const norm = ((ang % 360) + 360) % 360;
+    const dialSpin = -(distanceRank / 100) * 360;
+    const adjusted = ((norm - dialSpin) % 360 + 360) % 360;
+    return Math.max(0, Math.min(100, Math.round((adjusted / 360) * 100)));
+  }
+
+  const boundaries: ReactElement[] = [];
+  const labels: ReactElement[] = [];
+
+  for (let i = 0; i <= divisions; i++) {
+    const ang = tickRad(i, divisions);
+    const isMajor = i % 10 === 0;
+    boundaries.push(
+      <line
+        key={`db${i}`}
+        x1={cx + Math.cos(ang) * inner}
+        y1={cy + Math.sin(ang) * inner}
+        x2={cx + Math.cos(ang) * (radius - 0.5)}
+        y2={cy + Math.sin(ang) * (radius - 0.5)}
+        stroke={isMajor ? "#38bdf8" : "#2a4868"}
+        strokeWidth={isMajor ? 0.85 : 0.35}
+        opacity={isMajor ? 0.9 : 0.4}
+      />,
+    );
+  }
+
+  for (let i = 0; i <= divisions; i += 10) {
+    const ang = tickRad(i, divisions);
+    const lx = cx + Math.cos(ang) * midR;
+    const ly = cy + Math.sin(ang) * midR;
+    const rot = (ang * 180) / Math.PI + 90;
+    const txt = i === 0 ? "☽" : String(i);
+    labels.push(
+      <text
+        key={`dl${i}`}
+        x={lx}
+        y={ly}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={i === 0 ? fontSize + 1.5 : fontSize}
+        fill={i === 0 ? "#e8f4ff" : "#7dd3fc"}
+        fontFamily="Georgia, serif"
+        fontWeight={600}
+        transform={`rotate(${rot}, ${lx}, ${ly})`}
+      >
+        {txt}
+      </text>,
+    );
+  }
+
+  return (
+    <g
+      className="cp-watch-ring cp-distance-ring"
+      opacity={ringOpacity}
+      style={{ cursor: "grab" }}
+      onPointerDown={(e) => {
+        e.stopPropagation();
+        dragging.current = true;
+        e.currentTarget.setPointerCapture(e.pointerId);
+        onChange(rankFromPointer(e));
+      }}
+      onPointerMove={(e) => {
+        if (!dragging.current) return;
+        e.stopPropagation();
+        onChange(rankFromPointer(e));
+      }}
+      onPointerUp={() => { dragging.current = false; }}
+      onPointerCancel={() => { dragging.current = false; }}
+    >
+      <defs>
+        <linearGradient id={`dist-br-${uid}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor="#7dd3fc" stopOpacity={glass ? 0.55 : 0.95} />
+          <stop offset="50%" stopColor="#0ea5e9" stopOpacity={glass ? 0.5 : 0.9} />
+          <stop offset="100%" stopColor="#1e3a5f" stopOpacity={glass ? 0.55 : 1} />
+        </linearGradient>
+        <clipPath id={`dist-clip-${uid}`}>
+          <path d={ringDonutClip(cx, cy, radius, inner)} fillRule="evenodd" />
+        </clipPath>
+      </defs>
+
+      <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#dist-br-${uid})`} strokeWidth={band} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke="#061018" strokeWidth={band - 1.6} opacity={glass ? 0.25 : 0.45} />
+        <g clipPath={`url(#dist-clip-${uid})`}>
+          {boundaries}
+          {labels}
+        </g>
+      </g>
+
+      <line
+        x1={cx}
+        y1={cy - radius - 1}
+        x2={cx}
+        y2={cy - inner + 1}
+        stroke="#38bdf8"
+        strokeWidth={1.4}
+        strokeLinecap="round"
+      />
+
+      <text
+        x={cx}
+        y={cy + radius + 14}
+        textAnchor="middle"
+        fontSize={7}
+        fill="#7dd3fc"
+        fontFamily="monospace"
+      >
+        {labelForDistanceRank(distanceRank)}
+      </text>
+    </g>
+  );
+}
+
 function RotatingDialRing({
   cx,
   cy,
@@ -193,7 +448,9 @@ function RotatingDialRing({
   const dialSpin = -spec.nowAngle;
   const fontSize = spec.dense
     ? Math.max(3.2, Math.min(band * 0.72, (360 / spec.divisions) * 0.2))
-    : Math.max(4.5, band * 0.5);
+    : spec.id === "weather"
+      ? Math.max(5, band * 0.65)
+      : Math.max(4.5, band * 0.5);
 
   const boundaries: ReactElement[] = [];
   const labels: ReactElement[] = [];
@@ -295,154 +552,31 @@ function RotatingDialRing({
 
 export function WatchMovement({
   now,
-  gregorian,
-  weather,
-  calendarWheels,
+  cycles,
   hoverId,
   onHover,
   glass = false,
   heading = 0,
   emfUt = null,
   showCompass = true,
+  skyDistance = 50,
+  onSkyDistanceChange,
 }: WatchMovementProps) {
   const cx = 200;
   const cy = 200;
   const hubR = 26;
-  const rings: RingSpec[] = [];
+  const TIME_IDS = new Set(["ms", "s", "min", "h"]);
   let ri = 0;
 
-  const TIME_IDS = new Set(["ms", "s", "min", "h"]);
-
-  const addRing = (spec: Omit<RingSpec, "radius">) => {
-    const step = TIME_IDS.has(spec.id) ? 10 : 7;
-    rings.push({ ...spec, radius: hubR + 12 + ri * step });
+  const rings: RingSpec[] = buildRingSpecs(now, cycles).map(spec => {
+    const step = TIME_IDS.has(spec.id) ? 10 : spec.id === "weather" ? 9 : 7;
+    const ring = { ...spec, radius: hubR + 12 + ri * step };
     ri++;
-  };
-
-  addRing({
-    id: "ms",
-    color: "#fbbf24",
-    nowAngle: msAngle(now),
-    divisions: 100,
-    labelEvery: 10,
-    labelPad: 2,
-    dense: true,
+    return ring;
   });
 
-  addRing({
-    id: "s",
-    color: "#f97316",
-    nowAngle: secAngle(now),
-    divisions: 60,
-    labelEvery: 1,
-    labelPad: 0,
-    dense: true,
-  });
-
-  addRing({
-    id: "min",
-    color: "#ef4444",
-    nowAngle: minAngle(now),
-    divisions: 60,
-    labelEvery: 1,
-    labelPad: 0,
-    dense: true,
-  });
-
-  addRing({
-    id: "h",
-    color: "#d946ef",
-    nowAngle: hourAngle(now),
-    divisions: 24,
-    labelEvery: 1,
-    labelPad: 0,
-    dense: true,
-  });
-
-  if (gregorian) {
-    const dim = daysInMonth(gregorian.year, gregorian.monthNum);
-    const weekdayIdx = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(gregorian.weekday);
-    const wd = weekdayIdx >= 0 ? weekdayIdx : now.getDay();
-    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-    addRing({
-      id: "weekday",
-      color: "#94a3b8",
-      nowAngle: (wd / 7) * 360,
-      divisions: 7,
-      labelEvery: 1,
-      customLabel: i => weekdays[i] ?? null,
-    });
-
-    addRing({
-      id: "month",
-      color: "#a78bfa",
-      nowAngle: ((gregorian.monthNum - 1 + (gregorian.day - 1) / dim) / 12) * 360,
-      divisions: 12,
-      labelEvery: 1,
-      customLabel: i => months[i] ?? null,
-    });
-
-    addRing({
-      id: "day",
-      color: "#c084fc",
-      nowAngle: ((gregorian.day - 1 + now.getHours() / 24) / dim) * 360,
-      divisions: dim,
-      labelEvery: Math.max(1, Math.floor(dim / 6)),
-      labelPad: 0,
-    });
-
-    addRing({
-      id: "year",
-      color: "#818cf8",
-      nowAngle: (gregorian.dayOfYear / 365) * 360,
-      divisions: 4,
-      labelEvery: 1,
-      customLabel: i => (i === 0 ? String(gregorian.year) : null),
-    });
-
-    addRing({
-      id: "week",
-      color: "#60a5fa",
-      nowAngle: (gregorian.weekOfYear / 52) * 360,
-      divisions: 52,
-      labelEvery: 13,
-      customLabel: i => `W${i}`,
-    });
-
-    addRing({
-      id: "doy",
-      color: "#38bdf8",
-      nowAngle: (gregorian.dayOfYear / 365) * 360,
-      divisions: 4,
-      labelEvery: 1,
-      customLabel: i => ["D1", "D91", "D182", "D273"][i] ?? null,
-    });
-  }
-
-  if (weather) {
-    addRing({
-      id: "weather",
-      color: "#22d3ee",
-      nowAngle: cycleAngle(1, now),
-      divisions: 8,
-      labelEvery: 4,
-      customLabel: i => (i === 0 && weather.tempC != null ? `${Math.round(weather.tempC)}°` : i === 0 ? "—" : null),
-    });
-  }
-
-  calendarWheels.forEach((w) => {
-    const subNum = w.sublabel.match(/\d+/)?.[0];
-    addRing({
-      id: w.id,
-      color: w.color,
-      nowAngle: cycleAngle(w.periodDays, now),
-      divisions: 8,
-      labelEvery: 4,
-      customLabel: i => (i === 0 ? subNum ?? null : null),
-    });
-  });
+  const outerRingR = rings.length > 0 ? rings[rings.length - 1]!.radius : hubR + 12;
+  const distanceRadius = outerRingR + 14;
 
   return (
     <svg
@@ -462,6 +596,17 @@ export function WatchMovement({
           </defs>
           <rect x={0} y={0} width={400} height={400} fill="url(#watch-bg)" rx={8} />
         </>
+      )}
+
+      {onSkyDistanceChange && (
+        <DistanceDialRing
+          cx={cx}
+          cy={cy}
+          radius={distanceRadius}
+          distanceRank={skyDistance}
+          glass={glass}
+          onChange={onSkyDistanceChange}
+        />
       )}
 
       {[...rings].reverse().map((spec) => (

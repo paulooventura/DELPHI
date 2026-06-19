@@ -291,7 +291,26 @@ html,body {
   width: min(100%, min(62vh, 720px));
   max-width: 720px;
   margin: 0 auto;
+  pointer-events: none;
+}
+
+.cp-distance-ring {
   pointer-events: auto;
+}
+
+.cp-hero-pitch-surface {
+  cursor: ns-resize;
+  touch-action: none;
+}
+
+.cp-skymap-hint {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  margin-top: 0.15rem;
+}
+
+.cp-skymap-pitch-marker {
+  pointer-events: none;
 }
 
 .cp-watch-movement-glass {

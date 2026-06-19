@@ -1,12 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getClockAudio, playMsTick, playSecondTick, resumeClockAudio } from "../lib/clockSfx";
+import {
+  getClockAudio,
+  playHourBell,
+  playMinuteBell,
+  playMsTick,
+  playSecondTick,
+  resumeClockAudio,
+} from "../lib/clockSfx";
 
 export function useClockSfx(enabled: boolean) {
   const [active, setActive] = useState(false);
   const lastMs = useRef(-1);
   const lastSec = useRef(-1);
+  const lastMin = useRef(-1);
+  const lastHour = useRef(-1);
 
   useEffect(() => {
     if (!enabled) return;
@@ -27,6 +36,8 @@ export function useClockSfx(enabled: boolean) {
       const d = new Date();
       const ms = d.getMilliseconds();
       const sec = d.getSeconds();
+      const min = d.getMinutes();
+      const hr = d.getHours();
 
       if (ms !== lastMs.current) {
         playMsTick(ctx);
@@ -35,6 +46,18 @@ export function useClockSfx(enabled: boolean) {
       if (sec !== lastSec.current) {
         playSecondTick(ctx, sec);
         lastSec.current = sec;
+      }
+
+      // Bells fire once at the top of each minute
+      if (sec === 0 && ms < 20) {
+        if (hr !== lastHour.current) {
+          playHourBell(ctx, hr);
+          lastHour.current = hr;
+          lastMin.current = min;
+        } else if (min !== lastMin.current) {
+          playMinuteBell(ctx);
+          lastMin.current = min;
+        }
       }
     }, 1);
 

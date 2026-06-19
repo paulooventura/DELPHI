@@ -58,3 +58,37 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   click.start(t);
   click.stop(t + 0.03);
 }
+
+function playBellStrike(
+  ctx: AudioContext,
+  t0: number,
+  fundamental: number,
+  gainPeak: number,
+  duration: number,
+) {
+  [1, 2.2, 3.5, 5.1].forEach((harm, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(fundamental * harm, t0);
+    gain.gain.setValueAtTime(gainPeak / (i + 1), t0);
+    gain.gain.exponentialRampToValueAtTime(0.00008, t0 + duration);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t0);
+    osc.stop(t0 + duration + 0.05);
+  });
+}
+
+/** Single deep bell at each minute */
+export function playMinuteBell(ctx: AudioContext) {
+  playBellStrike(ctx, ctx.currentTime, 196, 0.11, 0.95);
+}
+
+/** Hour strike — one deep bell per hour count (12-hour cycle) */
+export function playHourBell(ctx: AudioContext, hour24: number) {
+  const strikes = (hour24 % 12) || 12;
+  for (let i = 0; i < strikes; i++) {
+    playBellStrike(ctx, ctx.currentTime + i * 0.9, 146, 0.13, 1.15);
+  }
+}

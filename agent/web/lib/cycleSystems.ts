@@ -17,7 +17,34 @@ export type WeatherInfo = {
   emoji: string;
   tempC: number | null;
   windKmh: number | null;
+  /** Local forecast emoji per clock hour (0–23) */
+  hourly?: Array<{ hour: number; emoji: string; condition: string; tempC: number | null }>;
 };
+
+export function weatherCodeToEmoji(code: number): { emoji: string; condition: string } {
+  const condition =
+    code === 0   ? "Clear sky"
+    : code <= 3  ? "Partly cloudy"
+    : code <= 9  ? "Foggy"
+    : code <= 29 ? "Drizzle"
+    : code <= 39 ? "Rain"
+    : code <= 49 ? "Snow"
+    : code <= 67 ? "Showers"
+    : code <= 77 ? "Snow"
+    : code <= 82 ? "Rain showers"
+    : code <= 86 ? "Snow showers"
+    : "Thunderstorm";
+  const emoji =
+    code === 0   ? "☀️"
+    : code <= 3  ? "⛅"
+    : code <= 9  ? "🌫️"
+    : code <= 39 ? "🌧️"
+    : code <= 49 ? "❄️"
+    : code <= 67 ? "🌦️"
+    : code <= 77 ? "🌨️"
+    : "⛈️";
+  return { emoji, condition };
+}
 
 export type CycleSnapshot = {
   capturedAtMs: number;

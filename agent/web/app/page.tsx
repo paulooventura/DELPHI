@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
-import { starsInDirection, relevantConstellations, STAR_TO_CONSTELLATION, type SkyObject, type ConstellationHit } from "../lib/starmap";
+import { skyObjectsInView, relevantConstellations, zodiacPlacements, labelForDistanceRank, distanceLyForRank, type ConstellationHit } from "../lib/starmap";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
 import { WatchMovement } from "../components/WatchMovement";
@@ -19,12 +19,12 @@ const CLOCK_RINGS = [
 ];
 
 const DATE_RINGS = [
+  { id: "weather", name: "weather", color: "#22d3ee" },
+  { id: "day", name: "day", color: "#c084fc" },
   { id: "weekday", name: "weekday", color: "#94a3b8" },
-  { id: "month",   name: "month",   color: "#a78bfa" },
-  { id: "day",     name: "day",     color: "#c084fc" },
-  { id: "year",    name: "year",    color: "#818cf8" },
-  { id: "week",    name: "week",    color: "#60a5fa" },
-  { id: "doy",     name: "day-of-year", color: "#38bdf8" },
+  { id: "chinese-sign", name: "chinese", color: "#dc2626" },
+  { id: "tzolkin", name: "tzolkin", color: "#7c3aed" },
+  { id: "moon", name: "moon", color: "#94a3b8" },
 ];
 
 // ─── Sensor toggles ───────────────────────────────────────────────────────────
@@ -90,8 +90,8 @@ type StreamState = {
 
 // ─── Sky Map ──────────────────────────────────────────────────────────────────
 
-function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalone" }: {
-  lat: number; lon: number; heading: number; pitchDeg: number; minuteKey: number;
+function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, variant = "standalone" }: {
+  lat: number; lon: number; heading: number; pitchDeg: number; distanceRank: number; minuteKey: number;
   variant?: "standalone" | "background" | "legend";
 }) {
   const W = 320, H = 168;
@@ -100,14 +100,14 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
   const isBg = variant === "background";
   const isLegend = variant === "legend";
 
-  const stars: SkyObject[] = useMemo(
-    () => starsInDirection(lat, lon, heading, new Date(), FOV_AZ, 3.5),
+  const { stars, moon } = useMemo(
+    () => skyObjectsInView(lat, lon, heading, pitchDeg, new Date(), FOV_AZ, FOV_ALT_HALF, distanceRank),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lat, lon, Math.round(heading * 2) / 2, minuteKey],
+    [lat, lon, Math.round(heading * 2) / 2, Math.round(pitchDeg), distanceRank, minuteKey],
   );
 
   const constellations: ConstellationHit[] = useMemo(
-    () => relevantConstellations(lat, lon, heading, new Date(), FOV_AZ, 3.5),
+    () => relevantConstellations(lat, lon, heading, new Date(), FOV_AZ, 6),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lat, lon, Math.round(heading * 2) / 2, minuteKey],
   );
@@ -120,21 +120,21 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
     return [x, y];
   }
 
+  const zodiac = useMemo(
+    () => isBg
+      ? zodiacPlacements(lat, lon, heading, pitchDeg, FOV_AZ / 2, FOV_ALT_HALF, new Date(), toXY, W, H, stars)
+      : [],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [stars, lat, lon, heading, pitchDeg, isBg, minuteKey],
+  );
+
   const CARD_AZS  = [0, 45, 90, 135, 180, 225, 270, 315];
   const CARD_LBLS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
   const bearing   = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(heading / 22.5) % 16];
+  const ALT_TICKS = [0, 15, 30, 45, 60, 75, 90];
+  const pitchY = H / 2;
 
-  const starsByConstellation = useMemo(() => {
-    const groups = new Map<string, SkyObject[]>();
-    for (const star of stars) {
-      const cName = STAR_TO_CONSTELLATION[star.name];
-      if (!cName) continue;
-      const list = groups.get(cName) ?? [];
-      list.push(star);
-      groups.set(cName, list);
-    }
-    return groups;
-  }, [stars]);
+  const moonScale = distanceRank <= 3 ? 3.2 : distanceRank <= 8 ? 2 : distanceRank <= 15 ? 1.2 : 0.55;
 
   const svg = (
     <svg
@@ -160,31 +160,61 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
       <rect width={W} height={H} fill={`url(#${isBg ? "skyg-bg" : "skyg"})`} rx={isBg ? 0 : 6}/>
       {isBg && <rect width={W} height={H} fill="url(#skyg-vignette)" />}
 
-      {[0, 15, 30, 45, 60, 75, 90].map(alt => {
+      {/* Zodiac artwork — background layer anchored to reference stars */}
+      {isBg && zodiac.map(({ def, cx, cy, scale }) => (
+        <g key={def.sign} opacity={0.22} transform={`translate(${cx},${cy}) scale(${scale / 40})`}>
+          <path d={def.path} fill="none" stroke={def.color} strokeWidth={0.12} strokeLinecap="round" strokeLinejoin="round" />
+          <text y={-1.1} textAnchor="middle" fontSize={0.55} fill={def.color} opacity={0.85}>{def.symbol}</text>
+        </g>
+      ))}
+
+      {/* Vertical altitude rails (left + right) — embedded pitch feedback */}
+      {ALT_TICKS.map(alt => {
         const y = H / 2 - ((alt - pitchDeg) / FOV_ALT_HALF) * (H / 2);
         if (y < -4 || y > H + 4) return null;
         const isHorizon = alt === 0;
         return (
-          <g key={alt}>
+          <g key={`alt-${alt}`}>
             <line
-              x1={0} y1={y} x2={W} y2={y}
+              x1={isBg ? 18 : 0} y1={y} x2={W - (isBg ? 18 : 0)} y2={y}
               stroke={isHorizon ? "#35506d" : isBg ? "#143248" : "#0c2236"}
               strokeWidth={isHorizon ? 1.2 : 1}
               strokeDasharray={isHorizon ? undefined : "3,9"}
-              opacity={isBg ? 0.85 : 1}
+              opacity={isBg ? 0.75 : 1}
             />
-            <text x={4} y={y - 2} fontSize={isBg ? 7 : 6.5} fill={isHorizon ? "#5a8cb0" : "#3a5870"}>
+            <text x={isBg ? 4 : 4} y={y - 2} fontSize={isBg ? 7 : 6.5} fill={isHorizon ? "#5a8cb0" : "#3a5870"}>
               {alt}°
             </text>
+            {isBg && (
+              <text x={W - 4} y={y - 2} fontSize={7} fill={isHorizon ? "#5a8cb0" : "#3a5870"} textAnchor="end">
+                {alt}°
+              </text>
+            )}
           </g>
         );
       })}
 
+      {/* Center crosshair — horizontal bearing + vertical pitch */}
       <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6" opacity={isBg ? 0.75 : 1}/>
-      {!isBg && (
-        <text x={W - 8} y={H - 4} fontSize="7" fill="#4a6c88" textAnchor="end">Center {Math.round(pitchDeg)}° alt</text>
+      <line x1={0} y1={pitchY} x2={W} y2={pitchY} stroke="#1a4060" strokeWidth={1} strokeDasharray="4,5" opacity={isBg ? 0.85 : 1}/>
+
+      {/* Pitch centre marker on right rail */}
+      {isBg && (
+        <g className="cp-skymap-pitch-marker">
+          <polygon points={`${W - 16},${pitchY} ${W - 6},${pitchY - 5} ${W - 6},${pitchY + 5}`} fill="#38bdf8" opacity={0.9} />
+          <text x={W - 18} y={pitchY + 3} textAnchor="end" fontSize={7.5} fill="#7dd3fc" fontWeight="700">
+            {Math.round(pitchDeg)}°
+          </text>
+        </g>
       )}
 
+      {!isBg && (
+        <text x={W - 8} y={H - 4} fontSize="7" fill="#4a6c88" textAnchor="end">
+          {labelForDistanceRank(distanceRank)} · {distanceLyForRank(distanceRank).toFixed(distanceRank === 0 ? 7 : 1)} ly
+        </text>
+      )}
+
+      {/* Horizontal bearing rail (bottom) */}
       {CARD_AZS.map((cAz, ci) => {
         const dAz = ((cAz - heading + 540) % 360) - 180;
         if (Math.abs(dAz) > FOV_AZ / 2 + 8) return null;
@@ -202,28 +232,34 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
         );
       })}
 
-      {/* faint constellation stick figures from visible stars */}
-      {isBg && Array.from(starsByConstellation.entries()).map(([name, group]) => {
-        if (group.length < 2) return null;
-        const sorted = [...group].sort((a, b) => a.az - b.az);
-        const points = sorted
-          .map(s => toXY(s.az, s.alt))
-          .filter(([x, y]) => x >= -8 && x <= W + 8 && y >= -8 && y <= H + 8);
-        if (points.length < 2) return null;
-        const d = points.map(([x, y], i) => `${i === 0 ? "M" : "L"} ${x} ${y}`).join(" ");
-        const [lx, ly] = toXY(
-          sorted.reduce((s, st) => s + st.az, 0) / sorted.length,
-          sorted.reduce((s, st) => s + st.alt, 0) / sorted.length,
-        );
+      {/* Bearing marker on bottom rail */}
+      {isBg && (
+        <g>
+          <polygon points={`${W / 2},${H - 4} ${W / 2 - 5},${H - 14} ${W / 2 + 5},${H - 14}`} fill="#c9a227" opacity={0.9} />
+          <text x={W / 2} y={H - 18} textAnchor="middle" fontSize={8} fill="#e8c872" fontWeight="700">
+            {Math.round(heading)}° {bearing}
+          </text>
+        </g>
+      )}
+
+      {moon && (() => {
+        const [x, y] = toXY(moon.az, moon.alt);
+        if (x < -30 || x > W + 30 || y < -30 || y > H + 30) return null;
+        const r = Math.max(4, 14 * moonScale);
+        const lit = moon.illumination;
         return (
-          <g key={name} opacity={0.55}>
-            <path d={d} fill="none" stroke="#5a9ec8" strokeWidth={0.9} strokeDasharray="2,3" />
-            <text x={lx} y={ly - 4} textAnchor="middle" fontSize={7.5} fill="#6eb8e8" fontWeight="600">
-              {name}
-            </text>
+          <g key="moon" opacity={0.95}>
+            <circle cx={x} cy={y} r={r * 1.8} fill={`rgba(200,220,255,${0.08 * moonScale})`} />
+            <circle cx={x} cy={y} r={r} fill="#e8eef8" opacity={0.15 + lit * 0.35} />
+            <circle cx={x - r * (0.5 - lit)} cy={y} r={r * 0.92} fill="#f5f8ff" opacity={0.85} />
+            {isBg && (
+              <text x={x} y={y + r + 10} textAnchor="middle" fontSize={7} fill="#a0c8e8">
+                ☽ {moon.phaseName}
+              </text>
+            )}
           </g>
         );
-      })}
+      })()}
 
       {stars.map(star => {
         const [x, y] = toXY(star.az, star.alt);
@@ -235,7 +271,7 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
           <g key={star.name}>
             <circle cx={x} cy={y} r={r * 2.4} fill={`rgba(100,170,255,${op * (isBg ? 0.14 : 0.09)})`}/>
             <circle cx={x} cy={y} r={r} fill={fill} opacity={op}/>
-            {!isBg && star.mag < 1.8 && (
+            {!isBg && star.mag < 2.5 && (
               <text x={x + r + 2.5} y={y + 3.5} fontSize="5.5" fill={`rgba(110,175,220,${op * 0.8})`}>{star.name}</text>
             )}
           </g>
@@ -243,12 +279,14 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
       })}
 
       <text x={W / 2} y={11} textAnchor="middle" fontSize={isBg ? 9.5 : 8.5} fill="#4a9cc4" opacity={isBg ? 0.95 : 1}>
-        {`↑ ${Math.round(heading)}°  ${bearing}  ·  pitch ${Math.round(pitchDeg)}°`}
+        {isBg
+          ? `drag ↕ pitch · dial ⊙ distance · ${labelForDistanceRank(distanceRank)}`
+          : `↑ ${Math.round(heading)}°  ${bearing}  ·  pitch ${Math.round(pitchDeg)}°`}
       </text>
 
-      {stars.length === 0 && (
+      {stars.length === 0 && !moon && (
         <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="10" fill="#203045">
-          No bright stars above horizon in this direction
+          {distanceRank === 0 ? "Moon view — rotate distance dial to reveal stars" : "No objects in this slice at current distance"}
         </text>
       )}
     </svg>
@@ -268,7 +306,7 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, minuteKey, variant = "standalo
           : <span className="cp-muted">No major constellation anchors in this slice right now.</span>}
       </div>
       <p className="cp-muted cp-skymap-meta">
-        {stars.length} bright star{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing} · {Math.round(pitchDeg)}° altitude
+        {stars.length} object{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing} · pitch {Math.round(pitchDeg)}° · {labelForDistanceRank(distanceRank)}
       </p>
     </>
   );
@@ -308,6 +346,7 @@ export default function Home() {
   });
   const [wheelZoom, setWheelZoom] = useState(1);
   const [skyPitch, setSkyPitch] = useState(35);
+  const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [clockSfxOn, setClockSfxOn] = useState(true);
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
@@ -318,6 +357,7 @@ export default function Home() {
   const abortRef = useRef<AbortController | null>(null);
   const pinchStartRef = useRef<number | null>(null);
   const pinchZoomRef = useRef(1);
+  const pitchDragRef = useRef<{ y0: number; pitch0: number } | null>(null);
   const headingCleanupRef = useRef<(() => void) | null>(null);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
 
@@ -521,7 +561,6 @@ export default function Home() {
 
   // ── Wheel data
   const calendarWheels = cycles?.wheelLayers ?? [];
-  const weatherRing    = cycles?.weather ?? null;
 
   const hasLiveHeading = headingLive && signals?.heading != null;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
@@ -562,6 +601,23 @@ export default function Home() {
 
   function onTouchEndZoom() {
     pinchStartRef.current = null;
+  }
+
+  function onPitchPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (e.button !== 0) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    pitchDragRef.current = { y0: e.clientY, pitch0: skyPitch };
+  }
+
+  function onPitchPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!pitchDragRef.current) return;
+    const dy = e.clientY - pitchDragRef.current.y0;
+    const next = pitchDragRef.current.pitch0 - dy * 0.12;
+    setSkyPitch(Math.max(5, Math.min(85, Math.round(next))));
+  }
+
+  function onPitchPointerUp() {
+    pitchDragRef.current = null;
   }
 
   return (
@@ -609,7 +665,13 @@ export default function Home() {
             onTouchMove={onTouchMoveZoom}
             onTouchEnd={onTouchEndZoom}
           >
-            <div className="cp-hero-composite">
+            <div
+              className="cp-hero-composite cp-hero-pitch-surface"
+              onPointerDown={onPitchPointerDown}
+              onPointerMove={onPitchPointerMove}
+              onPointerUp={onPitchPointerUp}
+              onPointerCancel={onPitchPointerUp}
+            >
               {toggles.skyMap ? (
                 <div className="cp-hero-skymap" aria-hidden>
                   <SkyMapSVG
@@ -618,6 +680,7 @@ export default function Home() {
                     lon={mapLon}
                     heading={activeHeading}
                     pitchDeg={skyPitch}
+                    distanceRank={skyDistance}
                     minuteKey={minuteKey}
                   />
                 </div>
@@ -629,14 +692,14 @@ export default function Home() {
                 <WatchMovement
                   glass
                   now={animNow}
-                  gregorian={cycles?.gregorian ?? null}
-                  weather={weatherRing}
-                  calendarWheels={calendarWheels}
+                  cycles={cycles}
                   hoverId={hoverRing}
                   onHover={setHoverRing}
                   heading={activeHeading}
                   emfUt={toggles.emf ? signals?.emfUt ?? null : null}
                   showCompass={toggles.compass}
+                  skyDistance={skyDistance}
+                  onSkyDistanceChange={setSkyDistance}
                 />
               </div>
             </div>
@@ -684,16 +747,10 @@ export default function Home() {
             {!toggles.compass && (
               <p className="cp-muted">Compass off — wheel center shows fixed north.</p>
             )}
-            <label className="cp-dir-label">
-              <span>Sky pitch (vertical look angle)</span>
-              <input
-                type="range" min={5} max={85}
-                value={Math.round(skyPitch)}
-                onChange={e => setSkyPitch(Number(e.target.value))}
-                className="cp-dir-range"
-              />
-              <span>{Math.round(skyPitch)}° altitude</span>
-            </label>
+            <p className="cp-muted cp-skymap-hint">
+              Vertical pitch: drag up/down on the sky behind the wheels (altitude rails on left &amp; right edges).
+              Distance: rotate the outer cyan dial — ☽ Moon (0) to #100 LP 771-95 (~22.7 ly).
+            </p>
             {hasLiveHeading && toggles.compass && (
               <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
             )}
@@ -706,6 +763,7 @@ export default function Home() {
               lon={mapLon}
               heading={activeHeading}
               pitchDeg={skyPitch}
+              distanceRank={skyDistance}
               minuteKey={minuteKey}
             />
           )}
@@ -755,21 +813,15 @@ export default function Home() {
               >
                 <span className="cp-rl-dot" style={{ background: dr.color }}/>
                 {dr.name}
-                {cycles && dr.id === "weekday" && `: ${cycles.gregorian.weekday}`}
-                {cycles && dr.id === "month" && `: ${cycles.gregorian.month}`}
+                {cycles && dr.id === "weather" && `: ${cycles.weather?.emoji ?? ""} ${cycles.weather?.condition ?? ""}`}
                 {cycles && dr.id === "day" && `: ${cycles.gregorian.day}`}
-                {cycles && dr.id === "year" && `: ${cycles.gregorian.year}`}
-                {cycles && dr.id === "week" && `: W${cycles.gregorian.weekOfYear}`}
-                {cycles && dr.id === "doy" && `: D${cycles.gregorian.dayOfYear}`}
+                {cycles && dr.id === "weekday" && `: ${cycles.gregorian.weekday}`}
+                {cycles && dr.id === "chinese-sign" && `: ${cycles.chineseZodiac.symbol} ${cycles.chineseZodiac.animal}`}
+                {cycles && dr.id === "tzolkin" && `: Kin ${cycles.tzolkin.kin} ${cycles.tzolkin.sign}`}
+                {cycles && dr.id === "moon" && `: ${cycles.lunar.emoji} ${cycles.lunar.phase}`}
               </span>
             ))}
-            {weatherRing && (
-              <span className="cp-rl-item">
-                <span className="cp-rl-dot" style={{ background: "#22d3ee" }}/>
-                {weatherRing.emoji} {weatherRing.condition}
-              </span>
-            )}
-            {calendarWheels.map(w => (
+            {calendarWheels.filter(w => !["day", "chinese-sign", "moon"].includes(w.id)).map(w => (
               <span
                 key={w.id}
                 className={`cp-rl-item cp-rl-link${hoverRing === w.id ? " cp-rl-active" : ""}`}
