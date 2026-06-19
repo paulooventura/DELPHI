@@ -20,8 +20,8 @@ async function fetchWeather(
     const params = new URLSearchParams({
       latitude: String(lat),
       longitude: String(lon),
-      current: "temperature_2m,weather_code,wind_speed_10m,is_day,cloud_cover,precipitation",
-      hourly: "weather_code,temperature_2m,precipitation_probability,cloud_cover,is_day",
+      current: "temperature_2m,weather_code,wind_speed_10m,is_day,cloud_cover,precipitation,surface_pressure",
+      hourly: "weather_code,temperature_2m,precipitation_probability,cloud_cover,is_day,surface_pressure",
       forecast_days: "2",
       timezone,
     });
@@ -94,6 +94,7 @@ async function fetchWeather(
       emoji,
       tempC: typeof cur.temperature_2m === "number" ? cur.temperature_2m : null,
       windKmh: typeof cur.wind_speed_10m === "number" ? cur.wind_speed_10m : null,
+      pressureHpa: typeof cur.surface_pressure === "number" ? cur.surface_pressure : null,
       hourly,
     };
   } catch {

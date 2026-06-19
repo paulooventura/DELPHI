@@ -8,6 +8,8 @@ import {
   formatSpeedMps,
 } from "../lib/spacetime";
 
+import type { CosmicClockState } from "../lib/cosmic";
+
 export type SpacetimeReadoutProps = {
   now: Date;
   lat: number;
@@ -25,7 +27,13 @@ export type SpacetimeReadoutProps = {
   compassHeading: number | null;
   pitchDeg: number | null;
   emfUt: number | null;
+  cosmic?: CosmicClockState | null;
 };
+
+function fmtTime(d: Date): string {
+  const p = (n: number, w = 2) => String(n).padStart(w, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}.${p(d.getMilliseconds(), 3)}`;
+}
 
 function ReadoutRow({ label, value }: { label: string; value: string }) {
   return (
@@ -54,6 +62,12 @@ export function SpacetimeReadout(props: SpacetimeReadoutProps) {
   if (!props.locationEnabled) spaceParts.push("(location off)");
 
   const motionParts: string[] = [];
+  if (props.cosmic?.sensors.pressureHpa != null) {
+    motionParts.push(`baro ${props.cosmic.sensors.pressureHpa.toFixed(1)} hPa (Δ${props.cosmic.sensors.pressureDeltaHpa?.toFixed(1) ?? "0"})`);
+  }
+  if (props.cosmic?.sensors.lux != null) {
+    motionParts.push(`lux ${props.cosmic.sensors.lux.toFixed(0)}`);
+  }
   const speed = formatSpeedMps(props.speedMps);
   if (speed) motionParts.push(speed);
   if (props.compassHeading != null) motionParts.push(`compass ${formatDegrees(props.compassHeading, 2)}`);
@@ -66,7 +80,7 @@ export function SpacetimeReadout(props: SpacetimeReadoutProps) {
   }
 
   return (
-    <div className="cp-spacetime" aria-live="off">
+    <div className="cp-spacetime cp-tabular" aria-live="off">
       <ReadoutRow
         label="TIME"
         value={`${snap.localTime} local · ${snap.tzName} (${snap.tzOffset})`}
@@ -79,6 +93,22 @@ export function SpacetimeReadout(props: SpacetimeReadoutProps) {
         label="SKY"
         value={`GMST ${snap.gmst}° · LST ${snap.lst}°`}
       />
+      {props.cosmic && (
+        <>
+          <ReadoutRow
+            label="SOLAR"
+            value={`noon ${fmtTime(props.cosmic.solar.solarNoon)} · rise ${fmtTime(props.cosmic.solar.sunrise)} · set ${fmtTime(props.cosmic.solar.sunset)} · day ${props.cosmic.solarDayAngleDeg.toFixed(3)}°`}
+          />
+          <ReadoutRow
+            label="CYCLES"
+            value={`☽ ${(props.cosmic.lunarPhaseFraction * 100).toFixed(1)}% · tide ${props.cosmic.tideLabel} · muhurta ${props.cosmic.muhurtaIndex + 1}/30 · ☉ ${props.cosmic.sunTropicalLongitudeDeg.toFixed(2)}° ${String(props.cosmic.layers.find(l => l.id === "sun-ecliptic")?.meta.sign ?? "")}`}
+          />
+          <ReadoutRow
+            label="EPOCH"
+            value={`precession ${props.cosmic.precessionAngleDeg.toFixed(6)}° · Great Year ~25,772 yr`}
+          />
+        </>
+      )}
       <ReadoutRow
         label="SPACE"
         value={spaceParts.join(" · ")}

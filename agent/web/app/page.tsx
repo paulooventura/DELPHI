@@ -1,14 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
-import { skyObjectsInView, zodiacPlacements, labelForDistanceRank } from "../lib/starmap";
+import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { WatchMovement } from "../components/WatchMovement";
 import { SpacetimeReadout } from "../components/SpacetimeReadout";
+import { RingFocusPanel, zoomForRingRadius } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
+import { useCosmicClock } from "../hooks/useCosmicClock";
+import { useSpringValue } from "../hooks/useSpringValue";
+import { LaunchScreen, useShowLaunch } from "../components/LaunchScreen";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -131,206 +135,10 @@ type StreamState = {
   report?: ResearchReport | null;
 };
 
-// ─── Sky Map ──────────────────────────────────────────────────────────────────
-
-function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, variant = "standalone", liveHeading = false, livePitch = false }: {
-  lat: number; lon: number; heading: number; pitchDeg: number; distanceRank: number; minuteKey: number;
-  variant?: "standalone" | "panel" | "legend";
-  liveHeading?: boolean;
-  livePitch?: boolean;
-}) {
-  const W = 320, H = variant === "panel" ? 200 : 168;
-  const FOV_AZ = 85;
-  const FOV_ALT_HALF = 42;
-  const isPanel = variant === "panel";
-  const isLegend = variant === "legend";
-
-  const { stars, moon } = useMemo(
-    () => skyObjectsInView(lat, lon, heading, pitchDeg, new Date(), FOV_AZ, FOV_ALT_HALF, distanceRank),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lat, lon, Math.round(heading * 2) / 2, Math.round(pitchDeg), distanceRank, minuteKey],
-  );
-
-  function toXY(az: number, alt: number): [number, number] {
-    const dAz = ((az - heading + 540) % 360) - 180;
-    const dAlt = alt - pitchDeg;
-    const x = (dAz / FOV_AZ + 0.5) * W;
-    const y = H / 2 - (dAlt / FOV_ALT_HALF) * (H / 2);
-    return [x, y];
-  }
-
-  const zodiac = useMemo(
-    () => isPanel
-      ? zodiacPlacements(lat, lon, heading, pitchDeg, FOV_AZ / 2, FOV_ALT_HALF, new Date(), toXY, W, H, stars)
-      : [],
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stars, lat, lon, heading, pitchDeg, isPanel, minuteKey],
-  );
-
-  const CARD_AZS  = [0, 45, 90, 135, 180, 225, 270, 315];
-  const CARD_LBLS = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
-  const bearing   = ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSW","SW","WSW","W","WNW","NW","NNW"][Math.round(heading / 22.5) % 16];
-  const ALT_TICKS = [0, 15, 30, 45, 60, 75, 90];
-  const pitchY = H / 2;
-
-  const moonScale = distanceRank <= 3 ? 3.2 : distanceRank <= 8 ? 2 : distanceRank <= 15 ? 1.2 : 0.55;
-
-  const svg = (
-    <svg
-      viewBox={`0 0 ${W} ${H}`}
-      width="100%"
-      height={isPanel ? "100%" : undefined}
-      preserveAspectRatio={isPanel ? "xMidYMid slice" : undefined}
-      className={`cp-skymap${isPanel ? " cp-skymap-panel" : ""}`}
-    >
-      <defs>
-        <linearGradient id={isPanel ? "skyg-panel" : "skyg"} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#010409"/>
-          <stop offset="70%" stopColor="#08192e"/>
-          <stop offset="100%" stopColor="#12253d"/>
-        </linearGradient>
-      </defs>
-      <rect width={W} height={H} fill={`url(#${isPanel ? "skyg-panel" : "skyg"})`} rx={isPanel ? 0 : 6}/>
-
-      {isPanel && zodiac.map(({ def, cx, cy, scale }) => (
-        <g key={def.sign} opacity={0.18} transform={`translate(${cx},${cy}) scale(${scale / 40})`}>
-          <path d={def.path} fill="none" stroke={def.color} strokeWidth={0.12} strokeLinecap="round" strokeLinejoin="round" />
-        </g>
-      ))}
-
-      {ALT_TICKS.map(alt => {
-        const y = H / 2 - ((alt - pitchDeg) / FOV_ALT_HALF) * (H / 2);
-        if (y < -4 || y > H + 4) return null;
-        const isHorizon = alt === 0;
-        return (
-          <g key={`alt-${alt}`}>
-            <line
-              x1={isPanel ? 22 : 0} y1={y} x2={W - (isPanel ? 22 : 0)} y2={y}
-              stroke={isHorizon ? "#35506d" : "#143248"}
-              strokeWidth={isHorizon ? 1.2 : 0.8}
-              strokeDasharray={isHorizon ? undefined : "3,9"}
-              opacity={0.8}
-            />
-            {isPanel && (
-              <>
-                <text x={6} y={y - 2} fontSize={7} fill={isHorizon ? "#5a8cb0" : "#3a5870"}>{alt}°</text>
-                <text x={W - 6} y={y - 2} fontSize={7} fill={isHorizon ? "#5a8cb0" : "#3a5870"} textAnchor="end">{alt}°</text>
-              </>
-            )}
-          </g>
-        );
-      })}
-
-      <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6" opacity={0.7}/>
-      <line x1={0} y1={pitchY} x2={W} y2={pitchY} stroke="#1a4060" strokeWidth={1} strokeDasharray="4,5" opacity={0.75}/>
-
-      {isPanel && (
-        <>
-          <g className="cp-skymap-pitch-marker">
-            <polygon points={`${W - 18},${pitchY} ${W - 8},${pitchY - 5} ${W - 8},${pitchY + 5}`} fill="#38bdf8" opacity={0.9} />
-            <text x={W - 20} y={pitchY + 3} textAnchor="end" fontSize={8} fill="#7dd3fc" fontWeight="700">
-              {Math.round(pitchDeg)}°{livePitch ? " ↕" : ""}
-            </text>
-          </g>
-          <g>
-            <polygon points={`${W / 2},${H - 3} ${W / 2 - 5},${H - 13} ${W / 2 + 5},${H - 13}`} fill="#c9a227" opacity={0.9} />
-            <text x={W / 2} y={H - 16} textAnchor="middle" fontSize={8} fill="#e8c872" fontWeight="700">
-              {Math.round(heading)}° {bearing}{liveHeading ? " ↔" : ""}
-            </text>
-          </g>
-        </>
-      )}
-
-      {moon && (() => {
-        const [x, y] = toXY(moon.az, moon.alt);
-        if (x < -30 || x > W + 30 || y < -30 || y > H + 30) return null;
-        const r = Math.max(4, 14 * moonScale);
-        const lit = moon.illumination;
-        return (
-          <g key="moon" opacity={0.95}>
-            <circle cx={x} cy={y} r={r * 1.8} fill={`rgba(200,220,255,${0.08 * moonScale})`} />
-            <circle cx={x} cy={y} r={r} fill="#e8eef8" opacity={0.15 + lit * 0.35} />
-            <circle cx={x - r * (0.5 - lit)} cy={y} r={r * 0.92} fill="#f5f8ff" opacity={0.85} />
-            {isPanel && (
-              <text x={x} y={y + r + 10} textAnchor="middle" fontSize={7} fill="#a0c8e8">
-                ☽ {moon.phaseName}
-              </text>
-            )}
-          </g>
-        );
-      })()}
-
-      {stars.map(star => {
-        const [x, y] = toXY(star.az, star.alt);
-        if (x < -18 || x > W + 18 || y < -18 || y > H + 18) return null;
-        const r = Math.max(0.9, (3.6 - star.mag) * 1.15 + 0.9) * (isPanel ? 1.15 : 1);
-        const op = Math.min(1, (0.45 + (3.6 - star.mag) / 5.5) * (isPanel ? 1.25 : 1));
-        const fill = star.mag < 0.5 ? "#fffff5" : star.mag < 1.5 ? "#eef5ff" : "#d5e8ff";
-        return (
-          <g key={star.name}>
-            <circle cx={x} cy={y} r={r * 2.4} fill={`rgba(100,170,255,${op * (isPanel ? 0.14 : 0.09)})`}/>
-            <circle cx={x} cy={y} r={r} fill={fill} opacity={op}/>
-          </g>
-        );
-      })}
-
-      {isPanel && CARD_AZS.map((cAz, ci) => {
-        const dAz = ((cAz - heading + 540) % 360) - 180;
-        if (Math.abs(dAz) > FOV_AZ / 2 + 8) return null;
-        const x = (dAz / FOV_AZ + 0.5) * W;
-        const isPrimary = ci % 2 === 0;
-        return (
-          <g key={ci} opacity={0.7}>
-            <line x1={x} y1={H - 20} x2={x} y2={H - (isPrimary ? 12 : 8)} stroke={isPrimary ? "#1e4d70" : "#102840"} strokeWidth={1}/>
-            {isPrimary && (
-              <text x={x} y={H - 22} textAnchor="middle" fontSize={7} fill="#2e6080" fontWeight="700">
-                {CARD_LBLS[ci]}
-              </text>
-            )}
-          </g>
-        );
-      })}
-
-      {isPanel && (
-        <text x={8} y={12} fontSize={8} fill="#4a9cc4">
-          {(liveHeading || livePitch) ? "● Live" : "○ Manual"} · {labelForDistanceRank(distanceRank)}
-        </text>
-      )}
-
-      {!isPanel && (
-        <text x={W / 2} y={11} textAnchor="middle" fontSize={8.5} fill="#4a9cc4">
-          {`↑ ${Math.round(heading)}°  ${bearing}  ·  pitch ${Math.round(pitchDeg)}°`}
-        </text>
-      )}
-
-      {stars.length === 0 && !moon && (
-        <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="10" fill="#203045">
-          {distanceRank === 0 ? "Moon view — rotate distance dial to reveal stars" : "No objects in this slice at current distance"}
-        </text>
-      )}
-    </svg>
-  );
-
-  if (isPanel) return svg;
-
-  if (isLegend) {
-    return (
-      <div className="cp-skymap-wrap cp-skymap-legend">
-        <p className="cp-muted cp-skymap-meta">
-          {stars.length} objects · {Math.round(heading)}° {bearing} · {Math.round(pitchDeg)}° · {labelForDistanceRank(distanceRank)}
-        </p>
-      </div>
-    );
-  }
-
-  return <div className="cp-skymap-wrap">{svg}</div>;
-}
-
 // ─── Main page ────────────────────────────────────────────────────────────────
 
 export default function Home() {
   const [now, setNow] = useState(() => new Date());
-  const [animNow, setAnimNow] = useState(() => new Date());
   const [minuteKey, setMinuteKey] = useState(0);
 
   const [cycles, setCycles]     = useState<CycleSnapshot | null>(() => getCycleSnapshot(new Date()));
@@ -349,9 +157,11 @@ export default function Home() {
     }
   });
   const [wheelZoom, setWheelZoom] = useState(1);
+  const springZoom = useSpringValue(wheelZoom);
   const [skyPitch, setSkyPitch] = useState(35);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
+  const [focusRing, setFocusRing] = useState<string | null>(null);
   const [clockSfxOn, setClockSfxOn] = useState(true);
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
 
@@ -366,23 +176,17 @@ export default function Home() {
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
+  const [showLaunch, completeLaunch] = useShowLaunch();
+
+  const { now: animNow, state: cosmic } = useCosmicClock({
+    lat: signals?.lat ?? FALLBACK_LAT,
+    lon: signals?.lon ?? FALLBACK_LON,
+    headingDeg: signals?.heading ?? manualHeading,
+    altitudeM: signals?.altM ?? null,
+    pressureHpa: cycles?.weather?.pressureHpa ?? null,
+  });
 
   useEffect(() => { togglesRef.current = toggles; }, [toggles]);
-
-  // ── Smooth watch motion (rAF)
-  useEffect(() => {
-    let frame = 0;
-    let last = 0;
-    const tick = (t: number) => {
-      if (t - last >= 16) {
-        last = t;
-        setAnimNow(new Date());
-      }
-      frame = requestAnimationFrame(tick);
-    };
-    frame = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame);
-  }, []);
 
   // ── Digital clock (1 second tick)
   useEffect(() => {
@@ -653,9 +457,27 @@ export default function Home() {
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
+  const spectrumWarmth = cosmic?.ui.warmth ?? cosmic?.sensors.lightSpectrum ?? 0.55;
 
   function clampZoom(z: number) {
     return Math.max(0.85, Math.min(2.8, z));
+  }
+
+  function handleRingSelect(id: string, meta: { radius: number }) {
+    setFocusRing(prev => {
+      if (prev === id) {
+        setWheelZoom(1);
+        return null;
+      }
+      setWheelZoom(clampZoom(zoomForRingRadius(meta.radius, true)));
+      setHoverRing(id);
+      return id;
+    });
+  }
+
+  function clearRingFocus() {
+    setFocusRing(null);
+    setWheelZoom(1);
   }
 
   function onWheelZoom(e: React.WheelEvent<HTMLDivElement>) {
@@ -690,18 +512,34 @@ export default function Home() {
   }
 
   return (
-    <main className="cp-shell">
+    <>
+      {showLaunch && (
+        <LaunchScreen
+          now={animNow}
+          lat={mapLat}
+          lon={mapLon}
+          telemetryReady={Boolean(cycles && cosmic)}
+          onComplete={completeLaunch}
+        />
+      )}
+    <main className={`cp-shell${showLaunch ? " cp-shell-under-launch" : ""}`}>
       <div className="cp-stack">
 
         {/* ── 1. CYCLE WHEELS + SKY (hero) ───────────────────────────────── */}
-        <section className="cp-hero-wheel">
+        <section
+          className="cp-hero-wheel"
+          style={cosmic ? { ["--cosmic-hue" as string]: String(Math.round(cosmic.ui.hue)) } : undefined}
+        >
           <div className="cp-hero-wheel-head">
-            <h1 className="cp-hero-title">Cycle Wheels</h1>
+            <div className="cp-hero-brand">
+              <h1 className="cp-hero-title">DELPHI</h1>
+              <p className="cp-hero-subtitle">COSMIC CLOCK | ASTRONOMICAL GUIDANCE</p>
+            </div>
             <div className="cp-wheel-controls">
               <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
-              <span className="cp-zoom-label">{Math.round(wheelZoom * 100)}%</span>
+              <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
               <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-              <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(1)}>Reset</button>
+              <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(1); }}>Reset</button>
               <button className="cp-btn cp-btn-sm"
                 onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
               <button
@@ -744,7 +582,18 @@ export default function Home() {
             compassHeading={toggles.compass ? activeHeading : null}
             pitchDeg={toggles.location ? activePitch : null}
             emfUt={toggles.emf ? signals?.emfUt ?? null : null}
+            cosmic={cosmic}
           />
+
+          {focusRing && (
+            <RingFocusPanel
+              ringId={focusRing}
+              cycles={cycles}
+              cosmic={cosmic}
+              now={animNow}
+              onClose={clearRingFocus}
+            />
+          )}
 
           <div
             className="cp-wheel-viewport cp-wheel-viewport-hero"
@@ -756,7 +605,10 @@ export default function Home() {
             <div className="cp-split-hero">
               <div className="cp-split-wheels">
                 <div className="cp-semicircle-clip">
-                  <div className="cp-watch-scaler" style={{ transform: `scale(${wheelZoom})` }}>
+                  <div
+                    className={`cp-watch-scaler cp-watch-scaler-spring${focusRing ? " cp-watch-scaler-focused" : ""}`}
+                    style={{ transform: `scale(${springZoom})` }}
+                  >
                     <WatchMovement
                       glass
                       semicircle
@@ -764,11 +616,14 @@ export default function Home() {
                       cycles={cycles}
                       hoverId={hoverRing}
                       onHover={setHoverRing}
+                      focusRingId={focusRing}
+                      onRingSelect={handleRingSelect}
                       heading={activeHeading}
                       emfUt={toggles.emf ? signals?.emfUt ?? null : null}
                       showCompass={toggles.compass}
                       skyDistance={skyDistance}
                       onSkyDistanceChange={setSkyDistance}
+                      spectrumWarmth={spectrumWarmth}
                     />
                   </div>
                 </div>
@@ -776,16 +631,17 @@ export default function Home() {
 
               {toggles.skyMap ? (
                 <div className="cp-split-skymap">
-                  <SkyMapSVG
-                    variant="panel"
+                  <CelestialSkyView
                     lat={mapLat}
                     lon={mapLon}
-                    heading={activeHeading}
+                    headingDeg={activeHeading}
                     pitchDeg={activePitch}
+                    observationTime={cosmic?.now ?? animNow}
                     distanceRank={skyDistance}
-                    minuteKey={minuteKey}
                     liveHeading={hasLiveHeading}
                     livePitch={hasLivePitch}
+                    hapticsEnabled={toggles.location || toggles.heading}
+                    warmth={spectrumWarmth}
                   />
                 </div>
               ) : (
@@ -915,6 +771,22 @@ export default function Home() {
               <div className="cp-cv"><span>Season</span><strong>{cycles.season.emoji} {cycles.season.name}</strong></div>
               <div className="cp-cv"><span>Chinese</span><strong>{cycles.chineseZodiac.symbol} {cycles.chineseZodiac.element} {cycles.chineseZodiac.animal}</strong></div>
               <div className="cp-cv"><span>Zodiac</span><strong>{cycles.westernZodiac.symbol} {cycles.westernZodiac.sign}</strong></div>
+            </div>
+          )}
+
+          {cosmic && (
+            <div className="cp-cosmic-layers">
+              <p className="cp-cosmic-layers-title">Cosmic Clock Engine · 6 tiers</p>
+              <div className="cp-cosmic-layer-grid">
+                {cosmic.layers.map(layer => (
+                  <div key={layer.id} className="cp-cosmic-layer" title={layer.name}>
+                    <span className="cp-cosmic-layer-tier">T{layer.tier}</span>
+                    <span className="cp-cosmic-layer-dot" style={{ background: layer.color }}/>
+                    <span className="cp-cosmic-layer-name">{layer.name}</span>
+                    <span className="cp-cosmic-layer-angle">{layer.angleDeg.toFixed(2)}°</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -1051,5 +923,6 @@ export default function Home() {
         )}
       </div>
     </main>
+    </>
   );
 }

@@ -17,6 +17,8 @@ export type WeatherInfo = {
   emoji: string;
   tempC: number | null;
   windKmh: number | null;
+  /** Sea-level adjusted surface pressure (hPa) for barometric breath ring */
+  pressureHpa: number | null;
   /** Local forecast per clock hour (0–23) in the viewer's timezone */
   hourly?: Array<{
     hour: number;

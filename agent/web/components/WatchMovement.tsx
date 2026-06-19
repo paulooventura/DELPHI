@@ -3,6 +3,7 @@
 import { useId, useRef, type ReactElement, type PointerEvent as ReactPointerEvent } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { daysInMonth } from "../lib/cycleSystems";
+import { OBS, spectrumAccent, spectrumBlend } from "../lib/design/observatoryTokens";
 import { labelForDistanceRank } from "../lib/starmap";
 
 export type CalendarWheel = CycleSnapshot["wheelLayers"][number];
@@ -13,6 +14,8 @@ export type WatchMovementProps = {
   cycles: CycleSnapshot | null;
   hoverId: string | null;
   onHover: (id: string | null) => void;
+  focusRingId?: string | null;
+  onRingSelect?: (id: string, meta: { radius: number }) => void;
   glass?: boolean;
   heading?: number;
   emfUt?: number | null;
@@ -20,6 +23,8 @@ export type WatchMovementProps = {
   skyDistance?: number;
   onSkyDistanceChange?: (rank: number) => void;
   semicircle?: boolean;
+  /** 0 = daylight blue, 1 = night amber (lux spectrum). */
+  spectrumWarmth?: number;
 };
 
 type RingSpec = {
@@ -225,6 +230,7 @@ function HubCompass({
   emfUt,
   showCompass,
   glass,
+  warmth = 0.55,
 }: {
   cx: number;
   cy: number;
@@ -232,15 +238,18 @@ function HubCompass({
   emfUt: number | null;
   showCompass: boolean;
   glass?: boolean;
+  warmth?: number;
 }) {
   const r = 26;
   const needle = showCompass ? heading : 0;
   const op = glass ? 0.92 : 1;
+  const accent = spectrumAccent(warmth);
+  const labelInk = spectrumBlend(warmth, OBS.day.ink, OBS.night.gold);
 
   return (
-    <g opacity={op}>
-      <circle cx={cx} cy={cy} r={r + 4} fill="rgba(6,10,18,0.82)" stroke="#c9a227" strokeWidth={1.4} />
-      <circle cx={cx} cy={cy} r={r} fill="rgba(8,14,24,0.6)" stroke="#2a4868" strokeWidth={1} />
+    <g opacity={op} className="cp-watch-hub">
+      <circle cx={cx} cy={cy} r={r + 4} fill="rgba(5, 7, 11, 0.88)" stroke={OBS.vector.structuralStrong} strokeWidth={1} />
+      <circle cx={cx} cy={cy} r={r} fill="rgba(13, 17, 26, 0.55)" stroke={OBS.vector.structural} strokeWidth={0.75} />
 
       {COMPASS_DIRS.map(({ deg, label, major }) => {
         const rad = ((deg - 90) * Math.PI) / 180;
@@ -253,17 +262,20 @@ function HubCompass({
               y1={cy + Math.sin(rad) * inner}
               x2={cx + Math.cos(rad) * outer}
               y2={cy + Math.sin(rad) * outer}
-              stroke={label === "N" ? "#ef4444" : major ? "#4a7090" : "#2a4058"}
-              strokeWidth={major ? 1.3 : 0.7}
+              stroke={label === "N" ? accent : major ? OBS.vector.structuralStrong : OBS.vector.structural}
+              strokeWidth={major ? 1 : 0.75}
+              strokeLinecap="round"
             />
             {(major || label === "N") && (
               <text
                 x={cx + Math.cos(rad) * (r - 9)}
                 y={cy + Math.sin(rad) * (r - 9) + 2}
                 textAnchor="middle"
-                fontSize={label === "N" ? 7.5 : major ? 5.5 : 4}
-                fill={label === "N" ? "#ef4444" : "#5a8cb0"}
-                fontWeight={label === "N" ? 800 : major ? 600 : 400}
+                fontSize={label === "N" ? 7 : major ? 5.5 : 4}
+                fill={label === "N" ? accent : labelInk}
+                fontWeight={label === "N" ? 700 : major ? 600 : 400}
+                fontFamily={OBS.typography.micro}
+                style={{ fontVariantNumeric: "tabular-nums" }}
               >
                 {label}
               </text>
@@ -273,14 +285,22 @@ function HubCompass({
       })}
 
       <g transform={`rotate(${needle} ${cx} ${cy})`}>
-        <polygon points={`${cx},${cy - r + 4} ${cx + 3},${cy + 3} ${cx - 3},${cy + 3}`} fill="#ef4444" opacity={0.95} />
-        <polygon points={`${cx},${cy + r - 4} ${cx + 2.5},${cy - 1} ${cx - 2.5},${cy - 1}`} fill="#3a6080" opacity={0.85} />
+        <polygon points={`${cx},${cy - r + 4} ${cx + 2.5},${cy + 3} ${cx - 2.5},${cy + 3}`} fill={accent} opacity={0.95} />
+        <polygon points={`${cx},${cy + r - 4} ${cx + 2},${cy - 1} ${cx - 2},${cy - 1}`} fill={OBS.vector.structuralStrong} opacity={0.75} />
       </g>
 
-      <circle cx={cx} cy={cy} r={3} fill="#c9a227" stroke="#8b6914" strokeWidth={0.6} />
+      <circle cx={cx} cy={cy} r={2.5} fill={accent} stroke={OBS.vector.structural} strokeWidth={0.5} />
 
       {emfUt != null && (
-        <text x={cx} y={cy + r + 11} textAnchor="middle" fontSize={6.5} fill="#7dd3fc" fontFamily="monospace">
+        <text
+          x={cx}
+          y={cy + r + 11}
+          textAnchor="middle"
+          fontSize={6.5}
+          fill={labelInk}
+          fontFamily={OBS.typography.micro}
+          style={{ fontVariantNumeric: "tabular-nums" }}
+        >
           {emfUt.toFixed(1)} µT
         </text>
       )}
@@ -294,6 +314,7 @@ function DistanceDialRing({
   radius,
   distanceRank,
   glass,
+  warmth = 0.55,
   onChange,
 }: {
   cx: number;
@@ -301,17 +322,20 @@ function DistanceDialRing({
   radius: number;
   distanceRank: number;
   glass?: boolean;
+  warmth?: number;
   onChange: (rank: number) => void;
 }) {
   const uid = useId().replace(/:/g, "");
   const dragging = useRef(false);
-  const band = Math.max(9, radius * 0.13);
+  const band = Math.max(8, radius * 0.11);
   const inner = radius - band;
   const midR = radius - band / 2;
   const divisions = 100;
   const dialSpin = -(distanceRank / divisions) * 360;
-  const ringOpacity = glass ? 0.58 : 0.92;
-  const fontSize = Math.max(3, Math.min(band * 0.65, 5.5));
+  const ringOpacity = glass ? 0.62 : 0.88;
+  const fontSize = Math.max(3, Math.min(band * 0.62, 5.2));
+  const accent = spectrumAccent(warmth);
+  const labelInk = spectrumBlend(warmth, OBS.day.ink, OBS.night.gold);
 
   function rankFromPointer(e: ReactPointerEvent<SVGGElement>) {
     const rect = (e.currentTarget.ownerSVGElement ?? e.currentTarget).getBoundingClientRect();
@@ -337,9 +361,10 @@ function DistanceDialRing({
         y1={cy + Math.sin(ang) * inner}
         x2={cx + Math.cos(ang) * (radius - 0.5)}
         y2={cy + Math.sin(ang) * (radius - 0.5)}
-        stroke={isMajor ? "#38bdf8" : "#2a4868"}
-        strokeWidth={isMajor ? 0.85 : 0.35}
-        opacity={isMajor ? 0.9 : 0.4}
+        stroke={isMajor ? accent : OBS.vector.structural}
+        strokeWidth={isMajor ? 1 : 0.75}
+        strokeLinecap="round"
+        opacity={isMajor ? 0.85 : 0.45}
       />,
     );
   }
@@ -357,10 +382,11 @@ function DistanceDialRing({
         y={ly}
         textAnchor="middle"
         dominantBaseline="middle"
-        fontSize={i === 0 ? fontSize + 1.5 : fontSize}
-        fill={i === 0 ? "#e8f4ff" : "#7dd3fc"}
-        fontFamily="Georgia, serif"
+        fontSize={i === 0 ? fontSize + 1.2 : fontSize}
+        fill={i === 0 ? labelInk : accent}
+        fontFamily={OBS.typography.micro}
         fontWeight={600}
+        style={{ fontVariantNumeric: "tabular-nums" }}
         transform={`rotate(${rot}, ${lx}, ${ly})`}
       >
         {txt}
@@ -370,7 +396,7 @@ function DistanceDialRing({
 
   return (
     <g
-      className="cp-watch-ring cp-distance-ring"
+      className="cp-watch-ring cp-distance-ring cp-watch-ring-fore"
       opacity={ringOpacity}
       style={{ cursor: "grab" }}
       onPointerDown={(e) => {
@@ -389,9 +415,9 @@ function DistanceDialRing({
     >
       <defs>
         <linearGradient id={`dist-br-${uid}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#7dd3fc" stopOpacity={glass ? 0.55 : 0.95} />
-          <stop offset="50%" stopColor="#0ea5e9" stopOpacity={glass ? 0.5 : 0.9} />
-          <stop offset="100%" stopColor="#1e3a5f" stopOpacity={glass ? 0.55 : 1} />
+          <stop offset="0%" stopColor={accent} stopOpacity={glass ? 0.45 : 0.75} />
+          <stop offset="50%" stopColor={OBS.day.accent} stopOpacity={glass ? 0.35 : 0.65} />
+          <stop offset="100%" stopColor={OBS.space.core} stopOpacity={glass ? 0.5 : 0.85} />
         </linearGradient>
         <clipPath id={`dist-clip-${uid}`}>
           <path d={ringDonutClip(cx, cy, radius, inner)} fillRule="evenodd" />
@@ -399,8 +425,8 @@ function DistanceDialRing({
       </defs>
 
       <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
-        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#dist-br-${uid})`} strokeWidth={band} />
-        <circle cx={cx} cy={cy} r={midR} fill="none" stroke="#061018" strokeWidth={band - 1.6} opacity={glass ? 0.25 : 0.45} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#dist-br-${uid})`} strokeWidth={band * 0.85} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={OBS.space.outer} strokeWidth={band - 2} opacity={glass ? 0.2 : 0.35} />
         <g clipPath={`url(#dist-clip-${uid})`}>
           {boundaries}
           {labels}
@@ -412,8 +438,8 @@ function DistanceDialRing({
         y1={cy - radius - 1}
         x2={cx}
         y2={cy - inner + 1}
-        stroke="#38bdf8"
-        strokeWidth={1.4}
+        stroke={accent}
+        strokeWidth={1}
         strokeLinecap="round"
       />
 
@@ -421,9 +447,10 @@ function DistanceDialRing({
         x={cx}
         y={cy + radius + 14}
         textAnchor="middle"
-        fontSize={7}
-        fill="#7dd3fc"
-        fontFamily="monospace"
+        fontSize={6.5}
+        fill={labelInk}
+        fontFamily={OBS.typography.micro}
+        style={{ fontVariantNumeric: "tabular-nums" }}
       >
         {labelForDistanceRank(distanceRank)}
       </text>
@@ -436,30 +463,49 @@ function RotatingDialRing({
   cy,
   spec,
   active,
+  focused,
+  dimmed,
   glass,
+  depthNorm,
+  warmth = 0.55,
   onEnter,
   onLeave,
+  onSelect,
 }: {
   cx: number;
   cy: number;
   spec: RingSpec;
   active: boolean;
+  focused?: boolean;
+  dimmed?: boolean;
   glass?: boolean;
+  /** 0 = inner foreground, 1 = outer cosmic depth. */
+  depthNorm: number;
+  warmth?: number;
   onEnter: () => void;
   onLeave: () => void;
+  onSelect?: () => void;
 }) {
   const uid = useId().replace(/:/g, "");
   const r = spec.radius;
-  const band = spec.dense ? Math.max(9, r * 0.13) : Math.max(4, r * 0.08);
+  const band = spec.dense ? Math.max(8, r * 0.11) : Math.max(3.5, r * 0.07);
   const inner = r - band;
   const midR = r - band / 2;
-  const ringOpacity = glass ? 0.52 : 0.9;
+  const parallax = 1 - depthNorm * 0.38;
+  const ringOpacity = dimmed
+    ? (glass ? 0.14 : 0.22)
+    : focused
+      ? (glass ? 0.82 : 0.96)
+      : (glass ? 0.38 + parallax * 0.28 : 0.55 + parallax * 0.35);
   const dialSpin = -spec.nowAngle;
+  const accent = spectrumAccent(warmth);
+  const labelInk = spectrumBlend(warmth, OBS.day.ink, OBS.night.gold);
   const fontSize = spec.dense
-    ? Math.max(3.2, Math.min(band * 0.72, (360 / spec.divisions) * 0.2))
+    ? Math.max(3, Math.min(band * 0.68, (360 / spec.divisions) * 0.18))
     : spec.id === "weather"
-      ? Math.max(5, band * 0.65)
-      : Math.max(4.5, band * 0.5);
+      ? Math.max(4.8, band * 0.62)
+      : Math.max(4.2, band * 0.48);
+  const depthClass = depthNorm > 0.55 ? " cp-watch-ring-deep" : depthNorm < 0.25 ? " cp-watch-ring-fore" : "";
 
   const boundaries: ReactElement[] = [];
   const labels: ReactElement[] = [];
@@ -475,10 +521,10 @@ function RotatingDialRing({
         y1={cy + Math.sin(ang) * inner}
         x2={cx + Math.cos(ang) * (r - 0.5)}
         y2={cy + Math.sin(ang) * (r - 0.5)}
-        stroke={isMajor ? spec.color : "#4a4030"}
-        strokeWidth={isMajor ? 0.85 : 0.4}
-        strokeLinecap="butt"
-        opacity={isMajor ? 0.85 : 0.45}
+        stroke={isMajor ? accent : OBS.vector.structural}
+        strokeWidth={isMajor ? 1 : 0.75}
+        strokeLinecap="round"
+        opacity={isMajor ? 0.75 : 0.4}
       />,
     );
   }
@@ -507,9 +553,10 @@ function RotatingDialRing({
         textAnchor="middle"
         dominantBaseline="middle"
         fontSize={fontSize}
-        fill="#e8c872"
-        fontFamily="Georgia, serif"
+        fill={labelInk}
+        fontFamily={OBS.typography.micro}
         fontWeight={600}
+        style={{ fontVariantNumeric: "tabular-nums" }}
         transform={`rotate(${rot}, ${lx}, ${ly})`}
       >
         {txt}
@@ -519,17 +566,21 @@ function RotatingDialRing({
 
   return (
     <g
-      className={`cp-watch-ring${active ? " cp-watch-ring-active" : ""}`}
+      className={`cp-watch-ring${depthClass}${active ? " cp-watch-ring-active" : ""}${focused ? " cp-watch-ring-focused" : ""}`}
       onMouseEnter={onEnter}
       onMouseLeave={onLeave}
+      onClick={e => {
+        e.stopPropagation();
+        onSelect?.();
+      }}
       style={{ cursor: "pointer" }}
       opacity={ringOpacity}
     >
       <defs>
         <linearGradient id={`br-${uid}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#e8c872" stopOpacity={glass ? 0.65 : 1} />
-          <stop offset="50%" stopColor={spec.color} stopOpacity={glass ? 0.6 : 0.95} />
-          <stop offset="100%" stopColor="#5a4a22" stopOpacity={glass ? 0.55 : 1} />
+          <stop offset="0%" stopColor={labelInk} stopOpacity={glass ? 0.5 : 0.8} />
+          <stop offset="50%" stopColor={spec.color} stopOpacity={glass ? 0.4 : 0.7} />
+          <stop offset="100%" stopColor={OBS.space.core} stopOpacity={glass ? 0.45 : 0.75} />
         </linearGradient>
         <clipPath id={`clip-${uid}`}>
           <path d={ringDonutClip(cx, cy, r, inner)} fillRule="evenodd" />
@@ -537,8 +588,8 @@ function RotatingDialRing({
       </defs>
 
       <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
-        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} />
-        <circle cx={cx} cy={cy} r={midR} fill="none" stroke="#0a0806" strokeWidth={band - 1.6} opacity={glass ? 0.2 : 0.45} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band * 0.88} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={OBS.space.outer} strokeWidth={band - 2} opacity={glass ? 0.18 : 0.32} />
         <g clipPath={`url(#clip-${uid})`}>
           {boundaries}
           {labels}
@@ -550,10 +601,10 @@ function RotatingDialRing({
         y1={cy - r - 1}
         x2={cx}
         y2={cy - inner + 1}
-        stroke="#f0d060"
-        strokeWidth={1.3}
+        stroke={accent}
+        strokeWidth={1}
         strokeLinecap="round"
-        opacity={0.95}
+        opacity={focused ? 0.95 : 0.65}
       />
     </g>
   );
@@ -564,6 +615,8 @@ export function WatchMovement({
   cycles,
   hoverId,
   onHover,
+  focusRingId = null,
+  onRingSelect,
   glass = false,
   heading = 0,
   emfUt = null,
@@ -571,6 +624,7 @@ export function WatchMovement({
   skyDistance = 50,
   onSkyDistanceChange,
   semicircle = false,
+  spectrumWarmth = 0.55,
 }: WatchMovementProps) {
   const cx = 200;
   const cy = 200;
@@ -587,6 +641,7 @@ export function WatchMovement({
 
   const outerRingR = rings.length > 0 ? rings[rings.length - 1]!.radius : hubR + 12;
   const distanceRadius = outerRingR + 14;
+  const maxDepth = Math.max(1, rings.length - 1);
 
   return (
     <svg
@@ -604,18 +659,21 @@ export function WatchMovement({
       )}
 
       <g clipPath={semicircle ? "url(#watch-semicircle-clip)" : undefined}>
-      {!glass && (
-        <>
-          <defs>
-            <radialGradient id="watch-bg" cx="50%" cy="50%" r="55%">
-              <stop offset="0%" stopColor="#2a2218" />
-              <stop offset="55%" stopColor="#12100c" />
-              <stop offset="100%" stopColor="#080604" />
-            </radialGradient>
-          </defs>
-          <rect x={0} y={0} width={400} height={400} fill="url(#watch-bg)" rx={8} />
-        </>
-      )}
+      <defs>
+        <radialGradient id="watch-bg" cx="50%" cy="48%" r="58%">
+          <stop offset="0%" stopColor={OBS.space.core} />
+          <stop offset="55%" stopColor="#0a0e16" />
+          <stop offset="100%" stopColor={OBS.space.outer} />
+        </radialGradient>
+        <filter id="watch-glow" x="-20%" y="-20%" width="140%" height="140%">
+          <feGaussianBlur stdDeviation="1.2" result="blur" />
+          <feMerge>
+            <feMergeNode in="blur" />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+      <rect x={0} y={0} width={400} height={400} fill="url(#watch-bg)" rx={8} opacity={glass ? 0.92 : 1} />
 
       {onSkyDistanceChange && (
         <DistanceDialRing
@@ -624,22 +682,31 @@ export function WatchMovement({
           radius={distanceRadius}
           distanceRank={skyDistance}
           glass={glass}
+          warmth={spectrumWarmth}
           onChange={onSkyDistanceChange}
         />
       )}
 
-      {[...rings].reverse().map((spec) => (
+      {[...rings].reverse().map((spec, revIdx) => {
+        const depthNorm = maxDepth > 0 ? 1 - revIdx / maxDepth : 0;
+        return (
         <RotatingDialRing
           key={spec.id}
           cx={cx}
           cy={cy}
           spec={spec}
           active={hoverId === spec.id}
+          focused={focusRingId === spec.id}
+          dimmed={focusRingId != null && focusRingId !== spec.id}
           glass={glass}
+          depthNorm={depthNorm}
+          warmth={spectrumWarmth}
           onEnter={() => onHover(spec.id)}
           onLeave={() => onHover(null)}
+          onSelect={() => onRingSelect?.(spec.id, { radius: spec.radius })}
         />
-      ))}
+        );
+      })}
 
       <HubCompass
         cx={cx}
@@ -648,6 +715,7 @@ export function WatchMovement({
         emfUt={emfUt}
         showCompass={showCompass}
         glass={glass}
+        warmth={spectrumWarmth}
       />
       </g>
     </svg>
