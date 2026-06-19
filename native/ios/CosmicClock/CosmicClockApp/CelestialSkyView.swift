@@ -121,10 +121,16 @@ final class CelestialSkyViewModel: ObservableObject {
     @Published var aircraft: [AircraftTrack] = []
     @Published var isLive = false
 
+    /// When true, heading/pitch and observer GPS are driven by real device sensors.
+    @Published var useDeviceSensors = false
+    @Published var sensorStatus: String = "OFF"
+
     let store = TelemetryStore()
+    let sensors = DeviceSensorProvider()
     private var engine: TelemetrySyncEngine?
     private let haptics = SkyHaptics()
     private var ticker: Timer?
+    private var lastPushedObserver: GeoPosition?
 
     private let lockEnterDeg = 1.5
     private let lockExitDeg = 3.0
@@ -162,8 +168,15 @@ final class CelestialSkyViewModel: ObservableObject {
     }
 
     func pan(deltaX: CGFloat, deltaY: CGFloat, viewport: SkyViewport) {
+        guard !useDeviceSensors else { return } // device attitude drives the view in AR mode
         headingDeg = CoordinateTransformer.normalizeDeg(headingDeg - Double(deltaX) / viewport.size.width * viewport.fovAz)
         pitchDeg = min(89, max(-20, pitchDeg + Double(deltaY) / viewport.size.height * viewport.fovAltHalf * 2))
+    }
+
+    /// Toggle live device sensors (CoreLocation GPS + CoreMotion attitude).
+    func setDeviceSensors(_ on: Bool) {
+        useDeviceSensors = on
+        if on { sensors.start() } else { sensors.stop() }
     }
 
     private func tick() {
@@ -171,11 +184,48 @@ final class CelestialSkyViewModel: ObservableObject {
         scale += (targetScale - scale) * 0.28
         if abs(targetScale - scale) < 0.001 { scale = targetScale }
 
+        if useDeviceSensors { applySensorInputs() }
+
         bodies = CelestialCatalog.bodies(date: Date(), latDeg: observer.latDeg, lonDeg: observer.lonDeg)
         satellites = store.satellites
         aircraft = store.aircraft
         isLive = store.isLive
         updateLock()
+    }
+
+    /// Pull the latest device-sensor frame into the view + telemetry observer.
+    private func applySensorInputs() {
+        if sensors.isMotionActive {
+            headingDeg = sensors.headingDeg
+            pitchDeg = sensors.pitchDeg
+        }
+        if let fix = sensors.observer {
+            observer = fix
+            if shouldPushObserver(fix) {
+                lastPushedObserver = fix
+                let engine = self.engine
+                Task { await engine?.updateObserver(fix) }
+            }
+        }
+        sensorStatus = sensorStateLabel()
+    }
+
+    private func shouldPushObserver(_ fix: GeoPosition) -> Bool {
+        guard let last = lastPushedObserver else { return true }
+        // Re-poll airspace only after meaningful movement (~100 m).
+        return CoordinateTransformer.surfaceDistanceM(
+            lat1Deg: last.latDeg, lon1Deg: last.lonDeg, lat2Deg: fix.latDeg, lon2Deg: fix.lonDeg
+        ) > 100
+    }
+
+    private func sensorStateLabel() -> String {
+        switch sensors.authorization {
+        case .denied, .restricted: return "DENIED"
+        case .notDetermined: return "WAIT"
+        default: break
+        }
+        if !sensors.hasFix { return "GPS…" }
+        return sensors.isMotionActive ? "AR" : "GPS"
     }
 
     /// Angular proximity check against every visible object (planets, satellites, aircraft).
@@ -456,13 +506,21 @@ struct CelestialSkyView: View {
                         rowMono("ALT", String(format: "%+05.1f°", model.pitchDeg))
                         rowMono("ZOOM", SkyViewport.formatZoom(model.scale))
                         rowMono("FEED", model.isLive ? "LIVE" : "MOCK")
+                        if model.useDeviceSensors {
+                            rowMono("GPS", model.sensors.hasFix
+                                ? String(format: "%.3f,%.3f", model.observer.latDeg, model.observer.lonDeg)
+                                : "—")
+                        }
                     }
                 }
                 Spacer()
-                glassPanel {
-                    VStack(alignment: .trailing, spacing: 3) {
-                        rowMono("SAT", "\(model.satellites.count)")
-                        rowMono("ACFT", "\(model.aircraft.count)")
+                VStack(alignment: .trailing, spacing: 8) {
+                    sensorToggle
+                    glassPanel {
+                        VStack(alignment: .trailing, spacing: 3) {
+                            rowMono("SAT", "\(model.satellites.count)")
+                            rowMono("ACFT", "\(model.aircraft.count)")
+                        }
                     }
                 }
             }
@@ -491,6 +549,25 @@ struct CelestialSkyView: View {
         }
         .padding(16)
         .animation(.easeInOut(duration: 0.2), value: model.lockedTarget)
+    }
+
+    private var sensorToggle: some View {
+        Button {
+            model.setDeviceSensors(!model.useDeviceSensors)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: model.useDeviceSensors ? "location.fill" : "hand.draw")
+                    .font(.system(size: 10))
+                Text(model.useDeviceSensors ? "AR · \(model.sensorStatus)" : "MANUAL")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+            }
+            .foregroundStyle(model.useDeviceSensors ? neon : .white.opacity(0.8))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 7)
+            .background(.ultraThinMaterial, in: Capsule())
+            .overlay(Capsule().stroke(model.useDeviceSensors ? neon.opacity(0.7) : .white.opacity(0.15), lineWidth: 0.8))
+        }
+        .buttonStyle(.plain)
     }
 
     private func rowMono(_ key: String, _ value: String) -> some View {
