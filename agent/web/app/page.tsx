@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
+import { getCycleSnapshot } from "../lib/cycleSystems";
 import { starsInDirection, relevantConstellations, type SkyObject, type ConstellationHit } from "../lib/starmap";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
@@ -350,8 +351,15 @@ export default function Home() {
   // ── Fetch cycles
   const loadCycles = useCallback(async (lat?: number, lon?: number) => {
     const q = lat != null ? `?lat=${lat}&lon=${lon}` : "";
-    const data = await fetch(`/api/cycles${q}`).then(r => r.json()).catch(() => null);
-    if (data) setCycles(data as CycleSnapshot);
+    const data = await fetch(`/api/cycles${q}`)
+      .then(r => (r.ok ? r.json() : null))
+      .catch(() => null);
+    if (data) {
+      setCycles(data as CycleSnapshot);
+      return;
+    }
+    // Local fallback when the API route is unreachable (e.g. opened without Next.js).
+    setCycles(getCycleSnapshot(new Date()));
   }, []);
 
   useEffect(() => { void loadCycles(); }, [loadCycles]);

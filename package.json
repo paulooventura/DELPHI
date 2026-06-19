@@ -5,7 +5,8 @@
     "dev": "npm --prefix agent/web run dev",
     "build": "npm --prefix agent/web run build",
     "start": "npm --prefix agent/web run start",
-    "lint": "npm --prefix agent/web run lint"
+    "lint": "npm --prefix agent/web run lint",
+    "serve": "node scripts/dev-proxy.mjs"
   },
   "engines": {
     "node": ">=18"
