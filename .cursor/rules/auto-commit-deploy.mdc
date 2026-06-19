@@ -1,0 +1,31 @@
+---
+description: Auto-commit and push to GitHub after substantive Delphi changes (triggers Netlify deploy)
+alwaysApply: true
+---
+
+# Auto commit & deploy — Delphi (Cosmos Prowler)
+
+After completing substantive work in this repo, **commit and push without asking**.
+
+## When to commit
+
+- Bug fixes, features, refactors, or config changes under `agent/web/`, root scripts, or deploy files
+- Do **not** commit secrets (`.env.local`, API keys, Netlify tokens)
+- Do **not** commit unless there are real changes (no empty commits)
+
+## Workflow
+
+1. `git status` and `git diff` — stage only files related to the task
+2. Write a concise commit message (1–2 sentences, focus on why)
+3. `git add` → `git commit` → `git push origin main`
+4. Briefly tell the user: commit hash, that push succeeded, and that **Netlify** (`palotino.netlify.app`) deploys automatically via `.github/workflows/netlify-deploy.yml` on push to `main`
+
+## Remote
+
+- Repo: `https://github.com/paulooventura/DELPHI.git`
+- Branch: `main`
+
+## Do not
+
+- Force-push, amend pushed commits, or skip hooks unless the user explicitly asks
+- Push `.env*` or credential files
