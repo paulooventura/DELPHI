@@ -261,7 +261,7 @@ html,body {
   width: 100%;
   min-height: min(62vh, 720px);
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   overflow: hidden;
   border-radius: 12px;
@@ -282,13 +282,15 @@ html,body {
 
 .cp-hero-skymap-off {
   background:
-    radial-gradient(ellipse 90% 80% at 50% 100%, #1a1510 0%, #080604 70%);
+    radial-gradient(ellipse 80% 80% at 50% 50%, #1a1510 0%, #080604 70%);
 }
 
 .cp-watch-overlay {
   position: relative;
   z-index: 1;
-  width: 100%;
+  width: min(100%, min(62vh, 720px));
+  max-width: 720px;
+  margin: 0 auto;
   pointer-events: auto;
 }
 
@@ -301,7 +303,7 @@ html,body {
 }
 
 .cp-watch-scaler {
-  transform-origin: 50% 100%;
+  transform-origin: 50% 50%;
   width: 100%;
   max-width: none;
   margin: 0 auto;
@@ -311,6 +313,7 @@ html,body {
   display: block;
   width: 100%;
   height: auto;
+  aspect-ratio: 1 / 1;
 }
 
 .cp-watch-ring {

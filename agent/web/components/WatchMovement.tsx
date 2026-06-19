@@ -29,8 +29,9 @@ type RingSpec = {
   tickCount: number;
 };
 
+/** Clock position → radians (0 at 12 o'clock, clockwise) */
 function tickRad(i: number, count: number): number {
-  return Math.PI + (i / count) * Math.PI;
+  return ((i / count) * 360 - 90) * (Math.PI / 180);
 }
 
 function buildNumericLabels(max: number, step: number, pad = 0): string[] {
@@ -184,7 +185,7 @@ function RotatingDialRing({
   const r = spec.radius;
   const band = Math.max(3.5, r * 0.082);
   const inner = r - band;
-  const arcPath = `M ${cx - r} ${cy} A ${r} ${r} 0 0 1 ${cx + r} ${cy}`;
+  const midR = r - band / 2;
   const ringOpacity = glass ? 0.52 : 0.9;
   const dialSpin = -spec.nowAngle;
   const labelCount = spec.labels.length;
@@ -251,16 +252,17 @@ function RotatingDialRing({
       </defs>
 
       <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
-        <path d={arcPath} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} strokeLinecap="round" />
-        <path d={arcPath} fill="none" stroke="#0a0806" strokeWidth={band - 1.8} strokeLinecap="round" opacity={glass ? 0.2 : 0.45} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} />
+        <circle cx={cx} cy={cy} r={midR} fill="none" stroke="#0a0806" strokeWidth={band - 1.8} opacity={glass ? 0.2 : 0.45} />
         {ticks}
       </g>
 
+      {/* fixed "now" marker at 12 o'clock */}
       <line
         x1={cx}
-        y1={cy - inner + 1}
+        y1={cy - r - 1}
         x2={cx}
-        y2={cy - r - 1}
+        y2={cy - inner + 1}
         stroke="#f0d060"
         strokeWidth={1.3}
         strokeLinecap="round"
@@ -283,13 +285,13 @@ export function WatchMovement({
   showCompass = true,
 }: WatchMovementProps) {
   const cx = 200;
-  const cy = 198;
+  const cy = 200;
   const hubR = 26;
   const rings: RingSpec[] = [];
   let ri = 0;
 
   const addRing = (spec: Omit<RingSpec, "radius">) => {
-    rings.push({ ...spec, radius: hubR + 10 + ri * 7.5 });
+    rings.push({ ...spec, radius: hubR + 10 + ri * 7 });
     ri++;
   };
 
@@ -404,7 +406,7 @@ export function WatchMovement({
 
   return (
     <svg
-      viewBox="0 0 400 210"
+      viewBox="0 0 400 400"
       className={`cp-watch-movement${glass ? " cp-watch-movement-glass" : ""}`}
       role="img"
       aria-label="Cycle wheels watch movement"
@@ -412,13 +414,13 @@ export function WatchMovement({
       {!glass && (
         <>
           <defs>
-            <radialGradient id="watch-bg" cx="50%" cy="95%" r="75%">
+            <radialGradient id="watch-bg" cx="50%" cy="50%" r="55%">
               <stop offset="0%" stopColor="#2a2218" />
               <stop offset="55%" stopColor="#12100c" />
               <stop offset="100%" stopColor="#080604" />
             </radialGradient>
           </defs>
-          <rect x={0} y={0} width={400} height={210} fill="url(#watch-bg)" rx={8} />
+          <rect x={0} y={0} width={400} height={400} fill="url(#watch-bg)" rx={8} />
         </>
       )}
 
