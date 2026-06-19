@@ -40,6 +40,13 @@ const DEFAULT_TOGGLES: SensorToggles = {
 };
 
 const TOGGLES_STORAGE_KEY = "cp-sensor-toggles";
+const MANUAL_HEADING_KEY = "cp-manual-heading";
+const FALLBACK_LAT = 36.1627;
+const FALLBACK_LON = -86.7816;
+
+function normalizeHeading(deg: number): number {
+  return ((deg % 360) + 360) % 360;
+}
 
 const SENSOR_TOGGLE_DEFS: Array<{ key: keyof SensorToggles; label: string }> = [
   { key: "skyMap",   label: "Sky Map" },
@@ -187,6 +194,9 @@ function SkyMapSVG({ lat, lon, heading, minuteKey }: {
             ))
           : <span className="cp-muted">No major constellation anchors in this slice right now.</span>}
       </div>
+      <p className="cp-muted cp-skymap-meta">
+        {stars.length} bright star{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing}
+      </p>
     </div>
   );
 }
@@ -304,10 +314,20 @@ export default function Home() {
   const [now, setNow] = useState(() => new Date());
   const [minuteKey, setMinuteKey] = useState(0);
 
-  const [cycles, setCycles]     = useState<CycleSnapshot | null>(null);
+  const [cycles, setCycles]     = useState<CycleSnapshot | null>(() => getCycleSnapshot(new Date()));
   const [signals, setSignals]   = useState<Signals | null>(null);
   const [sigLoading, setSigLoading] = useState(false);
-  const [manualHeading, setManualHeading] = useState(180);
+  const [locDenied, setLocDenied] = useState(false);
+  const [headingLive, setHeadingLive] = useState(false);
+  const [manualHeading, setManualHeading] = useState(() => {
+    try {
+      const raw = localStorage.getItem(MANUAL_HEADING_KEY);
+      const n = raw != null ? Number(raw) : 180;
+      return Number.isFinite(n) ? normalizeHeading(n) : 180;
+    } catch {
+      return 180;
+    }
+  });
   const [wheelZoom, setWheelZoom] = useState(1);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
@@ -348,6 +368,10 @@ export default function Home() {
     try { localStorage.setItem(TOGGLES_STORAGE_KEY, JSON.stringify(toggles)); } catch {}
   }, [toggles]);
 
+  useEffect(() => {
+    try { localStorage.setItem(MANUAL_HEADING_KEY, String(manualHeading)); } catch {}
+  }, [manualHeading]);
+
   // ── Fetch cycles
   const loadCycles = useCallback(async (lat?: number, lon?: number) => {
     const q = lat != null ? `?lat=${lat}&lon=${lon}` : "";
@@ -383,11 +407,13 @@ export default function Home() {
   // Heading is excluded here — it's a continuous stream, see startHeadingWatch.
   async function captureSensors(t: SensorToggles = toggles) {
     setSigLoading(true);
+    setLocDenied(false);
     try {
       const [location, emf] = await Promise.all([
         t.location ? getLocation() : Promise.resolve({ latitude: null, longitude: null, accuracyM: null }),
         t.emf ? getMagneticField() : Promise.resolve({ magneticFieldUt: null, method: "disabled" }),
       ]);
+      if (t.location && location.latitude == null) setLocDenied(true);
       const network = t.network ? getNetworkInfo() : { effectiveType: null, downlinkMbps: null, rttMs: null, hint5G: "" };
       setSignals(prev => ({
         lat: location.latitude,
@@ -414,11 +440,19 @@ export default function Home() {
 
   async function startHeadingWatch() {
     stopHeadingWatch();
+    setHeadingLive(false);
     const allowed = await requestOrientationPermission();
     if (!allowed) return;
     headingCleanupRef.current = watchCompassHeading(heading => {
+      if (heading == null || !Number.isFinite(heading)) return;
+      setHeadingLive(true);
       setSignals(prev => prev ? { ...prev, heading } : { lat: null, lon: null, network: null, emfUt: null, heading });
     });
+  }
+
+  function applyManualHeading(value: number) {
+    setHeadingLive(false);
+    setManualHeading(normalizeHeading(value));
   }
 
   // ── Flip a sensor toggle: clear its stale reading when turning off, re-capture when turning on.
@@ -429,6 +463,7 @@ export default function Home() {
       if (enabled) void startHeadingWatch();
       else {
         stopHeadingWatch();
+        setHeadingLive(false);
         setSignals(prev => prev ? { ...prev, heading: null } : prev);
       }
       return;
@@ -511,9 +546,11 @@ export default function Home() {
   const containerH     = Math.ceil(outerDiameter / 2) + 16;
   const containerW     = outerDiameter + 8;
 
-  const activeHeading = signals?.heading ?? manualHeading;
-  const hasLiveHeading = signals?.heading != null;
+  const hasLiveHeading = headingLive && signals?.heading != null;
+  const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
+  const mapLat = signals?.lat ?? FALLBACK_LAT;
+  const mapLon = signals?.lon ?? FALLBACK_LON;
 
   function clampZoom(z: number) {
     return Math.max(0.7, Math.min(2.4, z));
@@ -579,7 +616,10 @@ export default function Home() {
               <h2 className="cp-card-title">Sky Map</h2>
               <button
                 className="cp-btn cp-btn-sm"
-                onClick={() => { if (toggles.heading) void startHeadingWatch(); void captureSensors(); }}
+                onClick={() => {
+                  if (toggles.heading) void startHeadingWatch();
+                  void captureSensors();
+                }}
                 disabled={sigLoading}
               >
                 {sigLoading ? "…" : "📍 Locate Me"}
@@ -603,8 +643,8 @@ export default function Home() {
             {/* Sky map SVG (rectangle above wheels) */}
             {toggles.skyMap ? (
               <SkyMapSVG
-                lat={signals?.lat ?? 36.1627}
-                lon={signals?.lon ?? -86.7816}
+                lat={mapLat}
+                lon={mapLon}
                 heading={activeHeading}
                 minuteKey={minuteKey}
               />
@@ -618,20 +658,23 @@ export default function Home() {
                 <>
                   <CompassRose heading={activeHeading}/>
                   <div className="cp-compass-controls">
-                    {signals?.heading != null ? (
-                      <p className="cp-muted">↗ Live heading: {signals.heading.toFixed(1)}°</p>
+                    <label className="cp-dir-label">
+                      <span>{hasLiveHeading ? "Live compass" : "Direction (manual)"}</span>
+                      <input
+                        type="range" min={0} max={359}
+                        value={hasLiveHeading ? Math.round(signals!.heading!) : manualHeading}
+                        onChange={e => applyManualHeading(Number(e.target.value))}
+                        onInput={e => applyManualHeading(Number(e.currentTarget.value))}
+                        disabled={hasLiveHeading}
+                        className="cp-dir-range"
+                      />
+                      <span>{Math.round(activeHeading)}°</span>
+                    </label>
+                    {hasLiveHeading ? (
+                      <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
                     ) : (
-                      <label className="cp-dir-label">
-                        <span>Direction</span>
-                        <input
-                          type="range" min={0} max={359} value={manualHeading}
-                          onChange={e => setManualHeading(Number(e.target.value))}
-                          className="cp-dir-range"
-                        />
-                        <span>{manualHeading}°</span>
-                      </label>
+                      <p className="cp-muted">Drag the slider to rotate the sky map and compass (desktop fallback).</p>
                     )}
-                    {!hasLiveHeading && <p className="cp-muted">Desktop fallback active: facing South by default (180°).</p>}
                   </div>
                 </>
               ) : (
@@ -644,8 +687,11 @@ export default function Home() {
               {toggles.location && signals?.lat != null && (
                 <p className="cp-muted">{signals.lat.toFixed(3)}°, {signals.lon?.toFixed(3)}°</p>
               )}
-              {toggles.location && !hasLiveLocation && (
-                <p className="cp-muted">Location fallback active. Auto-refreshing every 1 minute.</p>
+              {toggles.location && !hasLiveLocation && !locDenied && (
+                <p className="cp-muted">Using Nashville fallback coords until you tap Locate Me.</p>
+              )}
+              {toggles.location && locDenied && (
+                <p className="cp-muted">Location blocked — allow browser location for your local sky map.</p>
               )}
               {!toggles.location && <p className="cp-muted cp-sensor-off">Location disabled.</p>}
               {toggles.network && signals?.network && (

@@ -78,7 +78,7 @@ export async function getLocation(): Promise<LocalSignals["location"]> {
         });
       },
       () => resolve({ latitude: null, longitude: null, accuracyM: null }),
-      { enableHighAccuracy: true, timeout: 6000, maximumAge: 10000 },
+      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
     );
   });
 }
@@ -99,18 +99,33 @@ export async function requestOrientationPermission(): Promise<boolean> {
   return typeof window !== "undefined" && "DeviceOrientationEvent" in window;
 }
 
+function normalizeHeading(deg: number): number {
+  return ((deg % 360) + 360) % 360;
+}
+
+function headingFromOrientation(event: DeviceOrientationEventWithCompass): number | null {
+  if (typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)) {
+    return normalizeHeading(event.webkitCompassHeading);
+  }
+  if (typeof event.alpha !== "number" || !Number.isFinite(event.alpha)) return null;
+  // absolute: alpha tracks compass north; relative: invert z-rotation
+  const raw = event.absolute ? event.alpha : (360 - event.alpha) % 360;
+  return normalizeHeading(raw);
+}
+
 // Continuous heading stream — call requestOrientationPermission() first.
+// Listens to both absolute and relative orientation events (iOS / Android / Chrome).
 // Returns an unsubscribe function.
 export function watchCompassHeading(onHeading: (headingDeg: number | null) => void): () => void {
   const onOrientation = (event: Event) => {
-    const e = event as DeviceOrientationEventWithCompass;
-    const heading = typeof e.webkitCompassHeading === "number"
-      ? e.webkitCompassHeading
-      : typeof e.alpha === "number" ? (360 - e.alpha) % 360 : null;
-    onHeading(heading);
+    onHeading(headingFromOrientation(event as DeviceOrientationEventWithCompass));
   };
-  window.addEventListener("deviceorientation", onOrientation);
-  return () => window.removeEventListener("deviceorientation", onOrientation);
+  window.addEventListener("deviceorientationabsolute", onOrientation, true);
+  window.addEventListener("deviceorientation", onOrientation, true);
+  return () => {
+    window.removeEventListener("deviceorientationabsolute", onOrientation, true);
+    window.removeEventListener("deviceorientation", onOrientation, true);
+  };
 }
 
 export async function getMagneticField(): Promise<LocalSignals["emf"]> {

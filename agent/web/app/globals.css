@@ -156,6 +156,8 @@ html,body {
 .cp-compass-controls { display: flex; flex-direction: column; gap: 0.3rem; flex: 1; justify-content: center; }
 .cp-dir-label { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.78rem; color: var(--ink-dim); }
 .cp-dir-range { width: 100%; accent-color: var(--accent); height: 4px; }
+.cp-dir-range:disabled { opacity: 0.55; cursor: not-allowed; }
+.cp-skymap-meta { font-size: 0.72rem; margin-top: 0.1rem; }
 
 /* ─── Sensor toggles ──────────────────────────────────────────────────────── */
 .cp-sensor-toggles { display: flex; flex-wrap: wrap; gap: 0.32rem; margin-bottom: 0.55rem; }
