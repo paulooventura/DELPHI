@@ -7,6 +7,7 @@ import { starsInDirection, relevantConstellations, STAR_TO_CONSTELLATION, type S
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
 import { WatchMovement } from "../components/WatchMovement";
+import { useClockSfx } from "../hooks/useClockSfx";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -308,6 +309,7 @@ export default function Home() {
   const [wheelZoom, setWheelZoom] = useState(1);
   const [skyPitch, setSkyPitch] = useState(35);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
+  const [clockSfxOn, setClockSfxOn] = useState(true);
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
 
   const [query, setQuery]       = useState("");
@@ -317,6 +319,7 @@ export default function Home() {
   const pinchStartRef = useRef<number | null>(null);
   const pinchZoomRef = useRef(1);
   const headingCleanupRef = useRef<(() => void) | null>(null);
+  const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
 
   // ── Smooth watch motion (rAF)
   useEffect(() => {
@@ -585,6 +588,16 @@ export default function Home() {
                 disabled={sigLoading}
               >
                 {sigLoading ? "…" : "📍 Locate"}
+              </button>
+              <button
+                className={`cp-btn cp-btn-sm${clockSfxOn ? " cp-toggle-on" : ""}`}
+                onClick={() => {
+                  if (!clockSfxOn) enableSfx();
+                  setClockSfxOn(v => !v);
+                }}
+                title={sfxActive ? "Clock sound on" : "Click to enable clock sound"}
+              >
+                {clockSfxOn ? "🔊" : "🔇"}
               </button>
             </div>
           </div>
