@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useId, type ReactElement } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 
 export type CalendarWheel = CycleSnapshot["wheelLayers"][number];
@@ -192,62 +192,63 @@ function RotatingDialRing({
   const ringOpacity = glass ? 0.52 : 0.9;
   const dialSpin = -spec.nowAngle;
   const fontSize = spec.dense
-    ? Math.max(3.2, Math.min(band * 0.78, (360 / spec.divisions) * 0.22))
-    : Math.max(4.5, band * 0.55);
+    ? Math.max(3.2, Math.min(band * 0.72, (360 / spec.divisions) * 0.2))
+    : Math.max(4.5, band * 0.5);
 
-  const ticks = [];
-  for (let i = 0; i < spec.divisions; i++) {
+  const boundaries: ReactElement[] = [];
+  const labels: ReactElement[] = [];
+
+  // Radial lines at the start of each slot: |0|1|2|…
+  for (let i = 0; i <= spec.divisions; i++) {
     const ang = tickRad(i, spec.divisions);
-    const major = i % spec.labelEvery === 0;
-    const tickLen = major ? band * 0.55 : band * 0.3;
-    const tInner = midR - tickLen / 2;
-    const tOuter = midR + tickLen / 2;
-
-    ticks.push(
+    const isMajor = i % spec.labelEvery === 0;
+    boundaries.push(
       <line
-        key={`t${i}`}
-        x1={cx + Math.cos(ang) * tInner}
-        y1={cy + Math.sin(ang) * tInner}
-        x2={cx + Math.cos(ang) * tOuter}
-        y2={cy + Math.sin(ang) * tOuter}
-        stroke={major ? spec.color : "#5a4a32"}
-        strokeWidth={major ? 0.9 : 0.45}
-        strokeLinecap="round"
-        opacity={major ? 0.95 : 0.5}
+        key={`b${i}`}
+        x1={cx + Math.cos(ang) * inner}
+        y1={cy + Math.sin(ang) * inner}
+        x2={cx + Math.cos(ang) * (r - 0.5)}
+        y2={cy + Math.sin(ang) * (r - 0.5)}
+        stroke={isMajor ? spec.color : "#4a4030"}
+        strokeWidth={isMajor ? 0.85 : 0.4}
+        strokeLinecap="butt"
+        opacity={isMajor ? 0.85 : 0.45}
       />,
     );
+  }
 
-    if (major) {
-      let txt: string | null = null;
-      if (spec.customLabel) {
-        txt = spec.customLabel(i, spec.divisions);
-      } else {
-        const val = i;
-        txt = spec.labelPad != null ? String(val).padStart(spec.labelPad, "0") : String(val);
-      }
+  // Numbers centered in each slot, between boundary lines
+  for (let i = 0; i < spec.divisions; i++) {
+    if (i % spec.labelEvery !== 0) continue;
 
-      if (txt) {
-        const lx = cx + Math.cos(ang) * midR;
-        const ly = cy + Math.sin(ang) * midR;
-        const rot = (ang * 180) / Math.PI + 90;
-        ticks.push(
-          <text
-            key={`l${i}`}
-            x={lx}
-            y={ly}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={fontSize}
-            fill="#e8c872"
-            fontFamily="Georgia, serif"
-            fontWeight={600}
-            transform={`rotate(${rot}, ${lx}, ${ly})`}
-          >
-            {txt}
-          </text>,
-        );
-      }
+    let txt: string | null = null;
+    if (spec.customLabel) {
+      txt = spec.customLabel(i, spec.divisions);
+    } else {
+      txt = spec.labelPad != null ? String(i).padStart(spec.labelPad, "0") : String(i);
     }
+    if (!txt) continue;
+
+    const ang = tickRad(i + 0.5, spec.divisions);
+    const lx = cx + Math.cos(ang) * midR;
+    const ly = cy + Math.sin(ang) * midR;
+    const rot = (ang * 180) / Math.PI + 90;
+    labels.push(
+      <text
+        key={`l${i}`}
+        x={lx}
+        y={ly}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        fontSize={fontSize}
+        fill="#e8c872"
+        fontFamily="Georgia, serif"
+        fontWeight={600}
+        transform={`rotate(${rot}, ${lx}, ${ly})`}
+      >
+        {txt}
+      </text>,
+    );
   }
 
   return (
@@ -272,7 +273,10 @@ function RotatingDialRing({
       <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
         <circle cx={cx} cy={cy} r={midR} fill="none" stroke={`url(#br-${uid})`} strokeWidth={band} />
         <circle cx={cx} cy={cy} r={midR} fill="none" stroke="#0a0806" strokeWidth={band - 1.6} opacity={glass ? 0.2 : 0.45} />
-        <g clipPath={`url(#clip-${uid})`}>{ticks}</g>
+        <g clipPath={`url(#clip-${uid})`}>
+          {boundaries}
+          {labels}
+        </g>
       </g>
 
       <line
