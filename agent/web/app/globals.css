@@ -330,14 +330,19 @@ html,body {
   position: absolute;
   left: 50%;
   bottom: -4px;
-  transform: translateX(-50%);
   z-index: 30;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.6));
+  transform-origin: center center;
 }
 
 .cp-ring-active {
   z-index: 15;
   filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.45)) drop-shadow(0 3px 6px rgba(0, 0, 0, 0.55));
+}
+
+@keyframes steam-pinion-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
 
 @keyframes steam-dial-spin {

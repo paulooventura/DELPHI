@@ -5,18 +5,21 @@ import { useId } from "react";
 export type SteampunkWheelRingProps = {
   size: number;
   color: string;
-  angleDeg?: number;
-  periodS?: number;
-  offsetS?: number;
+  /** Rotate the whole dial (calendar complications) */
+  dialAngleDeg?: number;
+  /** Watch hand angle — dial stays fixed, hand sweeps */
+  handAngleDeg?: number;
+  /** Decorative pinion gear spin period in seconds */
+  pinionPeriodS?: number;
+  pinionReverse?: boolean;
+  /** Timestamp (ms) for smooth animation updates */
+  animMs?: number;
   icon?: string;
   value?: string | number;
   name?: string;
   fullLabel?: string;
-  /** Short unit label on clock dials (ms, sec, …) */
   unit?: string;
-  /** Number of tick marks around the dial */
   tickCount?: number;
-  /** Labels placed on major ticks (evenly distributed) */
   tickLabels?: string[];
   active?: boolean;
   onHover?: (on: boolean) => void;
@@ -87,17 +90,13 @@ function DialTicks({
     const rad = (ang * Math.PI) / 180;
     const major = i % labelStep === 0;
     const len = major ? r * 0.11 : r * 0.06;
-    const x1 = cx + Math.cos(rad) * (r - len - 2);
-    const y1 = cy + Math.sin(rad) * (r - len - 2);
-    const x2 = cx + Math.cos(rad) * (r - 2);
-    const y2 = cy + Math.sin(rad) * (r - 2);
     items.push(
       <line
         key={`t${i}`}
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
+        x1={cx + Math.cos(rad) * (r - len - 2)}
+        y1={cy + Math.sin(rad) * (r - len - 2)}
+        x2={cx + Math.cos(rad) * (r - 2)}
+        y2={cy + Math.sin(rad) * (r - 2)}
         stroke={major ? accent : "#6b5a3a"}
         strokeWidth={major ? 1.4 : 0.8}
         strokeLinecap="round"
@@ -126,12 +125,77 @@ function DialTicks({
   return <g>{items}</g>;
 }
 
+function WatchHand({
+  cx,
+  cy,
+  length,
+  color,
+  width,
+  tail = 0.18,
+}: {
+  cx: number;
+  cy: number;
+  length: number;
+  color: string;
+  width: number;
+  tail?: number;
+}) {
+  return (
+    <g>
+      <line
+        x1={cx}
+        y1={cy + length * tail}
+        x2={cx}
+        y2={cy - length}
+        stroke={color}
+        strokeWidth={width}
+        strokeLinecap="round"
+      />
+      <circle cx={cx} cy={cy - length} r={width * 0.9} fill={color} opacity={0.85} />
+      <circle cx={cx} cy={cy} r={width * 1.4} fill="#1a1510" stroke="#c9a227" strokeWidth={0.8} />
+      <circle cx={cx} cy={cy} r={width * 0.55} fill={color} />
+    </g>
+  );
+}
+
+function PinionGear({
+  cx,
+  cy,
+  r,
+  teeth,
+  fill,
+  periodS,
+  reverse,
+  animMs,
+}: {
+  cx: number;
+  cy: number;
+  r: number;
+  teeth: number;
+  fill: string;
+  periodS: number;
+  reverse?: boolean;
+  animMs: number;
+}) {
+  const inner = r * 0.55;
+  const spin = ((animMs / 1000) / periodS) * 360;
+  const angle = reverse ? -spin : spin;
+  return (
+    <g transform={`rotate(${angle} ${cx} ${cy})`}>
+      <GearTeeth cx={cx} cy={cy} outerR={r} innerR={inner} teeth={teeth} fill={fill} />
+      <circle cx={cx} cy={cy} r={inner * 0.45} fill="#1a1510" stroke="#c9a227" strokeWidth={0.5} />
+    </g>
+  );
+}
+
 export function SteampunkWheelRing({
   size,
   color,
-  angleDeg,
-  periodS,
-  offsetS,
+  dialAngleDeg = 0,
+  handAngleDeg,
+  pinionPeriodS = 6,
+  pinionReverse = false,
+  animMs = 0,
   icon,
   value,
   name,
@@ -143,35 +207,24 @@ export function SteampunkWheelRing({
   onHover,
 }: SteampunkWheelRingProps) {
   const uid = useId().replace(/:/g, "");
-  const isAnim = periodS != null;
   const r = size / 2;
   const cx = r;
   const cy = r;
   const brassId = `brass-${uid}`;
   const faceId = `face-${uid}`;
   const teeth = Math.max(16, Math.min(36, Math.round(size / 3.5)));
-
-  const dialStyle: React.CSSProperties = isAnim
-    ? {
-        animationName: "steam-dial-spin",
-        animationDuration: `${periodS}s`,
-        animationDelay: `-${offsetS ?? 0}s`,
-        animationTimingFunction: "linear",
-        animationIterationCount: "infinite",
-        animationFillMode: "both",
-      }
-    : {
-        transform: `rotate(${angleDeg ?? 0}deg)`,
-      };
+  const hasHand = handAngleDeg != null;
+  const dialRotate = hasHand ? 0 : dialAngleDeg;
+  const gaugeCounter = -dialRotate;
+  const showGauge = icon != null || value != null || unit != null;
+  const handLen = r * 0.72;
+  const handW = Math.max(1.2, size * 0.018);
 
   const wrapStyle: React.CSSProperties = {
     width: size,
     height: size,
     transform: "translate(-50%, -50%)",
   };
-
-  const gaugeCounter = isAnim ? 0 : -(angleDeg ?? 0);
-  const showGauge = icon != null || value != null || unit != null;
 
   return (
     <div className="cp-ring-anchor">
@@ -181,7 +234,7 @@ export function SteampunkWheelRing({
         onMouseEnter={onHover ? () => onHover(true) : undefined}
         onMouseLeave={onHover ? () => onHover(false) : undefined}
       >
-        <div className="cp-steam-dial" style={dialStyle}>
+        <div className="cp-steam-dial">
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} aria-hidden>
             <defs>
               {brassGradient(brassId, color)}
@@ -192,57 +245,48 @@ export function SteampunkWheelRing({
               </radialGradient>
             </defs>
 
-            <GearTeeth cx={cx} cy={cy} outerR={r - 1} innerR={r - 5} teeth={teeth} fill={`url(#${brassId})`} />
+            {/* Rotating dial face (calendar) or fixed face (clock hands) */}
+            <g transform={`rotate(${dialRotate} ${cx} ${cy})`}>
+              <GearTeeth cx={cx} cy={cy} outerR={r - 1} innerR={r - 5} teeth={teeth} fill={`url(#${brassId})`} />
+              <circle cx={cx} cy={cy} r={r - 6} fill={`url(#${faceId})`} stroke="#5a4a2a" strokeWidth={1.2} />
+              <circle cx={cx} cy={cy} r={r - 9} fill="none" stroke="#8b6914" strokeWidth={0.8} opacity={0.55} />
+              <circle cx={cx} cy={cy} r={r * 0.58} fill="none" stroke="#6b5a3a" strokeWidth={0.6} strokeDasharray="3 2.5" opacity={0.7} />
+              <DialTicks cx={cx} cy={cy} r={r - 7} count={tickCount} accent={color} tickLabels={tickLabels} />
 
-            <circle cx={cx} cy={cy} r={r - 6} fill={`url(#${faceId})`} stroke="#5a4a2a" strokeWidth={1.2} />
+              {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
+                const rad = ((deg - 90) * Math.PI) / 180;
+                const rr = r - 10;
+                return (
+                  <g key={deg}>
+                    <circle cx={cx + Math.cos(rad) * rr} cy={cy + Math.sin(rad) * rr} r={1.6} fill="#2a2218" stroke="#c9a227" strokeWidth={0.6} />
+                    <circle cx={cx + Math.cos(rad) * rr} cy={cy + Math.sin(rad) * rr} r={0.45} fill="#e8c872" />
+                  </g>
+                );
+              })}
+            </g>
 
-            <circle cx={cx} cy={cy} r={r - 9} fill="none" stroke="#8b6914" strokeWidth={0.8} opacity={0.55} />
-            <circle cx={cx} cy={cy} r={r * 0.58} fill="none" stroke="#6b5a3a" strokeWidth={0.6} strokeDasharray="3 2.5" opacity={0.7} />
+            {/* Decorative pinion — always spins for mechanical life */}
+            <PinionGear
+              cx={cx + r * 0.38}
+              cy={cy - r * 0.12}
+              r={Math.max(5, size * 0.07)}
+              teeth={8}
+              fill={`url(#${brassId})`}
+              periodS={pinionPeriodS}
+              reverse={pinionReverse}
+              animMs={animMs}
+            />
 
-            <DialTicks cx={cx} cy={cy} r={r - 7} count={tickCount} accent={color} tickLabels={tickLabels} />
+            {/* Sweeping watch hand */}
+            {hasHand && (
+              <g transform={`rotate(${handAngleDeg} ${cx} ${cy})`}>
+                <WatchHand cx={cx} cy={cy} length={handLen} color={color} width={handW} />
+              </g>
+            )}
 
-            {[0, 45, 90, 135, 180, 225, 270, 315].map((deg) => {
-              const rad = ((deg - 90) * Math.PI) / 180;
-              const rr = r - 10;
-              return (
-                <g key={deg}>
-                  <circle
-                    cx={cx + Math.cos(rad) * rr}
-                    cy={cy + Math.sin(rad) * rr}
-                    r={1.6}
-                    fill="#2a2218"
-                    stroke="#c9a227"
-                    strokeWidth={0.6}
-                  />
-                  <circle
-                    cx={cx + Math.cos(rad) * rr}
-                    cy={cy + Math.sin(rad) * rr}
-                    r={0.45}
-                    fill="#e8c872"
-                  />
-                </g>
-              );
-            })}
-
-            {/* spoke hints */}
-            {[0, 120, 240].map((deg) => {
-              const rad = ((deg - 90) * Math.PI) / 180;
-              return (
-                <line
-                  key={`sp${deg}`}
-                  x1={cx}
-                  y1={cy}
-                  x2={cx + Math.cos(rad) * (r * 0.52)}
-                  y2={cy + Math.sin(rad) * (r * 0.52)}
-                  stroke="#4a3a22"
-                  strokeWidth={0.7}
-                  opacity={0.65}
-                />
-              );
-            })}
-
-            <circle cx={cx} cy={cy} r={Math.max(4, size * 0.07)} fill="#1a1510" stroke={`url(#${brassId})`} strokeWidth={1.4} />
-            <circle cx={cx} cy={cy} r={Math.max(2, size * 0.028)} fill={color} opacity={0.85} />
+            {!hasHand && (
+              <circle cx={cx} cy={cy} r={Math.max(4, size * 0.07)} fill="#1a1510" stroke={`url(#${brassId})`} strokeWidth={1.4} />
+            )}
           </svg>
         </div>
 

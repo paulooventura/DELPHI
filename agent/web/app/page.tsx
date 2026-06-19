@@ -49,6 +49,28 @@ function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;
 }
 
+/** Watch hand angle for clock rings (0° = 12 o'clock, clockwise) */
+function watchHandAngle(clockId: string, d: Date): number {
+  const ms = d.getMilliseconds();
+  const sec = d.getSeconds() + ms / 1000;
+  const min = d.getMinutes() + sec / 60;
+  const hr = (d.getHours() % 12) + min / 60;
+  switch (clockId) {
+    case "ms": return (ms / 1000) * 360;
+    case "s": return (sec / 60) * 360;
+    case "min": return (min / 60) * 360;
+    case "h": return (hr / 12) * 360;
+    default: return 0;
+  }
+}
+
+/** Continuous complication rotation from cycle period in days */
+function cycleDialAngle(periodDays: number, d: Date): number {
+  if (periodDays <= 0) return 0;
+  const periodMs = periodDays * 86400000;
+  return ((d.getTime() % periodMs) / periodMs) * 360;
+}
+
 const SENSOR_TOGGLE_DEFS: Array<{ key: keyof SensorToggles; label: string }> = [
   { key: "skyMap",   label: "Sky Map" },
   { key: "compass",  label: "Compass" },
@@ -245,6 +267,7 @@ function CompassRose({ heading }: { heading: number }) {
 
 export default function Home() {
   const [now, setNow] = useState(() => new Date());
+  const [animNow, setAnimNow] = useState(() => new Date());
   const [minuteKey, setMinuteKey] = useState(0);
 
   const [cycles, setCycles]     = useState<CycleSnapshot | null>(() => getCycleSnapshot(new Date()));
@@ -273,17 +296,10 @@ export default function Home() {
   const pinchZoomRef = useRef(1);
   const headingCleanupRef = useRef<(() => void) | null>(null);
 
-  // ── Clock offsets: computed client-side only (no SSR mismatch)
-  const [clockOffsets, setClockOffsets] = useState<{ ms: number; s: number; min: number; h: number } | null>(null);
-
+  // ── Smooth watch motion (~20 fps for hands + calendar dials)
   useEffect(() => {
-    const n = new Date();
-    setClockOffsets({
-      ms:  n.getMilliseconds() / 1000,
-      s:   n.getSeconds() + n.getMilliseconds() / 1000,
-      min: n.getMinutes() * 60 + n.getSeconds() + n.getMilliseconds() / 1000,
-      h:   (n.getHours() % 12) * 3600 + n.getMinutes() * 60 + n.getSeconds() + n.getMilliseconds() / 1000,
-    });
+    const id = setInterval(() => setAnimNow(new Date()), 50);
+    return () => clearInterval(id);
   }, []);
 
   // ── Digital clock (1 second tick)
@@ -663,7 +679,11 @@ export default function Home() {
                 className="cp-semicircle"
                 style={{ height: containerH, maxWidth: containerW, transform: `scale(${wheelZoom})` }}
               >
-                <div className="cp-steam-hub" aria-hidden>
+                <div
+                  className="cp-steam-hub"
+                  style={{ transform: `translateX(-50%) rotate(${((animNow.getTime() / 1000) / 12) * 360}deg)` }}
+                  aria-hidden
+                >
                   <svg width="36" height="36" viewBox="0 0 36 36">
                     <circle cx="18" cy="18" r="14" fill="#1a1510" stroke="#c9a227" strokeWidth="1.5" />
                     {[0, 60, 120, 180, 240, 300].map((d) => {
@@ -676,7 +696,7 @@ export default function Home() {
                   </svg>
                 </div>
 
-                {clockOffsets && CLOCK_RINGS.map((cr, i) => {
+                {CLOCK_RINGS.map((cr, i) => {
                   const val =
                     cr.id === "ms" ? String(now.getMilliseconds()).padStart(3, "0")
                     : cr.id === "s" ? ss
@@ -687,8 +707,10 @@ export default function Home() {
                       key={cr.id}
                       size={RING_BASE + i * RING_STEP}
                       color={cr.color}
-                      periodS={cr.periodS}
-                      offsetS={clockOffsets[cr.id as keyof typeof clockOffsets]}
+                      handAngleDeg={watchHandAngle(cr.id, animNow)}
+                      pinionPeriodS={cr.id === "ms" ? 0.8 : cr.id === "s" ? 3 : cr.id === "min" ? 8 : 16}
+                      pinionReverse={i % 2 === 1}
+                      animMs={animNow.getTime()}
                       icon={cr.icon}
                       value={val}
                       unit={cr.unit}
@@ -703,7 +725,10 @@ export default function Home() {
                     key="weather"
                     size={RING_BASE + clockCount * RING_STEP}
                     color="#22d3ee"
-                    angleDeg={0}
+                    dialAngleDeg={cycleDialAngle(1, animNow)}
+                    pinionPeriodS={5}
+                    pinionReverse
+                    animMs={animNow.getTime()}
                     icon={weatherRing.emoji}
                     value={weatherRing.tempC != null ? `${Math.round(weatherRing.tempC)}°` : "—"}
                     unit="WX"
@@ -717,7 +742,10 @@ export default function Home() {
                     key={w.id}
                     size={RING_BASE + (clockCount + (weatherRing ? 1 : 0) + i) * RING_STEP}
                     color={w.color}
-                    angleDeg={w.angleDeg}
+                    dialAngleDeg={cycleDialAngle(w.periodDays, animNow)}
+                    pinionPeriodS={4 + (i % 5) * 1.4}
+                    pinionReverse={i % 2 === 0}
+                    animMs={animNow.getTime()}
                     icon={w.icon}
                     value={compactWheelValue(w)}
                     name={w.name}
