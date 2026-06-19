@@ -6,19 +6,16 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { starsInDirection, relevantConstellations, type SkyObject, type ConstellationHit } from "../lib/starmap";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
-import { SteampunkWheelRing } from "../components/SteampunkWheelRing";
+import { WatchMovement } from "../components/WatchMovement";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CLOCK_RINGS = [
-  { id: "ms",  name: "ms",  color: "#fbbf24", periodS: 1,     icon: "⚙", unit: "MS"  },
-  { id: "s",   name: "sec", color: "#f97316", periodS: 60,    icon: "◷", unit: "SEC" },
-  { id: "min", name: "min", color: "#ef4444", periodS: 3600,  icon: "⏱", unit: "MIN" },
-  { id: "h",   name: "hr",  color: "#d946ef", periodS: 43200, icon: "🕰", unit: "HR"  },
+  { id: "ms",  name: "ms",  color: "#fbbf24", icon: "⚙" },
+  { id: "s",   name: "sec", color: "#f97316", icon: "◷" },
+  { id: "min", name: "min", color: "#ef4444", icon: "⏱" },
+  { id: "h",   name: "hr",  color: "#d946ef", icon: "🕰" },
 ];
-
-const RING_BASE = 54;   // innermost ring diameter px
-const RING_STEP = 26;   // px per ring step — wider gap so badges stay readable
 
 // ─── Sensor toggles ───────────────────────────────────────────────────────────
 
@@ -49,28 +46,6 @@ function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;
 }
 
-/** Watch hand angle for clock rings (0° = 12 o'clock, clockwise) */
-function watchHandAngle(clockId: string, d: Date): number {
-  const ms = d.getMilliseconds();
-  const sec = d.getSeconds() + ms / 1000;
-  const min = d.getMinutes() + sec / 60;
-  const hr = (d.getHours() % 12) + min / 60;
-  switch (clockId) {
-    case "ms": return (ms / 1000) * 360;
-    case "s": return (sec / 60) * 360;
-    case "min": return (min / 60) * 360;
-    case "h": return (hr / 12) * 360;
-    default: return 0;
-  }
-}
-
-/** Continuous complication rotation from cycle period in days */
-function cycleDialAngle(periodDays: number, d: Date): number {
-  if (periodDays <= 0) return 0;
-  const periodMs = periodDays * 86400000;
-  return ((d.getTime() % periodMs) / periodMs) * 360;
-}
-
 const SENSOR_TOGGLE_DEFS: Array<{ key: keyof SensorToggles; label: string }> = [
   { key: "skyMap",   label: "Sky Map" },
   { key: "compass",  label: "Compass" },
@@ -79,18 +54,6 @@ const SENSOR_TOGGLE_DEFS: Array<{ key: keyof SensorToggles; label: string }> = [
   { key: "network",  label: "Network" },
   { key: "emf",      label: "EMF" },
 ];
-
-// Pull a short, glanceable value for the on-ring badge.
-// Prefers a number in the sublabel/label, else a stripped short label.
-function compactWheelValue(w: { label: string; sublabel: string }): string {
-  const subNum = w.sublabel.match(/\d+/)?.[0];
-  if (subNum) return subNum;
-  const labelNum = w.label.match(/\d+/)?.[0];
-  if (labelNum) return labelNum;
-  // strip leading emoji/symbol, keep first short token
-  const stripped = w.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
-  return stripped.length <= 4 ? stripped : stripped.slice(0, 3);
-}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -296,10 +259,19 @@ export default function Home() {
   const pinchZoomRef = useRef(1);
   const headingCleanupRef = useRef<(() => void) | null>(null);
 
-  // ── Smooth watch motion (~20 fps for hands + calendar dials)
+  // ── Smooth watch motion (rAF)
   useEffect(() => {
-    const id = setInterval(() => setAnimNow(new Date()), 50);
-    return () => clearInterval(id);
+    let frame = 0;
+    let last = 0;
+    const tick = (t: number) => {
+      if (t - last >= 33) {
+        last = t;
+        setAnimNow(new Date());
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
   }, []);
 
   // ── Digital clock (1 second tick)
@@ -485,15 +457,9 @@ export default function Home() {
     }
   }
 
-  // ── Wheel sizing
+  // ── Wheel data
   const calendarWheels = cycles?.wheelLayers ?? [];
   const weatherRing    = cycles?.weather ?? null;
-  const calendarCount  = calendarWheels.length;
-  const clockCount     = CLOCK_RINGS.length;
-  const totalRings     = clockCount + (weatherRing ? 1 : 0) + calendarCount;
-  const outerDiameter  = RING_BASE + (totalRings - 1) * RING_STEP;
-  const containerH     = Math.ceil(outerDiameter / 2) + 16;
-  const containerW     = outerDiameter + 8;
 
   const hasLiveHeading = headingLive && signals?.heading != null;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
@@ -540,10 +506,6 @@ export default function Home() {
   const hh = String(now.getHours()).padStart(2, "0");
   const mm = String(now.getMinutes()).padStart(2, "0");
   const ss = String(now.getSeconds()).padStart(2, "0");
-
-  const clockTickLabels = ["12", "3", "6", "9"];
-  const clockFaceLabels = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10", "11", "12"];
-  const secMinLabels = ["0", "15", "30", "45"];
 
   return (
     <main className="cp-shell">
@@ -670,100 +632,37 @@ export default function Home() {
             </div>
 
             <p className="cp-muted" style={{ fontSize: "0.74rem", marginBottom: "0.38rem" }}>
-              Pinch on touch devices or Ctrl+wheel on desktop to zoom rings ({Math.round(wheelZoom * 100)}%).
+              Live watch movement — inner rings track time; outer rings track calendar cycles. Ctrl+wheel to zoom.
             </p>
 
-            {/* Semicircle container */}
-            <div className="cp-wheel-viewport" onWheel={onWheelZoom} onTouchStart={onTouchStartZoom} onTouchMove={onTouchMoveZoom} onTouchEnd={onTouchEndZoom}>
-              <div
-                className="cp-semicircle"
-                style={{ height: containerH, maxWidth: containerW, transform: `scale(${wheelZoom})` }}
-              >
-                <div
-                  className="cp-steam-hub"
-                  style={{ transform: `translateX(-50%) rotate(${((animNow.getTime() / 1000) / 12) * 360}deg)` }}
-                  aria-hidden
-                >
-                  <svg width="36" height="36" viewBox="0 0 36 36">
-                    <circle cx="18" cy="18" r="14" fill="#1a1510" stroke="#c9a227" strokeWidth="1.5" />
-                    {[0, 60, 120, 180, 240, 300].map((d) => {
-                      const rad = ((d - 90) * Math.PI) / 180;
-                      return (
-                        <line key={d} x1={18} y1={18} x2={18 + Math.cos(rad) * 11} y2={18 + Math.sin(rad) * 11} stroke="#8b6914" strokeWidth="1.2" />
-                      );
-                    })}
-                    <circle cx="18" cy="18" r="4" fill="#c9a227" />
-                  </svg>
-                </div>
-
-                {CLOCK_RINGS.map((cr, i) => {
-                  const val =
-                    cr.id === "ms" ? String(now.getMilliseconds()).padStart(3, "0")
-                    : cr.id === "s" ? ss
-                    : cr.id === "min" ? mm
-                    : hh;
-                  return (
-                    <SteampunkWheelRing
-                      key={cr.id}
-                      size={RING_BASE + i * RING_STEP}
-                      color={cr.color}
-                      handAngleDeg={watchHandAngle(cr.id, animNow)}
-                      pinionPeriodS={cr.id === "ms" ? 0.8 : cr.id === "s" ? 3 : cr.id === "min" ? 8 : 16}
-                      pinionReverse={i % 2 === 1}
-                      animMs={animNow.getTime()}
-                      icon={cr.icon}
-                      value={val}
-                      unit={cr.unit}
-                      tickCount={cr.id === "ms" ? 10 : 12}
-                      tickLabels={cr.id === "h" ? clockFaceLabels : cr.id === "ms" ? ["0", "2", "4", "6", "8"] : secMinLabels}
-                    />
-                  );
-                })}
-
-                {weatherRing && (
-                  <SteampunkWheelRing
-                    key="weather"
-                    size={RING_BASE + clockCount * RING_STEP}
-                    color="#22d3ee"
-                    dialAngleDeg={cycleDialAngle(1, animNow)}
-                    pinionPeriodS={5}
-                    pinionReverse
-                    animMs={animNow.getTime()}
-                    icon={weatherRing.emoji}
-                    value={weatherRing.tempC != null ? `${Math.round(weatherRing.tempC)}°` : "—"}
-                    unit="WX"
-                    tickCount={8}
-                    tickLabels={clockTickLabels}
-                  />
-                )}
-
-                {calendarWheels.map((w, i) => (
-                  <SteampunkWheelRing
-                    key={w.id}
-                    size={RING_BASE + (clockCount + (weatherRing ? 1 : 0) + i) * RING_STEP}
-                    color={w.color}
-                    dialAngleDeg={cycleDialAngle(w.periodDays, animNow)}
-                    pinionPeriodS={4 + (i % 5) * 1.4}
-                    pinionReverse={i % 2 === 0}
-                    animMs={animNow.getTime()}
-                    icon={w.icon}
-                    value={compactWheelValue(w)}
-                    name={w.name}
-                    fullLabel={w.label}
-                    unit={w.name.slice(0, 3).toUpperCase()}
-                    tickCount={16}
-                    tickLabels={clockTickLabels}
-                    active={hoverRing === w.id}
-                    onHover={(on) => setHoverRing(on ? w.id : null)}
-                  />
-                ))}
+            <div
+              className="cp-wheel-viewport"
+              onWheel={onWheelZoom}
+              onTouchStart={onTouchStartZoom}
+              onTouchMove={onTouchMoveZoom}
+              onTouchEnd={onTouchEndZoom}
+            >
+              <div className="cp-watch-scaler" style={{ transform: `scale(${wheelZoom})` }}>
+                <WatchMovement
+                  animMs={animNow.getTime()}
+                  now={animNow}
+                  weather={weatherRing}
+                  calendarWheels={calendarWheels}
+                  hoverId={hoverRing}
+                  onHover={setHoverRing}
+                />
               </div>
             </div>
 
             {/* Ring legend */}
             <div className="cp-ring-legend">
               {CLOCK_RINGS.map(cr => (
-                <span key={cr.id} className="cp-rl-item">
+                <span
+                  key={cr.id}
+                  className={`cp-rl-item cp-rl-link${hoverRing === cr.id ? " cp-rl-active" : ""}`}
+                  onMouseEnter={() => setHoverRing(cr.id)}
+                  onMouseLeave={() => setHoverRing(null)}
+                >
                   <span className="cp-rl-dot" style={{ background: cr.color }}/>
                   {cr.name}
                 </span>
