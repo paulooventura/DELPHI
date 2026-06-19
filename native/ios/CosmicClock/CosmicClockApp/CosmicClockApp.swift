@@ -10,8 +10,7 @@ struct CosmicClockApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                CosmicClockView()
-                    .environmentObject(model)
+                CelestialSkyView()
                 if showLaunch {
                     LaunchScreenView(model: launch, now: .now)
                         .transition(.opacity)

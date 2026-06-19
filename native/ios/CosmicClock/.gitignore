@@ -1,0 +1,10 @@
+# XcodeGen output (run `xcodegen generate` to recreate)
+CosmicClock.xcodeproj/
+Generated-Info.plist
+
+# Xcode / SwiftPM build artifacts
+.build/
+DerivedData/
+*.xcworkspace/xcuserdata/
+xcuserdata/
+.swiftpm/

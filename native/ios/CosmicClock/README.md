@@ -13,10 +13,28 @@ CosmicClock/
     CosmicClockApp.swift     — SwiftUI Canvas preview shell
 ```
 
-## Open in Xcode
+## Build & run the app (XcodeGen)
 
-1. File → Open → select `Package.swift` for the library only, **or**
-2. Create a new iOS App in Xcode, add `CosmicClock` as a local Swift Package dependency, paste `CosmicClockApp.swift` into the app target.
+The app target is defined declaratively in `project.yml` (the `.xcodeproj` is generated, not committed).
+
+```bash
+brew install xcodegen          # one-time
+cd native/ios/CosmicClock
+xcodegen generate              # creates CosmicClock.xcodeproj + Generated-Info.plist
+open CosmicClock.xcodeproj
+```
+
+Then pick the **CosmicClockApp** scheme and Run.
+
+- The app launches into `CelestialSkyView` (sky canvas) after the splash.
+- **AR mode requires a real device** — CoreMotion attitude and GPS are unavailable in the Simulator.
+  Use the **AR / MANUAL** toggle in the HUD; the Simulator can still drive MANUAL mode (drag + pinch).
+- Required Info.plist keys (`NSLocationWhenInUseUsageDescription`, `NSMotionUsageDescription`) are
+  generated from `project.yml`.
+
+### Library only
+
+Open `Package.swift` directly to work on / test the shared `CosmicClock` library in isolation.
 
 ## Parity with web
 
