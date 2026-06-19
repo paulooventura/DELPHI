@@ -40,8 +40,8 @@ export async function POST(req: Request) {
       const predictive = PREDICTIVE_RE.test(query);
 
       try {
-        // ── PHASE 1: high-tier academic sources ──────────────────────────
-        emit({ phase: 1, status: "Scanning primary academic databases (efficiency-first)…", answer: null });
+        // ── PHASE 1: Academic Foundations ──────────────────────────
+        emit({ phase: 1, status: "Scanning primary databases for verifiable records…", answer: null });
 
         const [cr, oa, pm, ax] = await Promise.all([
           safely(crossrefSources(query)),
@@ -55,6 +55,22 @@ export async function POST(req: Request) {
         const p1Confidence = computeConfidence(p1, [], query);
         const p1HighFresh = p1.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
 
+        // CRITICAL FIX: If zero matching items come back across all core engines, stop early 
+        // instead of allowing the model to hallucinate over unrelated snippets.
+        if (p1.length === 0 || p1Confidence < 0.15) {
+          emit({
+            phase: 1,
+            complete: true,
+            status: "No verified academic or primary records found for this query.",
+            answer: "The research engine could not locate sufficiently reliable, verified data matching your specific request. Please refine or broaden your query parameters.",
+            confidence: 0,
+            sources: [],
+            peerReview: [],
+            report: "Halted: Query does not align with active knowledge domains.",
+          });
+          return;
+        }
+
         emit({
           phase: 1,
           status: `Phase 1 complete — ${p1.length} sources`,
@@ -65,7 +81,6 @@ export async function POST(req: Request) {
           report: buildReport(p1, [], "Phase 1 - primary sources only", query),
         });
 
-        // Shortcut: stop immediately when primary evidence is already strong.
         if (!predictive && p1Confidence >= 0.75 && p1HighFresh >= 4) {
           emit({
             phase: 1,
@@ -82,8 +97,8 @@ export async function POST(req: Request) {
 
         if (Date.now() > deadline) { done = true; controller.close(); return; }
 
-        // ── PHASE 2: medium-tier + AI review ─────────────────────────────
-        emit({ phase: 2, status: "Expanding to secondary sources and selective peer review…", answer: null });
+        // ── PHASE 2: Medium-tier Verification ─────────────────────────────
+        emit({ phase: 2, status: "Expanding cross-references and evaluating context…", answer: null });
 
         const runAiPhase2 = predictive || p1Confidence < 0.72;
 
@@ -103,6 +118,21 @@ export async function POST(req: Request) {
         const p2Confidence = computeConfidence(p2, rev2, query);
         const p2HighFresh = p2.filter(s => s.reliability >= 0.76 && (s.freshness ?? 0) >= 0.6).length;
 
+        // CRITICAL FIX: If quality drops off significantly during expansion, halt before noise injection
+        if (p2Confidence < 0.35) {
+          emit({
+            phase: 2,
+            complete: true,
+            status: "Halted: Secondary source divergence detected.",
+            answer: "Insufficient reliable documentation found. Results cannot be verified with high structural confidence.",
+            confidence: p2Confidence,
+            sources: p2.sort((a, b) => b.reliability - a.reliability).slice(0, 5),
+            peerReview: rev2,
+            report: "Halted at noise boundary: Secondary expansion failed convergence thresholds.",
+          });
+          return;
+        }
+
         emit({
           phase: 2,
           status: `Phase 2 complete — ${p2.length} sources, ${rev2.length} AI reviews`,
@@ -113,7 +143,6 @@ export async function POST(req: Request) {
           report: buildReport(p2, rev2, "Phase 2 - secondary expansion", query),
         });
 
-        // Shortcut: stop before low-tier crawl if evidence is already strong.
         if (!predictive && p2Confidence >= 0.77 && p2HighFresh >= 5) {
           emit({
             phase: 2,
@@ -130,8 +159,8 @@ export async function POST(req: Request) {
 
         if (Date.now() > deadline) { done = true; controller.close(); return; }
 
-        // ── PHASE 3: low-tier + re-review + final ────────────────────────
-        emit({ phase: 3, status: "Deep scan + synthesising final answer…", answer: null });
+        // ── PHASE 3: Deep Scan Finalization ────────────────────────
+        emit({ phase: 3, status: "Deep scan + synthesizing final answer…", answer: null });
 
         const runAiPhase3 = predictive || p2Confidence < 0.7;
 
