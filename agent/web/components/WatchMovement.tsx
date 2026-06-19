@@ -2,6 +2,7 @@
 
 import { useId, useRef, type ReactElement, type PointerEvent as ReactPointerEvent } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
+import { daysInMonth } from "../lib/cycleSystems";
 import { labelForDistanceRank } from "../lib/starmap";
 
 export type CalendarWheel = CycleSnapshot["wheelLayers"][number];
@@ -18,6 +19,7 @@ export type WatchMovementProps = {
   showCompass?: boolean;
   skyDistance?: number;
   onSkyDistanceChange?: (rank: number) => void;
+  semicircle?: boolean;
 };
 
 type RingSpec = {
@@ -75,8 +77,8 @@ function cycleAngle(periodDays: number, d: Date): number {
   return ((d.getTime() % periodMs) / periodMs) * 360;
 }
 
-function daysInMonth(year: number, monthNum: number): number {
-  return new Date(year, monthNum, 0).getDate();
+function dayProgress(now: Date): number {
+  return (now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600 + now.getMilliseconds() / 86400000) / 24;
 }
 
 const TZOLKIN_SIGNS = [
@@ -109,32 +111,39 @@ function buildRingSpecs(now: Date, cycles: CycleSnapshot | null): Omit<RingSpec,
 
   if (!cycles) return specs;
 
-  const g = cycles.gregorian;
-  const dim = daysInMonth(g.year, g.monthNum);
-  const weekdayIdx = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].indexOf(g.weekday);
-  const wd = weekdayIdx >= 0 ? weekdayIdx : now.getDay();
+  const localYear = now.getFullYear();
+  const localMonth = now.getMonth() + 1;
+  const localDay = now.getDate();
+  const dim = daysInMonth(localYear, localMonth);
+  const wd = now.getDay();
   const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   const hourly = cycles.weather?.hourly;
 
-  // Weather — hourly forecast icons (0–23)
+  // Weather — hourly forecast icons (0–23), aligned to viewer local clock
   specs.push({
     id: "weather",
     color: "#22d3ee",
     nowAngle: hourAngle(now),
     divisions: 24,
     labelEvery: 1,
-    customLabel: i => hourly?.find(h => h.hour === i)?.emoji ?? (i === now.getHours() ? cycles.weather?.emoji ?? "·" : "·"),
+    customLabel: i => {
+      const slot = hourly?.find(h => h.hour === i);
+      if (slot?.emoji && slot.emoji !== "·") return slot.emoji;
+      if (i === now.getHours()) return cycles.weather?.emoji ?? "·";
+      return "·";
+    },
   });
 
-  // Day of month
+  // Day of month — divisions match this month's length (28–31)
   specs.push({
     id: "day",
     color: "#c084fc",
-    nowAngle: ((g.day - 1 + now.getHours() / 24) / dim) * 360,
+    nowAngle: ((localDay - 1 + dayProgress(now)) / dim) * 360,
     divisions: dim,
     labelEvery: 1,
     labelPad: 0,
     dense: true,
+    customLabel: i => (i < dim ? String(i + 1) : null),
   });
 
   // Weekday (outside day ring)
@@ -561,6 +570,7 @@ export function WatchMovement({
   showCompass = true,
   skyDistance = 50,
   onSkyDistanceChange,
+  semicircle = false,
 }: WatchMovementProps) {
   const cx = 200;
   const cy = 200;
@@ -580,11 +590,20 @@ export function WatchMovement({
 
   return (
     <svg
-      viewBox="0 0 400 400"
-      className={`cp-watch-movement${glass ? " cp-watch-movement-glass" : ""}`}
+      viewBox={semicircle ? "0 0 400 200" : "0 0 400 400"}
+      className={`cp-watch-movement${glass ? " cp-watch-movement-glass" : ""}${semicircle ? " cp-watch-semicircle" : ""}`}
       role="img"
       aria-label="Cycle wheels watch movement"
     >
+      {semicircle && (
+        <defs>
+          <clipPath id="watch-semicircle-clip">
+            <rect x={0} y={0} width={400} height={200} />
+          </clipPath>
+        </defs>
+      )}
+
+      <g clipPath={semicircle ? "url(#watch-semicircle-clip)" : undefined}>
       {!glass && (
         <>
           <defs>
@@ -630,6 +649,7 @@ export function WatchMovement({
         showCompass={showCompass}
         glass={glass}
       />
+      </g>
     </svg>
   );
 }

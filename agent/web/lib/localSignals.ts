@@ -1,9 +1,5 @@
 export type LocalSignals = {
-  location: {
-    latitude: number | null;
-    longitude: number | null;
-    accuracyM: number | null;
-  };
+  location: GeoFix;
   emf: {
     magneticFieldUt: number | null;
     method: string;
@@ -15,6 +11,49 @@ export type LocalSignals = {
     hint5G: string;
   };
 };
+
+export type GeoFix = {
+  latitude: number | null;
+  longitude: number | null;
+  accuracyM: number | null;
+  altitudeM: number | null;
+  altitudeAccuracyM: number | null;
+  speedMps: number | null;
+  headingDeg: number | null;
+  timestampMs: number | null;
+};
+
+const EMPTY_GEO: GeoFix = {
+  latitude: null,
+  longitude: null,
+  accuracyM: null,
+  altitudeM: null,
+  altitudeAccuracyM: null,
+  speedMps: null,
+  headingDeg: null,
+  timestampMs: null,
+};
+
+const GEO_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 12000,
+  maximumAge: 0,
+};
+
+function coordsToFix(coords: GeolocationCoordinates, timestampMs: number): GeoFix {
+  return {
+    latitude: coords.latitude,
+    longitude: coords.longitude,
+    accuracyM: Number.isFinite(coords.accuracy) ? coords.accuracy : null,
+    altitudeM: coords.altitude != null && Number.isFinite(coords.altitude) ? coords.altitude : null,
+    altitudeAccuracyM: coords.altitudeAccuracy != null && Number.isFinite(coords.altitudeAccuracy)
+      ? coords.altitudeAccuracy
+      : null,
+    speedMps: coords.speed != null && Number.isFinite(coords.speed) ? coords.speed : null,
+    headingDeg: coords.heading != null && Number.isFinite(coords.heading) ? coords.heading : null,
+    timestampMs,
+  };
+}
 
 type DeviceOrientationEventWithCompass = DeviceOrientationEvent & {
   webkitCompassHeading?: number;
@@ -63,24 +102,30 @@ export function getNetworkInfo(): LocalSignals["network"] {
   return { effectiveType, downlinkMbps, rttMs, hint5G };
 }
 
-export async function getLocation(): Promise<LocalSignals["location"]> {
+export async function getLocation(): Promise<GeoFix> {
   if (!("geolocation" in navigator)) {
-    return { latitude: null, longitude: null, accuracyM: null };
+    return { ...EMPTY_GEO };
   }
 
   return new Promise((resolve) => {
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        resolve({
-          latitude: pos.coords.latitude,
-          longitude: pos.coords.longitude,
-          accuracyM: pos.coords.accuracy,
-        });
-      },
-      () => resolve({ latitude: null, longitude: null, accuracyM: null }),
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+      (pos) => resolve(coordsToFix(pos.coords, pos.timestamp)),
+      () => resolve({ ...EMPTY_GEO }),
+      GEO_OPTIONS,
     );
   });
+}
+
+/** Continuous high-accuracy position stream. */
+export function watchLocation(onFix: (fix: GeoFix) => void, onError?: () => void): () => void {
+  if (!("geolocation" in navigator)) return () => {};
+
+  const id = navigator.geolocation.watchPosition(
+    (pos) => onFix(coordsToFix(pos.coords, pos.timestamp)),
+    () => onError?.(),
+    GEO_OPTIONS,
+  );
+  return () => navigator.geolocation.clearWatch(id);
 }
 
 // iOS 13+ requires this to be called from a user gesture (a click handler,
@@ -113,12 +158,29 @@ function headingFromOrientation(event: DeviceOrientationEventWithCompass): numbe
   return normalizeHeading(raw);
 }
 
-// Continuous heading stream — call requestOrientationPermission() first.
-// Listens to both absolute and relative orientation events (iOS / Android / Chrome).
-// Returns an unsubscribe function.
-export function watchCompassHeading(onHeading: (headingDeg: number | null) => void): () => void {
+function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
+  const beta = event.beta;
+  if (typeof beta !== "number" || !Number.isFinite(beta)) return null;
+  // Portrait hold: beta≈90 → horizon, beta→0 → zenith
+  const alt = 90 - beta;
+  return Math.max(5, Math.min(85, Math.round(alt)));
+}
+
+export type DeviceOrientationReading = {
+  heading: number | null;
+  pitch: number | null;
+};
+
+// Continuous heading + pitch from device tilt — call requestOrientationPermission() first.
+export function watchDeviceOrientation(
+  onReading: (reading: DeviceOrientationReading) => void,
+): () => void {
   const onOrientation = (event: Event) => {
-    onHeading(headingFromOrientation(event as DeviceOrientationEventWithCompass));
+    const e = event as DeviceOrientationEventWithCompass;
+    onReading({
+      heading: headingFromOrientation(e),
+      pitch: pitchFromOrientation(e),
+    });
   };
   window.addEventListener("deviceorientationabsolute", onOrientation, true);
   window.addEventListener("deviceorientation", onOrientation, true);
@@ -126,6 +188,11 @@ export function watchCompassHeading(onHeading: (headingDeg: number | null) => vo
     window.removeEventListener("deviceorientationabsolute", onOrientation, true);
     window.removeEventListener("deviceorientation", onOrientation, true);
   };
+}
+
+/** @deprecated Use watchDeviceOrientation */
+export function watchCompassHeading(onHeading: (headingDeg: number | null) => void): () => void {
+  return watchDeviceOrientation(({ heading }) => onHeading(heading));
 }
 
 export async function getMagneticField(): Promise<LocalSignals["emf"]> {

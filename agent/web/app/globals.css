@@ -65,6 +65,47 @@ html,body {
   color: #c9a227;
 }
 
+.cp-spacetime {
+  margin: 0 0.15rem 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border-radius: 8px;
+  background: rgba(8, 12, 20, 0.72);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  backdrop-filter: blur(6px);
+  font-family: "Consolas", "Courier New", monospace;
+  font-size: 0.68rem;
+  line-height: 1.55;
+  color: #c8d0dc;
+}
+
+.cp-st-row {
+  display: flex;
+  gap: 0.55rem;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
+.cp-st-label {
+  flex: 0 0 3.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #c9a227;
+  font-size: 0.62rem;
+}
+
+.cp-st-value {
+  flex: 1 1 12rem;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.cp-st-live {
+  margin: 0.35rem 0 0;
+  font-size: 0.62rem;
+  color: #4ade80;
+  letter-spacing: 0.06em;
+}
+
 .cp-zoom-label {
   font-size: 0.72rem;
   color: var(--ink-dim);
@@ -245,7 +286,7 @@ html,body {
 }
 
 .cp-wheel-viewport-hero {
-  min-height: min(62vh, 720px);
+  min-height: min(72vh, 820px);
   padding: 0;
   border-radius: 14px;
   border-width: 2px;
@@ -254,6 +295,66 @@ html,body {
   box-shadow:
     inset 0 0 40px rgba(0, 0, 0, 0.35),
     0 4px 24px rgba(0, 0, 0, 0.45);
+}
+
+.cp-split-hero {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: min(72vh, 820px);
+  height: 100%;
+}
+
+.cp-split-wheels {
+  flex: 0 0 50%;
+  min-height: 0;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: #010409;
+  border-bottom: 2px solid #2a4060;
+  overflow: hidden;
+}
+
+.cp-semicircle-clip {
+  width: min(100%, 720px);
+  aspect-ratio: 2 / 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.cp-semicircle-clip .cp-watch-scaler {
+  width: 100%;
+  transform-origin: 50% 100%;
+  pointer-events: none;
+}
+
+.cp-watch-semicircle {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 2 / 1;
+}
+
+.cp-split-skymap {
+  flex: 1 1 50%;
+  min-height: 160px;
+  position: relative;
+  overflow: hidden;
+  background: #010409;
+}
+
+.cp-split-skymap .cp-skymap-panel {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 160px;
+}
+
+.cp-split-skymap-off {
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .cp-hero-composite {
@@ -296,17 +397,6 @@ html,body {
 
 .cp-distance-ring {
   pointer-events: auto;
-}
-
-.cp-hero-pitch-surface {
-  cursor: ns-resize;
-  touch-action: none;
-}
-
-.cp-skymap-hint {
-  font-size: 0.78rem;
-  line-height: 1.45;
-  margin-top: 0.15rem;
 }
 
 .cp-skymap-pitch-marker {

@@ -17,32 +17,66 @@ export type WeatherInfo = {
   emoji: string;
   tempC: number | null;
   windKmh: number | null;
-  /** Local forecast emoji per clock hour (0–23) */
-  hourly?: Array<{ hour: number; emoji: string; condition: string; tempC: number | null }>;
+  /** Local forecast per clock hour (0–23) in the viewer's timezone */
+  hourly?: Array<{
+    hour: number;
+    emoji: string;
+    condition: string;
+    tempC: number | null;
+    precipProb?: number | null;
+    cloudCover?: number | null;
+    isDay?: boolean;
+  }>;
 };
 
-export function weatherCodeToEmoji(code: number): { emoji: string; condition: string } {
+export function daysInMonth(year: number, monthNum: number): number {
+  return new Date(year, monthNum, 0).getDate();
+}
+
+/** WMO weather interpretation codes (Open-Meteo). */
+export function weatherCodeToEmoji(code: number, isDay = true): { emoji: string; condition: string } {
   const condition =
-    code === 0   ? "Clear sky"
-    : code <= 3  ? "Partly cloudy"
-    : code <= 9  ? "Foggy"
-    : code <= 29 ? "Drizzle"
-    : code <= 39 ? "Rain"
-    : code <= 49 ? "Snow"
-    : code <= 67 ? "Showers"
-    : code <= 77 ? "Snow"
-    : code <= 82 ? "Rain showers"
-    : code <= 86 ? "Snow showers"
-    : "Thunderstorm";
+    code === 0 ? "Clear sky"
+    : code === 1 ? "Mainly clear"
+    : code === 2 ? "Partly cloudy"
+    : code === 3 ? "Overcast"
+    : code === 45 ? "Fog"
+    : code === 48 ? "Rime fog"
+    : code === 51 ? "Light drizzle"
+    : code === 53 ? "Drizzle"
+    : code === 55 ? "Dense drizzle"
+    : code === 56 || code === 57 ? "Freezing drizzle"
+    : code === 61 ? "Light rain"
+    : code === 63 ? "Rain"
+    : code === 65 ? "Heavy rain"
+    : code === 66 || code === 67 ? "Freezing rain"
+    : code === 71 ? "Light snow"
+    : code === 73 ? "Snow"
+    : code === 75 ? "Heavy snow"
+    : code === 77 ? "Snow grains"
+    : code === 80 ? "Light showers"
+    : code === 81 ? "Showers"
+    : code === 82 ? "Heavy showers"
+    : code === 85 ? "Snow showers"
+    : code === 86 ? "Heavy snow showers"
+    : code === 95 ? "Thunderstorm"
+    : code === 96 || code === 99 ? "Thunderstorm with hail"
+    : "Unknown";
+
   const emoji =
-    code === 0   ? "☀️"
-    : code <= 3  ? "⛅"
-    : code <= 9  ? "🌫️"
-    : code <= 39 ? "🌧️"
-    : code <= 49 ? "❄️"
-    : code <= 67 ? "🌦️"
-    : code <= 77 ? "🌨️"
-    : "⛈️";
+    code === 0 ? (isDay ? "☀️" : "🌙")
+    : code === 1 ? (isDay ? "🌤️" : "🌙")
+    : code === 2 ? "⛅"
+    : code === 3 ? "☁️"
+    : code === 45 || code === 48 ? "🌫️"
+    : code >= 51 && code <= 57 ? "🌦️"
+    : code >= 61 && code <= 67 ? "🌧️"
+    : code >= 71 && code <= 77 ? "❄️"
+    : code >= 80 && code <= 82 ? "🌦️"
+    : code >= 85 && code <= 86 ? "🌨️"
+    : code >= 95 ? "⛈️"
+    : "·";
+
   return { emoji, condition };
 }
 
@@ -59,6 +93,7 @@ export type CycleSnapshot = {
     year: number;
     dayOfYear: number;
     weekOfYear: number;
+    daysInMonth: number;
   };
   westernZodiac: { sign: string; symbol: string };
   chineseZodiac: { animal: string; element: string; yinYang: "Yin" | "Yang"; symbol: string };
@@ -98,16 +133,23 @@ const ZODIAC = [
 // ─── Date helpers ─────────────────────────────────────────────────────────
 
 function getDayOfYear(date: Date): number {
-  const start = new Date(Date.UTC(date.getUTCFullYear(), 0, 0));
-  const now   = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  return Math.floor((now.getTime() - start.getTime()) / 86400000);
+  const start = new Date(date.getFullYear(), 0, 0);
+  const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((today.getTime() - start.getTime()) / 86400000);
 }
 
 function getWeekOfYear(date: Date): number {
-  const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const y0 = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() + 4 - (d.getDay() || 7));
+  const y0 = new Date(d.getFullYear(), 0, 1);
   return Math.ceil((((d.getTime() - y0.getTime()) / 86400000) + 1) / 7);
+}
+
+function localIsoDate(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, "0");
+  const d = String(date.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
 }
 
 // ─── Cycle calculators ───────────────────────────────────────────────────
@@ -132,8 +174,8 @@ function getChineseZodiac(year: number) {
 }
 
 function getTzolkin(date: Date) {
-  const anchor = new Date(Date.UTC(2024, 6, 26)); // Kin 1 anchor
-  const current = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+  const anchor = new Date(2024, 6, 26); // Kin 1 anchor (local civil date)
+  const current = new Date(date.getFullYear(), date.getMonth(), date.getDate());
   const diff = Math.floor((current.getTime() - anchor.getTime()) / 86400000);
   const kin  = ((diff % 260) + 260) % 260 + 1;
   const tone = ((kin - 1) % 13) + 1;
@@ -204,13 +246,14 @@ function buildWheelLayers(
   chineseZodiac: ReturnType<typeof getChineseZodiac>,
   westernZodiac: ReturnType<typeof getZodiac>,
 ): WheelLayer[] {
-  const year  = date.getUTCFullYear();
-  const month = date.getUTCMonth() + 1;
-  const day   = date.getUTCDate();
+  const year  = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day   = date.getDate();
+  const dim   = daysInMonth(year, month);
 
   // position within current zodiac sign (0-360 within ~30-day sign)
   const zodiacSignStart = ZODIAC.find(z => z.sign === westernZodiac.sign)?.start ?? [1, 1];
-  const signStartDoy    = getDayOfYear(new Date(Date.UTC(year, zodiacSignStart[0] - 1, zodiacSignStart[1])));
+  const signStartDoy    = getDayOfYear(new Date(year, zodiacSignStart[0] - 1, zodiacSignStart[1]));
   const dayInSign       = (dayOfYear - signStartDoy + 365) % 365;
   const zodiacAngle     = (dayInSign / 30.44) * 360;
 
@@ -220,14 +263,14 @@ function buildWheelLayers(
   const chineseAnimalPos = ((year - 1984 + 120) % 12) / 12;
 
   return [
-    { id: "day",           name: "Day",            icon: "🕒", label: date.toLocaleDateString("en", { weekday: "short", timeZone: "UTC" }),            sublabel: `D${dayOfYear}`,               angleDeg: (date.getUTCDay() / 7) * 360,                    periodDays: 7,       color: "#4d8bff", category: "nature" },
+    { id: "day",           name: "Day",            icon: "🕒", label: date.toLocaleDateString("en", { weekday: "short" }),            sublabel: `D${dayOfYear}`,               angleDeg: (date.getDay() / 7) * 360,                    periodDays: 7,       color: "#4d8bff", category: "nature" },
     { id: "kin",           name: "Kin",            icon: "🧭", label: `Kin ${tzolkin.kin}`,                                                            sublabel: tzolkin.sign,                  angleDeg: ((tzolkin.kin - 1) / 260) * 360,                 periodDays: 260,     color: "#7c3aed", category: "mayan" },
     { id: "chinese-sign",  name: "Chinese Sign",   icon: "🐉", label: `${chineseZodiac.symbol} ${chineseZodiac.animal}`,                               sublabel: `12-yr cycle`,                 angleDeg: chineseAnimalPos * 360,                           periodDays: 4383,    color: "#dc2626", category: "chinese" },
     { id: "wavespell",     name: "Wavespell",      icon: "🌊", label: `Tone ${tzolkin.tone}`,                                                          sublabel: `Wave ${mayan.wavespell}`,      angleDeg: ((tzolkin.tone - 1) / 13) * 360,                 periodDays: 13,      color: "#6366f1", category: "mayan" },
     { id: "castle",        name: "Castle",         icon: "🏰", label: mayan.castleName,                                                                sublabel: `Castle ${mayan.castle}/5`,     angleDeg: (((tzolkin.kin - 1) % 52) / 52) * 360,           periodDays: 52,      color: mayan.castleColor, category: "mayan" },
     { id: "moon",          name: "Moon",           icon: "🌙", label: `${lunar.emoji} ${lunar.phase}`,                                                 sublabel: `${(lunar.fraction * 100).toFixed(0)}%`, angleDeg: lunar.angleDeg,                         periodDays: SYNODIC, color: "#94a3b8", category: "lunar" },
     { id: "chinese-month", name: "Chinese Month",  icon: "📅", label: `Lunar M${(Math.floor(lunar.fraction * 12) % 12) + 1}`,                          sublabel: "Lunar month",                  angleDeg: (((lunar.fraction * 12) % 1)) * 360,              periodDays: SYNODIC, color: "#f43f5e", category: "chinese" },
-    { id: "greg-month",    name: "Month",          icon: "🗓️", label: date.toLocaleDateString("en", { month: "short", timeZone: "UTC" }),               sublabel: `Day ${day}`,                   angleDeg: ((month - 1 + (day / 30)) / 12) * 360,            periodDays: 30.44,   color: "#0891b2", category: "western" },
+    { id: "greg-month",    name: "Month",          icon: "🗓️", label: date.toLocaleDateString("en", { month: "short" }),               sublabel: `Day ${day}`,                   angleDeg: ((month - 1 + (day - 1 + date.getHours() / 24) / dim) / 12) * 360,            periodDays: 30.44,   color: "#0891b2", category: "western" },
     { id: "zodiac",        name: "Zodiac",         icon: "✨", label: `${westernZodiac.symbol} ${westernZodiac.sign}`,                                  sublabel: "Sign cycle",                   angleDeg: zodiacAngle % 360,                                periodDays: 30.44,   color: "#f97316", category: "western" },
     { id: "season",        name: "Season",         icon: "🍃", label: `${season.emoji} ${season.name}`,                                                 sublabel: `Day ${season.dayInSeason}`,    angleDeg: season.angleDeg,                                  periodDays: 91.3,    color: "#22c55e", category: "nature" },
     { id: "chinese-year",  name: "Chinese Year",   icon: "🧧", label: `${chineseZodiac.element} ${chineseZodiac.animal}`,                               sublabel: "60-yr cycle",                  angleDeg: chineseCyclePos * 360,                            periodDays: 21915,   color: "#b91c1c", category: "chinese" },
@@ -239,9 +282,9 @@ function buildWheelLayers(
 
 export function getCycleSnapshot(input?: Date, weather?: WeatherInfo): CycleSnapshot {
   const date      = input ?? new Date();
-  const month     = date.getUTCMonth() + 1;
-  const day       = date.getUTCDate();
-  const year      = date.getUTCFullYear();
+  const month     = date.getMonth() + 1;
+  const day       = date.getDate();
+  const year      = date.getFullYear();
   const dayOfYear = getDayOfYear(date);
   const weekOfYear = getWeekOfYear(date);
 
@@ -264,17 +307,18 @@ export function getCycleSnapshot(input?: Date, weather?: WeatherInfo): CycleSnap
 
   return {
     capturedAtMs: date.getTime(),
-    isoDate: date.toISOString().slice(0, 10),
+    isoDate: localIsoDate(date),
     gregorian: {
-      weekday: date.toLocaleDateString("en", { weekday: "long", timeZone: "UTC" }),
-      weekdayShort: date.toLocaleDateString("en", { weekday: "short", timeZone: "UTC" }),
-      month: date.toLocaleDateString("en", { month: "long", timeZone: "UTC" }),
-      monthShort: date.toLocaleDateString("en", { month: "short", timeZone: "UTC" }),
+      weekday: date.toLocaleDateString("en", { weekday: "long" }),
+      weekdayShort: date.toLocaleDateString("en", { weekday: "short" }),
+      month: date.toLocaleDateString("en", { month: "long" }),
+      monthShort: date.toLocaleDateString("en", { month: "short" }),
       monthNum: month,
       day,
       year,
       dayOfYear,
       weekOfYear,
+      daysInMonth: daysInMonth(year, month),
     },
     westernZodiac,
     chineseZodiac,

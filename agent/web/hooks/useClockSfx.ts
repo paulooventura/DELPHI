@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import {
   getClockAudio,
   playHourBell,
@@ -10,19 +10,33 @@ import {
   resumeClockAudio,
 } from "../lib/clockSfx";
 
+function syncChimeRefs(refs: {
+  lastMs: MutableRefObject<number>;
+  lastSec: MutableRefObject<number>;
+  lastChimeKey: MutableRefObject<string>;
+}) {
+  const d = new Date();
+  refs.lastMs.current = d.getMilliseconds();
+  refs.lastSec.current = d.getSeconds();
+  refs.lastChimeKey.current = `${d.getHours()}:${d.getMinutes()}`;
+}
+
 export function useClockSfx(enabled: boolean) {
   const [active, setActive] = useState(false);
   const lastMs = useRef(-1);
   const lastSec = useRef(-1);
-  const lastMin = useRef(-1);
-  const lastHour = useRef(-1);
+  const lastChimeKey = useRef("");
 
   useEffect(() => {
     if (!enabled) return;
 
+    const refs = { lastMs, lastSec, lastChimeKey };
+
     const unlock = () => {
       void resumeClockAudio().then(ctx => {
-        if (ctx) setActive(true);
+        if (!ctx) return;
+        syncChimeRefs(refs);
+        setActive(true);
       });
     };
 
@@ -43,20 +57,22 @@ export function useClockSfx(enabled: boolean) {
         playMsTick(ctx);
         lastMs.current = ms;
       }
+
       if (sec !== lastSec.current) {
         playSecondTick(ctx, sec);
         lastSec.current = sec;
-      }
 
-      // Bells fire once at the top of each minute
-      if (sec === 0 && ms < 20) {
-        if (hr !== lastHour.current) {
-          playHourBell(ctx, hr);
-          lastHour.current = hr;
-          lastMin.current = min;
-        } else if (min !== lastMin.current) {
-          playMinuteBell(ctx);
-          lastMin.current = min;
+        // One chime per minute, on the second hand hitting 12
+        if (sec === 0) {
+          const chimeKey = `${hr}:${min}`;
+          if (chimeKey !== lastChimeKey.current) {
+            lastChimeKey.current = chimeKey;
+            if (min === 0) {
+              playHourBell(ctx, hr);
+            } else {
+              playMinuteBell(ctx);
+            }
+          }
         }
       }
     }, 1);
@@ -70,6 +86,11 @@ export function useClockSfx(enabled: boolean) {
 
   return {
     active,
-    enable: () => void resumeClockAudio().then(ctx => ctx && setActive(true)),
+    enable: () =>
+      void resumeClockAudio().then(ctx => {
+        if (!ctx) return;
+        syncChimeRefs({ lastMs, lastSec, lastChimeKey });
+        setActive(true);
+      }),
   };
 }

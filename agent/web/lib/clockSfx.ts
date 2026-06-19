@@ -65,12 +65,14 @@ function playBellStrike(
   fundamental: number,
   gainPeak: number,
   duration: number,
+  harmonics: number[] = [1, 2.4, 3.8],
 ) {
-  [1, 2.2, 3.5, 5.1].forEach((harm, i) => {
+  harmonics.forEach((harm, i) => {
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
     osc.type = "sine";
     osc.frequency.setValueAtTime(fundamental * harm, t0);
+    osc.frequency.exponentialRampToValueAtTime(fundamental * harm * 0.985, t0 + duration);
     gain.gain.setValueAtTime(gainPeak / (i + 1), t0);
     gain.gain.exponentialRampToValueAtTime(0.00008, t0 + duration);
     osc.connect(gain);
@@ -80,15 +82,16 @@ function playBellStrike(
   });
 }
 
-/** Single deep bell at each minute */
+/** Single bell at each minute (not on the hour — hour chime takes over). */
 export function playMinuteBell(ctx: AudioContext) {
-  playBellStrike(ctx, ctx.currentTime, 196, 0.11, 0.95);
+  playBellStrike(ctx, ctx.currentTime, 220, 0.09, 0.85);
 }
 
-/** Hour strike — one deep bell per hour count (12-hour cycle) */
+/** Hour strike — deeper bell, once per hour on a 12-hour dial (3 → 3, 9 → 9, 12 → 12). */
 export function playHourBell(ctx: AudioContext, hour24: number) {
   const strikes = (hour24 % 12) || 12;
+  const gap = 1.15;
   for (let i = 0; i < strikes; i++) {
-    playBellStrike(ctx, ctx.currentTime + i * 0.9, 146, 0.13, 1.15);
+    playBellStrike(ctx, ctx.currentTime + i * gap, 98, 0.14, 1.35, [1, 2.1, 3.2, 4.6]);
   }
 }

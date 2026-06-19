@@ -100,11 +100,14 @@ export const STAR_TO_CONSTELLATION: Record<string, string> = {
 // Legacy bright-star list kept for constellation scoring
 export const BRIGHT_STARS: StarData[] = NEAREST_STARS.filter(s => s.mag <= 3.5);
 
-function lstDeg(date: Date, lonDeg: number): number {
+export function gmstDeg(date: Date): number {
   const JD = date.getTime() / 86400000 + 2440587.5;
   const T = (JD - 2451545.0) / 36525;
-  const GMST = (280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T) % 360;
-  return ((GMST + lonDeg) % 360 + 360) % 360;
+  return ((280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T) % 360 + 360) % 360;
+}
+
+export function lstDeg(date: Date, lonDeg: number): number {
+  return ((gmstDeg(date) + lonDeg) % 360 + 360) % 360;
 }
 
 export function celestialToAltAz(

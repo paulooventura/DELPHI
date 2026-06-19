@@ -3,10 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
-import { skyObjectsInView, relevantConstellations, zodiacPlacements, labelForDistanceRank, distanceLyForRank, type ConstellationHit } from "../lib/starmap";
+import { skyObjectsInView, zodiacPlacements, labelForDistanceRank } from "../lib/starmap";
 import type { SourceItem, ResearchReport, ProviderReview } from "../lib/researchEngine";
-import { getLocation, requestOrientationPermission, watchCompassHeading, getMagneticField, getNetworkInfo } from "../lib/localSignals";
+import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { WatchMovement } from "../components/WatchMovement";
+import { SpacetimeReadout } from "../components/SpacetimeReadout";
 import { useClockSfx } from "../hooks/useClockSfx";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -70,10 +71,52 @@ const SENSOR_TOGGLE_DEFS: Array<{ key: keyof SensorToggles; label: string }> = [
 type Signals = {
   lat: number | null;
   lon: number | null;
+  accuracyM: number | null;
+  altM: number | null;
+  altAccuracyM: number | null;
+  speedMps: number | null;
+  gpsHeading: number | null;
+  locationAtMs: number | null;
   heading: number | null;
+  pitch: number | null;
   network: string | null;
   emfUt: number | null;
 };
+
+function emptySignals(partial: Partial<Signals> = {}): Signals {
+  return {
+    lat: null,
+    lon: null,
+    accuracyM: null,
+    altM: null,
+    altAccuracyM: null,
+    speedMps: null,
+    gpsHeading: null,
+    locationAtMs: null,
+    heading: null,
+    pitch: null,
+    network: null,
+    emfUt: null,
+    ...partial,
+  };
+}
+
+function applyGeoFix(prev: Signals | null, fix: GeoFix): Signals {
+  return {
+    lat: fix.latitude,
+    lon: fix.longitude,
+    accuracyM: fix.accuracyM,
+    altM: fix.altitudeM,
+    altAccuracyM: fix.altitudeAccuracyM,
+    speedMps: fix.speedMps,
+    gpsHeading: fix.headingDeg,
+    locationAtMs: fix.timestampMs,
+    heading: prev?.heading ?? null,
+    pitch: prev?.pitch ?? null,
+    network: prev?.network ?? null,
+    emfUt: prev?.emfUt ?? null,
+  };
+}
 
 type StreamState = {
   phase: number;
@@ -90,26 +133,22 @@ type StreamState = {
 
 // ─── Sky Map ──────────────────────────────────────────────────────────────────
 
-function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, variant = "standalone" }: {
+function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, variant = "standalone", liveHeading = false, livePitch = false }: {
   lat: number; lon: number; heading: number; pitchDeg: number; distanceRank: number; minuteKey: number;
-  variant?: "standalone" | "background" | "legend";
+  variant?: "standalone" | "panel" | "legend";
+  liveHeading?: boolean;
+  livePitch?: boolean;
 }) {
-  const W = 320, H = 168;
+  const W = 320, H = variant === "panel" ? 200 : 168;
   const FOV_AZ = 85;
   const FOV_ALT_HALF = 42;
-  const isBg = variant === "background";
+  const isPanel = variant === "panel";
   const isLegend = variant === "legend";
 
   const { stars, moon } = useMemo(
     () => skyObjectsInView(lat, lon, heading, pitchDeg, new Date(), FOV_AZ, FOV_ALT_HALF, distanceRank),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [lat, lon, Math.round(heading * 2) / 2, Math.round(pitchDeg), distanceRank, minuteKey],
-  );
-
-  const constellations: ConstellationHit[] = useMemo(
-    () => relevantConstellations(lat, lon, heading, new Date(), FOV_AZ, 6),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [lat, lon, Math.round(heading * 2) / 2, minuteKey],
   );
 
   function toXY(az: number, alt: number): [number, number] {
@@ -121,11 +160,11 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, varia
   }
 
   const zodiac = useMemo(
-    () => isBg
+    () => isPanel
       ? zodiacPlacements(lat, lon, heading, pitchDeg, FOV_AZ / 2, FOV_ALT_HALF, new Date(), toXY, W, H, stars)
       : [],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [stars, lat, lon, heading, pitchDeg, isBg, minuteKey],
+    [stars, lat, lon, heading, pitchDeg, isPanel, minuteKey],
   );
 
   const CARD_AZS  = [0, 45, 90, 135, 180, 225, 270, 315];
@@ -140,35 +179,25 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, varia
     <svg
       viewBox={`0 0 ${W} ${H}`}
       width="100%"
-      height={isBg ? "100%" : undefined}
-      preserveAspectRatio={isBg ? "xMidYMid slice" : undefined}
-      className={`cp-skymap${isBg ? " cp-skymap-bg" : ""}`}
+      height={isPanel ? "100%" : undefined}
+      preserveAspectRatio={isPanel ? "xMidYMid slice" : undefined}
+      className={`cp-skymap${isPanel ? " cp-skymap-panel" : ""}`}
     >
       <defs>
-        <linearGradient id={isBg ? "skyg-bg" : "skyg"} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient id={isPanel ? "skyg-panel" : "skyg"} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="#010409"/>
           <stop offset="70%" stopColor="#08192e"/>
           <stop offset="100%" stopColor="#12253d"/>
         </linearGradient>
-        {isBg && (
-          <radialGradient id="skyg-vignette" cx="50%" cy="88%" r="72%">
-            <stop offset="55%" stopColor="rgba(0,0,0,0)" />
-            <stop offset="100%" stopColor="rgba(0,0,0,0.55)" />
-          </radialGradient>
-        )}
       </defs>
-      <rect width={W} height={H} fill={`url(#${isBg ? "skyg-bg" : "skyg"})`} rx={isBg ? 0 : 6}/>
-      {isBg && <rect width={W} height={H} fill="url(#skyg-vignette)" />}
+      <rect width={W} height={H} fill={`url(#${isPanel ? "skyg-panel" : "skyg"})`} rx={isPanel ? 0 : 6}/>
 
-      {/* Zodiac artwork — background layer anchored to reference stars */}
-      {isBg && zodiac.map(({ def, cx, cy, scale }) => (
-        <g key={def.sign} opacity={0.22} transform={`translate(${cx},${cy}) scale(${scale / 40})`}>
+      {isPanel && zodiac.map(({ def, cx, cy, scale }) => (
+        <g key={def.sign} opacity={0.18} transform={`translate(${cx},${cy}) scale(${scale / 40})`}>
           <path d={def.path} fill="none" stroke={def.color} strokeWidth={0.12} strokeLinecap="round" strokeLinejoin="round" />
-          <text y={-1.1} textAnchor="middle" fontSize={0.55} fill={def.color} opacity={0.85}>{def.symbol}</text>
         </g>
       ))}
 
-      {/* Vertical altitude rails (left + right) — embedded pitch feedback */}
       {ALT_TICKS.map(alt => {
         const y = H / 2 - ((alt - pitchDeg) / FOV_ALT_HALF) * (H / 2);
         if (y < -4 || y > H + 4) return null;
@@ -176,70 +205,40 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, varia
         return (
           <g key={`alt-${alt}`}>
             <line
-              x1={isBg ? 18 : 0} y1={y} x2={W - (isBg ? 18 : 0)} y2={y}
-              stroke={isHorizon ? "#35506d" : isBg ? "#143248" : "#0c2236"}
-              strokeWidth={isHorizon ? 1.2 : 1}
+              x1={isPanel ? 22 : 0} y1={y} x2={W - (isPanel ? 22 : 0)} y2={y}
+              stroke={isHorizon ? "#35506d" : "#143248"}
+              strokeWidth={isHorizon ? 1.2 : 0.8}
               strokeDasharray={isHorizon ? undefined : "3,9"}
-              opacity={isBg ? 0.75 : 1}
+              opacity={0.8}
             />
-            <text x={isBg ? 4 : 4} y={y - 2} fontSize={isBg ? 7 : 6.5} fill={isHorizon ? "#5a8cb0" : "#3a5870"}>
-              {alt}°
+            {isPanel && (
+              <>
+                <text x={6} y={y - 2} fontSize={7} fill={isHorizon ? "#5a8cb0" : "#3a5870"}>{alt}°</text>
+                <text x={W - 6} y={y - 2} fontSize={7} fill={isHorizon ? "#5a8cb0" : "#3a5870"} textAnchor="end">{alt}°</text>
+              </>
+            )}
+          </g>
+        );
+      })}
+
+      <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6" opacity={0.7}/>
+      <line x1={0} y1={pitchY} x2={W} y2={pitchY} stroke="#1a4060" strokeWidth={1} strokeDasharray="4,5" opacity={0.75}/>
+
+      {isPanel && (
+        <>
+          <g className="cp-skymap-pitch-marker">
+            <polygon points={`${W - 18},${pitchY} ${W - 8},${pitchY - 5} ${W - 8},${pitchY + 5}`} fill="#38bdf8" opacity={0.9} />
+            <text x={W - 20} y={pitchY + 3} textAnchor="end" fontSize={8} fill="#7dd3fc" fontWeight="700">
+              {Math.round(pitchDeg)}°{livePitch ? " ↕" : ""}
             </text>
-            {isBg && (
-              <text x={W - 4} y={y - 2} fontSize={7} fill={isHorizon ? "#5a8cb0" : "#3a5870"} textAnchor="end">
-                {alt}°
-              </text>
-            )}
           </g>
-        );
-      })}
-
-      {/* Center crosshair — horizontal bearing + vertical pitch */}
-      <line x1={W / 2} y1={0} x2={W / 2} y2={H} stroke="#12324a" strokeWidth={1} strokeDasharray="2,6" opacity={isBg ? 0.75 : 1}/>
-      <line x1={0} y1={pitchY} x2={W} y2={pitchY} stroke="#1a4060" strokeWidth={1} strokeDasharray="4,5" opacity={isBg ? 0.85 : 1}/>
-
-      {/* Pitch centre marker on right rail */}
-      {isBg && (
-        <g className="cp-skymap-pitch-marker">
-          <polygon points={`${W - 16},${pitchY} ${W - 6},${pitchY - 5} ${W - 6},${pitchY + 5}`} fill="#38bdf8" opacity={0.9} />
-          <text x={W - 18} y={pitchY + 3} textAnchor="end" fontSize={7.5} fill="#7dd3fc" fontWeight="700">
-            {Math.round(pitchDeg)}°
-          </text>
-        </g>
-      )}
-
-      {!isBg && (
-        <text x={W - 8} y={H - 4} fontSize="7" fill="#4a6c88" textAnchor="end">
-          {labelForDistanceRank(distanceRank)} · {distanceLyForRank(distanceRank).toFixed(distanceRank === 0 ? 7 : 1)} ly
-        </text>
-      )}
-
-      {/* Horizontal bearing rail (bottom) */}
-      {CARD_AZS.map((cAz, ci) => {
-        const dAz = ((cAz - heading + 540) % 360) - 180;
-        if (Math.abs(dAz) > FOV_AZ / 2 + 8) return null;
-        const x = (dAz / FOV_AZ + 0.5) * W;
-        const isPrimary = ci % 2 === 0;
-        return (
-          <g key={ci} opacity={isBg ? 0.8 : 1}>
-            <line x1={x} y1={H - (isPrimary ? 14 : 8)} x2={x} y2={H} stroke={isPrimary ? "#1e4d70" : "#102840"} strokeWidth={1}/>
-            {isPrimary && (
-              <text x={x} y={H - 17} textAnchor="middle" fontSize={isBg ? 8 : 7} fill="#2e6080" fontWeight="700">
-                {CARD_LBLS[ci]}
-              </text>
-            )}
+          <g>
+            <polygon points={`${W / 2},${H - 3} ${W / 2 - 5},${H - 13} ${W / 2 + 5},${H - 13}`} fill="#c9a227" opacity={0.9} />
+            <text x={W / 2} y={H - 16} textAnchor="middle" fontSize={8} fill="#e8c872" fontWeight="700">
+              {Math.round(heading)}° {bearing}{liveHeading ? " ↔" : ""}
+            </text>
           </g>
-        );
-      })}
-
-      {/* Bearing marker on bottom rail */}
-      {isBg && (
-        <g>
-          <polygon points={`${W / 2},${H - 4} ${W / 2 - 5},${H - 14} ${W / 2 + 5},${H - 14}`} fill="#c9a227" opacity={0.9} />
-          <text x={W / 2} y={H - 18} textAnchor="middle" fontSize={8} fill="#e8c872" fontWeight="700">
-            {Math.round(heading)}° {bearing}
-          </text>
-        </g>
+        </>
       )}
 
       {moon && (() => {
@@ -252,7 +251,7 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, varia
             <circle cx={x} cy={y} r={r * 1.8} fill={`rgba(200,220,255,${0.08 * moonScale})`} />
             <circle cx={x} cy={y} r={r} fill="#e8eef8" opacity={0.15 + lit * 0.35} />
             <circle cx={x - r * (0.5 - lit)} cy={y} r={r * 0.92} fill="#f5f8ff" opacity={0.85} />
-            {isBg && (
+            {isPanel && (
               <text x={x} y={y + r + 10} textAnchor="middle" fontSize={7} fill="#a0c8e8">
                 ☽ {moon.phaseName}
               </text>
@@ -264,25 +263,45 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, varia
       {stars.map(star => {
         const [x, y] = toXY(star.az, star.alt);
         if (x < -18 || x > W + 18 || y < -18 || y > H + 18) return null;
-        const r = Math.max(0.9, (3.6 - star.mag) * 1.15 + 0.9) * (isBg ? 1.15 : 1);
-        const op = Math.min(1, (0.45 + (3.6 - star.mag) / 5.5) * (isBg ? 1.25 : 1));
+        const r = Math.max(0.9, (3.6 - star.mag) * 1.15 + 0.9) * (isPanel ? 1.15 : 1);
+        const op = Math.min(1, (0.45 + (3.6 - star.mag) / 5.5) * (isPanel ? 1.25 : 1));
         const fill = star.mag < 0.5 ? "#fffff5" : star.mag < 1.5 ? "#eef5ff" : "#d5e8ff";
         return (
           <g key={star.name}>
-            <circle cx={x} cy={y} r={r * 2.4} fill={`rgba(100,170,255,${op * (isBg ? 0.14 : 0.09)})`}/>
+            <circle cx={x} cy={y} r={r * 2.4} fill={`rgba(100,170,255,${op * (isPanel ? 0.14 : 0.09)})`}/>
             <circle cx={x} cy={y} r={r} fill={fill} opacity={op}/>
-            {!isBg && star.mag < 2.5 && (
-              <text x={x + r + 2.5} y={y + 3.5} fontSize="5.5" fill={`rgba(110,175,220,${op * 0.8})`}>{star.name}</text>
+          </g>
+        );
+      })}
+
+      {isPanel && CARD_AZS.map((cAz, ci) => {
+        const dAz = ((cAz - heading + 540) % 360) - 180;
+        if (Math.abs(dAz) > FOV_AZ / 2 + 8) return null;
+        const x = (dAz / FOV_AZ + 0.5) * W;
+        const isPrimary = ci % 2 === 0;
+        return (
+          <g key={ci} opacity={0.7}>
+            <line x1={x} y1={H - 20} x2={x} y2={H - (isPrimary ? 12 : 8)} stroke={isPrimary ? "#1e4d70" : "#102840"} strokeWidth={1}/>
+            {isPrimary && (
+              <text x={x} y={H - 22} textAnchor="middle" fontSize={7} fill="#2e6080" fontWeight="700">
+                {CARD_LBLS[ci]}
+              </text>
             )}
           </g>
         );
       })}
 
-      <text x={W / 2} y={11} textAnchor="middle" fontSize={isBg ? 9.5 : 8.5} fill="#4a9cc4" opacity={isBg ? 0.95 : 1}>
-        {isBg
-          ? `drag ↕ pitch · dial ⊙ distance · ${labelForDistanceRank(distanceRank)}`
-          : `↑ ${Math.round(heading)}°  ${bearing}  ·  pitch ${Math.round(pitchDeg)}°`}
-      </text>
+      {isPanel && (
+        <text x={8} y={12} fontSize={8} fill="#4a9cc4">
+          {(liveHeading || livePitch) ? "● Live" : "○ Manual"} · {labelForDistanceRank(distanceRank)}
+        </text>
+      )}
+
+      {!isPanel && (
+        <text x={W / 2} y={11} textAnchor="middle" fontSize={8.5} fill="#4a9cc4">
+          {`↑ ${Math.round(heading)}°  ${bearing}  ·  pitch ${Math.round(pitchDeg)}°`}
+        </text>
+      )}
 
       {stars.length === 0 && !moon && (
         <text x={W / 2} y={H / 2} textAnchor="middle" fontSize="10" fill="#203045">
@@ -292,35 +311,19 @@ function SkyMapSVG({ lat, lon, heading, pitchDeg, distanceRank, minuteKey, varia
     </svg>
   );
 
-  if (isBg) return svg;
-
-  const legend = (
-    <>
-      <div className="cp-constellations">
-        {constellations.length > 0
-          ? constellations.map(c => (
-              <span key={c.name} className="cp-const-pill" title={`${Math.round(c.avgAz)}° az · ${Math.round(c.avgAlt)}° alt`}>
-                ✦ {c.name} · {c.starsVisible}
-              </span>
-            ))
-          : <span className="cp-muted">No major constellation anchors in this slice right now.</span>}
-      </div>
-      <p className="cp-muted cp-skymap-meta">
-        {stars.length} object{stars.length === 1 ? "" : "s"} in view · {Math.round(heading)}° {bearing} · pitch {Math.round(pitchDeg)}° · {labelForDistanceRank(distanceRank)}
-      </p>
-    </>
-  );
+  if (isPanel) return svg;
 
   if (isLegend) {
-    return <div className="cp-skymap-wrap cp-skymap-legend">{legend}</div>;
+    return (
+      <div className="cp-skymap-wrap cp-skymap-legend">
+        <p className="cp-muted cp-skymap-meta">
+          {stars.length} objects · {Math.round(heading)}° {bearing} · {Math.round(pitchDeg)}° · {labelForDistanceRank(distanceRank)}
+        </p>
+      </div>
+    );
   }
 
-  return (
-    <div className="cp-skymap-wrap">
-      {svg}
-      {legend}
-    </div>
-  );
+  return <div className="cp-skymap-wrap">{svg}</div>;
 }
 
 // ─── Main page ────────────────────────────────────────────────────────────────
@@ -335,6 +338,7 @@ export default function Home() {
   const [sigLoading, setSigLoading] = useState(false);
   const [locDenied, setLocDenied] = useState(false);
   const [headingLive, setHeadingLive] = useState(false);
+  const [pitchLive, setPitchLive] = useState(false);
   const [manualHeading, setManualHeading] = useState(() => {
     try {
       const raw = localStorage.getItem(MANUAL_HEADING_KEY);
@@ -357,16 +361,20 @@ export default function Home() {
   const abortRef = useRef<AbortController | null>(null);
   const pinchStartRef = useRef<number | null>(null);
   const pinchZoomRef = useRef(1);
-  const pitchDragRef = useRef<{ y0: number; pitch0: number } | null>(null);
   const headingCleanupRef = useRef<(() => void) | null>(null);
+  const locationCleanupRef = useRef<(() => void) | null>(null);
+  const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
+  const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
+
+  useEffect(() => { togglesRef.current = toggles; }, [toggles]);
 
   // ── Smooth watch motion (rAF)
   useEffect(() => {
     let frame = 0;
     let last = 0;
     const tick = (t: number) => {
-      if (t - last >= 33) {
+      if (t - last >= 16) {
         last = t;
         setAnimNow(new Date());
       }
@@ -397,19 +405,26 @@ export default function Home() {
 
   // ── Fetch cycles
   const loadCycles = useCallback(async (lat?: number, lon?: number) => {
-    const q = lat != null ? `?lat=${lat}&lon=${lon}` : "";
-    const data = await fetch(`/api/cycles${q}`)
+    const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
+    const local = new Date();
+    const date = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")}`;
+    const qParts = [`tz=${tz}`, `date=${date}`];
+    if (lat != null && lon != null) qParts.unshift(`lat=${lat}`, `lon=${lon}`);
+    const data = await fetch(`/api/cycles?${qParts.join("&")}`)
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null);
-    if (data) {
-      setCycles(data as CycleSnapshot);
-      return;
-    }
-    // Local fallback when the API route is unreachable (e.g. opened without Next.js).
-    setCycles(getCycleSnapshot(new Date()));
+    const weather = data?.weather as CycleSnapshot["weather"] | undefined;
+    setCycles(getCycleSnapshot(new Date(), weather));
   }, []);
 
+  useEffect(() => { loadCyclesRef.current = loadCycles; }, [loadCycles]);
+
   useEffect(() => { void loadCycles(); }, [loadCycles]);
+
+  // Recompute calendar layers every minute (preserve latest weather).
+  useEffect(() => {
+    setCycles(prev => getCycleSnapshot(new Date(), prev?.weather));
+  }, [minuteKey]);
 
   // ── Refresh cadence: keep sky/cycles current every minute. Heading is a
   // continuous live stream (see startHeadingWatch), not a periodic sample.
@@ -428,49 +443,96 @@ export default function Home() {
 
   // ── Capture one-shot signals: each piece is requested only when its toggle is on.
   // Heading is excluded here — it's a continuous stream, see startHeadingWatch.
+  function stopLocationWatch() {
+    locationCleanupRef.current?.();
+    locationCleanupRef.current = null;
+  }
+
+  function startLocationWatch() {
+    stopLocationWatch();
+    let lastLat = NaN;
+    let lastLon = NaN;
+    locationCleanupRef.current = watchLocation(
+      (fix) => {
+        if (fix.latitude == null || fix.longitude == null) return;
+        setLocDenied(false);
+        setSignals(prev => applyGeoFix(prev, fix));
+        const moved = Math.hypot(fix.latitude - lastLat, fix.longitude - lastLon) > 0.002;
+        if (moved || !Number.isFinite(lastLat)) {
+          lastLat = fix.latitude;
+          lastLon = fix.longitude;
+          void loadCyclesRef.current(fix.latitude, fix.longitude);
+        }
+      },
+      () => setLocDenied(true),
+    );
+  }
+
   async function captureSensors(t: SensorToggles = toggles) {
     setSigLoading(true);
     setLocDenied(false);
     try {
       const [location, emf] = await Promise.all([
-        t.location ? getLocation() : Promise.resolve({ latitude: null, longitude: null, accuracyM: null }),
+        t.location ? getLocation() : Promise.resolve(null),
         t.emf ? getMagneticField() : Promise.resolve({ magneticFieldUt: null, method: "disabled" }),
       ]);
-      if (t.location && location.latitude == null) setLocDenied(true);
+      if (t.location && (location == null || location.latitude == null)) setLocDenied(true);
       const network = t.network ? getNetworkInfo() : { effectiveType: null, downlinkMbps: null, rttMs: null, hint5G: "" };
-      setSignals(prev => ({
-        lat: location.latitude,
-        lon: location.longitude,
-        heading: prev?.heading ?? null,
-        network: network.effectiveType,
-        emfUt: emf.magneticFieldUt,
-      }));
-      if (location.latitude != null && location.longitude != null) void loadCycles(location.latitude, location.longitude);
+      setSignals(prev => {
+        let next = prev ?? emptySignals();
+        if (t.location && location?.latitude != null) next = applyGeoFix(next, location);
+        return {
+          ...next,
+          network: t.network ? network.effectiveType : next.network,
+          emfUt: t.emf ? emf.magneticFieldUt : next.emfUt,
+        };
+      });
+      if (t.location && location?.latitude != null && location.longitude != null) {
+        void loadCycles(location.latitude, location.longitude);
+        void startOrientationWatch();
+        startLocationWatch();
+      } else if (t.location) {
+        startLocationWatch();
+      }
     } finally {
       setSigLoading(false);
     }
   }
 
-  // ── Live heading: a continuous "deviceorientation" subscription so the
-  // compass dial and sky map rotate in real time as the device turns.
-  // iOS 13+ requires requestOrientationPermission() to run inside a user
-  // gesture (a click), so this must be called directly from onClick handlers,
-  // not from inside an effect.
-  function stopHeadingWatch() {
+  // ── Live device orientation: heading + pitch from the same sensor stream.
+  function stopOrientationWatch() {
     headingCleanupRef.current?.();
     headingCleanupRef.current = null;
   }
 
-  async function startHeadingWatch() {
-    stopHeadingWatch();
+  async function startOrientationWatch() {
+    stopOrientationWatch();
     setHeadingLive(false);
+    setPitchLive(false);
     const allowed = await requestOrientationPermission();
     if (!allowed) return;
-    headingCleanupRef.current = watchCompassHeading(heading => {
-      if (heading == null || !Number.isFinite(heading)) return;
-      setHeadingLive(true);
-      setSignals(prev => prev ? { ...prev, heading } : { lat: null, lon: null, network: null, emfUt: null, heading });
+    headingCleanupRef.current = watchDeviceOrientation(({ heading, pitch }) => {
+      const t = togglesRef.current;
+      if (heading != null && t.heading) {
+        setHeadingLive(true);
+        setSignals(prev => prev
+          ? { ...prev, heading }
+          : emptySignals({ heading }));
+      }
+      if (pitch != null && t.location) {
+        setPitchLive(true);
+        setSkyPitch(pitch);
+        setSignals(prev => prev ? { ...prev, pitch } : prev);
+      }
     });
+  }
+
+  function stopHeadingWatch() {
+    stopOrientationWatch();
+  }
+
+  async function startHeadingWatch() {
+    await startOrientationWatch();
   }
 
   function applyManualHeading(value: number) {
@@ -483,18 +545,39 @@ export default function Home() {
     setToggles(prev => ({ ...prev, [key]: enabled }));
     if (key === "skyMap" || key === "compass") return;
     if (key === "heading") {
-      if (enabled) void startHeadingWatch();
+      if (enabled) void startOrientationWatch();
       else {
-        stopHeadingWatch();
         setHeadingLive(false);
         setSignals(prev => prev ? { ...prev, heading: null } : prev);
+        if (!toggles.location) stopOrientationWatch();
+      }
+      return;
+    }
+    if (key === "location") {
+      if (!enabled) {
+        setPitchLive(false);
+        stopLocationWatch();
+        setSignals(prev => prev ? {
+          ...prev,
+          lat: null,
+          lon: null,
+          accuracyM: null,
+          altM: null,
+          altAccuracyM: null,
+          speedMps: null,
+          gpsHeading: null,
+          locationAtMs: null,
+          pitch: null,
+        } : prev);
+        if (!toggles.heading) stopOrientationWatch();
+      } else {
+        void captureSensors();
       }
       return;
     }
     if (!enabled) {
       setSignals(prev => {
         if (!prev) return prev;
-        if (key === "location") return { ...prev, lat: null, lon: null };
         if (key === "network") return { ...prev, network: null };
         if (key === "emf") return { ...prev, emfUt: null };
         return prev;
@@ -512,10 +595,11 @@ export default function Home() {
     } catch {}
     setToggles(initial);
     void captureSensors(initial);
-    // Auto-starts on Android (no permission prompt needed); on iOS this
-    // silently no-ops until the user taps "Locate Me" or the Heading toggle.
-    if (initial.heading) void startHeadingWatch();
-    return () => stopHeadingWatch();
+    if (initial.heading || initial.location) void startOrientationWatch();
+    return () => {
+      stopOrientationWatch();
+      stopLocationWatch();
+    };
   }, []);
 
   // ── Streaming research
@@ -562,8 +646,10 @@ export default function Home() {
   // ── Wheel data
   const calendarWheels = cycles?.wheelLayers ?? [];
 
-  const hasLiveHeading = headingLive && signals?.heading != null;
+  const hasLiveHeading = headingLive && signals?.heading != null && toggles.heading;
+  const hasLivePitch = pitchLive && toggles.location;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
+  const activePitch = skyPitch;
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
@@ -603,23 +689,6 @@ export default function Home() {
     pinchStartRef.current = null;
   }
 
-  function onPitchPointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (e.button !== 0) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
-    pitchDragRef.current = { y0: e.clientY, pitch0: skyPitch };
-  }
-
-  function onPitchPointerMove(e: React.PointerEvent<HTMLDivElement>) {
-    if (!pitchDragRef.current) return;
-    const dy = e.clientY - pitchDragRef.current.y0;
-    const next = pitchDragRef.current.pitch0 - dy * 0.12;
-    setSkyPitch(Math.max(5, Math.min(85, Math.round(next))));
-  }
-
-  function onPitchPointerUp() {
-    pitchDragRef.current = null;
-  }
-
   return (
     <main className="cp-shell">
       <div className="cp-stack">
@@ -638,7 +707,7 @@ export default function Home() {
               <button
                 className="cp-btn cp-btn-sm"
                 onClick={() => {
-                  if (toggles.heading) void startHeadingWatch();
+                  if (toggles.heading || toggles.location) void startOrientationWatch();
                   void captureSensors();
                 }}
                 disabled={sigLoading}
@@ -658,6 +727,25 @@ export default function Home() {
             </div>
           </div>
 
+          <SpacetimeReadout
+            now={animNow}
+            lat={mapLat}
+            lon={mapLon}
+            liveCoords={hasLiveLocation && toggles.location}
+            usingFallback={!hasLiveLocation && toggles.location}
+            locationDenied={locDenied}
+            locationEnabled={toggles.location}
+            accuracyM={signals?.accuracyM ?? null}
+            altM={signals?.altM ?? null}
+            altAccuracyM={signals?.altAccuracyM ?? null}
+            speedMps={signals?.speedMps ?? null}
+            gpsHeading={signals?.gpsHeading ?? null}
+            locationAtMs={signals?.locationAtMs ?? null}
+            compassHeading={toggles.compass ? activeHeading : null}
+            pitchDeg={toggles.location ? activePitch : null}
+            emfUt={toggles.emf ? signals?.emfUt ?? null : null}
+          />
+
           <div
             className="cp-wheel-viewport cp-wheel-viewport-hero"
             onWheel={onWheelZoom}
@@ -665,43 +753,46 @@ export default function Home() {
             onTouchMove={onTouchMoveZoom}
             onTouchEnd={onTouchEndZoom}
           >
-            <div
-              className="cp-hero-composite cp-hero-pitch-surface"
-              onPointerDown={onPitchPointerDown}
-              onPointerMove={onPitchPointerMove}
-              onPointerUp={onPitchPointerUp}
-              onPointerCancel={onPitchPointerUp}
-            >
+            <div className="cp-split-hero">
+              <div className="cp-split-wheels">
+                <div className="cp-semicircle-clip">
+                  <div className="cp-watch-scaler" style={{ transform: `scale(${wheelZoom})` }}>
+                    <WatchMovement
+                      glass
+                      semicircle
+                      now={animNow}
+                      cycles={cycles}
+                      hoverId={hoverRing}
+                      onHover={setHoverRing}
+                      heading={activeHeading}
+                      emfUt={toggles.emf ? signals?.emfUt ?? null : null}
+                      showCompass={toggles.compass}
+                      skyDistance={skyDistance}
+                      onSkyDistanceChange={setSkyDistance}
+                    />
+                  </div>
+                </div>
+              </div>
+
               {toggles.skyMap ? (
-                <div className="cp-hero-skymap" aria-hidden>
+                <div className="cp-split-skymap">
                   <SkyMapSVG
-                    variant="background"
+                    variant="panel"
                     lat={mapLat}
                     lon={mapLon}
                     heading={activeHeading}
-                    pitchDeg={skyPitch}
+                    pitchDeg={activePitch}
                     distanceRank={skyDistance}
                     minuteKey={minuteKey}
+                    liveHeading={hasLiveHeading}
+                    livePitch={hasLivePitch}
                   />
                 </div>
               ) : (
-                <div className="cp-hero-skymap cp-hero-skymap-off" aria-hidden />
+                <div className="cp-split-skymap cp-split-skymap-off">
+                  <p className="cp-muted">Sky map off</p>
+                </div>
               )}
-
-              <div className="cp-watch-scaler cp-watch-overlay" style={{ transform: `scale(${wheelZoom})` }}>
-                <WatchMovement
-                  glass
-                  now={animNow}
-                  cycles={cycles}
-                  hoverId={hoverRing}
-                  onHover={setHoverRing}
-                  heading={activeHeading}
-                  emfUt={toggles.emf ? signals?.emfUt ?? null : null}
-                  showCompass={toggles.compass}
-                  skyDistance={skyDistance}
-                  onSkyDistanceChange={setSkyDistance}
-                />
-              </div>
             </div>
           </div>
         </section>
@@ -726,64 +817,44 @@ export default function Home() {
           </div>
 
           {!toggles.skyMap && (
-            <p className="cp-muted cp-sensor-off">Sky map background hidden — enable Sky Map to see stars behind the wheels.</p>
+            <p className="cp-muted cp-sensor-off">Sky map hidden — enable Sky Map to see the lower panel.</p>
           )}
 
           <div className="cp-compass-controls">
-            {toggles.compass && (
+            {toggles.compass && !hasLiveHeading && (
               <label className="cp-dir-label">
-                <span>{hasLiveHeading ? "Live compass (wheel center)" : "Direction — wheel center compass"}</span>
+                <span>Manual direction</span>
                 <input
                   type="range" min={0} max={359}
-                  value={hasLiveHeading ? Math.round(signals!.heading!) : manualHeading}
+                  value={manualHeading}
                   onChange={e => applyManualHeading(Number(e.target.value))}
                   onInput={e => applyManualHeading(Number(e.currentTarget.value))}
-                  disabled={hasLiveHeading}
                   className="cp-dir-range"
                 />
                 <span>{Math.round(activeHeading)}°</span>
               </label>
             )}
-            {!toggles.compass && (
-              <p className="cp-muted">Compass off — wheel center shows fixed north.</p>
+            {(hasLiveHeading || hasLivePitch) && (
+              <p className="cp-muted">
+                {hasLiveHeading && hasLivePitch && "↗ Live heading & pitch — tilt and turn your device."}
+                {hasLiveHeading && !hasLivePitch && "↗ Live heading — enable Location for auto pitch."}
+                {!hasLiveHeading && hasLivePitch && "↕ Live pitch — enable Heading for auto compass."}
+              </p>
             )}
-            <p className="cp-muted cp-skymap-hint">
-              Vertical pitch: drag up/down on the sky behind the wheels (altitude rails on left &amp; right edges).
-              Distance: rotate the outer cyan dial — ☽ Moon (0) to #100 LP 771-95 (~22.7 ly).
-            </p>
-            {hasLiveHeading && toggles.compass && (
-              <p className="cp-muted">↗ Device compass active — turn off Heading to aim manually.</p>
+            {!hasLiveHeading && !hasLivePitch && toggles.location && (
+              <p className="cp-muted">Tap Locate Me to enable live sky orientation (requires motion permission on iOS).</p>
             )}
           </div>
 
-          {toggles.skyMap && (
-            <SkyMapSVG
-              variant="legend"
-              lat={mapLat}
-              lon={mapLon}
-              heading={activeHeading}
-              pitchDeg={skyPitch}
-              distanceRank={skyDistance}
-              minuteKey={minuteKey}
-            />
-          )}
-
           <div className="cp-signal-readouts">
-            {toggles.location && signals?.lat != null && (
-              <p className="cp-muted">{signals.lat.toFixed(3)}°, {signals.lon?.toFixed(3)}°</p>
-            )}
             {toggles.location && !hasLiveLocation && !locDenied && (
-              <p className="cp-muted">Using Nashville fallback coords until you tap Locate Me.</p>
+              <p className="cp-muted">Using Nashville fallback coords — tap Locate for live GPS (see readout above).</p>
             )}
             {toggles.location && locDenied && (
               <p className="cp-muted">Location blocked — allow browser location for your local sky map.</p>
             )}
-            {!toggles.location && <p className="cp-muted cp-sensor-off">Location disabled.</p>}
             {toggles.network && signals?.network && (
               <p className="cp-muted">Network: {signals.network}</p>
-            )}
-            {toggles.emf && signals?.emfUt != null && (
-              <p className="cp-muted">EMF: {signals.emfUt.toFixed(1)} µT</p>
             )}
           </div>
         </section>
