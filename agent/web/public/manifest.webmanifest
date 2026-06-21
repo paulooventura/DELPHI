@@ -1,0 +1,27 @@
+{
+  "name": "DELPHI — Cosmic Clock",
+  "short_name": "DELPHI",
+  "description": "Cosmic Clock | Astronomical Guidance — an oracle that reads the sky and your device's senses.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#05070B",
+  "theme_color": "#05070B",
+  "categories": ["utilities", "education", "lifestyle"],
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/delphi-brand-reference.png",
+      "sizes": "1024x548",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

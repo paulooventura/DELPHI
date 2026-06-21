@@ -1,0 +1,296 @@
+/* Oracle Senses — self-contained sensor grid styling.
+   All classes are `cp-sensor-` prefixed so they never collide with the global
+   `cp-card` / `cp-btn` / etc. tokens defined in app/globals.css. Palette values
+   are inlined (with --gold / --ink fallbacks) so the component renders correctly
+   even outside the token scope. */
+
+.cp-sensor-array {
+  --cps-void: #05070b;
+  --cps-void2: #0d111a;
+  --cps-gold-a: #f5d78e;
+  --cps-gold-b: #c9a227;
+  --cps-gold-hi: #e8c872;
+  --cps-cyan: #7dd3fc;
+  --cps-cyan2: #38bdf8;
+  --cps-purple: #9174f8;
+  --cps-ink: #e2e8f0;
+  --cps-dim: rgba(226, 232, 240, 0.55);
+  --cps-glass: rgba(13, 17, 26, 0.72);
+  --cps-border: rgba(255, 255, 255, 0.08);
+  --cps-ok: #10b981;
+  --cps-mono: var(--font-geist-mono, "JetBrains Mono", Consolas, monospace);
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  color: var(--cps-ink);
+}
+
+/* ── Heading row ── */
+.cp-sensor-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.cp-sensor-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  background: linear-gradient(100deg, var(--cps-gold-a), var(--cps-gold-b));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.cp-sensor-subtitle {
+  font-size: 0.56rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cps-dim);
+  font-family: var(--cps-mono);
+}
+
+/* ── Action buttons ── */
+.cp-sensor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.cp-sensor-btn {
+  border: 1px solid var(--cps-border);
+  border-radius: 8px;
+  padding: 0.34rem 0.7rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  background: rgba(201, 162, 39, 0.08);
+  color: var(--cps-gold-hi);
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+}
+.cp-sensor-btn:hover:not(:disabled) {
+  border-color: var(--cps-gold-b);
+  background: rgba(201, 162, 39, 0.16);
+}
+.cp-sensor-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.cp-sensor-btn-on {
+  border-color: var(--cps-ok);
+  color: var(--cps-ok);
+  background: rgba(16, 185, 129, 0.12);
+}
+
+/* ── Grid ── */
+.cp-sensor-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.55rem;
+}
+
+/* ── Tile ── */
+.cp-sensor-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.6rem 0.65rem 0.7rem;
+  border-radius: 12px;
+  background: var(--cps-glass);
+  border: 1px solid var(--cps-border);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  overflow: hidden;
+  transition: border-color 0.25s, box-shadow 0.25s;
+}
+
+.cp-sensor-tile-live {
+  border-color: rgba(125, 211, 252, 0.22);
+  box-shadow: 0 6px 22px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 16px rgba(56, 189, 248, 0.1);
+}
+
+.cp-sensor-tile-dim {
+  opacity: 0.72;
+}
+
+.cp-sensor-tile-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.cp-sensor-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--cps-gold-b);
+}
+
+.cp-sensor-glyph {
+  font-size: 0.78rem;
+  line-height: 1;
+  filter: saturate(0.9);
+}
+
+.cp-sensor-value {
+  font-family: var(--cps-mono);
+  font-size: 1.18rem;
+  font-weight: 600;
+  line-height: 1.05;
+  color: var(--cps-ink);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+  word-break: break-word;
+}
+
+.cp-sensor-unit {
+  font-size: 0.62rem;
+  color: var(--cps-dim);
+  margin-left: 0.22rem;
+  letter-spacing: 0.04em;
+}
+
+.cp-sensor-sub {
+  font-family: var(--cps-mono);
+  font-size: 0.6rem;
+  color: var(--cps-dim);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Status chip ── */
+.cp-sensor-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.26rem;
+  font-size: 0.52rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+  color: var(--cps-dim);
+  background: rgba(255, 255, 255, 0.04);
+}
+.cp-sensor-chip::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.cp-sensor-chip-live {
+  color: var(--cps-ok);
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.28);
+}
+.cp-sensor-chip-live::before {
+  box-shadow: 0 0 6px var(--cps-ok);
+  animation: cp-sensor-pulse 1.6s ease-in-out infinite;
+}
+.cp-sensor-chip-permission {
+  color: var(--cps-gold-hi);
+  background: rgba(201, 162, 39, 0.12);
+  border-color: rgba(201, 162, 39, 0.3);
+}
+.cp-sensor-chip-idle {
+  color: var(--cps-cyan);
+  background: rgba(125, 211, 252, 0.08);
+  border-color: rgba(125, 211, 252, 0.2);
+}
+.cp-sensor-chip-denied,
+.cp-sensor-chip-unsupported {
+  color: var(--cps-dim);
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--cps-border);
+}
+
+/* ── Meters / bars ── */
+.cp-sensor-meter {
+  position: relative;
+  height: 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.07);
+  overflow: hidden;
+  margin-top: 0.1rem;
+}
+.cp-sensor-meter-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(90deg, var(--cps-gold-b), var(--cps-gold-hi));
+  transition: width 0.18s ease-out;
+}
+.cp-sensor-meter-cyan .cp-sensor-meter-fill {
+  background: linear-gradient(90deg, var(--cps-cyan2), var(--cps-cyan));
+}
+.cp-sensor-meter-purple .cp-sensor-meter-fill {
+  background: linear-gradient(90deg, var(--cps-purple), #b8a4ff);
+}
+.cp-sensor-meter-ok .cp-sensor-meter-fill {
+  background: linear-gradient(90deg, var(--cps-ok), #4ade80);
+}
+
+/* Battery fill gets a subtle outline like a cell. */
+.cp-sensor-battery {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 3px;
+  height: 9px;
+  padding: 1px;
+}
+.cp-sensor-battery .cp-sensor-meter-fill {
+  position: static;
+  height: 100%;
+  border-radius: 2px;
+}
+.cp-sensor-battery-low .cp-sensor-meter-fill {
+  background: linear-gradient(90deg, #e05050, #f0a050);
+}
+
+/* ── Footer ambient line ── */
+.cp-sensor-foot {
+  font-family: var(--cps-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  color: var(--cps-dim);
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.cp-sensor-foot strong {
+  color: var(--cps-gold-hi);
+  font-weight: 600;
+}
+
+@keyframes cp-sensor-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-sensor-chip-live::before,
+  .cp-sensor-meter-fill {
+    animation: none;
+    transition: none;
+  }
+}
