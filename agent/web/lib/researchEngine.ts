@@ -822,3 +822,1322 @@ export function buildReport(sources: SourceItem[], stopReason: string, query?: s
     aiProvidersConsulted: reviews.map((r) => r.provider),
   };
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// DELPHI Research Engine v2 — tier is a runtime parameter (see build spec §1)
+//
+// The caller passes a ResearchTier; the engine maps it (via TIER_CONFIG, not
+// branching logic) to a set of provider calls + a budget, runs the same
+// decompose → cross-reference → independence-dedup → fact-anchor → score →
+// synthesize pipeline for every tier, and returns a ConfidenceResult plus a
+// full transparency layer.
+//
+// The two free tiers (`instant`, `standard`) run entirely on free, mostly
+// no-auth APIs and must produce a discerning, cross-referenced answer with
+// ZERO keys configured. Paid deep-research (Valyu + Perplexity) is an opt-in
+// enhancement layered on top, never a gate on basic reliability.
+// ════════════════════════════════════════════════════════════════════════════
+
+export type ResearchTier = "instant" | "standard" | "deep" | "max";
+
+export interface ResearchRequest {
+  query: string;
+  tier: ResearchTier;
+  domainFilter?: string[];
+  recency?: "day" | "week" | "month" | "year" | "any";
+  academicOnly?: boolean;
+  maxBudgetUSD?: number;
+}
+
+export interface SourceResult {
+  url: string;
+  title: string;
+  snippet: string;
+  fullText?: string;
+  publishedDate?: string;
+  author?: string;
+  domain: string;
+  providerTier: 1 | 2 | 3 | 4;
+  citationCount?: number;
+  raw?: unknown;
+}
+
+export interface SearchAdapter {
+  name: string;
+  baseTier: 1 | 2 | 3 | 4;
+  search(req: ResearchRequest): Promise<SourceResult[]>;
+}
+
+export interface SynthesisAdapter {
+  name: string;
+  research(req: ResearchRequest): Promise<{
+    report: string;
+    sources: SourceResult[];
+    raw: unknown;
+  }>;
+}
+
+export type ConfidenceLabel = "Verified" | "Likely" | "Contested" | "Unsupported";
+
+export interface ScoredClaim {
+  text: string;
+  score: number;
+  label: ConfidenceLabel;
+  supportingSources: SourceResult[];
+  contradictingSources: SourceResult[];
+}
+
+export interface ConfidenceResult {
+  answer: string;
+  confidenceLabel: ConfidenceLabel;
+  confidenceScore: number; // 0–1
+  claims: ScoredClaim[];
+  sources: SourceResult[]; // ranked, deduped
+  contradictions: string[]; // surfaced, not hidden
+  tierUsed: ResearchTier;
+  costUSD: number; // summed from provider responses
+  providersUsed: string[];
+  // Transparency extras the cycle-wheel UI can render but that aren't part of
+  // the minimal §6 contract.
+  notes: string[];
+  subClaims: string[];
+}
+
+// ── §3 trust tiers → base weights. Single source of truth for scoring.
+export const TRUST_TIER_WEIGHTS: Record<1 | 2 | 3 | 4, number> = {
+  1: 1.0, // primary / peer-reviewed / verified (Wikidata facts, OpenAlex, PubMed…)
+  2: 0.75, // reference / curated (Wikipedia + its citations, official docs…)
+  3: 0.5, // general web, independent indexes (DuckDuckGo, Mojeek, Serper, Exa)
+  4: 0.2, // low-trust signal (blogs, forums, Reddit) — never clears alone
+};
+
+// arXiv etc. are preprints: Tier 1 reach, but not-yet-peer-reviewed, so a small
+// discount vs. published Tier-1 work.
+const PREPRINT_TRUST_FACTOR = 0.9;
+
+// ── §1 tier → behavior map, made data-driven so tiers are tunable without
+// touching core flow. `searchAdapters` / `synthAdapters` reference adapter
+// names registered below; unavailable (key-gated) ones are simply skipped.
+export interface TierConfig {
+  label: string;
+  latencyHint: string;
+  searchAdapters: string[];
+  synthAdapters: string[]; // paid; only fire when key present AND tier allows
+  maxResultsPerAdapter: number;
+  fullPipeline: boolean; // decompose + cross-ref (standard+) vs single-pass
+  factAnchor: boolean; // run Wikidata structured-fact anchoring
+  approxCostUSD: number;
+  defaultBudgetUSD: number;
+  valyuMode?: "fast" | "standard" | "heavy" | "max";
+}
+
+export const TIER_CONFIG: Record<ResearchTier, TierConfig> = {
+  instant: {
+    label: "Instant",
+    latencyHint: "~1–3s",
+    searchAdapters: ["Wikidata", "Wikipedia", "DuckDuckGo", "OpenAlex"],
+    synthAdapters: [],
+    maxResultsPerAdapter: 5,
+    fullPipeline: false,
+    factAnchor: true,
+    approxCostUSD: 0,
+    defaultBudgetUSD: 0,
+  },
+  standard: {
+    label: "Standard",
+    latencyHint: "~5–15s",
+    searchAdapters: [
+      "Wikidata",
+      "Wikipedia",
+      "OpenAlex",
+      "SemanticScholar",
+      "Crossref",
+      "EuropePMC",
+      "arXiv",
+      "DuckDuckGo",
+      "Mojeek",
+      "Serper",
+    ],
+    synthAdapters: [],
+    maxResultsPerAdapter: 8,
+    fullPipeline: true,
+    factAnchor: true,
+    approxCostUSD: 0,
+    defaultBudgetUSD: 0.01, // covers an optional Serper key if the user adds one
+  },
+  deep: {
+    label: "Deep",
+    latencyHint: "~1–5 min",
+    searchAdapters: [
+      "Wikidata",
+      "Wikipedia",
+      "OpenAlex",
+      "SemanticScholar",
+      "Crossref",
+      "EuropePMC",
+      "arXiv",
+      "DuckDuckGo",
+      "Mojeek",
+      "Serper",
+      "Exa",
+    ],
+    synthAdapters: ["Valyu", "Perplexity"],
+    maxResultsPerAdapter: 10,
+    fullPipeline: true,
+    factAnchor: true,
+    approxCostUSD: 3.0,
+    defaultBudgetUSD: 4.0,
+    valyuMode: "heavy",
+  },
+  max: {
+    label: "Max",
+    latencyHint: "~3–10 min",
+    searchAdapters: [
+      "Wikidata",
+      "Wikipedia",
+      "OpenAlex",
+      "SemanticScholar",
+      "Crossref",
+      "EuropePMC",
+      "arXiv",
+      "DuckDuckGo",
+      "Mojeek",
+      "Serper",
+      "Exa",
+    ],
+    synthAdapters: ["Valyu", "Perplexity"],
+    maxResultsPerAdapter: 12,
+    fullPipeline: true,
+    factAnchor: true,
+    approxCostUSD: 15.0,
+    defaultBudgetUSD: 20.0,
+    valyuMode: "max",
+  },
+};
+
+// ──────────────────────────────────────────────────────────────────────────
+// Small shared utilities for the v2 pipeline
+// ──────────────────────────────────────────────────────────────────────────
+
+function domainOf(url: string): string {
+  try {
+    return new URL(url).hostname.replace(/^www\./, "").toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+function contentTokens(text: string): Set<string> {
+  return new Set(
+    text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((t) => t.length >= 4 && !STOP_WORDS.has(t)),
+  );
+}
+
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  let inter = 0;
+  a.forEach((t) => {
+    if (b.has(t)) inter++;
+  });
+  return inter / (a.size + b.size - inter);
+}
+
+function extractNumbers(text: string): number[] {
+  const out: number[] = [];
+  const re = /\b\d{1,3}(?:,\d{3})+(?:\.\d+)?\b|\b\d+(?:\.\d+)?\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) out.push(Number(m[0].replace(/,/g, "")));
+  return out;
+}
+
+function extractYears(text: string): number[] {
+  const out: number[] = [];
+  const re = /\b(1[5-9]\d{2}|20\d{2})\b/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text)) !== null) out.push(Number(m[1]));
+  return out;
+}
+
+const NEGATION_RE = /\b(not|no longer|never|false|incorrect|debunk(?:ed|s)?|myth|hoax|disprov(?:e|ed|en)|refut(?:e|ed|es)|contrary|disput(?:e|ed)|wrong|unfounded)\b/i;
+
+// Is this a volatile/time-sensitive topic (→ recency decay) or a settled fact
+// (→ ~neutral recency)? Cheap classifier from query shape.
+function isVolatileQuery(query: string): boolean {
+  return (
+    predictiveRisk(query) ||
+    /\b(current|currently|latest|recent|now|today|this year|2024|2025|2026|price|stock|release|update|version|news|trend|live)\b/i.test(
+      query,
+    )
+  );
+}
+
+function recencyFactor(ageDays: number | null, volatile: boolean): number {
+  if (!volatile) return ageDays != null && ageDays > 3650 ? 0.9 : 1; // settled facts barely decay
+  if (ageDays == null) return 0.7;
+  if (ageDays <= 30) return 1;
+  if (ageDays <= 180) return 0.85;
+  if (ageDays <= 365) return 0.7;
+  if (ageDays <= 730) return 0.5;
+  return 0.32;
+}
+
+// log-scaled citation authority (Tier-1 only). influentialCitationCount, when
+// present, is a stronger authority signal than raw counts.
+function citationBoost(src: SourceResult): number {
+  if (src.providerTier !== 1) return 1;
+  const influential =
+    typeof (src.raw as Record<string, unknown>)?.influentialCitationCount === "number"
+      ? ((src.raw as Record<string, unknown>).influentialCitationCount as number)
+      : 0;
+  const cited = src.citationCount ?? 0;
+  const base = Math.log10(1 + cited) * 0.12;
+  const infl = Math.log10(1 + influential) * 0.18;
+  return 1 + Math.min(0.6, base + infl);
+}
+
+function ageDaysOf(src: SourceResult): number | null {
+  return ageInDays(src.publishedDate ?? null);
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// §2A Free evidence stack — search adapters (SourceResult shape, no keys)
+// ──────────────────────────────────────────────────────────────────────────
+
+const POLITE_MAILTO = process.env.RESEARCH_CONTACT_EMAIL ?? "research@delphi.app";
+
+function clip<T>(arr: T[], n: number): T[] {
+  return arr.slice(0, n);
+}
+
+// Layer 1 — Wikidata entity search (the fact anchor lives in wikidataFacts()).
+const wikidataAdapter: SearchAdapter = {
+  name: "Wikidata",
+  baseTier: 1,
+  async search(req) {
+    const data = await safeJson<any>(
+      `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(
+        req.query,
+      )}&language=en&format=json&origin=*&limit=${TIER_CONFIG[req.tier].maxResultsPerAdapter}`,
+    );
+    return (data?.search ?? [])
+      .map((it: any): SourceResult => {
+        const url = it.concepturi ?? (it.id ? `https://www.wikidata.org/wiki/${it.id}` : "");
+        return {
+          url,
+          title: it.label ?? "Untitled",
+          snippet: it.description ?? "Wikidata entity",
+          domain: "wikidata.org",
+          providerTier: 1,
+          raw: { ...it, structured: true },
+        };
+      })
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+// Known hard-fact properties → human labels, so the anchor surfaces real
+// typed statements (dates, quantities) rather than opaque P-numbers.
+const WIKIDATA_PROPS: Record<string, string> = {
+  P569: "date of birth",
+  P570: "date of death",
+  P571: "inception",
+  P576: "dissolved/abolished",
+  P577: "publication date",
+  P580: "start time",
+  P582: "end time",
+  P585: "point in time",
+  P1082: "population",
+  P2046: "area (km²)",
+  P2044: "elevation (m)",
+  P1083: "capacity",
+  P1128: "employees",
+  P2139: "total revenue",
+};
+
+export interface AnchorFact {
+  entity: string;
+  property: string;
+  value: string;
+  numeric: number | null;
+  year: number | null;
+  url: string;
+}
+
+function decodeWikidataValue(snak: any): { text: string; numeric: number | null; year: number | null } | null {
+  const dv = snak?.mainsnak?.datavalue;
+  if (!dv) return null;
+  if (dv.type === "time" && typeof dv.value?.time === "string") {
+    const yMatch = dv.value.time.match(/([+-]\d{1,})-(\d{2})-(\d{2})/);
+    const year = yMatch ? Number(yMatch[1]) : null;
+    return { text: dv.value.time.replace(/^\+/, "").slice(0, 10), numeric: null, year };
+  }
+  if (dv.type === "quantity" && dv.value?.amount != null) {
+    const amount = Number(String(dv.value.amount).replace(/^\+/, ""));
+    return { text: String(amount), numeric: Number.isFinite(amount) ? amount : null, year: null };
+  }
+  return null;
+}
+
+// Wikidata structured-fact anchor (§5 fact-anchor rule). Pulls typed
+// statements for the best-matching entity to ground hard facts before trusting
+// prose about them. Returns both readable AnchorFacts and SourceResults so the
+// facts participate in normal scoring/corroboration.
+export async function wikidataFacts(
+  query: string,
+): Promise<{ facts: AnchorFact[]; sources: SourceResult[] }> {
+  const search = await safeJson<any>(
+    `https://www.wikidata.org/w/api.php?action=wbsearchentities&search=${encodeURIComponent(
+      query,
+    )}&language=en&format=json&origin=*&limit=1`,
+  );
+  const top = search?.search?.[0];
+  if (!top?.id) return { facts: [], sources: [] };
+
+  const entityData = await safeJson<any>(
+    `https://www.wikidata.org/w/api.php?action=wbgetentities&ids=${top.id}&props=claims|labels|descriptions&languages=en&format=json&origin=*`,
+  );
+  const entity = entityData?.entities?.[top.id];
+  if (!entity) return { facts: [], sources: [] };
+  const entityLabel = entity.labels?.en?.value ?? top.label ?? top.id;
+  const url = `https://www.wikidata.org/wiki/${top.id}`;
+  const facts: AnchorFact[] = [];
+
+  for (const [prop, propLabel] of Object.entries(WIKIDATA_PROPS)) {
+    const statements = entity.claims?.[prop];
+    if (!Array.isArray(statements) || statements.length === 0) continue;
+    const decoded = decodeWikidataValue(statements[0]);
+    if (!decoded) continue;
+    facts.push({
+      entity: entityLabel,
+      property: propLabel,
+      value: decoded.text,
+      numeric: decoded.numeric,
+      year: decoded.year,
+      url,
+    });
+  }
+
+  const sources: SourceResult[] = facts.map((f) => ({
+    url: f.url,
+    title: `${f.entity} — ${f.property}`,
+    snippet: `${f.entity} ${f.property}: ${f.value}`,
+    domain: "wikidata.org",
+    providerTier: 1,
+    raw: { anchor: true, structured: true, fact: f },
+  }));
+
+  return { facts, sources };
+}
+
+// Layer 1 — Wikipedia REST summary + search (Tier 2 reference layer).
+const wikipediaAdapter: SearchAdapter = {
+  name: "Wikipedia",
+  baseTier: 2,
+  async search(req) {
+    const limit = TIER_CONFIG[req.tier].maxResultsPerAdapter;
+    const data = await safeJson<any>(
+      `https://en.wikipedia.org/w/rest.php/v1/search/page?q=${encodeURIComponent(req.query)}&limit=${limit}`,
+    );
+    return (data?.pages ?? []).map((p: any): SourceResult => ({
+      url: `https://en.wikipedia.org/wiki/${encodeURIComponent(String(p.title).replace(/ /g, "_"))}`,
+      title: p.title,
+      snippet: p.description ?? p.excerpt?.replace(/<[^>]+>/g, "") ?? "Wikipedia article",
+      domain: "en.wikipedia.org",
+      providerTier: 2,
+      raw: p,
+    }));
+  },
+};
+
+// Layer 2 — peer-reviewed academia (all free, citation-weighted).
+const openAlexAdapter: SearchAdapter = {
+  name: "OpenAlex",
+  baseTier: 1,
+  async search(req) {
+    const limit = TIER_CONFIG[req.tier].maxResultsPerAdapter;
+    const data = await safeJson<any>(
+      `https://api.openalex.org/works?search=${encodeURIComponent(
+        req.query,
+      )}&per-page=${limit}&sort=relevance_score:desc&mailto=${encodeURIComponent(POLITE_MAILTO)}`,
+    );
+    return (data?.results ?? [])
+      .map((it: any): SourceResult => ({
+        url: it.doi ?? it.id ?? "",
+        title: it.display_name ?? "Untitled",
+        snippet: `Cited by ${it.cited_by_count ?? 0} · ${it.publication_year ?? "n/a"} · OA: ${
+          it.open_access?.is_oa ? "yes" : "no"
+        }`,
+        publishedDate: it.publication_date ?? (it.publication_year ? `${it.publication_year}-07-01` : undefined),
+        domain: domainOf(it.doi ?? it.id ?? "") || "openalex.org",
+        providerTier: 1,
+        citationCount: it.cited_by_count ?? 0,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+const semanticScholarAdapter: SearchAdapter = {
+  name: "SemanticScholar",
+  baseTier: 1,
+  async search(req) {
+    const limit = TIER_CONFIG[req.tier].maxResultsPerAdapter;
+    const data = await safeJson<any>(
+      `https://api.semanticscholar.org/graph/v1/paper/search?query=${encodeURIComponent(
+        req.query,
+      )}&limit=${limit}&fields=title,abstract,citationCount,influentialCitationCount,year,authors,openAccessPdf,url`,
+    );
+    return (data?.data ?? [])
+      .map((it: any): SourceResult => ({
+        url: it.openAccessPdf?.url ?? it.url ?? "",
+        title: it.title ?? "Untitled",
+        snippet: `${it.year ?? "n/a"} · cited ${it.citationCount ?? 0} (influential ${
+          it.influentialCitationCount ?? 0
+        }) · ${truncateClean(String(it.abstract ?? ""), 180)}`,
+        publishedDate: it.year ? `${it.year}-07-01` : undefined,
+        author: Array.isArray(it.authors) && it.authors[0]?.name ? it.authors[0].name : undefined,
+        domain: domainOf(it.url ?? "") || "semanticscholar.org",
+        providerTier: 1,
+        citationCount: it.citationCount ?? 0,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+const crossrefAdapter: SearchAdapter = {
+  name: "Crossref",
+  baseTier: 1,
+  async search(req) {
+    const limit = TIER_CONFIG[req.tier].maxResultsPerAdapter;
+    const data = await safeJson<any>(
+      `https://api.crossref.org/works?query=${encodeURIComponent(req.query)}&rows=${limit}&sort=relevance&mailto=${encodeURIComponent(
+        POLITE_MAILTO,
+      )}`,
+    );
+    return (data?.message?.items ?? [])
+      .map((it: any): SourceResult => ({
+        url: it.URL ?? (it.DOI ? `https://doi.org/${it.DOI}` : ""),
+        title: Array.isArray(it.title) ? it.title[0] : it.title ?? "Untitled",
+        snippet: `${(it["container-title"] ?? [])[0] ?? "DOI"} · cited ${it["is-referenced-by-count"] ?? 0} · ${
+          it.created?.["date-time"]?.slice(0, 10) ?? "n/a"
+        }`,
+        publishedDate: it.created?.["date-time"] ?? undefined,
+        domain: "doi.org",
+        providerTier: 1,
+        citationCount: it["is-referenced-by-count"] ?? 0,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+const europePmcAdapter: SearchAdapter = {
+  name: "EuropePMC",
+  baseTier: 1,
+  async search(req) {
+    const limit = TIER_CONFIG[req.tier].maxResultsPerAdapter;
+    const data = await safeJson<any>(
+      `https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(
+        req.query,
+      )}&format=json&pageSize=${limit}`,
+    );
+    return (data?.resultList?.result ?? [])
+      .map((it: any): SourceResult => ({
+        url: it.doi
+          ? `https://doi.org/${it.doi}`
+          : it.pmid
+            ? `https://europepmc.org/article/MED/${it.pmid}`
+            : "",
+        title: it.title ?? "Untitled",
+        snippet: `${it.journalTitle ?? "Europe PMC"} · ${it.pubYear ?? "n/a"} · cited ${it.citedByCount ?? 0}`,
+        publishedDate: it.firstPublicationDate ?? (it.pubYear ? `${it.pubYear}-07-01` : undefined),
+        author: it.authorString,
+        domain: it.doi ? "doi.org" : "europepmc.org",
+        providerTier: 1,
+        citationCount: it.citedByCount ?? 0,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+const arxivAdapter: SearchAdapter = {
+  name: "arXiv",
+  baseTier: 1,
+  async search(req) {
+    const limit = TIER_CONFIG[req.tier].maxResultsPerAdapter;
+    const xml = await safeText(
+      `https://export.arxiv.org/api/query?search_query=all:${encodeURIComponent(req.query)}&start=0&max_results=${limit}`,
+    );
+    if (!xml) return [];
+    return xml
+      .split("<entry>")
+      .slice(1)
+      .map((entry): SourceResult => {
+        const url = entry.match(/<id>([\s\S]*?)<\/id>/)?.[1]?.trim() ?? "";
+        const published = entry.match(/<published>([\s\S]*?)<\/published>/)?.[1]?.trim();
+        return {
+          url,
+          title: (entry.match(/<title>([\s\S]*?)<\/title>/)?.[1] ?? "Untitled").replace(/\s+/g, " ").trim(),
+          snippet: truncateClean(
+            (entry.match(/<summary>([\s\S]*?)<\/summary>/)?.[1] ?? "").replace(/\s+/g, " ").trim(),
+            200,
+          ),
+          publishedDate: published,
+          domain: "arxiv.org",
+          providerTier: 1,
+          raw: { preprint: true },
+        };
+      })
+      .filter((s) => s.url);
+  },
+};
+
+// Layer 3 — raw web "noise" (independent indexes, low base trust).
+const duckDuckGoAdapter: SearchAdapter = {
+  name: "DuckDuckGo",
+  baseTier: 3,
+  async search(req) {
+    const data = await safeJson<any>(
+      `https://api.duckduckgo.com/?q=${encodeURIComponent(req.query)}&format=json&no_html=1&skip_disambig=1`,
+    );
+    if (!data) return [];
+    const out: SourceResult[] = [];
+    if (data.AbstractText && data.AbstractURL) {
+      out.push({
+        url: data.AbstractURL,
+        title: data.Heading || req.query,
+        snippet: data.AbstractText,
+        domain: domainOf(data.AbstractURL) || "duckduckgo.com",
+        providerTier: 3,
+        raw: { instantAnswer: true },
+      });
+    }
+    for (const topic of (data.RelatedTopics ?? []).slice(0, TIER_CONFIG[req.tier].maxResultsPerAdapter)) {
+      if (!topic?.FirstURL || !topic?.Text) continue;
+      out.push({
+        url: topic.FirstURL,
+        title: String(topic.Text).split(" - ")[0]?.slice(0, 90) || String(topic.Text).slice(0, 90),
+        snippet: topic.Text,
+        domain: domainOf(topic.FirstURL),
+        // Reddit/forum results captured here are practitioner/contrarian signal.
+        providerTier: /reddit\.com|forum|blogspot|medium\.com|quora\.com/.test(domainOf(topic.FirstURL)) ? 4 : 3,
+        raw: topic,
+      });
+    }
+    return out;
+  },
+};
+
+// Mojeek — genuinely independent crawler (not Google/Bing-derived), so it's a
+// real second web signal for §4 independence counting. Free dev key.
+const mojeekAdapter: SearchAdapter = {
+  name: "Mojeek",
+  baseTier: 3,
+  async search(req) {
+    const key = process.env.MOJEEK_API_KEY;
+    if (!key) return [];
+    const data = await safeJson<any>(
+      `https://www.mojeek.com/search?q=${encodeURIComponent(req.query)}&api_key=${key}&fmt=json`,
+    );
+    return (data?.response?.results ?? [])
+      .slice(0, TIER_CONFIG[req.tier].maxResultsPerAdapter)
+      .map((it: any): SourceResult => ({
+        url: it.url ?? "",
+        title: it.title ?? "Untitled",
+        snippet: it.desc ?? it.snippet ?? "",
+        domain: domainOf(it.url ?? ""),
+        providerTier: 3,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+// General web (Tier 3) — cheap raw retrieval, key-gated. Skipped (no cost) when
+// the user hasn't configured a key, so the free tiers stay $0.
+const serperAdapter: SearchAdapter = {
+  name: "Serper",
+  baseTier: 3,
+  async search(req) {
+    const key = process.env.SERPER_API_KEY;
+    if (!key) return [];
+    const res = await fetch("https://google.serper.dev/search", {
+      method: "POST",
+      headers: { "X-API-KEY": key, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(9000),
+      body: JSON.stringify({ q: req.query, num: TIER_CONFIG[req.tier].maxResultsPerAdapter }),
+    }).catch(() => null);
+    if (!res || !res.ok) return [];
+    const data: any = await res.json().catch(() => null);
+    return (data?.organic ?? [])
+      .map((it: any): SourceResult => ({
+        url: it.link ?? "",
+        title: it.title ?? "Untitled",
+        snippet: it.snippet ?? "",
+        publishedDate: it.date ?? undefined,
+        domain: domainOf(it.link ?? ""),
+        providerTier: 3,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+const exaAdapter: SearchAdapter = {
+  name: "Exa",
+  baseTier: 3,
+  async search(req) {
+    const key = process.env.EXA_API_KEY;
+    if (!key) return [];
+    const res = await fetch("https://api.exa.ai/search", {
+      method: "POST",
+      headers: { "x-api-key": key, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(9000),
+      body: JSON.stringify({
+        query: req.query,
+        numResults: TIER_CONFIG[req.tier].maxResultsPerAdapter,
+        contents: { text: { maxCharacters: 600 } },
+      }),
+    }).catch(() => null);
+    if (!res || !res.ok) return [];
+    const data: any = await res.json().catch(() => null);
+    return (data?.results ?? [])
+      .map((it: any): SourceResult => ({
+        url: it.url ?? "",
+        title: it.title ?? "Untitled",
+        snippet: (it.text ?? it.snippet ?? "").slice(0, 400),
+        publishedDate: it.publishedDate ?? undefined,
+        author: it.author ?? undefined,
+        domain: domainOf(it.url ?? ""),
+        providerTier: 3,
+        raw: it,
+      }))
+      .filter((s: SourceResult) => s.url);
+  },
+};
+
+export const SEARCH_ADAPTERS: Record<string, SearchAdapter> = {
+  Wikidata: wikidataAdapter,
+  Wikipedia: wikipediaAdapter,
+  OpenAlex: openAlexAdapter,
+  SemanticScholar: semanticScholarAdapter,
+  Crossref: crossrefAdapter,
+  EuropePMC: europePmcAdapter,
+  arXiv: arxivAdapter,
+  DuckDuckGo: duckDuckGoAdapter,
+  Mojeek: mojeekAdapter,
+  Serper: serperAdapter,
+  Exa: exaAdapter,
+};
+
+// ──────────────────────────────────────────────────────────────────────────
+// §2 Paid synthesis adapters — second independent synthesizers (key-gated)
+// ──────────────────────────────────────────────────────────────────────────
+
+export interface SynthesisRun {
+  name: string;
+  report: string;
+  sources: SourceResult[];
+  costUSD: number;
+  raw: unknown;
+}
+
+// Valyu DeepResearch — async: submit task then poll. Returns markdown report +
+// sources + total_deduction_dollars (used for budget enforcement).
+export async function runValyu(req: ResearchRequest, budgetRemaining: number): Promise<SynthesisRun | null> {
+  const key = process.env.VALYU_API_KEY;
+  if (!key) return null;
+  const cfg = TIER_CONFIG[req.tier];
+  const base = process.env.VALYU_API_BASE ?? "https://api.valyu.network";
+  try {
+    const create = await fetch(`${base}/v1/deepresearch`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(15000),
+      body: JSON.stringify({ query: req.query, mode: cfg.valyuMode ?? "heavy" }),
+    });
+    if (!create.ok) return null;
+    const task: any = await create.json();
+    const taskId = task?.id ?? task?.task_id;
+    if (!taskId) return null;
+
+    // Poll until complete (or budget/time gives out). DeepResearch is heavy.
+    const deadline = Date.now() + (req.tier === "max" ? 9 * 60_000 : 5 * 60_000);
+    let result: any = null;
+    while (Date.now() < deadline) {
+      await new Promise((r) => setTimeout(r, 5000));
+      const poll = await fetch(`${base}/v1/deepresearch/${taskId}`, {
+        headers: { Authorization: `Bearer ${key}` },
+        signal: AbortSignal.timeout(15000),
+      }).catch(() => null);
+      if (!poll || !poll.ok) continue;
+      const body: any = await poll.json().catch(() => null);
+      const status = body?.status;
+      if (status === "completed" || status === "success" || body?.result) {
+        result = body;
+        break;
+      }
+      if (status === "failed" || status === "error") return null;
+    }
+    if (!result) return null;
+
+    const cost = Number(result?.total_deduction_dollars ?? result?.cost ?? cfg.approxCostUSD);
+    if (cost > budgetRemaining) {
+      return { name: "Valyu", report: "", sources: [], costUSD: cost, raw: { abortedOverBudget: true } };
+    }
+    const report = String(result?.result?.report ?? result?.report ?? result?.answer ?? "");
+    const sources: SourceResult[] = (result?.result?.sources ?? result?.sources ?? [])
+      .map((s: any): SourceResult => ({
+        url: s.url ?? "",
+        title: s.title ?? "Valyu source",
+        snippet: (s.content ?? s.snippet ?? "").slice(0, 400),
+        domain: domainOf(s.url ?? "") || "valyu.network",
+        providerTier: s.proprietary ? 1 : 3,
+        raw: s,
+      }))
+      .filter((s: SourceResult) => s.url);
+    return { name: "Valyu", report, sources, costUSD: cost, raw: result };
+  } catch {
+    return null;
+  }
+}
+
+// Perplexity Sonar — OpenAI-compatible; second independent synthesizer.
+export async function runPerplexity(req: ResearchRequest, budgetRemaining: number): Promise<SynthesisRun | null> {
+  const key = process.env.PERPLEXITY_API_KEY;
+  if (!key) return null;
+  try {
+    const model = req.tier === "max" ? "sonar-deep-research" : "sonar-reasoning-pro";
+    const res = await fetch("https://api.perplexity.ai/chat/completions", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(req.tier === "max" ? 8 * 60_000 : 3 * 60_000),
+      body: JSON.stringify({
+        model,
+        messages: [{ role: "user", content: req.query }],
+        search_context_size: "high",
+        search_recency_filter: req.recency && req.recency !== "any" ? req.recency : undefined,
+        search_domain_filter: req.domainFilter,
+      }),
+    });
+    if (!res.ok) return null;
+    const data: any = await res.json();
+    const cost = Number(data?.usage?.cost?.total_cost ?? 0);
+    if (cost > budgetRemaining) {
+      return { name: "Perplexity", report: "", sources: [], costUSD: cost, raw: { abortedOverBudget: true } };
+    }
+    const report = String(data?.choices?.[0]?.message?.content ?? "");
+    const searchResults = data?.search_results ?? data?.citations ?? [];
+    const sources: SourceResult[] = (Array.isArray(searchResults) ? searchResults : [])
+      .map((s: any): SourceResult => {
+        const url = typeof s === "string" ? s : (s.url ?? "");
+        return {
+          url,
+          title: typeof s === "string" ? domainOf(s) : (s.title ?? domainOf(url)),
+          snippet: typeof s === "string" ? "" : (s.snippet ?? s.date ?? ""),
+          publishedDate: typeof s === "string" ? undefined : s.date,
+          domain: domainOf(url),
+          providerTier: 3,
+          raw: s,
+        };
+      })
+      .filter((s: SourceResult) => s.url);
+    return { name: "Perplexity", report, sources, costUSD: cost, raw: data };
+  } catch {
+    return null;
+  }
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// §4 Pipeline — decompose → fetch → dedup → cross-ref → fact-anchor → score
+// ──────────────────────────────────────────────────────────────────────────
+
+// 1. Decompose into atomic verifiable sub-claims. Uses an Anthropic call when a
+// key is present; otherwise a heuristic split so the free tiers work with ZERO
+// keys configured.
+export async function decomposeQuery(query: string): Promise<string[]> {
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (key) {
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-api-key": key, "anthropic-version": "2023-06-01" },
+        signal: AbortSignal.timeout(12000),
+        body: JSON.stringify({
+          model: process.env.ANTHROPIC_DECOMPOSE_MODEL ?? "claude-sonnet-4-6",
+          max_tokens: 400,
+          temperature: 0,
+          messages: [
+            {
+              role: "user",
+              content: `Decompose this question into 2-5 atomic, independently verifiable sub-claims. Return ONLY a JSON array of strings.\n\nQuestion: ${query}`,
+            },
+          ],
+        }),
+      });
+      if (res.ok) {
+        const json: any = await res.json();
+        const text = json?.content?.[0]?.text ?? "[]";
+        const arr = JSON.parse(text.slice(text.indexOf("["), text.lastIndexOf("]") + 1));
+        if (Array.isArray(arr) && arr.length) return arr.map(String).slice(0, 5);
+      }
+    } catch {
+      // fall through to heuristic
+    }
+  }
+  return heuristicDecompose(query);
+}
+
+function heuristicDecompose(query: string): string[] {
+  const parts = query
+    .split(/(?:\?|\.|;|\band\b|\bvs\.?\b|\bversus\b|,)/i)
+    .map((p) => p.trim())
+    .filter((p) => queryTokens(p).length >= 2);
+  const unique = Array.from(new Set([query.trim(), ...parts]));
+  return unique.slice(0, 5);
+}
+
+// 2. Parallel fetch, Promise.allSettled — one dead source never kills the run.
+export async function fetchAllSources(
+  req: ResearchRequest,
+  adapterNames: string[],
+): Promise<{ sources: SourceResult[]; providersUsed: string[]; failures: string[] }> {
+  const adapters = adapterNames
+    .map((n) => SEARCH_ADAPTERS[n])
+    .filter((a): a is SearchAdapter => Boolean(a))
+    .filter((a) => !(req.academicOnly && a.baseTier !== 1));
+
+  const settled = await Promise.allSettled(adapters.map((a) => a.search(req)));
+  const sources: SourceResult[] = [];
+  const providersUsed: string[] = [];
+  const failures: string[] = [];
+
+  settled.forEach((r, i) => {
+    const name = adapters[i].name;
+    if (r.status === "fulfilled" && r.value.length > 0) {
+      providersUsed.push(name);
+      for (const s of r.value) sources.push(s);
+    } else if (r.status === "rejected") {
+      failures.push(name);
+    }
+  });
+
+  let filtered = sources.filter((s) => s.url);
+  if (req.domainFilter && req.domainFilter.length) {
+    filtered = filtered.filter((s) => req.domainFilter!.some((d) => s.domain.includes(d.replace(/^www\./, ""))));
+  }
+  return { sources: filtered, providersUsed, failures };
+}
+
+// 5. Independence dedup — collapse syndicated/copied content and compute an
+// independenceFactor per source. Sources sharing a domain or near-identical
+// text form one "origin group"; each member's weight is divided across the
+// group so "10 copies of one story" can't masquerade as 10 corroborations.
+export function independenceDedup(sources: SourceResult[]): {
+  deduped: SourceResult[];
+  independence: Map<string, number>;
+} {
+  const groups: { key: string; tokens: Set<string>; members: SourceResult[] }[] = [];
+  for (const s of sources) {
+    const tokens = contentTokens(`${s.title} ${s.snippet}`);
+    const existing = groups.find(
+      (g) => g.members[0].domain === s.domain || jaccard(g.tokens, tokens) >= 0.8,
+    );
+    if (existing) existing.members.push(s);
+    else groups.push({ key: s.url, tokens, members: [s] });
+  }
+
+  const independence = new Map<string, number>();
+  const deduped: SourceResult[] = [];
+  for (const g of groups) {
+    // Keep the highest-trust representative of each origin group as canonical,
+    // but every member's independenceFactor is 1/groupSize.
+    const factor = 1 / g.members.length;
+    const sorted = [...g.members].sort(
+      (a, b) => TRUST_TIER_WEIGHTS[b.providerTier] - TRUST_TIER_WEIGHTS[a.providerTier],
+    );
+    for (const m of g.members) independence.set(m.url, factor);
+    deduped.push(sorted[0]);
+  }
+  return { deduped, independence };
+}
+
+// 3/4. Cluster sources by sub-claim and split into supporting vs contradicting.
+function clusterBySubClaim(
+  subClaim: string,
+  sources: SourceResult[],
+): { supporting: SourceResult[]; contradicting: SourceResult[]; representative: string | null } {
+  const claimTokens = new Set(queryTokens(subClaim).map(stem));
+  if (claimTokens.size === 0) return { supporting: [], contradicting: [], representative: null };
+
+  const supporting: SourceResult[] = [];
+  const contradicting: SourceResult[] = [];
+  let representative: string | null = null;
+  let bestOverlap = 0;
+
+  for (const s of sources) {
+    const text = `${s.title} ${s.snippet}`;
+    const sTokens = new Set(
+      text
+        .toLowerCase()
+        .replace(/[^a-z0-9\s]/g, " ")
+        .split(/\s+/)
+        .map(stem),
+    );
+    let hits = 0;
+    claimTokens.forEach((t) => {
+      if (sTokens.has(t)) hits++;
+    });
+    const overlap = hits / claimTokens.size;
+    if (overlap < 0.34) continue;
+
+    if (NEGATION_RE.test(s.snippet)) contradicting.push(s);
+    else supporting.push(s);
+
+    if (overlap > bestOverlap) {
+      bestOverlap = overlap;
+      const sentence = s.snippet
+        .replace(/\s+/g, " ")
+        .split(/(?<=[.!?])\s+/)
+        .find((x) => x.length >= 24 && jaccard(new Set(queryTokens(x).map(stem)), claimTokens) > 0.2);
+      representative = sentence ?? truncateClean(s.snippet, 200);
+    }
+  }
+  return { supporting, contradicting, representative };
+}
+
+// §5 fact-anchor: detect web prose that conflicts with a Wikidata typed fact.
+// Unless ≥2 independent Tier-1/2 sources override, the conflict is surfaced and
+// the conflicting prose down-weighted.
+function detectFactConflicts(
+  anchorFacts: AnchorFact[],
+  sources: SourceResult[],
+): { conflicts: string[]; penalizedUrls: Set<string> } {
+  const conflicts: string[] = [];
+  const penalizedUrls = new Set<string>();
+  for (const fact of anchorFacts) {
+    if (fact.numeric == null && fact.year == null) continue;
+    const target = fact.numeric ?? fact.year!;
+    const overrides = sources.filter(
+      (s) =>
+        s.providerTier <= 2 &&
+        (extractNumbers(s.snippet).some((n) => Math.abs(n - target) / Math.max(1, target) < 0.02) ||
+          extractYears(s.snippet).includes(fact.year ?? -1)),
+    ).length;
+    for (const s of sources) {
+      if (s.providerTier <= 2) continue;
+      const nums = fact.year != null ? extractYears(s.snippet) : extractNumbers(s.snippet);
+      if (nums.length === 0) continue;
+      const conflict = nums.some((n) => Math.abs(n - target) / Math.max(1, target) > 0.05);
+      const mentionsEntity = s.snippet.toLowerCase().includes(fact.entity.toLowerCase().split(" ")[0]);
+      if (conflict && mentionsEntity && overrides < 2) {
+        penalizedUrls.add(s.url);
+        conflicts.push(
+          `Wikidata records ${fact.entity} ${fact.property} = ${fact.value}, but ${s.domain} states a different value — structured fact treated as anchor.`,
+        );
+      }
+    }
+  }
+  return { conflicts, penalizedUrls };
+}
+
+// §5 scoring formula:
+//   claimConfidence = Σ(trustWeight × recencyFactor × independenceFactor × citationBoost)
+//                     − contradictionPenalty   → normalized 0–1
+function scoreClaim(
+  subClaim: string,
+  supporting: SourceResult[],
+  contradicting: SourceResult[],
+  ctx: { volatile: boolean; independence: Map<string, number>; penalizedUrls: Set<string>; representative: string | null },
+): ScoredClaim {
+  let raw = 0;
+  for (const s of supporting) {
+    let trust = TRUST_TIER_WEIGHTS[s.providerTier];
+    if ((s.raw as Record<string, unknown>)?.preprint) trust *= PREPRINT_TRUST_FACTOR;
+    if ((s.raw as Record<string, unknown>)?.anchor) trust = Math.max(trust, 1.0); // structured anchor
+    const indep = ctx.independence.get(s.url) ?? 1;
+    const recency = recencyFactor(ageDaysOf(s), ctx.volatile);
+    const penalty = ctx.penalizedUrls.has(s.url) ? 0.3 : 1;
+    raw += trust * recency * indep * citationBoost(s) * penalty;
+  }
+
+  // contradictionPenalty scales with independent, non-trivial dissent.
+  const contradictionPenalty = contradicting.reduce(
+    (sum, s) => sum + TRUST_TIER_WEIGHTS[s.providerTier] * (ctx.independence.get(s.url) ?? 1) * 0.5,
+    0,
+  );
+
+  const normalized = 1 - Math.exp(-raw * 0.55);
+  let score = Math.max(0, Math.min(1, normalized - contradictionPenalty * 0.25));
+
+  // Tier-4-only support can never clear the confidence threshold alone (§3).
+  if (supporting.length > 0 && supporting.every((s) => s.providerTier === 4)) score = Math.min(score, 0.38);
+
+  return {
+    text: ctx.representative ?? subClaim,
+    score,
+    label: scoreToLabel(score),
+    supportingSources: supporting,
+    contradictingSources: contradicting,
+  };
+}
+
+export function scoreToLabel(score: number): ConfidenceLabel {
+  if (score > 0.8) return "Verified";
+  if (score >= 0.6) return "Likely";
+  if (score >= 0.4) return "Contested";
+  return "Unsupported";
+}
+
+// Rank sources for display: trust tier, then citation/relevance, deduped.
+function rankSources(sources: SourceResult[], query: string): SourceResult[] {
+  const qTokens = new Set(queryTokens(query).map(stem));
+  return [...sources].sort((a, b) => {
+    const ta = TRUST_TIER_WEIGHTS[a.providerTier];
+    const tb = TRUST_TIER_WEIGHTS[b.providerTier];
+    if (tb !== ta) return tb - ta;
+    const ra = jaccard(new Set(queryTokens(`${a.title} ${a.snippet}`).map(stem)), qTokens);
+    const rb = jaccard(new Set(queryTokens(`${b.title} ${b.snippet}`).map(stem)), qTokens);
+    if (rb !== ra) return rb - ra;
+    return (b.citationCount ?? 0) - (a.citationCount ?? 0);
+  });
+}
+
+function buildAnswerFromClaims(claims: ScoredClaim[], query: string): string {
+  const usable = claims.filter((c) => c.score >= 0.4 && c.text).sort((a, b) => b.score - a.score);
+  if (usable.length === 0) {
+    return `The free evidence stack didn't return enough genuinely on-topic, corroborated material to answer "${query}" reliably. See sources below for what was found.`;
+  }
+  const seen = new Set<string>();
+  const lines: string[] = [];
+  for (const c of usable) {
+    const key = c.text.toLowerCase().slice(0, 40);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    lines.push(c.text.replace(/\s+/g, " ").trim());
+    if (lines.length >= 3) break;
+  }
+  return lines.join(" ");
+}
+
+// Cross-model reconciliation for deep/max: agreement → confidence justified;
+// divergence → force Contested and show both (§5).
+function reconcileSynthesizers(runs: SynthesisRun[]): {
+  answer: string;
+  agree: boolean | null;
+  contradiction: string | null;
+} {
+  const withReport = runs.filter((r) => r.report.trim().length > 0);
+  if (withReport.length === 0) return { answer: "", agree: null, contradiction: null };
+  if (withReport.length === 1) return { answer: withReport[0].report, agree: null, contradiction: null };
+
+  const [a, b] = withReport;
+  const overlap = jaccard(contentTokens(a.report), contentTokens(b.report));
+  if (overlap >= 0.25) {
+    return { answer: a.report, agree: true, contradiction: null };
+  }
+  return {
+    answer: `${a.name}: ${a.report}\n\n${b.name}: ${b.report}`,
+    agree: false,
+    contradiction: `${a.name} and ${b.name} diverged — flagged Contested; both syntheses shown.`,
+  };
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// Caching by (query, tier) hash
+// ──────────────────────────────────────────────────────────────────────────
+
+const RESEARCH_CACHE = new Map<string, { expires: number; value: ConfidenceResult }>();
+const CACHE_TTL_MS = 10 * 60_000;
+
+function cacheKey(req: ResearchRequest): string {
+  return JSON.stringify({
+    q: req.query.trim().toLowerCase(),
+    t: req.tier,
+    d: req.domainFilter ?? null,
+    r: req.recency ?? null,
+    a: req.academicOnly ?? false,
+  });
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+// §1/§4 Orchestrator — the single public entry point
+// ──────────────────────────────────────────────────────────────────────────
+
+export interface ResearchProgress {
+  phase: string;
+  partial?: Partial<ConfidenceResult>;
+}
+
+export async function research(
+  req: ResearchRequest,
+  opts: { onProgress?: (p: ResearchProgress) => void } = {},
+): Promise<ConfidenceResult> {
+  const notes: string[] = [];
+  const onProgress = opts.onProgress ?? (() => {});
+
+  // Tier resolution + graceful paid→free fallback (§1): if the user picks
+  // deep/max without any paid synthesis key, drop to standard and tell them.
+  let tier = req.tier;
+  const hasPaidKey = Boolean(process.env.VALYU_API_KEY || process.env.PERPLEXITY_API_KEY);
+  if ((tier === "deep" || tier === "max") && !hasPaidKey) {
+    notes.push(
+      "No Valyu/Perplexity key configured — ran the full free 'standard' pipeline instead. Adding a key would enable autonomous multi-step deep-research synthesis as a second opinion.",
+    );
+    tier = "standard";
+  }
+  const effectiveReq: ResearchRequest = { ...req, tier };
+  const cfg = TIER_CONFIG[tier];
+
+  const cached = RESEARCH_CACHE.get(cacheKey(effectiveReq));
+  if (cached && cached.expires > Date.now()) return cached.value;
+
+  const budget = req.maxBudgetUSD ?? cfg.defaultBudgetUSD;
+  let spent = 0;
+  const providersUsed: string[] = [];
+  const volatile = isVolatileQuery(req.query);
+
+  // Decompose (full pipeline only; instant is single-pass).
+  onProgress({ phase: "decompose" });
+  const subClaims = cfg.fullPipeline ? await decomposeQuery(req.query) : [req.query];
+
+  // Parallel fetch the free + key-gated search stack.
+  onProgress({ phase: "fetch" });
+  const fetched = await fetchAllSources(effectiveReq, cfg.searchAdapters);
+  providersUsed.push(...fetched.providersUsed);
+  if (fetched.failures.length) notes.push(`Providers unavailable this run: ${fetched.failures.join(", ")}.`);
+
+  // Fact anchor (Wikidata structured facts).
+  let anchorFacts: AnchorFact[] = [];
+  let allSources = fetched.sources;
+  if (cfg.factAnchor) {
+    const fa = await wikidataFacts(req.query).catch(() => ({ facts: [], sources: [] }));
+    anchorFacts = fa.facts;
+    if (fa.sources.length) {
+      allSources = [...allSources, ...fa.sources];
+      if (!providersUsed.includes("Wikidata")) providersUsed.push("Wikidata");
+    }
+  }
+
+  // Independence dedup.
+  const { deduped, independence } = independenceDedup(allSources);
+  const { conflicts, penalizedUrls } = detectFactConflicts(anchorFacts, deduped);
+
+  // Cross-reference + score each sub-claim.
+  onProgress({ phase: "cross-reference" });
+  const claims: ScoredClaim[] = subClaims.map((sc) => {
+    const { supporting, contradicting, representative } = clusterBySubClaim(sc, deduped);
+    return scoreClaim(sc, supporting, contradicting, {
+      volatile,
+      independence,
+      penalizedUrls,
+      representative,
+    });
+  });
+
+  const contradictions = [...conflicts];
+  for (const c of claims) {
+    if (c.contradictingSources.length > 0 && c.supportingSources.length > 0) {
+      contradictions.push(
+        `"${truncateClean(c.text, 80)}" is contested: ${c.contradictingSources.length} source(s) dissent.`,
+      );
+    }
+  }
+
+  // Emit partial free-tier result immediately (never block the UI).
+  const rankedFree = rankSources(deduped, req.query);
+  const freeAnswer = buildAnswerFromClaims(claims, req.query);
+  let confidenceScore = aggregateConfidence(claims);
+  onProgress({
+    phase: "free-synthesis",
+    partial: {
+      answer: freeAnswer,
+      confidenceScore,
+      confidenceLabel: scoreToLabel(confidenceScore),
+      claims,
+      sources: clip(rankedFree, 16),
+      tierUsed: tier,
+    },
+  });
+
+  let answer = freeAnswer;
+  const synthSources: SourceResult[] = [];
+
+  // Paid deep-research enhancement (deep/max with keys + budget).
+  if (cfg.synthAdapters.length > 0 && hasPaidKey && budget > 0) {
+    onProgress({ phase: "deep-synthesis" });
+    const runs: SynthesisRun[] = [];
+    if (cfg.synthAdapters.includes("Valyu")) {
+      const v = await runValyu(effectiveReq, budget - spent).catch(() => null);
+      if (v) {
+        if ((v.raw as Record<string, unknown>)?.abortedOverBudget) {
+          notes.push(`Valyu skipped — would exceed budget ($${budget.toFixed(2)}).`);
+        } else {
+          spent += v.costUSD;
+          runs.push(v);
+          providersUsed.push("Valyu");
+          synthSources.push(...v.sources);
+        }
+      }
+    }
+    if (cfg.synthAdapters.includes("Perplexity") && spent < budget) {
+      const p = await runPerplexity(effectiveReq, budget - spent).catch(() => null);
+      if (p) {
+        if ((p.raw as Record<string, unknown>)?.abortedOverBudget) {
+          notes.push(`Perplexity skipped — would exceed budget ($${budget.toFixed(2)}).`);
+        } else {
+          spent += p.costUSD;
+          runs.push(p);
+          providersUsed.push("Perplexity");
+          synthSources.push(...p.sources);
+        }
+      }
+    }
+
+    const reconciled = reconcileSynthesizers(runs);
+    if (reconciled.answer) answer = reconciled.answer;
+    if (reconciled.agree === true) confidenceScore = Math.min(0.97, confidenceScore + 0.08);
+    if (reconciled.agree === false) {
+      confidenceScore = Math.min(confidenceScore, 0.55); // force Contested band
+      if (reconciled.contradiction) contradictions.push(reconciled.contradiction);
+    }
+  }
+
+  const finalSources = rankSources([...deduped, ...synthSources], req.query);
+  const result: ConfidenceResult = {
+    answer,
+    confidenceLabel: scoreToLabel(confidenceScore),
+    confidenceScore: Number(confidenceScore.toFixed(3)),
+    claims,
+    sources: clip(finalSources, 20),
+    contradictions: Array.from(new Set(contradictions)),
+    tierUsed: tier,
+    costUSD: Number(spent.toFixed(4)),
+    providersUsed: Array.from(new Set(providersUsed)),
+    notes,
+    subClaims,
+  };
+
+  RESEARCH_CACHE.set(cacheKey(effectiveReq), { expires: Date.now() + CACHE_TTL_MS, value: result });
+  onProgress({ phase: "complete", partial: result });
+  return result;
+}
+
+// Overall confidence = independence/trust-weighted blend of claim scores, with
+// a diversity nudge — not just the single best claim.
+function aggregateConfidence(claims: ScoredClaim[]): number {
+  const scored = claims.filter((c) => c.supportingSources.length > 0);
+  if (scored.length === 0) return 0.2;
+  const sorted = [...scored].sort((a, b) => b.score - a.score);
+  const top = sorted.slice(0, 3);
+  const mean = top.reduce((s, c) => s + c.score, 0) / top.length;
+  const distinctDomains = new Set(scored.flatMap((c) => c.supportingSources.map((s) => s.domain))).size;
+  const diversity = Math.min(0.08, distinctDomains * 0.012);
+  return Math.max(0.14, Math.min(0.98, mean + diversity));
+}

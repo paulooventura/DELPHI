@@ -100,7 +100,10 @@ export function computeSatelliteTracks(
 
 const CLUSTER_SEP_DEG = 4;
 
-function angularSepHorizon(a: HorizontalCoords, b: HorizontalCoords): number {
+function angularSepHorizon(
+  a: Pick<HorizontalCoords, "az" | "alt">,
+  b: Pick<HorizontalCoords, "az" | "alt">,
+): number {
   const RAD = Math.PI / 180;
   const a1 = a.alt * RAD;
   const a2 = b.alt * RAD;

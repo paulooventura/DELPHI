@@ -3,7 +3,7 @@ import {
   computeAircraftTracks,
   fetchLiveAircraft,
   generateMockAircraft,
-} from "../../../lib/cosmic/aircraftTracking";
+} from "../../../../lib/cosmic/aircraftTracking";
 
 export async function GET(req: Request) {
   try {

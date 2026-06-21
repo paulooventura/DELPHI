@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import {
   computeSatelliteTracks,
   resolveSatelliteCatalog,
-} from "../../../lib/cosmic/satelliteTracking";
+} from "../../../../lib/cosmic/satelliteTracking";
 
 export async function GET(req: Request) {
   try {
