@@ -161,9 +161,19 @@ function headingFromOrientation(event: DeviceOrientationEventWithCompass): numbe
 function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
   const beta = event.beta;
   if (typeof beta !== "number" || !Number.isFinite(beta)) return null;
-  // Portrait hold: beta≈90 → horizon, beta→0 → zenith
-  const alt = 90 - beta;
-  return Math.max(5, Math.min(85, Math.round(alt)));
+
+  // Portrait: beta≈90 → horizon, beta→0 → zenith. Past vertical (beta>90) the
+  // phone is tipped back toward the sky — fold instead of clamping to horizon.
+  let alt: number;
+  if (beta > 90) {
+    alt = beta - 90;
+  } else if (beta < 0) {
+    alt = 90 + beta;
+  } else {
+    alt = 90 - beta;
+  }
+
+  return Math.max(-20, Math.min(90, Math.round(alt)));
 }
 
 export type DeviceOrientationReading = {

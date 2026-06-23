@@ -287,6 +287,102 @@
   50% { opacity: 0.35; }
 }
 
+/* ── Oracle eye (awaken all senses) ── */
+.cp-oracle-eye {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  width: 100%;
+  padding: 0.85rem 1rem;
+  margin-bottom: 0.35rem;
+  border: 1px solid rgba(201, 162, 39, 0.25);
+  border-radius: 16px;
+  background:
+    radial-gradient(ellipse 80% 120% at 50% 0%, rgba(201, 162, 39, 0.12) 0%, transparent 70%),
+    rgba(5, 7, 11, 0.65);
+  cursor: pointer;
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-oracle-eye:active { transform: scale(0.98); }
+.cp-oracle-eye-open {
+  border-color: rgba(52, 211, 153, 0.45);
+  box-shadow: 0 0 28px rgba(52, 211, 153, 0.12), inset 0 0 20px rgba(52, 211, 153, 0.06);
+}
+.cp-oracle-eye-busy { opacity: 0.75; cursor: wait; }
+.cp-oracle-eye-icon {
+  font-size: 2.4rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 12px rgba(201, 162, 39, 0.45));
+  transition: filter 0.3s, transform 0.3s;
+}
+.cp-oracle-eye-open .cp-oracle-eye-icon {
+  filter: drop-shadow(0 0 16px rgba(52, 211, 153, 0.55));
+  transform: scale(1.06);
+}
+.cp-oracle-eye-text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--cps-gold-a);
+}
+.cp-oracle-eye-open .cp-oracle-eye-text { color: #6ee7b7; }
+.cp-oracle-eye-hint {
+  font-size: 0.55rem;
+  letter-spacing: 0.1em;
+  color: var(--cps-dim);
+  text-transform: uppercase;
+}
+
+/* ── Car-style speed dial ── */
+.cp-speed-dial {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0.5rem 0 0.25rem;
+  margin-bottom: 0.5rem;
+  border-radius: 14px;
+  background: linear-gradient(180deg, rgba(13, 17, 26, 0.9) 0%, rgba(5, 7, 11, 0.5) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 2px 24px rgba(0, 0, 0, 0.45), 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.cp-speed-dial-svg {
+  width: min(100%, 280px);
+  height: auto;
+  display: block;
+}
+.cp-speed-dial-readout {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: -0.85rem;
+  gap: 0.05rem;
+}
+.cp-speed-dial-value {
+  font-family: var(--cps-mono);
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--cps-gold-a);
+  font-variant-numeric: tabular-nums;
+  text-shadow: 0 0 20px rgba(245, 215, 142, 0.35);
+  line-height: 1;
+}
+.cp-speed-dial-unit {
+  font-size: 0.58rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--cps-dim);
+}
+.cp-speed-dial-sub {
+  font-size: 0.55rem;
+  color: var(--cps-dim);
+  letter-spacing: 0.06em;
+  margin-top: 0.15rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .cp-sensor-chip-live::before,
   .cp-sensor-meter-fill {

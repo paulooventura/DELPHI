@@ -135,3 +135,11 @@ export function zoomForRingRadius(radius: number, semicircle = true): number {
   const target = viewSpan * 0.38;
   return Math.max(1.15, Math.min(2.8, target / Math.max(radius, 20)));
 }
+
+/** Default zoom so ms→hour and day/month rings are legible on first open. */
+export function defaultClockZoom(outerRadius: number, semicircle = true): number {
+  const viewSpan = semicircle ? 200 : 400;
+  const target = viewSpan * 0.58;
+  const focusRadius = Math.min(outerRadius, 88);
+  return Math.max(1.72, Math.min(2.35, target / Math.max(focusRadius, 38)));
+}

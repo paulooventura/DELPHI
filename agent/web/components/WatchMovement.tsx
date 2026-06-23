@@ -204,6 +204,20 @@ function buildRingSpecs(now: Date, cycles: CycleSnapshot | null): Omit<RingSpec,
   return specs;
 }
 
+/** Outermost ring radius (px) for default hero zoom. */
+export function clockOuterRadius(cycles: CycleSnapshot | null, now = new Date()): number {
+  const hubR = 26;
+  const TIME_IDS = new Set(["ms", "s", "min", "h"]);
+  let ri = 0;
+  let last = hubR + 12;
+  for (const spec of buildRingSpecs(now, cycles)) {
+    const step = TIME_IDS.has(spec.id) ? 10 : spec.id === "weather" ? 9 : 7;
+    last = hubR + 12 + ri * step;
+    ri += 1;
+  }
+  return last;
+}
+
 const COMPASS_DIRS: Array<{ deg: number; label: string; major: boolean }> = [
   { deg: 0, label: "N", major: true },
   { deg: 22.5, label: "NNE", major: false },

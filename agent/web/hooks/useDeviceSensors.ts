@@ -88,6 +88,7 @@ export type DeviceSensorsControls = {
   enableMotion: () => Promise<void>;
   enableMic: () => Promise<void>;
   disableMic: () => void;
+  enableAll: () => Promise<void>;
   pulse: (pattern?: number | number[]) => void;
   toggleWakeLock: () => Promise<void>;
 };
@@ -421,6 +422,16 @@ export function useDeviceSensors(
     }
   }, [acquireWakeLock, markDirty, releaseWakeLock]);
 
+  const enableAll = useCallback(async () => {
+    await enableMotion();
+    await enableMic();
+    if (wakeLockSupported()) {
+      wakeLockWantedRef.current = true;
+      await acquireWakeLock();
+    }
+    pulse([20, 40, 80]);
+  }, [acquireWakeLock, enableMic, enableMotion, pulse]);
+
   // ── Auto-start sensors + commit loop ───────────────────────────────────────
   useEffect(() => {
     const d = dataRef.current;
@@ -604,6 +615,6 @@ export function useDeviceSensors(
 
   return {
     state,
-    controls: { enableMotion, enableMic, disableMic, pulse, toggleWakeLock },
+    controls: { enableMotion, enableMic, disableMic, enableAll, pulse, toggleWakeLock },
   };
 }

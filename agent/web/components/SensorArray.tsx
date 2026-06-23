@@ -1,19 +1,23 @@
 "use client";
 
 import type React from "react";
+import { useCallback, useState } from "react";
 import { useDeviceSensors } from "../hooks/useDeviceSensors";
 import type { SensorStatus } from "../lib/deviceSensors";
 import { SENSOR_HINTS } from "../lib/platform";
+import { SensesSpeedDial } from "./SensesSpeedDial";
 import "./sensorArray.css";
 
 export type SensorArrayProps = {
   className?: string;
-  /** Surface ambient readings up so the parent can feed the cosmic engine. */
   onAmbient?: (a: { lux: number | null; pressureHpa: number | null }) => void;
-  /** Weather API pressure fallback (hPa). */
   weatherPressureHpa?: number | null;
-  /** Estimated lux from sun position when hardware sensor unavailable. */
   estimatedLux?: number | null;
+  /** GPS ground speed (m/s) for the speed dial. */
+  speedMps?: number | null;
+  headingDeg?: number | null;
+  /** Parent hook: enable location + orientation when the oracle eye opens. */
+  onAwaken?: () => void | Promise<void>;
 };
 
 const CHIP_LABEL: Record<SensorStatus, string> = {
@@ -126,9 +130,23 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
     weatherPressureHpa: props.weatherPressureHpa,
     estimatedLux: props.estimatedLux,
   });
+  const [awake, setAwake] = useState(false);
+  const [awakening, setAwakening] = useState(false);
+
+  const awaken = useCallback(async () => {
+    if (awakening) return;
+    setAwakening(true);
+    try {
+      await controls.enableAll();
+      await props.onAwaken?.();
+      setAwake(true);
+    } finally {
+      setAwakening(false);
+    }
+  }, [awakening, controls, props.onAwaken]);
 
   const m = state.motion;
-  const motionGated = m.status === "permission-required" || m.status === "denied";
+  const motionLive = m.status === "live";
 
   const dbPct =
     state.mic.db != null ? clampPct(state.mic.db, -80, 0) : 0;
@@ -148,41 +166,31 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
 
   return (
     <div className={rootClass}>
-      <div className="cp-sensor-head">
-        <div>
-          <div className="cp-sensor-title">Oracle Senses</div>
-          <div className="cp-sensor-subtitle">device telemetry · live</div>
-        </div>
-        <div className="cp-sensor-actions">
-          {motionGated ? (
-            <button
-              type="button"
-              className="cp-sensor-btn"
-              onClick={() => void controls.enableMotion()}
-            >
-              Enable motion
-            </button>
-          ) : null}
-          {state.mic.status === "live" ? (
-            <button
-              type="button"
-              className="cp-sensor-btn cp-sensor-btn-on"
-              onClick={() => controls.disableMic()}
-            >
-              Mute mic
-            </button>
-          ) : (
-            <button
-              type="button"
-              className="cp-sensor-btn"
-              disabled={state.mic.status === "unsupported"}
-              onClick={() => void controls.enableMic()}
-            >
-              Enable mic
-            </button>
-          )}
-        </div>
-      </div>
+      <button
+        type="button"
+        className={`cp-oracle-eye${awake ? " cp-oracle-eye-open" : ""}${awakening ? " cp-oracle-eye-busy" : ""}`}
+        onClick={() => void awaken()}
+        disabled={awakening}
+        aria-label={awake ? "Oracle senses active" : "Awaken oracle senses — enable all device sensors"}
+      >
+        <span className="cp-oracle-eye-icon" aria-hidden>
+          {awake ? "👁" : "👁‍🗨"}
+        </span>
+        <span className="cp-oracle-eye-text">
+          {awakening ? "Awakening…" : awake ? "Oracle senses live" : "Tap to awaken all senses"}
+        </span>
+        <span className="cp-oracle-eye-hint">
+          {awake ? "motion · mic · location · orientation" : "closed — permissions required"}
+        </span>
+      </button>
+
+      <SensesSpeedDial
+        speedMps={props.speedMps ?? null}
+        gForce={m.gForce}
+        cadenceSpm={state.steps.cadenceSpm}
+        headingDeg={props.headingDeg ?? null}
+        live={motionLive || props.speedMps != null}
+      />
 
       <div className="cp-sensor-grid">
         {/* Accelerometer (incl. gravity) + tilt */}

@@ -6,8 +6,8 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
-import { WatchMovement } from "../components/WatchMovement";
-import { RingFocusPanel, zoomForRingRadius } from "../components/RingFocusPanel";
+import { WatchMovement, clockOuterRadius } from "../components/WatchMovement";
+import { RingFocusPanel, zoomForRingRadius, defaultClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
 import { useSpringValue } from "../hooks/useSpringValue";
@@ -184,9 +184,11 @@ export default function Home() {
       return 180;
     }
   });
-  const [wheelZoom, setWheelZoom] = useState(1);
+  const [wheelZoom, setWheelZoom] = useState(1.75);
   const springZoom = useSpringValue(wheelZoom);
-  const [skyPitch, setSkyPitch] = useState(35);
+  const zoomBootstrapped = useRef(false);
+  const heroZoomDefault = defaultClockZoom(clockOuterRadius(cycles));
+  const [skyPitch, setSkyPitch] = useState(25);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
@@ -261,6 +263,13 @@ export default function Home() {
   });
 
   useEffect(() => { togglesRef.current = toggles; }, [toggles]);
+
+  useEffect(() => {
+    if (!zoomBootstrapped.current && cycles) {
+      zoomBootstrapped.current = true;
+      setWheelZoom(heroZoomDefault);
+    }
+  }, [cycles, heroZoomDefault]);
 
   // ── Digital clock (1 second tick)
   useEffect(() => {
@@ -582,7 +591,7 @@ export default function Home() {
 
   function clearRingFocus() {
     setFocusRing(null);
-    setWheelZoom(1);
+    setWheelZoom(heroZoomDefault);
   }
 
   function onWheelZoom(e: React.WheelEvent<HTMLDivElement>) {
@@ -678,7 +687,7 @@ export default function Home() {
                 <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
                 <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
                 <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-                <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(1); }}>Reset</button>
+                <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(heroZoomDefault); }}>Reset</button>
                 <button className="cp-btn cp-btn-sm" onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
               </div>
             </div>
@@ -861,6 +870,12 @@ export default function Home() {
             onAmbient={handleAmbient}
             weatherPressureHpa={cycles?.weather?.pressureHpa ?? null}
             estimatedLux={estimatedLux}
+            speedMps={signals?.speedMps ?? null}
+            headingDeg={signals?.heading ?? manualHeading}
+            onAwaken={async () => {
+              if (toggles.heading || toggles.location) void startOrientationWatch();
+              void captureSensors();
+            }}
           />
         )}
 

@@ -58,8 +58,8 @@ type Trackable = {
   altKm?: number;
 };
 
-const FOV_AZ = 85;
-const FOV_ALT_HALF = 42;
+const FOV_AZ = 90;
+const FOV_ALT_HALF = 52;
 const MICRO = OBS.typography.micro;
 const TARGET_ENTER = 2;
 const TARGET_EXIT = 3.5;
