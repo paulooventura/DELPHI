@@ -542,7 +542,10 @@ html,body {
 .cp-semicircle-clip .cp-watch-scaler {
   width: 100%;
   transform-origin: 50% 100%;
-  pointer-events: none;
+}
+
+.cp-watch-scaler-portrait {
+  pointer-events: auto;
 }
 
 .cp-watch-semicircle {
@@ -1337,15 +1340,149 @@ html,body {
 }
 
 /* ─── Per-tab hero sizing: Clock shows the wheel, Sky shows the map ────────── */
-.cp-app[data-tab="clock"] .cp-wheel-viewport-hero,
-.cp-app[data-tab="clock"] .cp-split-hero { min-height: min(50vh, 500px); }
-.cp-app[data-tab="clock"] .cp-split-skymap { display: none; }
-.cp-app[data-tab="clock"] .cp-split-wheels {
-  flex: 1 1 100%;
-  align-items: center;
-  border-bottom: 0;
+
+/* Mobile-first portrait clock: full screen, compass at bottom, month ring at top */
+.cp-app {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
-.cp-app[data-tab="clock"] .cp-semicircle-clip { width: min(100%, 600px); }
+
+.cp-app .cp-tabview {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.cp-app[data-tab="clock"] .cp-tabview {
+  overflow: hidden;
+  padding-bottom: calc(72px + var(--safe-b));
+  gap: 0;
+}
+
+.cp-app[data-tab="clock"] .cp-hero-wheel-clock {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cp-app[data-tab="clock"] .cp-wheel-viewport-hero {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  min-height: unset;
+  border-radius: 0;
+  border-left: 0;
+  border-right: 0;
+  border-top: 0;
+  box-shadow: inset 0 0 80px rgba(0, 0, 0, 0.5);
+}
+
+.cp-app[data-tab="clock"] .cp-split-hero {
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  min-height: unset;
+}
+
+.cp-app[data-tab="clock"] .cp-split-skymap { display: none; }
+
+.cp-app[data-tab="clock"] .cp-split-wheels {
+  flex: 1;
+  height: 100%;
+  align-items: flex-end;
+  justify-content: center;
+  border-bottom: 0;
+  background: radial-gradient(ellipse 100% 85% at 50% 100%, var(--void-core) 0%, var(--void) 72%);
+}
+
+.cp-app[data-tab="clock"] .cp-semicircle-clip-portrait {
+  width: 100%;
+  max-width: 100%;
+  height: 100%;
+  max-height: 100%;
+  aspect-ratio: 2 / 1;
+  align-self: flex-end;
+}
+
+.cp-app[data-tab="clock"] .cp-semicircle-clip-portrait .cp-watch-semicircle {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: unset;
+}
+
+.cp-app[data-tab="clock"] .cp-hero-wheel-head-desktop {
+  display: none;
+}
+
+.cp-app[data-tab="clock"] .cp-cosmic-card-secondary {
+  display: none;
+}
+
+.cp-app[data-tab="clock"] .cp-clock-details {
+  flex-shrink: 0;
+  margin: 0;
+  border-top: 1px solid rgba(201, 162, 39, 0.15);
+  background: rgba(5, 7, 11, 0.92);
+}
+.cp-app[data-tab="clock"] .cp-clock-details-summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.45rem 1rem;
+  font-size: 0.62rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gold);
+  text-align: center;
+}
+.cp-app[data-tab="clock"] .cp-clock-details-summary::-webkit-details-marker { display: none; }
+.cp-app[data-tab="clock"] .cp-clock-details[open] .cp-clock-details-summary {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+.cp-app[data-tab="clock"] .cp-clock-details .cp-now-grid {
+  padding: 0.55rem 0.85rem 0.65rem;
+  margin-top: 0;
+}
+
+.cp-app[data-tab="clock"] .cp-appbar {
+  padding-top: calc(0.35rem + var(--safe-t));
+  padding-bottom: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .cp-app {
+    max-height: none;
+    overflow: visible;
+  }
+  .cp-app[data-tab="clock"] .cp-tabview {
+    overflow-y: auto;
+    gap: 0.85rem;
+    padding-bottom: calc(84px + var(--safe-b));
+  }
+  .cp-app[data-tab="clock"] .cp-wheel-viewport-hero {
+    min-height: min(55vh, 620px);
+    border-radius: 14px;
+    border: 1px solid var(--border);
+  }
+  .cp-app[data-tab="clock"] .cp-hero-wheel-head-desktop {
+    display: flex;
+  }
+  .cp-app[data-tab="clock"] .cp-cosmic-card-secondary {
+    display: block;
+  }
+  .cp-app[data-tab="clock"] .cp-clock-details {
+    display: none;
+  }
+  .cp-app[data-tab="clock"] .cp-semicircle-clip-portrait {
+    width: min(100%, 640px);
+    height: auto;
+    aspect-ratio: 2 / 1;
+  }
+}
 
 .cp-app[data-tab="sky"] .cp-wheel-viewport-hero,
 .cp-app[data-tab="sky"] .cp-split-hero { min-height: min(70vh, 760px); }

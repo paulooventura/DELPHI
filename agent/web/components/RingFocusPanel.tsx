@@ -143,3 +143,13 @@ export function defaultClockZoom(outerRadius: number, semicircle = true): number
   const focusRadius = Math.min(outerRadius, 88);
   return Math.max(1.72, Math.min(2.35, target / Math.max(focusRadius, 38)));
 }
+
+/**
+ * Mobile portrait: compass hub flush at the bottom, outer month ring at the top.
+ * Scale so the full ring stack fits inside the semicircle window.
+ */
+export function fitMobileClockZoom(outerRadius: number): number {
+  const span = 200;
+  const pad = 18;
+  return Math.max(0.82, Math.min(1.35, (span - pad) / Math.max(outerRadius, 55)));
+}

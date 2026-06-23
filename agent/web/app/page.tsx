@@ -7,7 +7,7 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { WatchMovement, clockOuterRadius } from "../components/WatchMovement";
-import { RingFocusPanel, zoomForRingRadius, defaultClockZoom } from "../components/RingFocusPanel";
+import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
 import { useSpringValue } from "../hooks/useSpringValue";
@@ -184,10 +184,10 @@ export default function Home() {
       return 180;
     }
   });
-  const [wheelZoom, setWheelZoom] = useState(1.75);
+  const [wheelZoom, setWheelZoom] = useState(1);
   const springZoom = useSpringValue(wheelZoom);
   const zoomBootstrapped = useRef(false);
-  const heroZoomDefault = defaultClockZoom(clockOuterRadius(cycles));
+  const heroZoomDefault = fitMobileClockZoom(clockOuterRadius(cycles));
   const [skyPitch, setSkyPitch] = useState(25);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
@@ -270,6 +270,13 @@ export default function Home() {
       setWheelZoom(heroZoomDefault);
     }
   }, [cycles, heroZoomDefault]);
+
+  // Clock tick sound: on by default — unlock audio when splash dismisses.
+  useEffect(() => {
+    if (!showLaunch && clockSfxOn && tab === "clock") {
+      void enableSfx();
+    }
+  }, [showLaunch, clockSfxOn, tab, enableSfx]);
 
   // ── Digital clock (1 second tick)
   useEffect(() => {
@@ -574,7 +581,7 @@ export default function Home() {
   const estimatedLux = estimateOutdoorLux(cosmic?.solarDayAngleDeg);
 
   function clampZoom(z: number) {
-    return Math.max(0.85, Math.min(2.8, z));
+    return Math.max(0.75, Math.min(2.8, z));
   }
 
   function handleRingSelect(id: string, meta: { radius: number }) {
@@ -620,6 +627,7 @@ export default function Home() {
     if (tab !== "clock") return;
     const d = touchDistance(e.touches);
     if (d == null || pinchStartRef.current == null) return;
+    e.preventDefault();
     const ratio = d / pinchStartRef.current;
     setWheelZoom(clampZoom(pinchZoomRef.current * ratio));
   }
@@ -636,7 +644,10 @@ export default function Home() {
           lat={mapLat}
           lon={mapLon}
           telemetryReady={Boolean(cycles && cosmic)}
-          onComplete={completeLaunch}
+          onComplete={() => {
+            completeLaunch();
+            if (clockSfxOn) void enableSfx();
+          }}
         />
       )}
     <main
@@ -680,9 +691,9 @@ export default function Home() {
 
         {/* ── CLOCK / SKY visual hero — CSS shows the wheel on Clock, the sky map on Sky ── */}
         {(tab === "clock" || tab === "sky") && (
-        <section className="cp-hero-wheel">
+        <section className={`cp-hero-wheel${tab === "clock" ? " cp-hero-wheel-clock" : ""}`}>
           {tab === "clock" && (
-            <div className="cp-hero-wheel-head">
+            <div className="cp-hero-wheel-head cp-hero-wheel-head-desktop">
               <div className="cp-wheel-controls">
                 <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
                 <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
@@ -712,14 +723,15 @@ export default function Home() {
           >
             <div className="cp-split-hero">
               <div className="cp-split-wheels">
-                <div className="cp-semicircle-clip">
+                <div className="cp-semicircle-clip cp-semicircle-clip-portrait">
                   <div
-                    className={`cp-watch-scaler cp-watch-scaler-spring${focusRing ? " cp-watch-scaler-focused" : ""}`}
+                    className={`cp-watch-scaler cp-watch-scaler-spring cp-watch-scaler-portrait${focusRing ? " cp-watch-scaler-focused" : ""}`}
                     style={{ transform: `scale(${springZoom})` }}
                   >
                     <WatchMovement
                       glass
                       semicircle
+                      portrait
                       now={animNow}
                       cycles={cycles}
                       hoverId={hoverRing}
@@ -764,18 +776,21 @@ export default function Home() {
           </div>
 
           {tab === "clock" && (
-            <CosmicNow
-              now={animNow}
-              lat={mapLat}
-              lon={mapLon}
-              liveCoords={hasLiveLocation && toggles.location}
-              usingFallback={!hasLiveLocation && toggles.location}
-              altM={signals?.altM ?? null}
-              heading={toggles.compass ? activeHeading : null}
-              liveHeading={hasLiveHeading}
-              cosmic={cosmic}
-              cycles={cycles}
-            />
+            <details className="cp-clock-details">
+              <summary className="cp-clock-details-summary">Cosmic snapshot</summary>
+              <CosmicNow
+                now={animNow}
+                lat={mapLat}
+                lon={mapLon}
+                liveCoords={hasLiveLocation && toggles.location}
+                usingFallback={!hasLiveLocation && toggles.location}
+                altM={signals?.altM ?? null}
+                heading={toggles.compass ? activeHeading : null}
+                liveHeading={hasLiveHeading}
+                cosmic={cosmic}
+                cycles={cycles}
+              />
+            </details>
           )}
         </section>
         )}
@@ -879,9 +894,9 @@ export default function Home() {
           />
         )}
 
-        {/* ── COSMIC DATA (Clock tab) ─────────────────────────────────────── */}
+        {/* ── COSMIC DATA (Clock tab — desktop / expanded) ─────────────────── */}
         {tab === "clock" && (
-        <section className="cp-card cp-cosmic-card">
+        <section className="cp-card cp-cosmic-card cp-cosmic-card-secondary">
           <div className="cp-card-head">
             <h2 className="cp-card-title">Cosmic Data</h2>
             <button

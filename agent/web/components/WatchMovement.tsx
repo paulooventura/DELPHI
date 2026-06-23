@@ -23,6 +23,8 @@ export type WatchMovementProps = {
   skyDistance?: number;
   onSkyDistanceChange?: (rank: number) => void;
   semicircle?: boolean;
+  /** Mobile portrait clock — hide sky-distance dial, optimize for full-screen stack. */
+  portrait?: boolean;
   /** 0 = daylight blue, 1 = night amber (lux spectrum). */
   spectrumWarmth?: number;
 };
@@ -638,6 +640,7 @@ export function WatchMovement({
   skyDistance = 50,
   onSkyDistanceChange,
   semicircle = false,
+  portrait = false,
   spectrumWarmth = 0.55,
 }: WatchMovementProps) {
   const cx = 200;
@@ -689,7 +692,7 @@ export function WatchMovement({
       </defs>
       <rect x={0} y={0} width={400} height={400} fill="url(#watch-bg)" rx={8} opacity={glass ? 0.92 : 1} />
 
-      {onSkyDistanceChange && (
+      {onSkyDistanceChange && !portrait && (
         <DistanceDialRing
           cx={cx}
           cy={cy}
