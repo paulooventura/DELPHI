@@ -11,8 +11,10 @@ import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../compon
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
 import { useSpringValue } from "../hooks/useSpringValue";
+import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
 import { LaunchScreen, useShowLaunch } from "../components/LaunchScreen";
 import { OracleLogo } from "../components/oracle/OracleLogo";
+import { ClockAmbience } from "../components/ClockAmbience";
 import { SensorArray } from "../components/SensorArray";
 import { CosmicNow } from "../components/CosmicNow";
 import { BottomNav, type AppTab } from "../components/BottomNav";
@@ -56,10 +58,10 @@ const DEFAULT_TOGGLES: SensorToggles = {
   location: true,
   heading: true,
   network: true,
-  emf: false, // opt-in: magnetometer permission prompts are intrusive
+  emf: true,
 };
 
-const TOGGLES_STORAGE_KEY = "cp-sensor-toggles";
+const TOGGLES_STORAGE_KEY = "cp-sensor-toggles-v2";
 const RESEARCH_TIER_KEY = "cp-research-tier";
 const MANUAL_HEADING_KEY = "cp-manual-heading";
 
@@ -187,7 +189,10 @@ export default function Home() {
   const [wheelZoom, setWheelZoom] = useState(1);
   const springZoom = useSpringValue(wheelZoom);
   const zoomBootstrapped = useRef(false);
-  const heroZoomDefault = fitMobileClockZoom(clockOuterRadius(cycles));
+  const wheelViewportRef = useRef<HTMLDivElement>(null);
+  const viewportHeightRef = useRef(400);
+  const outerRingR = clockOuterRadius(cycles);
+  const heroZoomDefault = fitMobileClockZoom(outerRingR, viewportHeightRef.current);
   const [skyPitch, setSkyPitch] = useState(25);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
@@ -220,6 +225,7 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
   const [showLaunch, completeLaunch] = useShowLaunch();
+  useScreenWakeLock(true);
 
   // ── Tabbed app shell (Clock · Sky · Senses · Oracle)
   const [tab, setTab] = useState<AppTab>(() => {
@@ -270,6 +276,28 @@ export default function Home() {
       setWheelZoom(heroZoomDefault);
     }
   }, [cycles, heroZoomDefault]);
+
+  useEffect(() => {
+    if (tab !== "clock") return;
+    const el = wheelViewportRef.current;
+    if (!el || typeof ResizeObserver === "undefined") return;
+
+    const measure = () => {
+      const h = el.getBoundingClientRect().height;
+      if (h < 80) return;
+      viewportHeightRef.current = h;
+      const fit = fitMobileClockZoom(clockOuterRadius(cycles), h);
+      if (!zoomBootstrapped.current) {
+        setWheelZoom(fit);
+        zoomBootstrapped.current = true;
+      }
+    };
+
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, [cycles, tab]);
 
   // Clock tick sound: on by default — unlock audio when splash dismisses.
   useEffect(() => {
@@ -486,14 +514,14 @@ export default function Home() {
   }
 
   useEffect(() => {
-    let initial = DEFAULT_TOGGLES;
+    let initial = { ...DEFAULT_TOGGLES };
     try {
       const raw = localStorage.getItem(TOGGLES_STORAGE_KEY);
       if (raw) initial = { ...DEFAULT_TOGGLES, ...JSON.parse(raw) };
-    } catch {}
+    } catch { /* fresh session — all senses on */ }
     setToggles(initial);
     void captureSensors(initial);
-    if (initial.heading || initial.location) void startOrientationWatch();
+    void startOrientationWatch();
     return () => {
       stopOrientationWatch();
       stopLocationWatch();
@@ -578,6 +606,8 @@ export default function Home() {
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
   const spectrumWarmth = cosmic?.ui.warmth ?? cosmic?.sensors.lightSpectrum ?? 0.55;
+  const atmosphericBreath = cosmic?.sensors.atmosphericBreath ?? 0;
+  const sensesAwake = hasLiveLocation || hasLiveHeading || pitchLive || Boolean(signals?.network);
   const estimatedLux = estimateOutdoorLux(cosmic?.solarDayAngleDeg);
 
   function clampZoom(z: number) {
@@ -655,17 +685,24 @@ export default function Home() {
       data-tab={tab}
       style={cosmic ? { ["--cosmic-hue" as string]: String(Math.round(cosmic.ui.hue)) } : undefined}
     >
-      <header className="cp-appbar">
+      <header className={`cp-appbar${tab === "clock" ? " cp-appbar-overlay" : ""}`}>
         <div className="cp-hero-brand">
           <OracleLogo size={34} className="cp-hero-mark" />
           <div className="cp-hero-brand-text">
             <h1 className="cp-hero-title">DELPHI</h1>
             <p className="cp-hero-subtitle">{TAB_SUBTITLE[tab]}</p>
           </div>
+          {tab === "clock" && (
+            <span
+              className={`cp-sense-pulse${sensesAwake ? " cp-sense-pulse-live" : ""}`}
+              title={sensesAwake ? "Oracle senses live" : "Awakening senses…"}
+              aria-label={sensesAwake ? "Senses live" : "Senses awakening"}
+            />
+          )}
         </div>
         <div className="cp-appbar-actions">
           <button
-            className="cp-btn cp-btn-sm"
+            className="cp-btn cp-btn-sm cp-appbar-locate-desktop"
             onClick={() => {
               if (toggles.heading || toggles.location) void startOrientationWatch();
               void captureSensors();
@@ -698,7 +735,7 @@ export default function Home() {
                 <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
                 <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
                 <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-                <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(heroZoomDefault); }}>Reset</button>
+                <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(fitMobileClockZoom(outerRingR, viewportHeightRef.current)); }}>Reset</button>
                 <button className="cp-btn cp-btn-sm" onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
               </div>
             </div>
@@ -715,12 +752,21 @@ export default function Home() {
           )}
 
           <div
+            ref={wheelViewportRef}
             className="cp-wheel-viewport cp-wheel-viewport-hero"
             onWheel={onWheelZoom}
             onTouchStart={onTouchStartZoom}
             onTouchMove={onTouchMoveZoom}
             onTouchEnd={onTouchEndZoom}
           >
+            {tab === "clock" && (
+              <ClockAmbience
+                warmth={spectrumWarmth}
+                breath={atmosphericBreath}
+                live={sensesAwake}
+                heading={hasLiveHeading ? activeHeading : null}
+              />
+            )}
             <div className="cp-split-hero">
               <div className="cp-split-wheels">
                 <div className="cp-semicircle-clip cp-semicircle-clip-portrait">
@@ -882,6 +928,7 @@ export default function Home() {
         {tab === "senses" && (
           <SensorArray
             className="cp-card"
+            autoAwaken
             onAmbient={handleAmbient}
             weatherPressureHpa={cycles?.weather?.pressureHpa ?? null}
             estimatedLux={estimatedLux}

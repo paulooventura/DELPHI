@@ -1,7 +1,7 @@
 "use client";
 
 import type React from "react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDeviceSensors } from "../hooks/useDeviceSensors";
 import type { SensorStatus } from "../lib/deviceSensors";
 import { SENSOR_HINTS } from "../lib/platform";
@@ -18,6 +18,8 @@ export type SensorArrayProps = {
   headingDeg?: number | null;
   /** Parent hook: enable location + orientation when the oracle eye opens. */
   onAwaken?: () => void | Promise<void>;
+  /** Open all device senses automatically on mount (app opens ready). */
+  autoAwaken?: boolean;
 };
 
 const CHIP_LABEL: Record<SensorStatus, string> = {
@@ -144,6 +146,11 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
       setAwakening(false);
     }
   }, [awakening, controls, props.onAwaken]);
+
+  useEffect(() => {
+    if (!props.autoAwaken || awake || awakening) return;
+    void awaken();
+  }, [props.autoAwaken, awake, awakening, awaken]);
 
   const m = state.motion;
   const motionLive = m.status === "live";
