@@ -381,6 +381,64 @@
   color: var(--cps-dim);
   letter-spacing: 0.06em;
   margin-top: 0.15rem;
+  text-align: center;
+}
+
+/* Tier ticker — walk / run / drive / fly */
+.cp-speed-tier-ticker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.28rem;
+  flex-wrap: wrap;
+  width: 100%;
+  padding: 0 0.25rem 0.45rem;
+}
+.cp-speed-tier-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-speed-tier-btn:active { transform: scale(0.94); }
+.cp-speed-tier-btn-active {
+  border-color: rgba(201, 162, 39, 0.55);
+  background: rgba(201, 162, 39, 0.14);
+  box-shadow: 0 0 12px rgba(201, 162, 39, 0.15);
+}
+.cp-speed-tier-btn-auto.cp-speed-tier-btn-active {
+  border-color: rgba(52, 211, 153, 0.45);
+  background: rgba(52, 211, 153, 0.1);
+}
+.cp-speed-tier-icon { font-size: 0.95rem; line-height: 1; }
+.cp-speed-tier-label {
+  font-size: 0.48rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--cps-dim);
+}
+.cp-speed-tier-btn-active .cp-speed-tier-label { color: var(--cps-gold-a); }
+.cp-speed-tier-auto {
+  font-size: 0.48rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #34d399;
+  padding: 0.2rem 0.35rem;
+  opacity: 0.85;
+}
+.cp-speed-tier-auto-btn {
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 @media (prefers-reduced-motion: reduce) {

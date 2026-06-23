@@ -412,7 +412,7 @@ export default function Home() {
       }
       if (pitch != null && t.location) {
         setPitchLive(true);
-        setSkyPitch(pitch);
+        setSkyPitch(prev => (prev == null ? pitch : prev * 0.55 + pitch * 0.45));
         setSignals(prev => prev ? { ...prev, pitch } : prev);
       }
     });

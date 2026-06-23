@@ -1,20 +1,21 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  resolveSpeedTier,
+  SPEED_TIERS,
+  tierById,
+  type SpeedTierId,
+} from "../lib/speedDialTiers";
 
 export type SensesSpeedDialProps = {
-  /** Ground speed m/s (GPS). */
   speedMps: number | null;
-  /** Linear g-force from accelerometer. */
   gForce: number | null;
-  /** Step cadence steps per minute. */
   cadenceSpm: number | null;
-  /** Heading degrees. */
   headingDeg: number | null;
   live?: boolean;
 };
 
-const MAX_SPEED_KMH = 160;
 const MAX_G = 2.5;
 
 function clamp01(v: number): number {
@@ -30,11 +31,34 @@ export function SensesSpeedDial({
 }: SensesSpeedDialProps) {
   const needleRef = useRef<SVGLineElement>(null);
   const glowRef = useRef<SVGCircleElement>(null);
+  const smoothKmhRef = useRef(0);
+  const tierRef = useRef<SpeedTierId>("walk");
+  const [autoTierId, setAutoTierId] = useState<SpeedTierId>("walk");
+  const [manualTierId, setManualTierId] = useState<SpeedTierId | null>(null);
 
-  const speedKmh = speedMps != null && Number.isFinite(speedMps) ? speedMps * 3.6 : null;
-  const primary = speedKmh != null && speedKmh > 0.5 ? speedKmh : (gForce ?? 0) * 12;
-  const max = speedKmh != null && speedKmh > 0.5 ? MAX_SPEED_KMH : MAX_G * 12;
-  const unit = speedKmh != null && speedKmh > 0.5 ? "km/h" : "activity";
+  const rawKmh = speedMps != null && Number.isFinite(speedMps) ? speedMps * 3.6 : null;
+  const hasGpsSpeed = rawKmh != null && rawKmh > 0.15;
+
+  if (hasGpsSpeed && rawKmh != null) {
+    smoothKmhRef.current = smoothKmhRef.current * 0.82 + rawKmh * 0.18;
+  } else {
+    smoothKmhRef.current *= 0.9;
+  }
+  const speedKmh = hasGpsSpeed ? smoothKmhRef.current : null;
+
+  useEffect(() => {
+    if (!hasGpsSpeed || speedKmh == null) return;
+    const next = resolveSpeedTier(speedKmh, tierRef.current);
+    if (next !== tierRef.current) {
+      tierRef.current = next;
+      setAutoTierId(next);
+    }
+  }, [hasGpsSpeed, speedKmh]);
+
+  const activeTier = tierById(manualTierId ?? autoTierId);
+  const usingGps = hasGpsSpeed && speedKmh != null;
+  const primary = usingGps ? speedKmh : (gForce ?? 0) * 12;
+  const max = usingGps ? activeTier.maxKmh : MAX_G * 12;
   const pct = clamp01(primary / max);
   const angle = -135 + pct * 270;
 
@@ -45,15 +69,46 @@ export function SensesSpeedDial({
     if (glow) glow.style.opacity = String(0.35 + pct * 0.45);
   }, [angle, pct]);
 
-  const display =
-    speedKmh != null && speedKmh > 0.5
-      ? Math.round(speedKmh).toString()
-      : gForce != null
-        ? gForce.toFixed(2)
-        : "—";
+  const display = usingGps
+    ? speedKmh! < 10
+      ? speedKmh!.toFixed(1)
+      : Math.round(speedKmh!).toString()
+    : gForce != null
+      ? gForce.toFixed(2)
+      : "—";
 
   return (
     <div className="cp-speed-dial" aria-label="Motion speed dial">
+      <div className="cp-speed-tier-ticker" role="group" aria-label="Speed scale tier">
+        {SPEED_TIERS.map(t => {
+          const active = activeTier.id === t.id;
+          const auto = manualTierId == null && autoTierId === t.id;
+          return (
+            <button
+              key={t.id}
+              type="button"
+              className={`cp-speed-tier-btn${active ? " cp-speed-tier-btn-active" : ""}${auto ? " cp-speed-tier-btn-auto" : ""}`}
+              onClick={() => setManualTierId(prev => (prev === t.id ? null : t.id))}
+              title={`${t.label} scale · 0–${t.maxKmh} km/h`}
+            >
+              <span className="cp-speed-tier-icon" aria-hidden>{t.icon}</span>
+              <span className="cp-speed-tier-label">{t.label}</span>
+            </button>
+          );
+        })}
+        {manualTierId == null ? (
+          <span className="cp-speed-tier-auto">auto</span>
+        ) : (
+          <button
+            type="button"
+            className="cp-speed-tier-auto cp-speed-tier-auto-btn"
+            onClick={() => setManualTierId(null)}
+          >
+            auto
+          </button>
+        )}
+      </div>
+
       <svg viewBox="0 0 220 140" className="cp-speed-dial-svg" aria-hidden>
         <defs>
           <linearGradient id="cp-dial-arc" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -102,6 +157,8 @@ export function SensesSpeedDial({
             />
           );
         })}
+        <text x={24} y={132} fontSize={7} fill="rgba(148,163,184,0.7)" textAnchor="middle">0</text>
+        <text x={196} y={132} fontSize={7} fill="rgba(148,163,184,0.7)" textAnchor="middle">{activeTier.maxKmh}</text>
         <circle ref={glowRef} cx={110} cy={118} r={52} fill="rgba(201,162,39,0.2)" filter="url(#cp-dial-glow)" />
         <g transform="translate(110 118)">
           <line
@@ -120,9 +177,10 @@ export function SensesSpeedDial({
       </svg>
       <div className="cp-speed-dial-readout">
         <span className="cp-speed-dial-value">{display}</span>
-        <span className="cp-speed-dial-unit">{unit}</span>
+        <span className="cp-speed-dial-unit">{usingGps ? "km/h" : "activity"}</span>
         <span className="cp-speed-dial-sub">
-          {cadenceSpm != null && cadenceSpm > 0 ? `${Math.round(cadenceSpm)} spm` : ""}
+          {activeTier.icon} {activeTier.label} · 0–{activeTier.maxKmh} km/h
+          {cadenceSpm != null && cadenceSpm > 0 ? ` · ${Math.round(cadenceSpm)} spm` : ""}
           {headingDeg != null ? ` · ${Math.round(headingDeg)}°` : ""}
           {live ? " · live" : ""}
         </span>

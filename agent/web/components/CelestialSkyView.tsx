@@ -59,7 +59,7 @@ type Trackable = {
 };
 
 const FOV_AZ = 90;
-const FOV_ALT_HALF = 52;
+const FOV_ALT_HALF = 60;
 const MICRO = OBS.typography.micro;
 const TARGET_ENTER = 2;
 const TARGET_EXIT = 3.5;

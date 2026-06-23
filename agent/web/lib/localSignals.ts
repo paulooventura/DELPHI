@@ -160,20 +160,24 @@ function headingFromOrientation(event: DeviceOrientationEventWithCompass): numbe
 
 function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
   const beta = event.beta;
+  const gamma = event.gamma;
   if (typeof beta !== "number" || !Number.isFinite(beta)) return null;
 
-  // Portrait: beta≈90 → horizon, beta→0 → zenith. Past vertical (beta>90) the
-  // phone is tipped back toward the sky — fold instead of clamping to horizon.
-  let alt: number;
-  if (beta > 90) {
-    alt = beta - 90;
-  } else if (beta < 0) {
-    alt = 90 + beta;
-  } else {
-    alt = 90 - beta;
-  }
+  const screenAngle =
+    typeof screen !== "undefined" ? (screen.orientation?.angle ?? 0) : 0;
 
-  return Math.max(-20, Math.min(90, Math.round(alt)));
+  // Portrait: alt = 90−β (horizon at β≈90, zenith at β≈0, nadir at β≈180).
+  // Landscape: use |γ| as the primary tilt axis.
+  let alt =
+    screenAngle === 90 || screenAngle === 270
+      ? 90 - Math.abs(typeof gamma === "number" && Number.isFinite(gamma) ? gamma : beta)
+      : 90 - beta;
+
+  // Folding over zenith keeps vertical motion continuous (no bounce at the horizon).
+  if (alt > 90) alt = 180 - alt;
+  if (alt < -90) alt = -180 - alt;
+
+  return Math.max(-90, Math.min(90, alt));
 }
 
 export type DeviceOrientationReading = {
