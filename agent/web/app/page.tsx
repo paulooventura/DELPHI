@@ -16,7 +16,10 @@ import { OracleLogo } from "../components/oracle/OracleLogo";
 import { SensorArray } from "../components/SensorArray";
 import { CosmicNow } from "../components/CosmicNow";
 import { BottomNav, type AppTab } from "../components/BottomNav";
+import { SkyCompass } from "../components/SkyCompass";
+import { SkyCatalog } from "../components/SkyCatalog";
 import { labelForDistanceRank } from "../lib/starmap";
+import { estimateOutdoorLux } from "../lib/platform";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -559,6 +562,7 @@ export default function Home() {
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
   const spectrumWarmth = cosmic?.ui.warmth ?? cosmic?.sensors.lightSpectrum ?? 0.55;
+  const estimatedLux = estimateOutdoorLux(cosmic?.solarDayAngleDeg);
 
   function clampZoom(z: number) {
     return Math.max(0.85, Math.min(2.8, z));
@@ -725,7 +729,7 @@ export default function Home() {
               </div>
 
               {toggles.skyMap ? (
-                <div className="cp-split-skymap">
+                <div className="cp-split-skymap cp-split-skymap-with-compass">
                   <CelestialSkyView
                     lat={mapLat}
                     lon={mapLon}
@@ -738,6 +742,9 @@ export default function Home() {
                     hapticsEnabled={toggles.location || toggles.heading}
                     warmth={spectrumWarmth}
                   />
+                  {tab === "sky" && toggles.compass && (
+                    <SkyCompass headingDeg={activeHeading} live={hasLiveHeading} />
+                  )}
                 </div>
               ) : (
                 <div className="cp-split-skymap cp-split-skymap-off">
@@ -766,6 +773,7 @@ export default function Home() {
 
         {/* ── SKY CONTROLS (Sky tab) ─────────────────────────────────────── */}
         {tab === "sky" && (
+        <>
         <section className="cp-card cp-sky-card">
           <div className="cp-card-head">
             <h2 className="cp-card-title">Sky Controls</h2>
@@ -836,11 +844,24 @@ export default function Home() {
             )}
           </div>
         </section>
+
+        <SkyCatalog
+          className="cp-card"
+          lat={mapLat}
+          lon={mapLon}
+          observationTime={cosmic?.now ?? animNow}
+        />
+        </>
         )}
 
         {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}
         {tab === "senses" && (
-          <SensorArray className="cp-card" onAmbient={handleAmbient} />
+          <SensorArray
+            className="cp-card"
+            onAmbient={handleAmbient}
+            weatherPressureHpa={cycles?.weather?.pressureHpa ?? null}
+            estimatedLux={estimatedLux}
+          />
         )}
 
         {/* ── COSMIC DATA (Clock tab) ─────────────────────────────────────── */}

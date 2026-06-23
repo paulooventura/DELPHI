@@ -42,6 +42,10 @@ export type AmbientCallback = (ambient: {
 export type UseDeviceSensorsOptions = {
   /** Called (throttled ~2/sec) whenever lux or pressure changes. */
   onAmbient?: AmbientCallback;
+  /** Weather API pressure when hardware barometer is unavailable (hPa). */
+  weatherPressureHpa?: number | null;
+  /** Estimated outdoor lux when AmbientLightSensor is unavailable. */
+  estimatedLux?: number | null;
 };
 
 export type DeviceSensorsState = {
@@ -56,7 +60,7 @@ export type DeviceSensorsState = {
   };
   shake: { status: SensorStatus; count: number; intensity: number | null };
   steps: { status: SensorStatus; count: number; cadenceSpm: number | null };
-  light: { status: SensorStatus; lux: number | null };
+  light: { status: SensorStatus; lux: number | null; source: "hardware" | "estimated" | "none" };
   proximity: { status: SensorStatus; near: boolean | null; distanceCm: number | null };
   battery: {
     status: SensorStatus;
@@ -66,7 +70,7 @@ export type DeviceSensorsState = {
     dischargingTimeS: number | null;
   };
   mic: { status: SensorStatus; db: number | null; freqHz: number | null };
-  pressure: { status: SensorStatus; hpa: number | null; method: string };
+  pressure: { status: SensorStatus; hpa: number | null; method: string; source: "hardware" | "weather" | "none" };
   magnetometer: { status: SensorStatus; ut: number | null };
   orientation: { status: SensorStatus; type: string | null; angle: number | null };
   hardware: {
@@ -90,8 +94,10 @@ export type DeviceSensorsControls = {
 
 const SHAKE_THRESHOLD = 14; // m/s² delta
 const SHAKE_DEBOUNCE_MS = 320;
-const STEP_THRESHOLD = 1.7; // m/s² above running mean magnitude
-const STEP_MIN_INTERVAL_MS = 260; // ~230 steps/min ceiling
+const STEP_PEAK_THRESHOLD = 1.05; // m/s² high-pass magnitude to enter a step
+const STEP_VALLEY_THRESHOLD = 0.35; // m/s² to confirm step after peak
+const STEP_MIN_INTERVAL_MS = 200; // up to ~300 spm
+const STEP_HP_ALPHA = 0.88; // high-pass smoothing
 const CADENCE_WINDOW_MS = 6000;
 const FLUSH_MS = 120;
 const AMBIENT_THROTTLE_MS = 500;
@@ -110,7 +116,7 @@ function createInitialState(): DeviceSensorsState {
     },
     shake: { status: "idle", count: 0, intensity: null },
     steps: { status: "idle", count: 0, cadenceSpm: null },
-    light: { status: "idle", lux: null },
+    light: { status: "idle", lux: null, source: "none" },
     proximity: { status: "idle", near: null, distanceCm: null },
     battery: {
       status: "idle",
@@ -120,7 +126,7 @@ function createInitialState(): DeviceSensorsState {
       dischargingTimeS: null,
     },
     mic: { status: "idle", db: null, freqHz: null },
-    pressure: { status: "idle", hpa: null, method: "none" },
+    pressure: { status: "idle", hpa: null, method: "none", source: "none" },
     magnetometer: { status: "idle", ut: null },
     orientation: { status: "idle", type: null, angle: null },
     hardware: {
@@ -179,9 +185,11 @@ export function useDeviceSensors(
   // Motion-derived accumulators.
   const lastAccelGRef = useRef<{ x: number; y: number; z: number } | null>(null);
   const lastShakeAtRef = useRef(0);
-  const magMeanRef = useRef<number | null>(null);
   const lastStepAtRef = useRef(0);
   const stepTimesRef = useRef<number[]>([]);
+  const stepPhaseRef = useRef<"idle" | "rising">("idle");
+  const stepHpRef = useRef(0);
+  const stepLastMagRef = useRef(0);
   const motionStartedRef = useRef(false);
 
   // Subscription teardown handles.
@@ -202,6 +210,27 @@ export function useDeviceSensors(
     lastAmbientEmitRef.current = now;
     cb({ lux: luxRef.current, pressureHpa: pressureRef.current });
   }, []);
+
+  // Weather / estimated lux fallbacks when hardware sensors are unavailable.
+  useEffect(() => {
+    const d = dataRef.current;
+    if (d.pressure.hpa == null && options.weatherPressureHpa != null) {
+      d.pressure.hpa = options.weatherPressureHpa;
+      d.pressure.source = "weather";
+      d.pressure.status = "live";
+      pressureRef.current = options.weatherPressureHpa;
+      maybeEmitAmbient();
+      markDirty();
+    }
+    if (d.light.lux == null && options.estimatedLux != null && d.light.source !== "hardware") {
+      d.light.lux = options.estimatedLux;
+      d.light.source = "estimated";
+      d.light.status = "live";
+      luxRef.current = options.estimatedLux;
+      maybeEmitAmbient();
+      markDirty();
+    }
+  }, [options.weatherPressureHpa, options.estimatedLux, markDirty, maybeEmitAmbient]);
 
   // ── Motion / shake / steps shared handler ─────────────────────────────────
   const handleMotion = useCallback(
@@ -237,15 +266,25 @@ export function useDeviceSensors(
         }
         lastAccelGRef.current = { x, y, z };
 
-        // Pedometer: peak detection on the de-meaned magnitude.
-        const mag = Math.sqrt(x * x + y * y + z * z);
-        const mean = magMeanRef.current;
-        magMeanRef.current = mean == null ? mag : mean * 0.9 + mag * 0.1;
-        const baseline = magMeanRef.current ?? mag;
-        if (
-          mag - baseline > STEP_THRESHOLD &&
-          now - lastStepAtRef.current > STEP_MIN_INTERVAL_MS
-        ) {
+        // Pedometer: high-pass filtered linear acceleration + peak/valley state machine.
+        const lx = reading.accel.x;
+        const ly = reading.accel.y;
+        const lz = reading.accel.z;
+        const hasLinear = lx != null && ly != null && lz != null;
+        const mag = hasLinear
+          ? Math.sqrt(lx * lx + ly * ly + lz * lz)
+          : Math.sqrt(x * x + y * y + z * z);
+        const lastMag = stepLastMagRef.current;
+        stepLastMagRef.current = mag;
+        const hp = STEP_HP_ALPHA * (stepHpRef.current + mag - lastMag);
+        stepHpRef.current = hp;
+
+        if (stepPhaseRef.current === "idle") {
+          if (hp > STEP_PEAK_THRESHOLD && now - lastStepAtRef.current > STEP_MIN_INTERVAL_MS) {
+            stepPhaseRef.current = "rising";
+          }
+        } else if (hp < STEP_VALLEY_THRESHOLD) {
+          stepPhaseRef.current = "idle";
           lastStepAtRef.current = now;
           d.steps.count += 1;
           const times = stepTimesRef.current;
@@ -255,11 +294,11 @@ export function useDeviceSensors(
             const span = times[times.length - 1] - times[0];
             d.steps.cadenceSpm = span > 0 ? ((times.length - 1) / span) * 60000 : null;
           }
-        } else {
-          const times = stepTimesRef.current;
-          while (times.length > 0 && now - times[0] > CADENCE_WINDOW_MS) times.shift();
-          if (times.length < 2) d.steps.cadenceSpm = 0;
         }
+
+        const times = stepTimesRef.current;
+        while (times.length > 0 && now - times[0] > CADENCE_WINDOW_MS) times.shift();
+        if (times.length < 2 && stepPhaseRef.current === "idle") d.steps.cadenceSpm = 0;
       }
       markDirty();
     },
@@ -405,6 +444,7 @@ export function useDeviceSensors(
       (lux) => {
         luxRef.current = lux;
         dataRef.current.light.lux = lux;
+        dataRef.current.light.source = "hardware";
         dataRef.current.light.status = "live";
         maybeEmitAmbient();
         markDirty();
@@ -437,6 +477,7 @@ export function useDeviceSensors(
       (hpa) => {
         pressureRef.current = hpa;
         dataRef.current.pressure.hpa = hpa;
+        dataRef.current.pressure.source = "hardware";
         dataRef.current.pressure.status = "live";
         maybeEmitAmbient();
         markDirty();

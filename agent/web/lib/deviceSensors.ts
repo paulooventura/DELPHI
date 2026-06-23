@@ -9,6 +9,8 @@
 // local, module-scoped interfaces so they never collide with global types or
 // the locally-typed copies in `localSignals.ts` / `cosmic/sensors.ts`.
 
+import { batteryAvailable, vibrationAvailable } from "./platform";
+
 export type SensorStatus =
   | "live"
   | "idle"
@@ -414,7 +416,7 @@ type NavigatorWithBattery = Navigator & {
 };
 
 export function batterySupported(): boolean {
-  return typeof navigator !== "undefined" && "getBattery" in navigator;
+  return batteryAvailable();
 }
 
 const BATTERY_EVENTS = [
@@ -639,7 +641,7 @@ export function watchOnline(onChange: (online: boolean) => void): () => void {
 // ─── Vibration (output) ──────────────────────────────────────────────────────
 
 export function vibrationSupported(): boolean {
-  return typeof navigator !== "undefined" && typeof navigator.vibrate === "function";
+  return vibrationAvailable();
 }
 
 export function vibrate(pattern: number | number[]): boolean {

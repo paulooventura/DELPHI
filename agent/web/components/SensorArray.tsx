@@ -3,12 +3,17 @@
 import type React from "react";
 import { useDeviceSensors } from "../hooks/useDeviceSensors";
 import type { SensorStatus } from "../lib/deviceSensors";
+import { SENSOR_HINTS } from "../lib/platform";
 import "./sensorArray.css";
 
 export type SensorArrayProps = {
   className?: string;
   /** Surface ambient readings up so the parent can feed the cosmic engine. */
   onAmbient?: (a: { lux: number | null; pressureHpa: number | null }) => void;
+  /** Weather API pressure fallback (hPa). */
+  weatherPressureHpa?: number | null;
+  /** Estimated lux from sun position when hardware sensor unavailable. */
+  estimatedLux?: number | null;
 };
 
 const CHIP_LABEL: Record<SensorStatus, string> = {
@@ -116,7 +121,11 @@ function Tile({ label, glyph, status, value, unit, sub, meter, action }: TilePro
 }
 
 export function SensorArray(props: SensorArrayProps): React.ReactElement {
-  const { state, controls } = useDeviceSensors({ onAmbient: props.onAmbient });
+  const { state, controls } = useDeviceSensors({
+    onAmbient: props.onAmbient,
+    weatherPressureHpa: props.weatherPressureHpa,
+    estimatedLux: props.estimatedLux,
+  });
 
   const m = state.motion;
   const motionGated = m.status === "permission-required" || m.status === "denied";
@@ -227,7 +236,7 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
           status={state.steps.status}
           value={state.steps.count}
           unit="steps"
-          sub={`cadence ${fmt(state.steps.cadenceSpm, 0)} spm`}
+          sub={`cadence ${fmt(state.steps.cadenceSpm, 0)} spm · tap Enable motion if idle`}
           meter={{ pct: cadencePct, variant: "cp-sensor-meter-ok" }}
         />
 
@@ -238,6 +247,13 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
           status={state.light.status}
           value={fmt(state.light.lux, 0)}
           unit="lux"
+          sub={
+            state.light.source === "estimated"
+              ? `estimated from sun · ${SENSOR_HINTS.ambientLight}`
+              : state.light.status === "unsupported"
+                ? SENSOR_HINTS.ambientLight
+                : undefined
+          }
           meter={{ pct: luxPct }}
         />
 
@@ -249,18 +265,16 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
           value={
             state.proximity.near == null
               ? state.proximity.distanceCm == null
-                ? "—"
+                ? state.proximity.status === "unsupported"
+                  ? "N/A"
+                  : "—"
                 : fmt(state.proximity.distanceCm, 1)
               : state.proximity.near
                 ? "NEAR"
                 : "FAR"
           }
           unit={state.proximity.distanceCm != null ? "cm" : undefined}
-          sub={
-            state.proximity.distanceCm != null
-              ? `distance ${fmt(state.proximity.distanceCm, 1)} cm`
-              : undefined
-          }
+          sub={SENSOR_HINTS.proximity}
         />
 
         {/* Battery */}
@@ -268,12 +282,14 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
           label="Battery"
           glyph={state.battery.charging ? "🔌" : "🔋"}
           status={state.battery.status}
-          value={state.battery.level != null ? fmt(batteryLevelPct, 0) : "—"}
-          unit="%"
+          value={state.battery.level != null ? fmt(batteryLevelPct, 0) : "N/A"}
+          unit={state.battery.level != null ? "%" : undefined}
           sub={
-            state.battery.charging
-              ? `charging · full in ${fmtDuration(state.battery.chargingTimeS)}`
-              : `empty in ${fmtDuration(state.battery.dischargingTimeS)}`
+            state.battery.status === "unsupported"
+              ? SENSOR_HINTS.battery
+              : state.battery.charging
+                ? `charging · full in ${fmtDuration(state.battery.chargingTimeS)}`
+                : `empty in ${fmtDuration(state.battery.dischargingTimeS)}`
           }
           meter={{
             pct: batteryLevelPct,
@@ -302,10 +318,8 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
           unit="hPa"
           sub={
             state.pressure.hpa != null
-              ? `Δ ${fmtSigned(state.pressure.hpa - 1013.25, 1)} hPa`
-              : state.pressure.method === "compute-pressure"
-                ? "compute-pressure (no hPa)"
-                : undefined
+              ? `${state.pressure.source === "weather" ? "weather API · " : ""}Δ ${fmtSigned(state.pressure.hpa - 1013.25, 1)} hPa`
+              : SENSOR_HINTS.barometer
           }
           meter={{ pct: clampPct(state.pressure.hpa ?? 1013.25, 950, 1050) }}
         />
@@ -317,6 +331,7 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
           status={state.magnetometer.status}
           value={fmt(state.magnetometer.ut, 1)}
           unit="µT"
+          sub={SENSOR_HINTS.magnetometer}
           meter={{ pct: utPct, variant: "cp-sensor-meter-purple" }}
         />
 
@@ -350,9 +365,13 @@ export function SensorArray(props: SensorArrayProps): React.ReactElement {
         <Tile
           label="Vibration"
           glyph="📳"
-          status={state.vibration.status === "unsupported" ? "unsupported" : "idle"}
-          value="Pulse"
-          sub={state.vibration.status === "unsupported" ? "no motor (desktop)" : "tap to buzz"}
+          status={state.vibration.status}
+          value={state.vibration.status === "unsupported" ? "N/A" : "Pulse"}
+          sub={
+            state.vibration.status === "unsupported"
+              ? SENSOR_HINTS.vibration
+              : "tap to buzz the motor"
+          }
           action={
             <button
               type="button"
