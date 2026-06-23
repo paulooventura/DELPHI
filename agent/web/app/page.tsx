@@ -7,7 +7,6 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { WatchMovement } from "../components/WatchMovement";
-import { SpacetimeReadout } from "../components/SpacetimeReadout";
 import { RingFocusPanel, zoomForRingRadius } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
@@ -15,6 +14,9 @@ import { useSpringValue } from "../hooks/useSpringValue";
 import { LaunchScreen, useShowLaunch } from "../components/LaunchScreen";
 import { OracleLogo } from "../components/oracle/OracleLogo";
 import { SensorArray } from "../components/SensorArray";
+import { CosmicNow } from "../components/CosmicNow";
+import { BottomNav, type AppTab } from "../components/BottomNav";
+import { labelForDistanceRank } from "../lib/starmap";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -213,6 +215,27 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
   const [showLaunch, completeLaunch] = useShowLaunch();
+
+  // ── Tabbed app shell (Clock · Sky · Senses · Oracle)
+  const [tab, setTab] = useState<AppTab>(() => {
+    try {
+      const raw = localStorage.getItem("cp-active-tab");
+      return raw === "clock" || raw === "sky" || raw === "senses" || raw === "oracle" ? raw : "clock";
+    } catch {
+      return "clock";
+    }
+  });
+  const [showDetail, setShowDetail] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem("cp-active-tab", tab); } catch {}
+  }, [tab]);
+
+  const TAB_SUBTITLE: Record<AppTab, string> = {
+    clock: "COSMIC CLOCK",
+    sky: "ASTRONOMICAL GUIDANCE",
+    senses: "ORACLE SENSES",
+    oracle: "UNVEILING THE ORACLE",
+  };
 
   // Live ambient readings from the device sensor array (lux + barometric
   // pressure), fed into the cosmic engine so the sky's warmth/breath respond
@@ -559,6 +582,7 @@ export default function Home() {
   }
 
   function onWheelZoom(e: React.WheelEvent<HTMLDivElement>) {
+    if (tab !== "clock") return;
     if (!e.ctrlKey) return;
     e.preventDefault();
     setWheelZoom(prev => clampZoom(prev + (e.deltaY < 0 ? 0.08 : -0.08)));
@@ -572,6 +596,7 @@ export default function Home() {
   }
 
   function onTouchStartZoom(e: React.TouchEvent<HTMLDivElement>) {
+    if (tab !== "clock") return;
     const d = touchDistance(e.touches);
     if (d == null) return;
     pinchStartRef.current = d;
@@ -579,6 +604,7 @@ export default function Home() {
   }
 
   function onTouchMoveZoom(e: React.TouchEvent<HTMLDivElement>) {
+    if (tab !== "clock") return;
     const d = touchDistance(e.touches);
     if (d == null || pinchStartRef.current == null) return;
     const ratio = d / pinchStartRef.current;
@@ -600,71 +626,59 @@ export default function Home() {
           onComplete={completeLaunch}
         />
       )}
-    <main className={`cp-shell${showLaunch ? " cp-shell-under-launch" : ""}`}>
-      <div className="cp-stack">
+    <main
+      className={`cp-shell cp-app${showLaunch ? " cp-shell-under-launch" : ""}`}
+      data-tab={tab}
+      style={cosmic ? { ["--cosmic-hue" as string]: String(Math.round(cosmic.ui.hue)) } : undefined}
+    >
+      <header className="cp-appbar">
+        <div className="cp-hero-brand">
+          <OracleLogo size={34} className="cp-hero-mark" />
+          <div className="cp-hero-brand-text">
+            <h1 className="cp-hero-title">DELPHI</h1>
+            <p className="cp-hero-subtitle">{TAB_SUBTITLE[tab]}</p>
+          </div>
+        </div>
+        <div className="cp-appbar-actions">
+          <button
+            className="cp-btn cp-btn-sm"
+            onClick={() => {
+              if (toggles.heading || toggles.location) void startOrientationWatch();
+              void captureSensors();
+            }}
+            disabled={sigLoading}
+          >
+            {sigLoading ? "…" : "📍 Locate"}
+          </button>
+          <button
+            className={`cp-btn cp-btn-sm${clockSfxOn ? " cp-toggle-on" : ""}`}
+            onClick={() => {
+              if (!clockSfxOn) enableSfx();
+              setClockSfxOn(v => !v);
+            }}
+            title={sfxActive ? "Clock sound on" : "Click to enable clock sound"}
+          >
+            {clockSfxOn ? "🔊" : "🔇"}
+          </button>
+        </div>
+      </header>
 
-        {/* ── 1. CYCLE WHEELS + SKY (hero) ───────────────────────────────── */}
-        <section
-          className="cp-hero-wheel"
-          style={cosmic ? { ["--cosmic-hue" as string]: String(Math.round(cosmic.ui.hue)) } : undefined}
-        >
-          <div className="cp-hero-wheel-head">
-            <div className="cp-hero-brand">
-              <OracleLogo size={42} className="cp-hero-mark" />
-              <div className="cp-hero-brand-text">
-                <h1 className="cp-hero-title">DELPHI</h1>
-                <p className="cp-hero-subtitle">COSMIC CLOCK | ASTRONOMICAL GUIDANCE</p>
+      <div className="cp-tabview" key={tab}>
+
+        {/* ── CLOCK / SKY visual hero — CSS shows the wheel on Clock, the sky map on Sky ── */}
+        {(tab === "clock" || tab === "sky") && (
+        <section className="cp-hero-wheel">
+          {tab === "clock" && (
+            <div className="cp-hero-wheel-head">
+              <div className="cp-wheel-controls">
+                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
+                <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
+                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
+                <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(1); }}>Reset</button>
+                <button className="cp-btn cp-btn-sm" onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
               </div>
             </div>
-            <div className="cp-wheel-controls">
-              <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
-              <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
-              <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-              <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(1); }}>Reset</button>
-              <button className="cp-btn cp-btn-sm"
-                onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
-              <button
-                className="cp-btn cp-btn-sm"
-                onClick={() => {
-                  if (toggles.heading || toggles.location) void startOrientationWatch();
-                  void captureSensors();
-                }}
-                disabled={sigLoading}
-              >
-                {sigLoading ? "…" : "📍 Locate"}
-              </button>
-              <button
-                className={`cp-btn cp-btn-sm${clockSfxOn ? " cp-toggle-on" : ""}`}
-                onClick={() => {
-                  if (!clockSfxOn) enableSfx();
-                  setClockSfxOn(v => !v);
-                }}
-                title={sfxActive ? "Clock sound on" : "Click to enable clock sound"}
-              >
-                {clockSfxOn ? "🔊" : "🔇"}
-              </button>
-            </div>
-          </div>
-
-          <SpacetimeReadout
-            now={animNow}
-            lat={mapLat}
-            lon={mapLon}
-            liveCoords={hasLiveLocation && toggles.location}
-            usingFallback={!hasLiveLocation && toggles.location}
-            locationDenied={locDenied}
-            locationEnabled={toggles.location}
-            accuracyM={signals?.accuracyM ?? null}
-            altM={signals?.altM ?? null}
-            altAccuracyM={signals?.altAccuracyM ?? null}
-            speedMps={signals?.speedMps ?? null}
-            gpsHeading={signals?.gpsHeading ?? null}
-            locationAtMs={signals?.locationAtMs ?? null}
-            compassHeading={toggles.compass ? activeHeading : null}
-            pitchDeg={toggles.location ? activePitch : null}
-            emfUt={toggles.emf ? signals?.emfUt ?? null : null}
-            cosmic={cosmic}
-          />
+          )}
 
           {focusRing && (
             <RingFocusPanel
@@ -732,13 +746,40 @@ export default function Home() {
               )}
             </div>
           </div>
-        </section>
 
-        {/* ── 2. SKY CONTROLS ────────────────────────────────────────────── */}
+          {tab === "clock" && (
+            <CosmicNow
+              now={animNow}
+              lat={mapLat}
+              lon={mapLon}
+              liveCoords={hasLiveLocation && toggles.location}
+              usingFallback={!hasLiveLocation && toggles.location}
+              altM={signals?.altM ?? null}
+              heading={toggles.compass ? activeHeading : null}
+              liveHeading={hasLiveHeading}
+              cosmic={cosmic}
+              cycles={cycles}
+            />
+          )}
+        </section>
+        )}
+
+        {/* ── SKY CONTROLS (Sky tab) ─────────────────────────────────────── */}
+        {tab === "sky" && (
         <section className="cp-card cp-sky-card">
           <div className="cp-card-head">
             <h2 className="cp-card-title">Sky Controls</h2>
           </div>
+
+          <label className="cp-dir-label" style={{ marginBottom: "0.5rem" }}>
+            <span>Sky depth · {labelForDistanceRank(skyDistance)}</span>
+            <input
+              type="range" min={0} max={100}
+              value={skyDistance}
+              onChange={e => setSkyDistance(Number(e.target.value))}
+              className="cp-dir-range"
+            />
+          </label>
 
           <div className="cp-sensor-toggles">
             {SENSOR_TOGGLE_DEFS.map(t => (
@@ -795,13 +836,26 @@ export default function Home() {
             )}
           </div>
         </section>
+        )}
 
-        {/* ── 2b. ORACLE SENSES (full device sensor array) ────────────────── */}
-        <SensorArray className="cp-card" onAmbient={handleAmbient} />
+        {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}
+        {tab === "senses" && (
+          <SensorArray className="cp-card" onAmbient={handleAmbient} />
+        )}
 
-        {/* ── 3. COSMIC DATA ─────────────────────────────────────────────── */}
+        {/* ── COSMIC DATA (Clock tab) ─────────────────────────────────────── */}
+        {tab === "clock" && (
         <section className="cp-card cp-cosmic-card">
-          <h2 className="cp-card-title">Cosmic Data</h2>
+          <div className="cp-card-head">
+            <h2 className="cp-card-title">Cosmic Data</h2>
+            <button
+              type="button"
+              className="cp-btn cp-btn-ghost cp-btn-sm"
+              onClick={() => setShowDetail(v => !v)}
+            >
+              {showDetail ? "▾ Detail" : "▸ Detail"}
+            </button>
+          </div>
 
           <div className="cp-ring-legend">
             {CLOCK_RINGS.map(cr => (
@@ -858,7 +912,7 @@ export default function Home() {
             </div>
           )}
 
-          {cosmic && (
+          {showDetail && cosmic && (
             <div className="cp-cosmic-layers">
               <p className="cp-cosmic-layers-title">Cosmic Clock Engine · 6 tiers</p>
               <div className="cp-cosmic-layer-grid">
@@ -874,7 +928,7 @@ export default function Home() {
             </div>
           )}
 
-          {cycles && (
+          {showDetail && cycles && (
             <div className="cp-spectrum">
               {cycles.spectrum.map(s => (
                 <div key={s.name} className="cp-spectrum-row">
@@ -888,8 +942,11 @@ export default function Home() {
             </div>
           )}
         </section>
+        )}
 
-        {/* ── 4. RESEARCH ────────────────────────────────────────────────── */}
+        {/* ── RESEARCH ORACLE (Oracle tab) ────────────────────────────────── */}
+        {tab === "oracle" && (
+        <>
         <section className="cp-card">
           <h2 className="cp-card-title">Research Console</h2>
 
@@ -1161,7 +1218,12 @@ export default function Home() {
             <p className="cp-muted">Pick a tier, type a question, and run. The free tiers need no API keys.</p>
           </div>
         )}
+        </>
+        )}
+
       </div>
+
+      <BottomNav tab={tab} onChange={setTab} />
     </main>
     </>
   );

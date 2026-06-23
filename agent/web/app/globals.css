@@ -1227,3 +1227,193 @@ html,body {
   font-variant-numeric: tabular-nums;
 }
 @keyframes blink    { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Tabbed app shell — Clock · Sky · Senses · Oracle
+   ════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── App bar (sticky brand + global actions) ─────────────────────────────── */
+.cp-appbar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding:
+    calc(0.5rem + var(--safe-t))
+    calc(0.95rem + var(--safe-r))
+    0.5rem
+    calc(0.95rem + var(--safe-l));
+  background: linear-gradient(180deg, rgba(5, 7, 11, 0.94) 0%, rgba(5, 7, 11, 0.6) 72%, transparent 100%);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+.cp-appbar .cp-hero-title { font-size: 1.15rem; letter-spacing: 0.22em; margin-left: 0.22em; }
+.cp-appbar .cp-hero-subtitle { font-size: 0.46rem; margin-top: 0.2rem; transition: color 0.3s ease; }
+.cp-appbar-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+/* ─── Tab view (one panel column at a time, animated on switch) ────────────── */
+.cp-tabview {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  padding:
+    0.55rem
+    calc(0.85rem + var(--safe-r))
+    calc(84px + var(--safe-b))
+    calc(0.85rem + var(--safe-l));
+  animation: cp-tab-in 0.42s cubic-bezier(0.22, 0.61, 0.36, 1);
+}
+@keyframes cp-tab-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.992); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ─── Bottom tab bar ──────────────────────────────────────────────────────── */
+.cp-tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.1rem;
+  padding: 0.3rem 0.4rem calc(0.3rem + var(--safe-b));
+  background: linear-gradient(0deg, rgba(5, 7, 11, 0.97) 55%, rgba(5, 7, 11, 0.72) 100%);
+  border-top: 1px solid rgba(201, 162, 39, 0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.45);
+}
+.cp-tabbar-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 0.4rem 0 0.15rem;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  color: rgba(226, 232, 240, 0.45);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.2s ease, transform 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-tabbar-glyph {
+  font-size: 1.25rem;
+  line-height: 1;
+  transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1), filter 0.28s ease;
+}
+.cp-tabbar-item:active { transform: scale(0.9); }
+.cp-tabbar-item-active { color: var(--gold-lt); }
+.cp-tabbar-item-active .cp-tabbar-glyph {
+  transform: translateY(-2px) scale(1.14);
+  filter: drop-shadow(0 0 10px var(--gold-glow));
+}
+.cp-tabbar-dot {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: transparent;
+  transition: background 0.2s ease, box-shadow 0.2s ease;
+}
+.cp-tabbar-item-active .cp-tabbar-dot {
+  background: var(--gold);
+  box-shadow: 0 0 8px var(--gold-glow);
+}
+
+/* ─── Per-tab hero sizing: Clock shows the wheel, Sky shows the map ────────── */
+.cp-app[data-tab="clock"] .cp-wheel-viewport-hero,
+.cp-app[data-tab="clock"] .cp-split-hero { min-height: min(50vh, 500px); }
+.cp-app[data-tab="clock"] .cp-split-skymap { display: none; }
+.cp-app[data-tab="clock"] .cp-split-wheels {
+  flex: 1 1 100%;
+  align-items: center;
+  border-bottom: 0;
+}
+.cp-app[data-tab="clock"] .cp-semicircle-clip { width: min(100%, 600px); }
+
+.cp-app[data-tab="sky"] .cp-wheel-viewport-hero,
+.cp-app[data-tab="sky"] .cp-split-hero { min-height: min(70vh, 760px); }
+.cp-app[data-tab="sky"] .cp-split-wheels { display: none; }
+.cp-app[data-tab="sky"] .cp-split-skymap { flex: 1 1 100%; border-bottom: 0; }
+
+/* ─── CosmicNow dashboard (iconified, plain-language tiles) ────────────────── */
+.cp-now-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.7rem;
+}
+.cp-now-tile {
+  --tile-accent: var(--gold);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.7rem;
+  border-radius: 13px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.012));
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-left: 2px solid var(--tile-accent);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03), 0 2px 12px rgba(0, 0, 0, 0.2);
+  min-width: 0;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+.cp-now-tile:hover { transform: translateY(-2px); border-color: rgba(201, 162, 39, 0.3); }
+.cp-now-tile-wide { grid-column: span 2; }
+.cp-now-glyph {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.4));
+}
+.cp-now-body { display: flex; flex-direction: column; min-width: 0; }
+.cp-now-label {
+  font-size: 0.55rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(226, 232, 240, 0.5);
+}
+.cp-now-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cp-now-tile-wide .cp-now-value {
+  font-size: 1.2rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+.cp-now-sub {
+  font-size: 0.62rem;
+  color: #cbd5e1;
+  margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (min-width: 560px) {
+  .cp-now-grid { grid-template-columns: repeat(3, 1fr); }
+  .cp-now-tile-wide { grid-column: span 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-tabview { animation: none; }
+  .cp-tabbar-glyph, .cp-tabbar-item, .cp-now-tile { transition: none; }
+}
