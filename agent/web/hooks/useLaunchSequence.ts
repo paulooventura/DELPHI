@@ -22,13 +22,15 @@ export function useLaunchSequence(onComplete: () => void, telemetryReady: boolea
   const [ringsVisible, setRingsVisible] = useState(false);
   const [ringsExpanded, setRingsExpanded] = useState(false);
   const doneRef = useRef(false);
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
   const finish = useCallback(() => {
     if (doneRef.current) return;
     doneRef.current = true;
     setPhase("done");
-    onComplete();
-  }, [onComplete]);
+    onCompleteRef.current();
+  }, []);
 
   // Stage timeline
   useEffect(() => {

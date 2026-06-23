@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { OracleLogo } from "./oracle/OracleLogo";
 import { SplashRings } from "./oracle/SplashRings";
 import { reversePlaceLabel, useLaunchSequence } from "../hooks/useLaunchSequence";
@@ -81,18 +81,18 @@ export function LaunchScreen({
 const LAUNCH_KEY = "delphi-launched";
 
 export function useShowLaunch(): [boolean, () => void] {
-  const [show, setShow] = useState(true);
-
-  useEffect(() => {
+  const [show, setShow] = useState(() => {
     try {
-      if (sessionStorage.getItem(LAUNCH_KEY)) setShow(false);
-    } catch { /* ignore */ }
-  }, []);
+      return !sessionStorage.getItem(LAUNCH_KEY);
+    } catch {
+      return true;
+    }
+  });
 
-  const complete = () => {
+  const complete = useCallback(() => {
     try { sessionStorage.setItem(LAUNCH_KEY, "1"); } catch { /* ignore */ }
     setShow(false);
-  };
+  }, []);
 
   return [show, complete];
 }

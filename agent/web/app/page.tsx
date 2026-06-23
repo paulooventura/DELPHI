@@ -1223,8 +1223,9 @@ export default function Home() {
 
       </div>
 
-      <BottomNav tab={tab} onChange={setTab} />
     </main>
+
+      <BottomNav tab={tab} onChange={setTab} />
     </>
   );
 }

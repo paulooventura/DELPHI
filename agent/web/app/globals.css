@@ -999,7 +999,6 @@ html,body {
 
 /* ─── Launch / Unveiling the Oracle ─────────────────────────────────────── */
 .cp-shell-under-launch {
-  pointer-events: none;
   overflow: hidden;
   max-height: 100vh;
 }
@@ -1013,11 +1012,12 @@ html,body {
   justify-content: center;
   opacity: 0;
   transition: opacity 0.45s ease;
-  pointer-events: auto;
+  pointer-events: none;
 }
 
 .cp-launch-visible {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .cp-launch-exit {
@@ -1283,7 +1283,8 @@ html,body {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 40;
+  z-index: 10000;
+  pointer-events: auto;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 0.1rem;
