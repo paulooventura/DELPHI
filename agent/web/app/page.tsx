@@ -447,7 +447,7 @@ export default function Home() {
         setSignals(prev => prev
           ? { ...prev, heading: viewAz, pitch: viewAlt }
           : emptySignals({ heading: viewAz, pitch: viewAlt }));
-        setSkyPitch(prev => prev * 0.45 + viewAlt * 0.55);
+        setSkyPitch(viewAlt);
         return;
       }
 
@@ -910,7 +910,7 @@ export default function Home() {
             )}
             {(hasLiveHeading || hasLivePitch) && (
               <p className="cp-muted">
-                {hasLiveHeading && hasLivePitch && "↗ Live heading & pitch — tilt and turn your device."}
+                {hasLiveHeading && hasLivePitch && "↗ Live — tilt the top of your phone toward the moon; crosshair should match within a few degrees."}
                 {hasLiveHeading && !hasLivePitch && "↗ Live heading — enable Location for auto pitch."}
                 {!hasLiveHeading && hasLivePitch && "↕ Live pitch — enable Heading for auto compass."}
               </p>

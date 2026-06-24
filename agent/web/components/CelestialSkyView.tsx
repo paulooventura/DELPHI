@@ -225,8 +225,8 @@ function drawBody(
   ctx.shadowBlur = 0;
   ctx.globalAlpha = 1;
 
-  const label = locked
-    ? `${body.name} · ${Math.round(body.az)}° az · ${Math.round(body.alt)}° alt`
+  const label = body.id === "moon" || locked
+    ? `${body.name} · ${Math.round(body.az)}° · ${Math.round(body.alt)}°`
     : body.name;
   ctx.font = locked ? `600 10px ${MICRO}` : `500 9px ${MICRO}`;
   ctx.fillStyle = locked
@@ -780,6 +780,46 @@ export function CelestialSkyView({
         w - 10,
         15,
       );
+
+      const moon = bodies.find(b => b.id === "moon");
+      if (moon && moon.alt > -5) {
+        const sep = angularSeparationDeg(headingDeg, pitchDeg, moon.az, moon.alt);
+        const dAz = ((moon.az - headingDeg + 540) % 360) - 180;
+        const dAlt = moon.alt - pitchDeg;
+        const moonLabel =
+          sep < 4
+            ? `☽ Moon locked · ${Math.round(moon.az)}° · ${Math.round(moon.alt)}°`
+            : `☽ Moon ${Math.round(moon.az)}° · ${Math.round(moon.alt)}° · ${sep.toFixed(0)}° off`;
+        ctx.font = `600 9px ${MICRO}`;
+        ctx.fillStyle = sep < 6 ? "rgba(251, 191, 36, 0.95)" : "rgba(226, 232, 240, 0.72)";
+        ctx.textAlign = "left";
+        ctx.fillText(moonLabel, 10, 28);
+
+        if (sep > 8) {
+          const edgePad = 22;
+          let ax = w / 2;
+          let ay = h / 2;
+          if (Math.abs(dAz) >= Math.abs(dAlt)) {
+            ax = dAz > 0 ? w - edgePad : edgePad;
+            ay = h / 2 + Math.max(-h * 0.35, Math.min(h * 0.35, dAlt * 2.2));
+          } else {
+            ay = dAlt > 0 ? edgePad + 18 : h - edgePad;
+            ax = w / 2 + Math.max(-w * 0.35, Math.min(w * 0.35, dAz * 2.2));
+          }
+          ctx.save();
+          ctx.strokeStyle = "rgba(251, 191, 36, 0.75)";
+          ctx.fillStyle = "rgba(251, 191, 36, 0.9)";
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(w / 2, h / 2);
+          ctx.lineTo(ax, ay);
+          ctx.stroke();
+          ctx.font = `700 11px ${MICRO}`;
+          ctx.textAlign = "center";
+          ctx.fillText("☽", ax, ay + 4);
+          ctx.restore();
+        }
+      }
 
       if (lockReadoutRef.current) {
         ctx.font = `600 9px ${MICRO}`;

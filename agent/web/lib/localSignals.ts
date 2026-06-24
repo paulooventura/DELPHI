@@ -1,3 +1,9 @@
+import {
+  deviceHeadingDeg,
+  devicePitchDeg,
+  deviceViewAltAz,
+} from "./deviceOrientation";
+
 export type LocalSignals = {
   location: GeoFix;
   emf: {
@@ -144,65 +150,12 @@ export async function requestOrientationPermission(): Promise<boolean> {
   return typeof window !== "undefined" && "DeviceOrientationEvent" in window;
 }
 
-function normalizeHeading(deg: number): number {
-  return ((deg % 360) + 360) % 360;
-}
-
 function headingFromOrientation(event: DeviceOrientationEventWithCompass): number | null {
-  if (typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)) {
-    return normalizeHeading(event.webkitCompassHeading);
-  }
-  if (typeof event.alpha !== "number" || !Number.isFinite(event.alpha)) return null;
-  // absolute: alpha tracks compass north; relative: invert z-rotation
-  const raw = event.absolute ? event.alpha : (360 - event.alpha) % 360;
-  return normalizeHeading(raw);
+  return deviceHeadingDeg(event);
 }
 
 function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
-  const view = deviceViewAltAz(event);
-  return view?.alt ?? null;
-}
-
-/**
- * Where the device screen center points on the sky (azimuth from north, altitude).
- * Uses W3C T = Rz(α) Rx(β) Ry(γ) with view axis −Z (through the screen).
- */
-export function deviceViewAltAz(event: DeviceOrientationEvent): { az: number; alt: number } | null {
-  const alpha = event.alpha;
-  const beta = event.beta;
-  const gamma = event.gamma;
-  if (alpha == null || beta == null || gamma == null) return null;
-  if (!Number.isFinite(alpha) || !Number.isFinite(beta) || !Number.isFinite(gamma)) return null;
-
-  const screenAngle = typeof screen !== "undefined" ? (screen.orientation?.angle ?? 0) : 0;
-  const e = event as DeviceOrientationEventWithCompass;
-
-  let alphaDeg = alpha + screenAngle;
-  if (typeof e.webkitCompassHeading === "number" && Number.isFinite(e.webkitCompassHeading)) {
-    alphaDeg = e.webkitCompassHeading + screenAngle;
-  }
-
-  const r = Math.PI / 180;
-  const a = alphaDeg * r;
-  const b = beta * r;
-  const g = gamma * r;
-  const cA = Math.cos(a);
-  const sA = Math.sin(a);
-  const cB = Math.cos(b);
-  const sB = Math.sin(b);
-  const cG = Math.cos(g);
-  const sG = Math.sin(g);
-
-  const vx = -cA * sG - sA * cG * cB;
-  const vy = -sA * sG + cA * cG * cB;
-  const vz = sB * cG;
-
-  const clamp = (x: number) => Math.max(-1, Math.min(1, x));
-  const alt = Math.asin(clamp(vz)) / r;
-  let az = Math.atan2(vx, vy) / r;
-  if (az < 0) az += 360;
-
-  return { az: normalizeHeading(az), alt: Math.max(-90, Math.min(90, alt)) };
+  return devicePitchDeg(event);
 }
 
 export type DeviceOrientationReading = {
@@ -212,6 +165,8 @@ export type DeviceOrientationReading = {
   viewAz: number | null;
   viewAlt: number | null;
 };
+
+export { deviceViewAltAz } from "./deviceOrientation";
 
 // Continuous heading + pitch from device tilt — call requestOrientationPermission() first.
 export function watchDeviceOrientation(
