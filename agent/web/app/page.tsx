@@ -193,7 +193,7 @@ export default function Home() {
   const viewportHeightRef = useRef(400);
   const outerRingR = clockOuterRadius(cycles);
   const heroZoomDefault = fitMobileClockZoom(outerRingR, viewportHeightRef.current);
-  const [skyPitch, setSkyPitch] = useState(25);
+  const [skyPitch, setSkyPitch] = useState(0);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
@@ -437,8 +437,20 @@ export default function Home() {
     setPitchLive(false);
     const allowed = await requestOrientationPermission();
     if (!allowed) return;
-    headingCleanupRef.current = watchDeviceOrientation(({ heading, pitch }) => {
+    headingCleanupRef.current = watchDeviceOrientation(({ heading, pitch, viewAz, viewAlt }) => {
       const t = togglesRef.current;
+      const useView = viewAz != null && viewAlt != null && t.heading && t.location;
+
+      if (useView) {
+        setHeadingLive(true);
+        setPitchLive(true);
+        setSignals(prev => prev
+          ? { ...prev, heading: viewAz, pitch: viewAlt }
+          : emptySignals({ heading: viewAz, pitch: viewAlt }));
+        setSkyPitch(prev => prev * 0.45 + viewAlt * 0.55);
+        return;
+      }
+
       if (heading != null && t.heading) {
         setHeadingLive(true);
         setSignals(prev => prev
@@ -527,6 +539,12 @@ export default function Home() {
       stopLocationWatch();
     };
   }, []);
+
+  useEffect(() => {
+    if (tab === "sky" && (toggles.heading || toggles.location)) {
+      void startOrientationWatch();
+    }
+  }, [tab, toggles.heading, toggles.location]);
 
   // ── Streaming research (tiered v2 engine). Each SSE message is a partial
   // ConfidenceResult; we merge so progress phases enrich rather than reset.

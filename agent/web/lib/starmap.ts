@@ -1,5 +1,6 @@
 import { NEAREST_STARS, MOON_DISTANCE_LY, magLimitForRank, distanceLyForRank, type NearestStarData } from "./nearestStars";
 import { ZODIAC_ART, type ZodiacArtDef } from "./zodiacArt";
+import { julianDay, lunarPhaseFraction, moonEquatorial, normalizeDeg } from "./cosmic/math";
 
 export type StarData = {
   name: string;
@@ -103,11 +104,11 @@ export const BRIGHT_STARS: StarData[] = NEAREST_STARS.filter(s => s.mag <= 3.5);
 export function gmstDeg(date: Date): number {
   const JD = date.getTime() / 86400000 + 2440587.5;
   const T = (JD - 2451545.0) / 36525;
-  return ((280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T) % 360 + 360) % 360;
+  return normalizeDeg(280.46061837 + 360.98564736629 * (JD - 2451545.0) + 0.000387933 * T * T);
 }
 
 export function lstDeg(date: Date, lonDeg: number): number {
-  return ((gmstDeg(date) + lonDeg) % 360 + 360) % 360;
+  return normalizeDeg(gmstDeg(date) + lonDeg);
 }
 
 export function celestialToAltAz(
@@ -120,7 +121,7 @@ export function celestialToAltAz(
   const LST = lstDeg(date, lonDeg);
   const latRad = (latDeg * Math.PI) / 180;
   const raDeg = raHours * 15;
-  const HA = ((LST - raDeg + 360) % 360);
+  const HA = normalizeDeg(LST - raDeg);
   const haRad = (HA * Math.PI) / 180;
   const decRad = (decDeg * Math.PI) / 180;
 
@@ -152,27 +153,11 @@ function moonPhaseLabel(fraction: number): string {
 }
 
 export function moonPosition(latDeg: number, lonDeg: number, date: Date): MoonObject | null {
-  const d = (date.getTime() - Date.UTC(2000, 0, 1, 12)) / 86400000;
-  const N = ((125.1228 - 0.0529538083 * d) % 360) * (Math.PI / 180);
-  const M = ((134.9634 + 13.0649929509 * d) % 360) * (Math.PI / 180);
-  const F = ((93.2720 + 13.229350498 * d) % 360) * (Math.PI / 180);
-
-  const moonLong = (N * 180 / Math.PI + 6.289 * Math.sin(M)) % 360;
-  const moonLat = 5.128 * Math.sin(F);
-  const eclRad = 23.4393 * (Math.PI / 180);
-
-  const lonRad = moonLong * (Math.PI / 180);
-  const latRad = moonLat * (Math.PI / 180);
-  const sinDec = Math.sin(latRad) * Math.cos(eclRad)
-    + Math.cos(latRad) * Math.sin(eclRad) * Math.sin(lonRad);
-  const decDeg = Math.asin(Math.max(-1, Math.min(1, sinDec))) * 180 / Math.PI;
-  const y = Math.sin(lonRad) * Math.cos(eclRad) - Math.tan(latRad) * Math.sin(eclRad);
-  const x = Math.cos(lonRad);
-  let raHours = Math.atan2(y, x) * 180 / Math.PI / 15;
-  if (raHours < 0) raHours += 24;
-
+  const jd = julianDay(date);
+  const { raHours, decDeg } = moonEquatorial(jd);
   const { alt, az } = celestialToAltAz(raHours, decDeg, latDeg, lonDeg, date);
-  const illumination = (1 - Math.cos(M)) / 2;
+  const phase = lunarPhaseFraction(date);
+  const illumination = (1 - Math.cos(2 * Math.PI * phase)) / 2;
 
   return {
     name: "Moon",

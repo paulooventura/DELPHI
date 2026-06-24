@@ -134,6 +134,57 @@ export function lunarPhaseFraction(date: Date): number {
   return (((elapsed % SYNODIC_MONTH_DAYS) + SYNODIC_MONTH_DAYS) % SYNODIC_MONTH_DAYS) / SYNODIC_MONTH_DAYS;
 }
 
+/**
+ * Meeus Ch.47 — low-precision geocentric lunar ecliptic coordinates (degrees).
+ * Accurate to ~0.1° for mobile sky maps.
+ */
+export function moonEclipticDeg(jd: number): { lonDeg: number; latDeg: number } {
+  const T = julianCentury(jd);
+  const Lp = normalizeDeg(218.3164477 + 481267.88123421 * T - 0.0015786 * T * T);
+  const D = normalizeDeg(297.8501921 + 445267.1114034 * T - 0.0018819 * T * T);
+  const M = normalizeDeg(357.5291092 + 35999.0502909 * T - 0.0001536 * T * T);
+  const Mp = normalizeDeg(134.9633964 + 477198.8675055 * T + 0.0087414 * T * T);
+  const F = normalizeDeg(93.2720950 + 483202.0175233 * T - 0.0036539 * T * T);
+  const dr = RAD;
+  const lambda =
+    Lp
+    + 6.289 * Math.sin(Mp * dr)
+    + 1.274 * Math.sin((2 * D - Mp) * dr)
+    + 0.658 * Math.sin(2 * D * dr)
+    + 0.214 * Math.sin(2 * Mp * dr)
+    - 0.186 * Math.sin(M * dr)
+    - 0.114 * Math.sin(2 * F * dr);
+  const beta =
+    5.128 * Math.sin(F * dr)
+    + 0.280 * Math.sin((Mp + F) * dr)
+    + 0.277 * Math.sin((Mp - F) * dr)
+    + 0.173 * Math.sin((2 * D - F) * dr);
+  return { lonDeg: normalizeDeg(lambda), latDeg: beta };
+}
+
+export function eclipticToEquatorial(
+  lonDeg: number,
+  latDeg: number,
+  jd: number,
+): { raHours: number; decDeg: number } {
+  const lon = lonDeg * RAD;
+  const lat = latDeg * RAD;
+  const eps = obliquityDeg(jd) * RAD;
+  const sinDec = Math.sin(lat) * Math.cos(eps) + Math.cos(lat) * Math.sin(eps) * Math.sin(lon);
+  const decDeg = Math.asin(Math.max(-1, Math.min(1, sinDec))) * DEG;
+  const y = Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps);
+  const x = Math.cos(lon);
+  let raDeg = Math.atan2(y, x) * DEG;
+  if (raDeg < 0) raDeg += 360;
+  return { raHours: raDeg / 15, decDeg };
+}
+
+/** Geocentric equatorial moon position at Julian date. */
+export function moonEquatorial(jd: number): { raHours: number; decDeg: number } {
+  const ecl = moonEclipticDeg(jd);
+  return eclipticToEquatorial(ecl.lonDeg, ecl.latDeg, jd);
+}
+
 /** Semidiurnal tide proxy combined with spring–neap envelope from lunar phase. */
 export function tideCycle(date: Date, lunarFraction: number): { angleDeg: number; label: string } {
   const semidiurnalHours = 12.4206;

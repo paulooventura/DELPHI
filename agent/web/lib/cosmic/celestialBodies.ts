@@ -1,5 +1,5 @@
 import { celestialToAltAz, moonPosition } from "../starmap";
-import { julianDay, obliquityDeg, sunDeclinationDeg, sunRightAscensionHours } from "./math";
+import { eclipticToEquatorial, julianDay, sunDeclinationDeg, sunRightAscensionHours } from "./math";
 
 export type CelestialBodyId =
   | "sun"
@@ -20,22 +20,6 @@ export type CelestialBody = {
   color: string;
   major: boolean;
 };
-
-const RAD = Math.PI / 180;
-const DEG = 180 / Math.PI;
-
-function eclipticToEquatorial(lonDeg: number, latDeg: number, jd: number): { raHours: number; decDeg: number } {
-  const lon = lonDeg * RAD;
-  const lat = latDeg * RAD;
-  const eps = obliquityDeg(jd) * RAD;
-  const sinDec = Math.sin(lat) * Math.cos(eps) + Math.cos(lat) * Math.sin(eps) * Math.sin(lon);
-  const decDeg = Math.asin(Math.max(-1, Math.min(1, sinDec))) * DEG;
-  const y = Math.sin(lon) * Math.cos(eps) - Math.tan(lat) * Math.sin(eps);
-  const x = Math.cos(lon);
-  let raDeg = Math.atan2(y, x) * DEG;
-  if (raDeg < 0) raDeg += 360;
-  return { raHours: raDeg / 15, decDeg };
-}
 
 /** Low-precision heliocentric → geocentric ecliptic (Meeus-style mean elements). */
 function planetEcliptic(name: CelestialBodyId, jd: number): { lonDeg: number; latDeg: number; rAu: number } {
@@ -92,7 +76,17 @@ export function computeCelestialBodies(
 
   const moon = moonPosition(latDeg, lonDeg, date);
   if (moon) {
-    bodies.push(bodyFromRaDec("moon", "Moon", moon.ra, moon.dec, latDeg, lonDeg, date, -12.6, "#e8eef8"));
+    bodies.push({
+      id: "moon",
+      name: "Moon",
+      alt: moon.alt,
+      az: moon.az,
+      raHours: moon.ra,
+      decDeg: moon.dec,
+      magnitude: -12.6,
+      color: "#e8eef8",
+      major: true,
+    });
   }
 
   for (const id of ["venus", "mars", "jupiter", "saturn"] as CelestialBodyId[]) {
@@ -160,6 +154,8 @@ export function angularSeparationDeg(
   az2: number,
   alt2: number,
 ): number {
+  const RAD = Math.PI / 180;
+  const DEG = 180 / Math.PI;
   const a1 = alt1 * RAD;
   const a2 = alt2 * RAD;
   const dAz = (az2 - az1) * RAD;

@@ -159,30 +159,58 @@ function headingFromOrientation(event: DeviceOrientationEventWithCompass): numbe
 }
 
 function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
+  const view = deviceViewAltAz(event);
+  return view?.alt ?? null;
+}
+
+/**
+ * Where the device screen center points on the sky (azimuth from north, altitude).
+ * Uses W3C T = Rz(α) Rx(β) Ry(γ) with view axis −Z (through the screen).
+ */
+export function deviceViewAltAz(event: DeviceOrientationEvent): { az: number; alt: number } | null {
+  const alpha = event.alpha;
   const beta = event.beta;
   const gamma = event.gamma;
-  if (typeof beta !== "number" || !Number.isFinite(beta)) return null;
+  if (alpha == null || beta == null || gamma == null) return null;
+  if (!Number.isFinite(alpha) || !Number.isFinite(beta) || !Number.isFinite(gamma)) return null;
 
-  const screenAngle =
-    typeof screen !== "undefined" ? (screen.orientation?.angle ?? 0) : 0;
+  const screenAngle = typeof screen !== "undefined" ? (screen.orientation?.angle ?? 0) : 0;
+  const e = event as DeviceOrientationEventWithCompass;
 
-  // Portrait: alt = 90−β (horizon at β≈90, zenith at β≈0, nadir at β≈180).
-  // Landscape: use |γ| as the primary tilt axis.
-  let alt =
-    screenAngle === 90 || screenAngle === 270
-      ? 90 - Math.abs(typeof gamma === "number" && Number.isFinite(gamma) ? gamma : beta)
-      : 90 - beta;
+  let alphaDeg = alpha + screenAngle;
+  if (typeof e.webkitCompassHeading === "number" && Number.isFinite(e.webkitCompassHeading)) {
+    alphaDeg = e.webkitCompassHeading + screenAngle;
+  }
 
-  // Folding over zenith keeps vertical motion continuous (no bounce at the horizon).
-  if (alt > 90) alt = 180 - alt;
-  if (alt < -90) alt = -180 - alt;
+  const r = Math.PI / 180;
+  const a = alphaDeg * r;
+  const b = beta * r;
+  const g = gamma * r;
+  const cA = Math.cos(a);
+  const sA = Math.sin(a);
+  const cB = Math.cos(b);
+  const sB = Math.sin(b);
+  const cG = Math.cos(g);
+  const sG = Math.sin(g);
 
-  return Math.max(-90, Math.min(90, alt));
+  const vx = -cA * sG - sA * cG * cB;
+  const vy = -sA * sG + cA * cG * cB;
+  const vz = sB * cG;
+
+  const clamp = (x: number) => Math.max(-1, Math.min(1, x));
+  const alt = Math.asin(clamp(vz)) / r;
+  let az = Math.atan2(vx, vy) / r;
+  if (az < 0) az += 360;
+
+  return { az: normalizeHeading(az), alt: Math.max(-90, Math.min(90, alt)) };
 }
 
 export type DeviceOrientationReading = {
   heading: number | null;
   pitch: number | null;
+  /** Unified view direction when full orientation is available. */
+  viewAz: number | null;
+  viewAlt: number | null;
 };
 
 // Continuous heading + pitch from device tilt — call requestOrientationPermission() first.
@@ -191,9 +219,12 @@ export function watchDeviceOrientation(
 ): () => void {
   const onOrientation = (event: Event) => {
     const e = event as DeviceOrientationEventWithCompass;
+    const view = deviceViewAltAz(e);
     onReading({
       heading: headingFromOrientation(e),
       pitch: pitchFromOrientation(e),
+      viewAz: view?.az ?? null,
+      viewAlt: view?.alt ?? null,
     });
   };
   window.addEventListener("deviceorientationabsolute", onOrientation, true);
