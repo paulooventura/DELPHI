@@ -6,6 +6,7 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
+import { geoDistanceM } from "../lib/sensorSmoothing";
 import { WatchMovement, clockOuterRadius } from "../components/WatchMovement";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
@@ -380,13 +381,21 @@ export default function Home() {
     stopLocationWatch();
     let lastLat = NaN;
     let lastLon = NaN;
+    let lastAcc = 40;
     locationCleanupRef.current = watchLocation(
       (fix) => {
         if (fix.latitude == null || fix.longitude == null) return;
         setLocDenied(false);
         setSignals(prev => applyGeoFix(prev, fix));
-        const moved = Math.hypot(fix.latitude - lastLat, fix.longitude - lastLon) > 0.002;
-        if (moved || !Number.isFinite(lastLat)) {
+        const acc = fix.accuracyM ?? lastAcc;
+        lastAcc = acc;
+        const moved = !Number.isFinite(lastLat) || geoDistanceM(
+          lastLat,
+          lastLon,
+          fix.latitude,
+          fix.longitude,
+        ) > Math.max(45, acc * 1.8);
+        if (moved) {
           lastLat = fix.latitude;
           lastLon = fix.longitude;
           void loadCyclesRef.current(fix.latitude, fix.longitude);
@@ -461,7 +470,7 @@ export default function Home() {
       }
       if (pitch != null && t.location) {
         setPitchLive(true);
-        setSkyPitch(prev => (prev == null ? pitch : prev * 0.55 + pitch * 0.45));
+        setSkyPitch(pitch);
         setSignals(prev => prev ? { ...prev, pitch } : prev);
       }
     });
