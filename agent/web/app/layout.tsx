@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Cinzel } from "next/font/google";
+import { SITE_URL } from "../lib/site";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -21,10 +22,18 @@ const cinzel = Cinzel({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "DELPHI | Cosmic Clock",
   description: "Cosmic Clock | Astronomical Guidance — an oracle that reads the sky and your device's senses.",
   applicationName: "DELPHI",
   manifest: "/manifest.webmanifest",
+  alternates: { canonical: "/" },
+  openGraph: {
+    title: "DELPHI | Cosmic Clock",
+    description: "Astronomical guidance under pauloventura.org",
+    url: SITE_URL,
+    siteName: "Paulo Ventura · DELPHI",
+  },
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",

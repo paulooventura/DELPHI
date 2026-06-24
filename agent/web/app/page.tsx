@@ -18,6 +18,8 @@ import { ClockAmbience } from "../components/ClockAmbience";
 import { SensorArray } from "../components/SensorArray";
 import { CosmicNow } from "../components/CosmicNow";
 import { BottomNav, type AppTab } from "../components/BottomNav";
+import { PauloVenturaHub } from "../components/PauloVenturaHub";
+import { WIX_HOME } from "../lib/site";
 import { SkyCompass } from "../components/SkyCompass";
 import { SkyCatalog } from "../components/SkyCatalog";
 import { labelForDistanceRank } from "../lib/starmap";
@@ -719,6 +721,15 @@ export default function Home() {
           )}
         </div>
         <div className="cp-appbar-actions">
+          <a
+            href={WIX_HOME}
+            className="cp-btn cp-btn-sm cp-btn-ghost"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="Paulo Ventura — music & art"
+          >
+            PV
+          </a>
           <button
             className="cp-btn cp-btn-sm cp-appbar-locate-desktop"
             onClick={() => {
@@ -1096,6 +1107,7 @@ export default function Home() {
         {/* ── RESEARCH ORACLE (Oracle tab) ────────────────────────────────── */}
         {tab === "oracle" && (
         <>
+        <PauloVenturaHub className="cp-card" />
         <section className="cp-card">
           <h2 className="cp-card-title">Research Console</h2>
 

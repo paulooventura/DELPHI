@@ -1,10 +1,23 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "version": 2,
-  "builds": [
+  "buildCommand": "npm --prefix agent/web run build",
+  "installCommand": "npm --prefix agent/web ci",
+  "outputDirectory": "agent/web/.next",
+  "framework": "nextjs",
+  "redirects": [
     {
-      "src": "agent/web/package.json",
-      "use": "@vercel/next"
+      "source": "/:path*",
+      "has": [{ "type": "host", "value": "delphi-wine.vercel.app" }],
+      "destination": "https://delphi.pauloventura.org/:path*",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
     }
   ]
 }

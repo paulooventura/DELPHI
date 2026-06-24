@@ -1972,3 +1972,67 @@ html,body {
   background: rgba(52, 211, 153, 0.15);
   color: #34d399;
 }
+
+/* ─── Paulo Ventura hub (Oracle tab + Wix links) ─────────────────────────── */
+.cp-pv-hub {
+  padding: 1rem 1.1rem 1.15rem;
+}
+.cp-pv-hub-head {
+  margin-bottom: 0.85rem;
+}
+.cp-pv-hub-title {
+  font-family: var(--font-cinzel), serif;
+  font-size: 1rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin: 0 0 0.35rem;
+  color: #e2e8f0;
+}
+.cp-pv-hub-sub {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: #94a3b8;
+}
+.cp-pv-hub-link {
+  color: #c9a227;
+  text-decoration: none;
+}
+.cp-pv-hub-link:hover {
+  text-decoration: underline;
+}
+.cp-pv-hub-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+@media (min-width: 480px) {
+  .cp-pv-hub-grid { grid-template-columns: repeat(6, 1fr); }
+}
+.cp-pv-hub-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  padding: 0.55rem 0.35rem;
+  border-radius: 10px;
+  background: rgba(15, 23, 42, 0.55);
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 0.68rem;
+  text-align: center;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cp-pv-hub-tile:hover {
+  border-color: rgba(201, 162, 39, 0.35);
+  background: rgba(201, 162, 39, 0.08);
+}
+.cp-pv-hub-glyph {
+  font-size: 1.1rem;
+  line-height: 1;
+}
+.cp-pv-hub-label {
+  letter-spacing: 0.04em;
+}

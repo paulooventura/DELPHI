@@ -1,7 +1,7 @@
 name: Deploy to Netlify (palotino.netlify.app)
 
 # NOTE: palotino.netlify.app currently hosts a different site. Primary DELPHI
-# deploy is Vercel (delphi-wine.vercel.app) via .github/workflows/vercel-deploy.yml
+# deploy is Vercel (delphi.pauloventura.org) via .github/workflows/vercel-deploy.yml
 
 on:
   push:
@@ -27,7 +27,7 @@ jobs:
             echo "configured=true" >> "$GITHUB_OUTPUT"
           else
             echo "configured=false" >> "$GITHUB_OUTPUT"
-            echo "::warning::Skipping Netlify deploy — secrets not configured. Use Vercel (delphi-wine.vercel.app)."
+            echo "::warning::Skipping Netlify deploy — secrets not configured. Use Vercel (delphi.pauloventura.org)."
           fi
       - name: Install web deps
         if: steps.netlify.outputs.configured == 'true'

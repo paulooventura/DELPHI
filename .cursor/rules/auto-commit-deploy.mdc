@@ -1,5 +1,5 @@
 ---
-description: Auto-commit and push to GitHub after substantive Delphi changes (triggers Netlify deploy)
+description: Auto-commit and push to GitHub after substantive Delphi changes (triggers Vercel deploy)
 alwaysApply: true
 ---
 
@@ -18,7 +18,7 @@ After completing substantive work in this repo, **commit and push without asking
 1. `git status` and `git diff` — stage only files related to the task
 2. Write a concise commit message (1–2 sentences, focus on why)
 3. `git add` → `git commit` → `git push origin main`
-4. Briefly tell the user: commit hash, that push succeeded, and which deploy target updated — **Vercel** (`https://delphi-wine.vercel.app`) via `.github/workflows/vercel-deploy.yml`, or Netlify if secrets are configured.
+4. Briefly tell the user: commit hash, that push succeeded, and that **delphi.pauloventura.org** deploys via Vercel on push to `main`.
 
 ## Remote
 

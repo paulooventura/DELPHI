@@ -12,19 +12,16 @@ npm run dev
 
 Deploying to production
 
-**Live app:** [delphi-wine.vercel.app](https://delphi-wine.vercel.app)
+**Live app:** [delphi.pauloventura.org](https://delphi.pauloventura.org)  
+**Artist hub (Wix):** [www.pauloventura.org](https://www.pauloventura.org)
 
-Pushes to `main` deploy via GitHub Actions (`.github/workflows/vercel-deploy.yml`) when these repository secrets are set:
+See [docs/DOMAIN.md](docs/DOMAIN.md) for DNS setup (CNAME `delphi` → Vercel).
 
-- `VERCEL_TOKEN` — from [Vercel Account → Tokens](https://vercel.com/account/tokens)
-- `VERCEL_ORG_ID` — Project Settings → General
-- `VERCEL_PROJECT_ID` — Project Settings → General
+Pushes to `main` deploy via Vercel Git integration or `.github/workflows/vercel-deploy.yml` (requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`).
 
-**Alternative (no secrets):** In the [Vercel dashboard](https://vercel.com), connect this GitHub repo to the `delphi-wine` project with **Root Directory** = `agent/web`. Vercel will deploy automatically on every push to `main`.
+In Vercel → project **delphi** → **Root Directory** = `agent/web` → **Domains** → add `delphi.pauloventura.org`.
 
-`palotino.netlify.app` is a separate Netlify site; Netlify deploy is optional and requires `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` secrets.
-
-Legacy GitHub Pages (`delphi.pauloventura.org`) is a placeholder only — not the Next.js app.
+`delphi-wine.vercel.app` redirects to the custom domain. Legacy Netlify (`palotino.netlify.app`) is unrelated.
 
 Local usage:
 

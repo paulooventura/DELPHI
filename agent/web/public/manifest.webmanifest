@@ -1,8 +1,8 @@
 {
   "name": "DELPHI — Cosmic Clock",
   "short_name": "DELPHI",
-  "description": "Cosmic Clock | Astronomical Guidance — an oracle that reads the sky and your device's senses.",
-  "id": "/",
+  "description": "Cosmic Clock | Astronomical Guidance — delphi.pauloventura.org",
+  "id": "https://delphi.pauloventura.org/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
