@@ -29,22 +29,6 @@ import { estimateOutdoorLux } from "../lib/platform";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
-const CLOCK_RINGS = [
-  { id: "ms",  name: "ms (0–99)", color: "#fbbf24" },
-  { id: "s",   name: "sec", color: "#f97316" },
-  { id: "min", name: "min", color: "#ef4444" },
-  { id: "h",   name: "hr",  color: "#d946ef" },
-];
-
-const DATE_RINGS = [
-  { id: "weather", name: "weather", color: "#22d3ee" },
-  { id: "day", name: "day", color: "#c084fc" },
-  { id: "weekday", name: "weekday", color: "#94a3b8" },
-  { id: "chinese-sign", name: "chinese", color: "#dc2626" },
-  { id: "tzolkin", name: "tzolkin", color: "#7c3aed" },
-  { id: "moon", name: "moon", color: "#94a3b8" },
-];
-
 // ─── Sensor toggles ───────────────────────────────────────────────────────────
 
 type SensorToggles = {
@@ -195,6 +179,7 @@ export default function Home() {
   const zoomBootstrapped = useRef(false);
   const wheelViewportRef = useRef<HTMLDivElement>(null);
   const viewportHeightRef = useRef(400);
+  const viewportWidthRef = useRef(400);
   const outerRingR = clockOuterRadius(cycles);
   const heroZoomDefault = fitMobileClockZoom(outerRingR, viewportHeightRef.current);
   const [skyDistance, setSkyDistance] = useState(50);
@@ -241,7 +226,6 @@ export default function Home() {
       return "clock";
     }
   });
-  const [showDetail, setShowDetail] = useState(false);
   useEffect(() => {
     try { localStorage.setItem("cp-active-tab", tab); } catch {}
   }, [tab]);
@@ -288,10 +272,13 @@ export default function Home() {
     if (!el || typeof ResizeObserver === "undefined") return;
 
     const measure = () => {
-      const h = el.getBoundingClientRect().height;
+      const rect = el.getBoundingClientRect();
+      const h = rect.height;
+      const w = rect.width;
       if (h < 80) return;
       viewportHeightRef.current = h;
-      const fit = fitMobileClockZoom(clockOuterRadius(cycles), h);
+      viewportWidthRef.current = w;
+      const fit = fitMobileClockZoom(clockOuterRadius(cycles), h, w);
       if (!zoomBootstrapped.current) {
         setWheelZoom(fit);
         zoomBootstrapped.current = true;
@@ -637,7 +624,6 @@ export default function Home() {
   };
 
   // ── Wheel data
-  const calendarWheels = cycles?.wheelLayers ?? [];
 
   const hasLiveHeading = headingLive && signals?.heading != null && toggles.heading;
   const hasLivePitch = pitchLive && toggles.location;
@@ -779,18 +765,6 @@ export default function Home() {
         {/* ── CLOCK / SKY visual hero — CSS shows the wheel on Clock, the sky map on Sky ── */}
         {(tab === "clock" || tab === "sky") && (
         <section className={`cp-hero-wheel${tab === "clock" ? " cp-hero-wheel-clock" : ""}${tab === "sky" ? " cp-hero-wheel-sky" : ""}`}>
-          {tab === "clock" && (
-            <div className="cp-hero-wheel-head cp-hero-wheel-head-desktop">
-              <div className="cp-wheel-controls">
-                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
-                <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
-                <button className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-                <button className="cp-btn cp-btn-sm" onClick={() => { clearRingFocus(); setWheelZoom(fitMobileClockZoom(outerRingR, viewportHeightRef.current)); }}>Reset</button>
-                <button className="cp-btn cp-btn-sm" onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
-              </div>
-            </div>
-          )}
-
           {focusRing && (
             <RingFocusPanel
               ringId={focusRing}
@@ -816,6 +790,24 @@ export default function Home() {
                 live={sensesAwake}
                 heading={hasLiveHeading ? activeHeading : null}
               />
+            )}
+            {tab === "clock" && (
+              <div className="cp-wheel-controls-float">
+                <button type="button" className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
+                <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
+                <button type="button" className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
+                <button
+                  type="button"
+                  className="cp-btn cp-btn-sm"
+                  onClick={() => {
+                    clearRingFocus();
+                    setWheelZoom(fitMobileClockZoom(outerRingR, viewportHeightRef.current, viewportWidthRef.current));
+                  }}
+                >
+                  Reset
+                </button>
+                <button type="button" className="cp-btn cp-btn-sm" onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
+              </div>
             )}
             <div className="cp-split-hero">
               <div className="cp-split-wheels">
@@ -1025,106 +1017,6 @@ export default function Home() {
           />
         )}
 
-        {/* ── COSMIC DATA (Clock tab — desktop / expanded) ─────────────────── */}
-        {tab === "clock" && (
-        <section className="cp-card cp-cosmic-card cp-cosmic-card-secondary">
-          <div className="cp-card-head">
-            <h2 className="cp-card-title">Cosmic Data</h2>
-            <button
-              type="button"
-              className="cp-btn cp-btn-ghost cp-btn-sm"
-              onClick={() => setShowDetail(v => !v)}
-            >
-              {showDetail ? "▾ Detail" : "▸ Detail"}
-            </button>
-          </div>
-
-          <div className="cp-ring-legend">
-            {CLOCK_RINGS.map(cr => (
-              <span
-                key={cr.id}
-                className={`cp-rl-item cp-rl-link${hoverRing === cr.id ? " cp-rl-active" : ""}`}
-                onMouseEnter={() => setHoverRing(cr.id)}
-                onMouseLeave={() => setHoverRing(null)}
-              >
-                <span className="cp-rl-dot" style={{ background: cr.color }}/>
-                {cr.name}
-              </span>
-            ))}
-            {DATE_RINGS.map(dr => (
-              <span
-                key={dr.id}
-                className={`cp-rl-item cp-rl-link${hoverRing === dr.id ? " cp-rl-active" : ""}`}
-                onMouseEnter={() => setHoverRing(dr.id)}
-                onMouseLeave={() => setHoverRing(null)}
-              >
-                <span className="cp-rl-dot" style={{ background: dr.color }}/>
-                {dr.name}
-                {cycles && dr.id === "weather" && `: ${cycles.weather?.emoji ?? ""} ${cycles.weather?.condition ?? ""}`}
-                {cycles && dr.id === "day" && `: ${cycles.gregorian.day}`}
-                {cycles && dr.id === "weekday" && `: ${cycles.gregorian.weekday}`}
-                {cycles && dr.id === "chinese-sign" && `: ${cycles.chineseZodiac.symbol} ${cycles.chineseZodiac.animal}`}
-                {cycles && dr.id === "tzolkin" && `: Kin ${cycles.tzolkin.kin} ${cycles.tzolkin.sign}`}
-                {cycles && dr.id === "moon" && `: ${cycles.lunar.emoji} ${cycles.lunar.phase}`}
-              </span>
-            ))}
-            {calendarWheels.filter(w => !["day", "chinese-sign", "moon"].includes(w.id)).map(w => (
-              <span
-                key={w.id}
-                className={`cp-rl-item cp-rl-link${hoverRing === w.id ? " cp-rl-active" : ""}`}
-                onMouseEnter={() => setHoverRing(w.id)}
-                onMouseLeave={() => setHoverRing(null)}
-              >
-                <span className="cp-rl-dot" style={{ background: w.color }}/>
-                <span>{w.icon}</span>
-                <span className="cp-rl-name">{w.name}:</span>
-                {w.label}
-              </span>
-            ))}
-          </div>
-
-          {cycles && (
-            <div className="cp-cycle-grid">
-              <div className="cp-cv"><span>Moon</span><strong>{cycles.lunar.emoji} {cycles.lunar.phase}</strong></div>
-              <div className="cp-cv"><span>Tzolkin</span><strong>Kin {cycles.tzolkin.kin} T{cycles.tzolkin.tone} {cycles.tzolkin.sign}</strong></div>
-              <div className="cp-cv"><span>Castle</span><strong>{cycles.mayan.castleName}</strong></div>
-              <div className="cp-cv"><span>Season</span><strong>{cycles.season.emoji} {cycles.season.name}</strong></div>
-              <div className="cp-cv"><span>Chinese</span><strong>{cycles.chineseZodiac.symbol} {cycles.chineseZodiac.element} {cycles.chineseZodiac.animal}</strong></div>
-              <div className="cp-cv"><span>Zodiac</span><strong>{cycles.westernZodiac.symbol} {cycles.westernZodiac.sign}</strong></div>
-            </div>
-          )}
-
-          {showDetail && cosmic && (
-            <div className="cp-cosmic-layers">
-              <p className="cp-cosmic-layers-title">Cosmic Clock Engine · 6 tiers</p>
-              <div className="cp-cosmic-layer-grid">
-                {cosmic.layers.map(layer => (
-                  <div key={layer.id} className="cp-cosmic-layer" title={layer.name}>
-                    <span className="cp-cosmic-layer-tier">T{layer.tier}</span>
-                    <span className="cp-cosmic-layer-dot" style={{ background: layer.color }}/>
-                    <span className="cp-cosmic-layer-name">{layer.name}</span>
-                    <span className="cp-cosmic-layer-angle">{layer.angleDeg.toFixed(2)}°</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {showDetail && cycles && (
-            <div className="cp-spectrum">
-              {cycles.spectrum.map(s => (
-                <div key={s.name} className="cp-spectrum-row">
-                  <div><strong>{s.name}</strong><p>{s.note}</p></div>
-                  <div className="cp-spectrum-meta">
-                    <span className={`cp-axis cp-axis-${s.axis}`}>{s.axis}</span>
-                    <span className="cp-score">{s.score.toFixed(2)}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </section>
-        )}
 
         {/* ── RESEARCH ORACLE (Oracle tab) ────────────────────────────────── */}
         {tab === "oracle" && (
