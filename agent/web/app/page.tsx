@@ -864,24 +864,6 @@ export default function Home() {
               )}
             </div>
           </div>
-
-          {tab === "clock" && (
-            <details className="cp-clock-details">
-              <summary className="cp-clock-details-summary">Cosmic snapshot</summary>
-              <CosmicNow
-                now={animNow}
-                lat={mapLat}
-                lon={mapLon}
-                liveCoords={hasLiveLocation && toggles.location}
-                usingFallback={!hasLiveLocation && toggles.location}
-                altM={signals?.altM ?? null}
-                heading={toggles.compass ? activeHeading : null}
-                liveHeading={hasLiveHeading}
-                cosmic={cosmic}
-                cycles={cycles}
-              />
-            </details>
-          )}
           {tab === "sky" && (
             <details className="cp-sky-details">
               <summary className="cp-sky-details-summary">Sky controls & catalog</summary>
@@ -1002,6 +984,21 @@ export default function Home() {
 
         {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}
         {tab === "senses" && (
+        <>
+          <div className="cp-senses-cosmic">
+          <CosmicNow
+            now={animNow}
+            lat={mapLat}
+            lon={mapLon}
+            liveCoords={hasLiveLocation && toggles.location}
+            usingFallback={!hasLiveLocation && toggles.location}
+            altM={signals?.altM ?? null}
+            heading={toggles.compass ? activeHeading : null}
+            liveHeading={hasLiveHeading}
+            cosmic={cosmic}
+            cycles={cycles}
+          />
+          </div>
           <SensorArray
             className="cp-card"
             autoAwaken
@@ -1015,6 +1012,7 @@ export default function Home() {
               void captureSensors();
             }}
           />
+        </>
         )}
 
 

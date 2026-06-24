@@ -148,19 +148,18 @@ export function defaultClockZoom(outerRadius: number, semicircle = true): number
  * Mobile portrait: compass hub flush at the bottom, outer month ring at the top.
  * Scale the ring stack to fill the semicircle viewport height.
  */
+/** Scale ring stack to fill the immersive clock viewport (height + width). */
 export function fitMobileClockZoom(
   outerRadius: number,
   containerHeightPx = 400,
   containerWidthPx = 400,
 ): number {
   const viewBoxH = 200;
-  const pad = 10;
-  const spanUnits = outerRadius + 30;
-  if (containerHeightPx <= 0) return 1.1;
-  const zoomH = ((containerHeightPx - pad) * viewBoxH) / (spanUnits * containerHeightPx);
-  const zoomW = containerWidthPx > 0
-    ? (containerWidthPx * viewBoxH) / (spanUnits * 2 * containerWidthPx)
-    : zoomH;
-  const zoom = Math.max(zoomH, zoomW) * 1.12;
-  return Math.max(1.05, Math.min(3.8, zoom));
+  const viewBoxW = 400;
+  const spanY = outerRadius + 20;
+  const spanX = (outerRadius + 34) * 2;
+  const zoomH = (viewBoxH / spanY) * 1.15;
+  const wide = containerWidthPx / Math.max(1, containerHeightPx);
+  const zoomW = (viewBoxW / spanX) * Math.max(1, wide * 0.72) * 1.1;
+  return Math.max(1.4, Math.min(4.8, Math.max(zoomH, zoomW)));
 }
