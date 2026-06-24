@@ -196,7 +196,6 @@ export default function Home() {
   const viewportHeightRef = useRef(400);
   const outerRingR = clockOuterRadius(cycles);
   const heroZoomDefault = fitMobileClockZoom(outerRingR, viewportHeightRef.current);
-  const [skyPitch, setSkyPitch] = useState(0);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
@@ -224,6 +223,8 @@ export default function Home() {
   const pinchZoomRef = useRef(1);
   const headingCleanupRef = useRef<(() => void) | null>(null);
   const locationCleanupRef = useRef<(() => void) | null>(null);
+  const liveAttitudeRef = useRef({ heading: 180, pitch: 0 });
+  const attitudeHudMs = useRef(0);
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
@@ -451,14 +452,26 @@ export default function Home() {
     headingCleanupRef.current = watchDeviceOrientation(({ heading, pitch, viewAz, viewAlt }) => {
       const t = togglesRef.current;
       const useView = viewAz != null && viewAlt != null && t.heading && t.location;
+      const h = useView ? viewAz : heading;
+      const p = useView ? viewAlt : pitch;
+
+      if (h != null) {
+        liveAttitudeRef.current.heading = h;
+        if (p != null) liveAttitudeRef.current.pitch = p;
+      }
+
+      const now = performance.now();
+      if (now - attitudeHudMs.current < 120) return;
+      attitudeHudMs.current = now;
 
       if (useView) {
         setHeadingLive(true);
         setPitchLive(true);
-        setSignals(prev => prev
-          ? { ...prev, heading: viewAz, pitch: viewAlt }
-          : emptySignals({ heading: viewAz, pitch: viewAlt }));
-        setSkyPitch(viewAlt);
+        setSignals(prev =>
+          prev
+            ? { ...prev, heading: h!, pitch: p ?? prev.pitch }
+            : emptySignals({ heading: h!, pitch: p ?? 0 }),
+        );
         return;
       }
 
@@ -470,7 +483,6 @@ export default function Home() {
       }
       if (pitch != null && t.location) {
         setPitchLive(true);
-        setSkyPitch(pitch);
         setSignals(prev => prev ? { ...prev, pitch } : prev);
       }
     });
@@ -630,7 +642,7 @@ export default function Home() {
   const hasLiveHeading = headingLive && signals?.heading != null && toggles.heading;
   const hasLivePitch = pitchLive && toggles.location;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
-  const activePitch = skyPitch;
+  const activePitch = signals?.pitch ?? 0;
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
@@ -841,6 +853,7 @@ export default function Home() {
                     observerAltM={signals?.altM ?? 0}
                     headingDeg={activeHeading}
                     pitchDeg={activePitch}
+                    liveAttitudeRef={hasLiveHeading || hasLivePitch ? liveAttitudeRef : undefined}
                     observationTime={cosmic?.now ?? animNow}
                     distanceRank={skyDistance}
                     liveHeading={hasLiveHeading}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
 import type { AircraftTrack } from "../lib/cosmic/aircraftTracking";
 import {
   computeCelestialBodies,
@@ -30,8 +30,11 @@ import {
 import { angularSeparationDeg } from "../lib/cosmic/celestialBodies";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
 import { stepSpring } from "../lib/motion/spring";
+import { lerpAngle, lerpScalar } from "../lib/sensorSmoothing";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
+
+export type LiveAttitude = { heading: number; pitch: number };
 
 export type CelestialSkyViewProps = {
   lat: number;
@@ -40,6 +43,8 @@ export type CelestialSkyViewProps = {
   observerAltM?: number;
   headingDeg: number;
   pitchDeg: number;
+  /** When set, the canvas reads attitude every frame without React re-renders. */
+  liveAttitudeRef?: RefObject<LiveAttitude>;
   observationTime: Date;
   distanceRank?: number;
   liveHeading?: boolean;
@@ -458,6 +463,7 @@ export function CelestialSkyView({
   observerAltM = 0,
   headingDeg,
   pitchDeg,
+  liveAttitudeRef,
   observationTime,
   distanceRank = 50,
   liveHeading = false,
@@ -477,6 +483,12 @@ export function CelestialSkyView({
   const hudZoomRef = useRef("1.0×");
   const lockReadoutRef = useRef<string | null>(null);
   const hudTickRef = useRef(0);
+  const propsAttitudeRef = useRef<LiveAttitude>({ heading: headingDeg, pitch: pitchDeg });
+  const smoothAttitudeRef = useRef<LiveAttitude>({ heading: headingDeg, pitch: pitchDeg });
+
+  useLayoutEffect(() => {
+    propsAttitudeRef.current = { heading: headingDeg, pitch: pitchDeg };
+  }, [headingDeg, pitchDeg]);
 
   const bodies = useMemo(
     () => computeCelestialBodies(observationTime, lat, lon, observerAltM),
@@ -484,8 +496,8 @@ export function CelestialSkyView({
   );
 
   const stars = useMemo(
-    () => skyObjectsInView(lat, lon, headingDeg, pitchDeg, observationTime, FOV_AZ, FOV_ALT_HALF, distanceRank).stars,
-    [lat, lon, headingDeg, pitchDeg, observationTime, distanceRank],
+    () => skyObjectsInView(lat, lon, 0, 0, observationTime, 360, 180, distanceRank).stars,
+    [lat, lon, observationTime, distanceRank],
   );
 
   const tleCatalog = useMemo(() => parseTLECatalog(DEFAULT_TLE_CATALOG), []);
@@ -556,6 +568,16 @@ export function CelestialSkyView({
       last = now;
       pulseRef.current += dt * 4;
 
+      const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
+      const smooth = smoothAttitudeRef.current;
+      const nearHorizon = Math.abs(target.pitch) < 22;
+      const hAlpha = nearHorizon ? 0.1 : 0.15;
+      const pAlpha = nearHorizon ? 0.07 : 0.14;
+      smooth.heading = lerpAngle(smooth.heading, target.heading, hAlpha);
+      smooth.pitch = lerpScalar(smooth.pitch, target.pitch, pAlpha);
+      const viewHeading = smooth.heading;
+      const viewPitch = smooth.pitch;
+
       pinchRef.current.tick(dt);
       const scale = pinchRef.current.getScale();
       hudTickRef.current += dt;
@@ -564,7 +586,7 @@ export function CelestialSkyView({
         hudZoomRef.current = formatZoom(scale);
       }
 
-      const targetSub = pitchDeg < 0 ? Math.min(1, -pitchDeg / 28) : 0;
+      const targetSub = viewPitch < -7 ? Math.min(1, (-viewPitch - 7) / 24) : 0;
       const subStep = stepSpring(subSimRef.current.value, subSimRef.current.velocity, targetSub, dt, {
         stiffness: 90,
         damping: 22,
@@ -586,12 +608,12 @@ export function CelestialSkyView({
       const detail = getSkyDetailLevel(scale);
       const starAlpha = starFieldOpacity(scale);
       const texBlend = planetTextureBlend(scale);
-      const project = createZoomedSkyProjector(w, h, headingDeg, pitchDeg, scale, FOV_AZ, FOV_ALT_HALF);
+      const project = createZoomedSkyProjector(w, h, viewHeading, viewPitch, scale, FOV_AZ, FOV_ALT_HALF);
       const accent = spectrumAccent(warmth);
 
       drawPath(
         ctx,
-        sampleHorizon(headingDeg, pitchDeg),
+        sampleHorizon(viewHeading, viewPitch),
         project.toXY,
         w,
         h,
@@ -700,11 +722,11 @@ export function CelestialSkyView({
         }
       }
 
-      const locked = findTargetLock(headingDeg, pitchDeg, trackables, lockRef.current);
+      const locked = findTargetLock(viewHeading, viewPitch, trackables, lockRef.current);
       lockRef.current = locked?.id ?? null;
 
       if (hapticsEnabled) {
-        hapticsRef.current.update(headingDeg, pitchDeg, locked?.id ?? null);
+        hapticsRef.current.update(viewHeading, viewPitch, locked?.id ?? null);
       }
 
       if (locked) {
@@ -779,16 +801,16 @@ export function CelestialSkyView({
       );
       ctx.textAlign = "right";
       ctx.fillText(
-        `${Math.round(headingDeg).toString().padStart(3, " ")}° az · ${Math.round(pitchDeg).toString().padStart(2, " ")}° alt`,
+        `${Math.round(viewHeading).toString().padStart(3, " ")}° az · ${Math.round(viewPitch).toString().padStart(2, " ")}° alt`,
         w - 10,
         15,
       );
 
       const moon = bodies.find(b => b.id === "moon");
       if (moon && moon.alt > -5) {
-        const sep = angularSeparationDeg(headingDeg, pitchDeg, moon.az, moon.alt);
-        const dAz = ((moon.az - headingDeg + 540) % 360) - 180;
-        const dAlt = moon.alt - pitchDeg;
+        const sep = angularSeparationDeg(viewHeading, viewPitch, moon.az, moon.alt);
+        const dAz = ((moon.az - viewHeading + 540) % 360) - 180;
+        const dAlt = moon.alt - viewPitch;
         const moonLabel =
           sep < 4
             ? `☽ Moon locked · ${Math.round(moon.az)}° · ${Math.round(moon.alt)}°`
@@ -842,8 +864,6 @@ export function CelestialSkyView({
   }, [
     lat,
     lon,
-    headingDeg,
-    pitchDeg,
     observationTime,
     bodies,
     stars,
@@ -852,6 +872,7 @@ export function CelestialSkyView({
     livePitch,
     observerAltM,
     warmth,
+    liveAttitudeRef,
   ]);
 
   return (

@@ -199,12 +199,19 @@ export function watchDeviceOrientation(
       viewAlt: view?.alt ?? null,
     });
   };
-  window.addEventListener("deviceorientationabsolute", onOrientation, true);
-  window.addEventListener("deviceorientation", onOrientation, true);
+  const absoluteOk = "ondeviceorientationabsolute" in window;
+  if (absoluteOk) {
+    window.addEventListener("deviceorientationabsolute", onOrientation, true);
+  } else {
+    window.addEventListener("deviceorientation", onOrientation, true);
+  }
   return () => {
     filter.destroy();
-    window.removeEventListener("deviceorientationabsolute", onOrientation, true);
-    window.removeEventListener("deviceorientation", onOrientation, true);
+    if (absoluteOk) {
+      window.removeEventListener("deviceorientationabsolute", onOrientation, true);
+    } else {
+      window.removeEventListener("deviceorientation", onOrientation, true);
+    }
   };
 }
 

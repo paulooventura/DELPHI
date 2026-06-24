@@ -138,8 +138,10 @@ export class OrientationFilter {
     this.lastEmitMs = now;
     this.pending = null;
 
-    const hAlpha = 0.16;
-    const pAlpha = 0.22;
+    const hAlpha = 0.14;
+    const altForPitch = raw.viewAlt ?? raw.pitch;
+    const nearHorizon = altForPitch != null && Math.abs(altForPitch) < 20;
+    const pAlpha = nearHorizon ? 0.07 : 0.2;
 
     if (raw.heading != null) {
       this.heading =

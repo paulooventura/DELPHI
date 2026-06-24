@@ -45,9 +45,20 @@ function portraitAltitude(betaDeg: number, gammaDeg: number, orient: number): nu
   } else {
     alt = 90 - betaDeg;
   }
-  if (alt > 90) alt = 180 - alt;
-  if (alt < -90) alt = -180 - alt;
   return Math.max(-90, Math.min(90, alt));
+}
+
+/** Compass is stabler than tilt-compensated azimuth near the horizon / when phone is flat. */
+function viewAzimuthDeg(
+  headingDeg: number,
+  betaDeg: number,
+  gammaDeg: number,
+  altDeg: number,
+): number {
+  const nearHorizon = Math.abs(altDeg) < 22;
+  const phoneFlat = Math.abs(betaDeg) > 68;
+  if (nearHorizon || phoneFlat) return headingDeg;
+  return tiltCompensatedAzimuth(headingDeg, betaDeg, gammaDeg);
 }
 
 export function deviceViewAltAz(event: DeviceOrientationEvent): { az: number; alt: number } | null {
@@ -60,7 +71,7 @@ export function deviceViewAltAz(event: DeviceOrientationEvent): { az: number; al
 
   const orient = screenAngleDeg();
   const alt = portraitAltitude(beta, gamma, orient);
-  const az = tiltCompensatedAzimuth(heading, beta, gamma);
+  const az = viewAzimuthDeg(heading, beta, gamma, alt);
 
   return { az, alt };
 }

@@ -3,6 +3,9 @@ export type SkyHapticKind = "cardinal" | "horizon" | "zenith" | "targetLock";
 const CARDINALS = [0, 90, 180, 270] as const;
 const ENTER_DEG = 2.5;
 const EXIT_DEG = 4.5;
+const HORIZON_ENTER_DEG = 4;
+const HORIZON_EXIT_DEG = 10;
+const HAPTIC_COOLDOWN_MS = 420;
 const TARGET_ENTER = 2;
 const TARGET_EXIT = 3.5;
 
@@ -29,6 +32,14 @@ export function createSkyHapticController() {
     zenith: false,
     target: null,
   };
+  let lastPulseMs = 0;
+
+  function pulse(pattern: number | number[]) {
+    const now = performance.now();
+    if (now - lastPulseMs < HAPTIC_COOLDOWN_MS) return;
+    lastPulseMs = now;
+    vibrate(pattern);
+  }
 
   return {
     /** Call each frame with current view center (heading = az, pitch = alt). */
@@ -41,24 +52,24 @@ export function createSkyHapticController() {
         const inside = d <= ENTER_DEG;
         const was = state.cardinal.has(c);
         if (inside && !was) {
-          vibrate(12);
+          pulse(12);
           state.cardinal.add(c);
         } else if (!inside && was && d > EXIT_DEG) {
           state.cardinal.delete(c);
         }
       }
 
-      const nearHorizon = Math.abs(p) <= ENTER_DEG;
+      const nearHorizon = Math.abs(p) <= HORIZON_ENTER_DEG;
       if (nearHorizon && !state.horizon) {
-        vibrate(18);
+        pulse(18);
         state.horizon = true;
-      } else if (!nearHorizon && state.horizon && Math.abs(p) > EXIT_DEG) {
+      } else if (!nearHorizon && state.horizon && Math.abs(p) > HORIZON_EXIT_DEG) {
         state.horizon = false;
       }
 
       const nearZenith = Math.abs(p - 90) <= ENTER_DEG;
       if (nearZenith && !state.zenith) {
-        vibrate([20, 30, 20]);
+        pulse([20, 30, 20]);
         state.zenith = true;
       } else if (!nearZenith && state.zenith && Math.abs(p - 90) > EXIT_DEG) {
         state.zenith = false;
@@ -66,7 +77,7 @@ export function createSkyHapticController() {
 
       if (lockedBodyId) {
         if (state.target !== lockedBodyId) {
-          vibrate([35, 40, 35]);
+          pulse([35, 40, 35]);
           state.target = lockedBodyId;
         }
       } else if (state.target != null) {
