@@ -29,12 +29,18 @@ import {
 } from "../lib/cosmic/skyZoom";
 import { angularSeparationDeg } from "../lib/cosmic/celestialBodies";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
-import { stepSpring } from "../lib/motion/spring";
-import { lerpAngle, lerpScalar } from "../lib/sensorSmoothing";
+import {
+  altAzToEnu,
+  buildViewBasis,
+  enuToAltAz,
+  groundBlendFromView,
+  slerpUnit,
+  type Vec3,
+} from "../lib/sphericalView";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
 
-export type LiveAttitude = { heading: number; pitch: number };
+export type LiveAttitude = { view: Vec3; roll: number };
 
 export type CelestialSkyViewProps = {
   lat: number;
@@ -475,7 +481,7 @@ export function CelestialSkyView({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hapticsRef = useRef(createSkyHapticController());
   const pinchRef = useRef(createPinchGestureController());
-  const subSimRef = useRef({ value: 0, velocity: 0 });
+  const groundBlendRef = useRef(0);
   const lockRef = useRef<string | null>(null);
   const pulseRef = useRef(0);
   const aircraftRef = useRef<AircraftTrack[]>([]);
@@ -483,11 +489,17 @@ export function CelestialSkyView({
   const hudZoomRef = useRef("1.0×");
   const lockReadoutRef = useRef<string | null>(null);
   const hudTickRef = useRef(0);
-  const propsAttitudeRef = useRef<LiveAttitude>({ heading: headingDeg, pitch: pitchDeg });
-  const smoothAttitudeRef = useRef<LiveAttitude>({ heading: headingDeg, pitch: pitchDeg });
+  const propsAttitudeRef = useRef<LiveAttitude>({
+    view: altAzToEnu(headingDeg, pitchDeg),
+    roll: 0,
+  });
+  const smoothAttitudeRef = useRef<LiveAttitude>({
+    view: altAzToEnu(headingDeg, pitchDeg),
+    roll: 0,
+  });
 
   useLayoutEffect(() => {
-    propsAttitudeRef.current = { heading: headingDeg, pitch: pitchDeg };
+    propsAttitudeRef.current = { view: altAzToEnu(headingDeg, pitchDeg), roll: 0 };
   }, [headingDeg, pitchDeg]);
 
   const bodies = useMemo(
@@ -570,13 +582,15 @@ export function CelestialSkyView({
 
       const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
       const smooth = smoothAttitudeRef.current;
-      const nearHorizon = Math.abs(target.pitch) < 22;
-      const hAlpha = nearHorizon ? 0.1 : 0.15;
-      const pAlpha = nearHorizon ? 0.07 : 0.14;
-      smooth.heading = lerpAngle(smooth.heading, target.heading, hAlpha);
-      smooth.pitch = lerpScalar(smooth.pitch, target.pitch, pAlpha);
-      const viewHeading = smooth.heading;
-      const viewPitch = smooth.pitch;
+      const { alt: targetAlt } = enuToAltAz(target.view);
+      const nearHorizon = Math.abs(targetAlt) < 22;
+      const t = nearHorizon ? 0.1 : 0.16;
+      smooth.view = slerpUnit(smooth.view, target.view, t);
+      smooth.roll += (target.roll - smooth.roll) * (nearHorizon ? 0.12 : 0.18);
+      const viewAtt = enuToAltAz(smooth.view);
+      const viewHeading = viewAtt.az;
+      const viewPitch = viewAtt.alt;
+      const basis = buildViewBasis(smooth.view, smooth.roll);
 
       pinchRef.current.tick(dt);
       const scale = pinchRef.current.getScale();
@@ -586,12 +600,8 @@ export function CelestialSkyView({
         hudZoomRef.current = formatZoom(scale);
       }
 
-      const targetSub = viewPitch < -7 ? Math.min(1, (-viewPitch - 7) / 24) : 0;
-      const subStep = stepSpring(subSimRef.current.value, subSimRef.current.velocity, targetSub, dt, {
-        stiffness: 90,
-        damping: 22,
-      });
-      subSimRef.current = subStep;
+      const targetGround = groundBlendFromView(smooth.view);
+      groundBlendRef.current += (targetGround - groundBlendRef.current) * 0.14;
 
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -603,12 +613,12 @@ export function CelestialSkyView({
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      paintBackground(ctx, w, h, subSimRef.current.value, warmth);
+      paintBackground(ctx, w, h, groundBlendRef.current, warmth);
 
       const detail = getSkyDetailLevel(scale);
       const starAlpha = starFieldOpacity(scale);
       const texBlend = planetTextureBlend(scale);
-      const project = createZoomedSkyProjector(w, h, viewHeading, viewPitch, scale, FOV_AZ, FOV_ALT_HALF);
+      const project = createZoomedSkyProjector(w, h, basis, scale, FOV_AZ, FOV_ALT_HALF);
       const accent = spectrumAccent(warmth);
 
       drawPath(

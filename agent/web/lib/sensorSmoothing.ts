@@ -100,27 +100,39 @@ export class GeoFixFilter {
   }
 }
 
+import type { Vec3 } from "./sphericalView";
+import { enuToAltAz, slerpUnit } from "./sphericalView";
+
 export type SmoothedOrientation = {
+  view: Vec3;
+  roll: number;
   heading: number | null;
   pitch: number | null;
   viewAz: number | null;
   viewAlt: number | null;
 };
 
-/** RAF-throttled compass smoothing — cuts React/canvas churn from 60+ Hz sensor noise. */
+/** RAF-throttled view-vector smoothing — continuous on the full sphere. */
 export class OrientationFilter {
-  private heading: number | null = null;
-  private pitch: number | null = null;
-  private viewAz: number | null = null;
-  private viewAlt: number | null = null;
+  private view: Vec3 = [0, 0, 1];
+  private roll = 0;
+  private hasView = false;
   private pending: SmoothedOrientation | null = null;
   private rafId = 0;
   private lastEmitMs = 0;
 
   constructor(private readonly onEmit: (reading: SmoothedOrientation) => void) {}
 
-  push(raw: SmoothedOrientation): void {
-    this.pending = raw;
+  push(raw: { view: Vec3; roll: number }): void {
+    const { az, alt } = enuToAltAz(raw.view);
+    this.pending = {
+      view: raw.view,
+      roll: raw.roll,
+      heading: az,
+      pitch: alt,
+      viewAz: az,
+      viewAlt: alt,
+    };
     if (this.rafId) return;
     this.rafId = requestAnimationFrame(() => this.flush());
   }
@@ -138,33 +150,27 @@ export class OrientationFilter {
     this.lastEmitMs = now;
     this.pending = null;
 
-    const hAlpha = 0.14;
-    const altForPitch = raw.viewAlt ?? raw.pitch;
-    const nearHorizon = altForPitch != null && Math.abs(altForPitch) < 20;
-    const pAlpha = nearHorizon ? 0.07 : 0.2;
+    const { alt } = enuToAltAz(raw.view);
+    const nearHorizon = Math.abs(alt) < 22;
+    const t = nearHorizon ? 0.08 : 0.14;
 
-    if (raw.heading != null) {
-      this.heading =
-        this.heading == null ? raw.heading : lerpAngle(this.heading, raw.heading, hAlpha);
-    }
-    if (raw.pitch != null) {
-      this.pitch =
-        this.pitch == null ? raw.pitch : lerpScalar(this.pitch, raw.pitch, pAlpha);
-    }
-    if (raw.viewAz != null) {
-      this.viewAz =
-        this.viewAz == null ? raw.viewAz : lerpAngle(this.viewAz, raw.viewAz, hAlpha);
-    }
-    if (raw.viewAlt != null) {
-      this.viewAlt =
-        this.viewAlt == null ? raw.viewAlt : lerpScalar(this.viewAlt, raw.viewAlt, pAlpha);
+    if (!this.hasView) {
+      this.view = raw.view;
+      this.roll = raw.roll;
+      this.hasView = true;
+    } else {
+      this.view = slerpUnit(this.view, raw.view, t);
+      this.roll += (raw.roll - this.roll) * (nearHorizon ? 0.12 : 0.2);
     }
 
+    const smoothed = enuToAltAz(this.view);
     this.onEmit({
-      heading: this.heading,
-      pitch: this.pitch,
-      viewAz: this.viewAz,
-      viewAlt: this.viewAlt,
+      view: this.view,
+      roll: this.roll,
+      heading: smoothed.az,
+      pitch: smoothed.alt,
+      viewAz: smoothed.az,
+      viewAlt: smoothed.alt,
     });
   }
 
@@ -172,5 +178,6 @@ export class OrientationFilter {
     if (this.rafId) cancelAnimationFrame(this.rafId);
     this.rafId = 0;
     this.pending = null;
+    this.hasView = false;
   }
 }

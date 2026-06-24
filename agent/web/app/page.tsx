@@ -7,6 +7,7 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { geoDistanceM } from "../lib/sensorSmoothing";
+import { altAzToEnu } from "../lib/sphericalView";
 import { WatchMovement, clockOuterRadius } from "../components/WatchMovement";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
@@ -223,7 +224,7 @@ export default function Home() {
   const pinchZoomRef = useRef(1);
   const headingCleanupRef = useRef<(() => void) | null>(null);
   const locationCleanupRef = useRef<(() => void) | null>(null);
-  const liveAttitudeRef = useRef({ heading: 180, pitch: 0 });
+  const liveAttitudeRef = useRef({ view: altAzToEnu(180, 0), roll: 0 });
   const attitudeHudMs = useRef(0);
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
   const togglesRef = useRef(toggles);
@@ -449,41 +450,40 @@ export default function Home() {
     setPitchLive(false);
     const allowed = await requestOrientationPermission();
     if (!allowed) return;
-    headingCleanupRef.current = watchDeviceOrientation(({ heading, pitch, viewAz, viewAlt }) => {
+    headingCleanupRef.current = watchDeviceOrientation((reading) => {
       const t = togglesRef.current;
-      const useView = viewAz != null && viewAlt != null && t.heading && t.location;
-      const h = useView ? viewAz : heading;
-      const p = useView ? viewAlt : pitch;
-
-      if (h != null) {
-        liveAttitudeRef.current.heading = h;
-        if (p != null) liveAttitudeRef.current.pitch = p;
+      if (reading.view) {
+        liveAttitudeRef.current.view = reading.view;
+        liveAttitudeRef.current.roll = reading.roll;
       }
 
       const now = performance.now();
       if (now - attitudeHudMs.current < 120) return;
       attitudeHudMs.current = now;
 
-      if (useView) {
+      const h = reading.viewAz ?? reading.heading;
+      const p = reading.viewAlt ?? reading.pitch;
+
+      if (h != null && (t.heading || t.location)) {
         setHeadingLive(true);
-        setPitchLive(true);
+        if (p != null) setPitchLive(true);
         setSignals(prev =>
           prev
-            ? { ...prev, heading: h!, pitch: p ?? prev.pitch }
-            : emptySignals({ heading: h!, pitch: p ?? 0 }),
+            ? { ...prev, heading: h, pitch: p ?? prev.pitch }
+            : emptySignals({ heading: h, pitch: p ?? 0 }),
         );
         return;
       }
 
-      if (heading != null && t.heading) {
+      if (reading.heading != null && t.heading) {
         setHeadingLive(true);
         setSignals(prev => prev
-          ? { ...prev, heading }
-          : emptySignals({ heading }));
+          ? { ...prev, heading: reading.heading }
+          : emptySignals({ heading: reading.heading }));
       }
-      if (pitch != null && t.location) {
+      if (reading.pitch != null && t.location) {
         setPitchLive(true);
-        setSignals(prev => prev ? { ...prev, pitch } : prev);
+        setSignals(prev => prev ? { ...prev, pitch: reading.pitch } : prev);
       }
     });
   }

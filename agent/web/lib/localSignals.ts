@@ -2,6 +2,7 @@ import {
   deviceHeadingDeg,
   devicePitchDeg,
   deviceViewAltAz,
+  deviceViewEnu,
 } from "./deviceOrientation";
 import { GeoFixFilter, OrientationFilter } from "./sensorSmoothing";
 
@@ -175,9 +176,11 @@ function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
 }
 
 export type DeviceOrientationReading = {
+  /** Continuous look direction (east, north, up). */
+  view: import("./sphericalView").Vec3 | null;
+  roll: number;
   heading: number | null;
   pitch: number | null;
-  /** Unified view direction when full orientation is available. */
   viewAz: number | null;
   viewAlt: number | null;
 };
@@ -191,13 +194,10 @@ export function watchDeviceOrientation(
   const filter = new OrientationFilter(onReading);
   const onOrientation = (event: Event) => {
     const e = event as DeviceOrientationEventWithCompass;
-    const view = deviceViewAltAz(e);
-    filter.push({
-      heading: headingFromOrientation(e),
-      pitch: pitchFromOrientation(e),
-      viewAz: view?.az ?? null,
-      viewAlt: view?.alt ?? null,
-    });
+    const view = deviceViewEnu(e);
+    if (!view) return;
+    const gamma = typeof e.gamma === "number" && Number.isFinite(e.gamma) ? e.gamma : 0;
+    filter.push({ view, roll: gamma });
   };
   const absoluteOk = "ondeviceorientationabsolute" in window;
   if (absoluteOk) {

@@ -2,8 +2,8 @@
  * Scale-dependent field-of-view and level-of-detail for deep-space zoom.
  */
 
-import type { SkyProjector } from "./celestialProjection";
-import { createSkyProjector } from "./celestialProjection";
+import type { ViewBasis } from "../sphericalView";
+import { createSphericalSkyProjector, type SkyProjector } from "../sphericalView";
 
 export type SkyDetailLevel = "wide" | "telephoto";
 
@@ -42,14 +42,13 @@ export function shouldClusterSatellites(scale: number): boolean {
 export function createZoomedSkyProjector(
   width: number,
   height: number,
-  headingDeg: number,
-  pitchDeg: number,
+  basis: ViewBasis,
   scale: number,
   baseFovAz = 85,
   baseFovAltHalf = 42,
 ): SkyProjector {
   const { fovAz, fovAltHalf } = effectiveFov(scale, baseFovAz, baseFovAltHalf);
-  return createSkyProjector(width, height, headingDeg, pitchDeg, fovAz, fovAltHalf);
+  return createSphericalSkyProjector(width, height, basis, fovAz, fovAltHalf);
 }
 
 /** Format zoom factor for HUD (e.g. "12.4×"). */
