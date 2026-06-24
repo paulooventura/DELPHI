@@ -10,40 +10,21 @@ npm install
 npm run dev
 ```
 
-Deploying to GitHub + Netlify
+Deploying to production
 
-This project is built to be local-first and cloud-ready. The UI and intelligence are self-contained in `agent/web`, so the same app can run locally and also deploy to `palotino.netlify.app` without depending on paid APIs.
+**Live app:** [delphi-wine.vercel.app](https://delphi-wine.vercel.app)
 
-1. Initialize a git repo and push to GitHub:
+Pushes to `main` deploy via GitHub Actions (`.github/workflows/vercel-deploy.yml`) when these repository secrets are set:
 
-```bash
-git init
-git add .
-git commit -m "Initial commit"
-# create a repo on GitHub and add remote
-git remote add origin git@github.com:YOUR_USER/YOUR_REPO.git
-git push -u origin main
-```
+- `VERCEL_TOKEN` — from [Vercel Account → Tokens](https://vercel.com/account/tokens)
+- `VERCEL_ORG_ID` — Project Settings → General
+- `VERCEL_PROJECT_ID` — Project Settings → General
 
-2. On Netlify, connect this repository to the existing site `palotino.netlify.app`. Set the build command to:
+**Alternative (no secrets):** In the [Vercel dashboard](https://vercel.com), connect this GitHub repo to the `delphi-wine` project with **Root Directory** = `agent/web`. Vercel will deploy automatically on every push to `main`.
 
-```
-npm --prefix DELPHI/agent/web run build
-```
+`palotino.netlify.app` is a separate Netlify site; Netlify deploy is optional and requires `NETLIFY_AUTH_TOKEN` + `NETLIFY_SITE_ID` secrets.
 
-and the publish directory to:
-
-```
-DELPHI/agent/web/.next
-```
-
-3. Add the `NETLIFY_AUTH_TOKEN` and `NETLIFY_SITE_ID` as GitHub Secrets so the workflow can deploy to `palotino.netlify.app` automatically.
-
-Secrets required for the workflow:
-- `NETLIFY_AUTH_TOKEN`
-- `NETLIFY_SITE_ID`
-
-The repository includes `netlify.toml` and a GitHub Actions workflow that deploys to `palotino.netlify.app` on push to `main` and also on a 10-minute schedule so the cloud site stays synchronized.
+Legacy GitHub Pages (`delphi.pauloventura.org`) is a placeholder only — not the Next.js app.
 
 Local usage:
 

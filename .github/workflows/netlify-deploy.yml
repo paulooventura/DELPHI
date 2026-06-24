@@ -1,4 +1,7 @@
-name: Deploy to palotino.netlify.app
+name: Deploy to Netlify (palotino.netlify.app)
+
+# NOTE: palotino.netlify.app currently hosts a different site. Primary DELPHI
+# deploy is Vercel (delphi-wine.vercel.app) via .github/workflows/vercel-deploy.yml
 
 on:
   push:
@@ -14,18 +17,23 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '18'
-      - name: Validate Netlify secrets
+      - name: Check Netlify secrets
+        id: netlify
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
         run: |
-          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
-            echo "Missing NETLIFY_AUTH_TOKEN or NETLIFY_SITE_ID. Configure repository secrets before deploy."
-            exit 1
+          if [ -n "$NETLIFY_AUTH_TOKEN" ] && [ -n "$NETLIFY_SITE_ID" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Skipping Netlify deploy — secrets not configured. Use Vercel (delphi-wine.vercel.app)."
           fi
       - name: Install web deps
+        if: steps.netlify.outputs.configured == 'true'
         run: npm --prefix agent/web install
       - name: Deploy to Netlify
+        if: steps.netlify.outputs.configured == 'true'
         uses: netlify/actions/cli@master
         with:
           args: deploy --build --prod
