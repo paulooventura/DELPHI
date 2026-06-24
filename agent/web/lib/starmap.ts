@@ -1,6 +1,8 @@
 import { NEAREST_STARS, MOON_DISTANCE_LY, magLimitForRank, distanceLyForRank, type NearestStarData } from "./nearestStars";
 import { ZODIAC_ART, type ZodiacArtDef } from "./zodiacArt";
-import { julianDay, lunarPhaseFraction, moonEquatorial, normalizeDeg } from "./cosmic/math";
+import { Body } from "astronomy-engine";
+import { bodyEquatorHorizon, raDecToAltAz } from "./skyPositions";
+import { julianDay, lunarPhaseFraction, normalizeDeg, eclipticToEquatorial } from "./cosmic/math";
 
 export type StarData = {
   name: string;
@@ -117,25 +119,9 @@ export function celestialToAltAz(
   latDeg: number,
   lonDeg: number,
   date: Date,
+  altM = 0,
 ): { alt: number; az: number } {
-  const LST = lstDeg(date, lonDeg);
-  const latRad = (latDeg * Math.PI) / 180;
-  const raDeg = raHours * 15;
-  const HA = normalizeDeg(LST - raDeg);
-  const haRad = (HA * Math.PI) / 180;
-  const decRad = (decDeg * Math.PI) / 180;
-
-  const sinAlt = Math.sin(decRad) * Math.sin(latRad)
-    + Math.cos(decRad) * Math.cos(latRad) * Math.cos(haRad);
-  const alt = (Math.asin(Math.max(-1, Math.min(1, sinAlt))) * 180) / Math.PI;
-
-  const cosAlt = Math.cos((alt * Math.PI) / 180);
-  const cosAz = cosAlt < 1e-8 ? 0
-    : (Math.sin(decRad) - Math.sin(latRad) * sinAlt) / (Math.cos(latRad) * cosAlt);
-  let az = (Math.acos(Math.max(-1, Math.min(1, cosAz))) * 180) / Math.PI;
-  if (Math.sin(haRad) > 0) az = 360 - az;
-
-  return { alt, az };
+  return raDecToAltAz(date, latDeg, lonDeg, raHours, decDeg, altM);
 }
 
 const MOON_PHASES: Array<[number, string]> = [
@@ -152,21 +138,19 @@ function moonPhaseLabel(fraction: number): string {
   return "New";
 }
 
-export function moonPosition(latDeg: number, lonDeg: number, date: Date): MoonObject | null {
-  const jd = julianDay(date);
-  const { raHours, decDeg } = moonEquatorial(jd);
-  const { alt, az } = celestialToAltAz(raHours, decDeg, latDeg, lonDeg, date);
+export function moonPosition(latDeg: number, lonDeg: number, date: Date, altM = 0): MoonObject | null {
+  const pos = bodyEquatorHorizon(Body.Moon, date, latDeg, lonDeg, altM);
   const phase = lunarPhaseFraction(date);
   const illumination = (1 - Math.cos(2 * Math.PI * phase)) / 2;
 
   return {
     name: "Moon",
     bayer: "☽",
-    ra: raHours,
-    dec: decDeg,
+    ra: pos.raHours,
+    dec: pos.decDeg,
     mag: -12.6,
-    alt,
-    az,
+    alt: pos.alt,
+    az: pos.az,
     distanceLy: MOON_DISTANCE_LY,
     kind: "moon",
     illumination,

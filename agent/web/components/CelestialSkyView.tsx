@@ -36,6 +36,8 @@ import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircr
 export type CelestialSkyViewProps = {
   lat: number;
   lon: number;
+  /** Observer elevation (m) for topocentric parallax. */
+  observerAltM?: number;
   headingDeg: number;
   pitchDeg: number;
   observationTime: Date;
@@ -453,6 +455,7 @@ function paintBackground(
 export function CelestialSkyView({
   lat,
   lon,
+  observerAltM = 0,
   headingDeg,
   pitchDeg,
   observationTime,
@@ -476,8 +479,8 @@ export function CelestialSkyView({
   const hudTickRef = useRef(0);
 
   const bodies = useMemo(
-    () => computeCelestialBodies(observationTime, lat, lon),
-    [observationTime, lat, lon],
+    () => computeCelestialBodies(observationTime, lat, lon, observerAltM),
+    [observationTime, lat, lon, observerAltM],
   );
 
   const stars = useMemo(
@@ -601,7 +604,7 @@ export function CelestialSkyView({
       if (detail === "wide") {
         drawPath(
           ctx,
-          sampleEclipticPath(observationTime, lat, lon, 8),
+          sampleEclipticPath(observationTime, lat, lon, 8, observerAltM),
           project.toXY,
           w,
           h,
@@ -770,7 +773,7 @@ export function CelestialSkyView({
       ctx.fillStyle = warmth > 0.5 ? "rgba(245, 158, 11, 0.88)" : "rgba(226, 232, 240, 0.88)";
       ctx.textAlign = "left";
       ctx.fillText(
-        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${observationTime.toLocaleTimeString()} · ${hudZoomRef.current}`,
+        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${observationTime.toLocaleTimeString()} · ${hudZoomRef.current} · astro`,
         10,
         15,
       );
@@ -847,6 +850,7 @@ export function CelestialSkyView({
     hapticsEnabled,
     liveHeading,
     livePitch,
+    observerAltM,
     warmth,
   ]);
 

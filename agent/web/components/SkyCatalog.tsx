@@ -15,6 +15,7 @@ export type SkyCatalogProps = {
   lat: number;
   lon: number;
   observationTime: Date;
+  observerAltM?: number;
   className?: string;
 };
 
@@ -72,10 +73,10 @@ function CatalogSection({ title, rows }: { title: string; rows: CatalogRow[] }) 
   );
 }
 
-export function SkyCatalog({ lat, lon, observationTime, className = "" }: SkyCatalogProps) {
+export function SkyCatalog({ lat, lon, observationTime, observerAltM = 0, className = "" }: SkyCatalogProps) {
   const bodies = useMemo(
-    () => computeCelestialBodies(observationTime, lat, lon),
-    [observationTime, lat, lon],
+    () => computeCelestialBodies(observationTime, lat, lon, observerAltM),
+    [observationTime, lat, lon, observerAltM],
   );
   const tleCatalog = useMemo(() => parseTLECatalog(DEFAULT_TLE_CATALOG), []);
   const [aircraft, setAircraft] = useState<AircraftTrack[]>([]);

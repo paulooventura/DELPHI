@@ -1,6 +1,6 @@
 /**
- * Portrait sky-window orientation: where the phone screen center points in az/alt.
- * iOS: webkitCompassHeading + tilt-compensated bearing, altitude from beta.
+ * Portrait sky AR: where the phone screen center points (az from north, alt above horizon).
+ * iOS: webkitCompassHeading + standard tilt-compensated bearing.
  */
 
 type OrientEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
@@ -15,6 +15,7 @@ function screenAngleDeg(): number {
 }
 
 function compassHeadingDeg(event: OrientEvent): number | null {
+  // iOS Safari: true compass — do NOT add screen.orientation.angle
   if (typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)) {
     return normalizeHeading(event.webkitCompassHeading);
   }
@@ -24,7 +25,6 @@ function compassHeadingDeg(event: OrientEvent): number | null {
   return normalizeHeading(alpha + orient);
 }
 
-/** Tilt-compensated azimuth while the phone is pitched toward the sky. */
 function tiltCompensatedAzimuth(headingDeg: number, betaDeg: number, gammaDeg: number): number {
   const hr = headingDeg * (Math.PI / 180);
   const br = betaDeg * (Math.PI / 180);
@@ -50,10 +50,6 @@ function portraitAltitude(betaDeg: number, gammaDeg: number, orient: number): nu
   return Math.max(-90, Math.min(90, alt));
 }
 
-/**
- * Azimuth (° from north) and altitude (° above horizon) for the sky crosshair.
- * Hold the phone portrait, screen toward you, and tilt the top toward the target.
- */
 export function deviceViewAltAz(event: DeviceOrientationEvent): { az: number; alt: number } | null {
   const beta = event.beta;
   if (beta == null || !Number.isFinite(beta)) return null;

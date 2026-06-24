@@ -1,5 +1,5 @@
-import { celestialToAltAz, moonPosition } from "../starmap";
-import { eclipticToEquatorial, julianDay, sunDeclinationDeg, sunRightAscensionHours } from "./math";
+import { SKY_BODIES, bodyEquatorHorizon, raDecToAltAz } from "../skyPositions";
+import { eclipticToEquatorial, julianDay } from "./math";
 
 export type CelestialBodyId =
   | "sun"
@@ -21,103 +21,27 @@ export type CelestialBody = {
   major: boolean;
 };
 
-/** Low-precision heliocentric → geocentric ecliptic (Meeus-style mean elements). */
-function planetEcliptic(name: CelestialBodyId, jd: number): { lonDeg: number; latDeg: number; rAu: number } {
-  const T = (jd - 2451545.0) / 36525;
-  const L: Record<CelestialBodyId, number> = {
-    sun: 0,
-    moon: 0,
-    venus: (181.979801 - 0.0000004263 * (jd - 2451545)) % 360,
-    mars: (355.433 + 0.524071 * (jd - 2451545)) % 360,
-    jupiter: (34.351519 + 0.083099 * (jd - 2451545)) % 360,
-    saturn: (50.077444 + 0.033444 * (jd - 2451545)) % 360,
-  };
-  const lonDeg = ((L[name] ?? 0) + 360) % 360;
-  const latDeg = name === "moon" ? 0 : Math.sin((lonDeg * 0.017 + T) * 2) * 1.2;
-  const rAu =
-    name === "venus" ? 0.72
-    : name === "mars" ? 1.52
-    : name === "jupiter" ? 5.2
-    : name === "saturn" ? 9.5
-    : 1;
-  return { lonDeg, latDeg, rAu };
-}
-
-function sunEquatorial(jd: number): { raHours: number; decDeg: number } {
-  return { raHours: sunRightAscensionHours(jd), decDeg: sunDeclinationDeg(jd) };
-}
-
-function bodyFromRaDec(
-  id: CelestialBodyId,
-  name: string,
-  raHours: number,
-  decDeg: number,
-  latDeg: number,
-  lonDeg: number,
-  date: Date,
-  magnitude: number,
-  color: string,
-): CelestialBody {
-  const { alt, az } = celestialToAltAz(raHours, decDeg, latDeg, lonDeg, date);
-  return { id, name, alt, az, raHours, decDeg, magnitude, color, major: true };
-}
-
-/** Major solar-system bodies for target-lock and sky rendering. */
+/** Major solar-system bodies — astronomy-engine topocentric alt/az. */
 export function computeCelestialBodies(
   date: Date,
   latDeg: number,
   lonDeg: number,
+  altM = 0,
 ): CelestialBody[] {
-  const jd = julianDay(date);
-  const sun = sunEquatorial(jd);
-  const bodies: CelestialBody[] = [
-    bodyFromRaDec("sun", "Sun", sun.raHours, sun.decDeg, latDeg, lonDeg, date, -26.7, "#fff8e8"),
-  ];
-
-  const moon = moonPosition(latDeg, lonDeg, date);
-  if (moon) {
-    bodies.push({
-      id: "moon",
-      name: "Moon",
-      alt: moon.alt,
-      az: moon.az,
-      raHours: moon.ra,
-      decDeg: moon.dec,
-      magnitude: -12.6,
-      color: "#e8eef8",
-      major: true,
-    });
-  }
-
-  for (const id of ["venus", "mars", "jupiter", "saturn"] as CelestialBodyId[]) {
-    const ecl = planetEcliptic(id, jd);
-    const eq = eclipticToEquatorial(ecl.lonDeg, ecl.latDeg, jd);
-    const colors: Record<string, string> = {
-      venus: "#e8d5a0",
-      mars: "#e07050",
-      jupiter: "#d4c4a8",
-      saturn: "#c9b896",
-    };
-    const mags: Record<string, number> = {
-      venus: -4.2,
-      mars: 0.5,
-      jupiter: -2.0,
-      saturn: 0.8,
-    };
-    bodies.push(bodyFromRaDec(
+  return SKY_BODIES.map(({ id, body, name, magnitude, color }) => {
+    const pos = bodyEquatorHorizon(body, date, latDeg, lonDeg, altM);
+    return {
       id,
-      id.charAt(0).toUpperCase() + id.slice(1),
-      eq.raHours,
-      eq.decDeg,
-      latDeg,
-      lonDeg,
-      date,
-      mags[id] ?? 2,
-      colors[id] ?? "#d5e8ff",
-    ));
-  }
-
-  return bodies;
+      name,
+      alt: pos.alt,
+      az: pos.az,
+      raHours: pos.raHours,
+      decDeg: pos.decDeg,
+      magnitude,
+      color,
+      major: true,
+    };
+  });
 }
 
 /** Sample the ecliptic great circle (β = 0) for guide-line rendering. */
@@ -126,12 +50,13 @@ export function sampleEclipticPath(
   latDeg: number,
   lonDeg: number,
   stepDeg = 10,
+  altM = 0,
 ): Array<{ alt: number; az: number }> {
   const jd = julianDay(date);
   const pts: Array<{ alt: number; az: number }> = [];
   for (let lon = 0; lon <= 360; lon += stepDeg) {
     const eq = eclipticToEquatorial(lon, 0, jd);
-    pts.push(celestialToAltAz(eq.raHours, eq.decDeg, latDeg, lonDeg, date));
+    pts.push(raDecToAltAz(date, latDeg, lonDeg, eq.raHours, eq.decDeg, altM));
   }
   return pts;
 }

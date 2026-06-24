@@ -703,18 +703,18 @@ export default function Home() {
       data-tab={tab}
       style={cosmic ? { ["--cosmic-hue" as string]: String(Math.round(cosmic.ui.hue)) } : undefined}
     >
-      <header className={`cp-appbar${tab === "clock" ? " cp-appbar-overlay" : ""}`}>
+      <header className={`cp-appbar${tab === "clock" || tab === "sky" ? " cp-appbar-overlay" : ""}`}>
         <div className="cp-hero-brand">
           <OracleLogo size={34} className="cp-hero-mark" />
           <div className="cp-hero-brand-text">
             <h1 className="cp-hero-title">DELPHI</h1>
             <p className="cp-hero-subtitle">{TAB_SUBTITLE[tab]}</p>
           </div>
-          {tab === "clock" && (
+          {tab === "sky" && (
             <span
               className={`cp-sense-pulse${sensesAwake ? " cp-sense-pulse-live" : ""}`}
-              title={sensesAwake ? "Oracle senses live" : "Awakening senses…"}
-              aria-label={sensesAwake ? "Senses live" : "Senses awakening"}
+              title={sensesAwake ? "Sky sensors live" : "Awakening GPS & compass…"}
+              aria-label={sensesAwake ? "Sensors live" : "Sensors awakening"}
             />
           )}
         </div>
@@ -746,7 +746,7 @@ export default function Home() {
 
         {/* ── CLOCK / SKY visual hero — CSS shows the wheel on Clock, the sky map on Sky ── */}
         {(tab === "clock" || tab === "sky") && (
-        <section className={`cp-hero-wheel${tab === "clock" ? " cp-hero-wheel-clock" : ""}`}>
+        <section className={`cp-hero-wheel${tab === "clock" ? " cp-hero-wheel-clock" : ""}${tab === "sky" ? " cp-hero-wheel-sky" : ""}`}>
           {tab === "clock" && (
             <div className="cp-hero-wheel-head cp-hero-wheel-head-desktop">
               <div className="cp-wheel-controls">
@@ -770,12 +770,12 @@ export default function Home() {
           )}
 
           <div
-            ref={wheelViewportRef}
+            ref={tab === "clock" ? wheelViewportRef : undefined}
             className="cp-wheel-viewport cp-wheel-viewport-hero"
-            onWheel={onWheelZoom}
-            onTouchStart={onTouchStartZoom}
-            onTouchMove={onTouchMoveZoom}
-            onTouchEnd={onTouchEndZoom}
+            onWheel={tab === "clock" ? onWheelZoom : undefined}
+            onTouchStart={tab === "clock" ? onTouchStartZoom : undefined}
+            onTouchMove={tab === "clock" ? onTouchMoveZoom : undefined}
+            onTouchEnd={tab === "clock" ? onTouchEndZoom : undefined}
           >
             {tab === "clock" && (
               <ClockAmbience
@@ -818,6 +818,7 @@ export default function Home() {
                   <CelestialSkyView
                     lat={mapLat}
                     lon={mapLon}
+                    observerAltM={signals?.altM ?? 0}
                     headingDeg={activeHeading}
                     pitchDeg={activePitch}
                     observationTime={cosmic?.now ?? animNow}
@@ -856,13 +857,53 @@ export default function Home() {
               />
             </details>
           )}
+          {tab === "sky" && (
+            <details className="cp-sky-details">
+              <summary className="cp-sky-details-summary">Sky controls & catalog</summary>
+              <div className="cp-sky-details-inner">
+                <label className="cp-dir-label">
+                  <span>Sky depth · {labelForDistanceRank(skyDistance)}</span>
+                  <input
+                    type="range" min={0} max={100}
+                    value={skyDistance}
+                    onChange={e => setSkyDistance(Number(e.target.value))}
+                    className="cp-dir-range"
+                  />
+                </label>
+                <div className="cp-sensor-toggles">
+                  {SENSOR_TOGGLE_DEFS.map(t => (
+                    <button
+                      key={t.key}
+                      className={`cp-toggle${toggles[t.key] ? " cp-toggle-on" : ""}`}
+                      onClick={() => setSensorEnabled(t.key, !toggles[t.key])}
+                      title={`${t.label}: ${toggles[t.key] ? "on" : "off"}`}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+                {(hasLiveHeading || hasLivePitch) ? (
+                  <p className="cp-muted cp-sky-hint">
+                    Live AR — hold portrait, tilt the top of the phone toward the moon. Gold arrow guides you when off-target.
+                  </p>
+                ) : (
+                  <p className="cp-muted cp-sky-hint">Enable Location + Heading for live sky alignment.</p>
+                )}
+                <SkyCatalog
+                  lat={mapLat}
+                  lon={mapLon}
+                  observationTime={cosmic?.now ?? animNow}
+                  observerAltM={signals?.altM ?? 0}
+                />
+              </div>
+            </details>
+          )}
         </section>
         )}
 
-        {/* ── SKY CONTROLS (Sky tab) ─────────────────────────────────────── */}
+        {/* ── SKY CONTROLS (Sky tab — desktop expanded) ───────────────────── */}
         {tab === "sky" && (
-        <>
-        <section className="cp-card cp-sky-card">
+        <section className="cp-card cp-sky-card cp-sky-card-desktop">
           <div className="cp-card-head">
             <h2 className="cp-card-title">Sky Controls</h2>
           </div>
@@ -932,14 +973,6 @@ export default function Home() {
             )}
           </div>
         </section>
-
-        <SkyCatalog
-          className="cp-card"
-          lat={mapLat}
-          lon={mapLon}
-          observationTime={cosmic?.now ?? animNow}
-        />
-        </>
         )}
 
         {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}
