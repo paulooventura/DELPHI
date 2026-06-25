@@ -143,7 +143,7 @@ export class OrientationFilter {
     if (!raw) return;
 
     const now = performance.now();
-    if (now - this.lastEmitMs < 48) {
+    if (now - this.lastEmitMs < 16) {
       this.rafId = requestAnimationFrame(() => this.flush());
       return;
     }
@@ -151,8 +151,8 @@ export class OrientationFilter {
     this.pending = null;
 
     const { alt } = enuToAltAz(raw.view);
-    const nearHorizon = Math.abs(alt) < 22;
-    const t = nearHorizon ? 0.08 : 0.14;
+    const nearHorizon = Math.abs(alt) < 18;
+    const t = nearHorizon ? 0.28 : 0.35;
 
     if (!this.hasView) {
       this.view = raw.view;

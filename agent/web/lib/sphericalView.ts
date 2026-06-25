@@ -30,14 +30,6 @@ export function cross(a: Vec3, b: Vec3): Vec3 {
   ];
 }
 
-export function sub(a: Vec3, b: Vec3): Vec3 {
-  return [a[0] - b[0], a[1] - b[1], a[2] - b[2]];
-}
-
-export function scale(v: Vec3, s: number): Vec3 {
-  return [v[0] * s, v[1] * s, v[2] * s];
-}
-
 export function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;
 }
@@ -50,7 +42,7 @@ export function altAzToEnu(azDeg: number, altDeg: number): Vec3 {
   return [c * Math.sin(az), c * Math.cos(az), Math.sin(alt)];
 }
 
-/** ENU unit vector → az / alt (continuous except at nadir). */
+/** ENU unit vector → az / alt. */
 export function enuToAltAz([e, n, u]: Vec3): { az: number; alt: number } {
   const alt = Math.asin(clamp(u, -1, 1)) * RAD;
   let az = Math.atan2(e, n) * RAD;
@@ -64,7 +56,19 @@ export type ViewBasis = {
   up: Vec3;
 };
 
-/** Screen basis from look direction + device roll (gamma). Stable at zenith/nadir/horizon. */
+function rotateAroundAxis(v: Vec3, axis: Vec3, angleRad: number): Vec3 {
+  const k = normalize(axis);
+  const c = Math.cos(angleRad);
+  const s = Math.sin(angleRad);
+  const kd = dot(k, v);
+  return normalize([
+    v[0] * c + (k[1] * v[2] - k[2] * v[1]) * s + k[0] * kd * (1 - c),
+    v[1] * c + (k[2] * v[0] - k[0] * v[2]) * s + k[1] * kd * (1 - c),
+    v[2] * c + (k[0] * v[1] - k[1] * v[0]) * s + k[2] * kd * (1 - c),
+  ]);
+}
+
+/** Screen basis: roll applied once (gamma), stable at horizon/zenith/nadir. */
 export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
   const view = normalize(viewEnu);
   const roll = rollDeg * DEG;
@@ -72,7 +76,7 @@ export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
 
   let right = cross(worldUp, view);
   let rLen = Math.hypot(right[0], right[1], right[2]);
-  if (rLen < 1e-5) {
+  if (rLen < 1e-4) {
     const { az } = enuToAltAz(view);
     const azR = az * DEG;
     right = [Math.cos(azR), -Math.sin(azR), 0];
@@ -89,23 +93,11 @@ export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
   return { view, right, up };
 }
 
-function rotateAroundAxis(v: Vec3, axis: Vec3, angleRad: number): Vec3 {
-  const k = normalize(axis);
-  const c = Math.cos(angleRad);
-  const s = Math.sin(angleRad);
-  const kd = dot(k, v);
-  return normalize([
-    v[0] * c + (k[1] * v[2] - k[2] * v[1]) * s + k[0] * kd * (1 - c),
-    v[1] * c + (k[2] * v[0] - k[0] * v[2]) * s + k[1] * kd * (1 - c),
-    v[2] * c + (k[0] * v[1] - k[1] * v[0]) * s + k[2] * kd * (1 - c),
-  ]);
-}
-
 /** Spherical linear interpolation between unit vectors. */
 export function slerpUnit(a: Vec3, b: Vec3, t: number): Vec3 {
   const au = normalize(a);
   const bu = normalize(b);
-  let cos = clamp(dot(au, bu), -1, 1);
+  const cos = clamp(dot(au, bu), -1, 1);
   if (cos > 0.9995) {
     return normalize([
       au[0] + (bu[0] - au[0]) * t,
@@ -129,7 +121,7 @@ export type SkyProjector = {
   basis: ViewBasis;
 };
 
-/** Gnomonic projection — smooth pan in every direction, no horizon flip. */
+/** Gnomonic projection — smooth pan in every direction. */
 export function createSphericalSkyProjector(
   width: number,
   height: number,
@@ -160,45 +152,47 @@ export function createSphericalSkyProjector(
   return { toXY, inView, basis: { view, right, up } };
 }
 
-/** W3C deviceorientation → look direction in ENU (continuous). */
+function compassHeadingDeg(
+  event: DeviceOrientationEvent & { webkitCompassHeading?: number },
+): number | null {
+  if (typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)) {
+    return normalizeHeading(event.webkitCompassHeading);
+  }
+  if (typeof event.alpha !== "number" || !Number.isFinite(event.alpha)) return null;
+  const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
+  const alpha = event.absolute ? event.alpha : normalizeHeading(360 - event.alpha);
+  return normalizeHeading(alpha + orient);
+}
+
+function portraitPitchDeg(
+  beta: number,
+  gamma: number,
+  screenAngle: number,
+): number {
+  if (screenAngle === 90 || screenAngle === 270) {
+    return clamp(90 - Math.abs(gamma), -89.5, 89.5);
+  }
+  return clamp(90 - beta, -89.5, 89.5);
+}
+
+/**
+ * Continuous look direction from compass + tilt.
+ * Near the horizon we use raw compass (tilt-compensation diverges → no flip).
+ */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
   const beta = event.beta;
   if (beta == null || !Number.isFinite(beta)) return null;
+
+  const heading = compassHeadingDeg(event);
+  if (heading == null) return null;
+
   const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
+  const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
+  const pitch = portraitPitchDeg(beta, gamma, orient);
 
-  let alpha = event.alpha;
-  const hasIosCompass = typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading);
-  if (hasIosCompass) {
-    alpha = event.webkitCompassHeading!;
-  } else if (alpha == null || !Number.isFinite(alpha)) {
-    return null;
-  } else {
-    const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
-    const a = event.absolute ? alpha : normalizeHeading(360 - alpha);
-    alpha = normalizeHeading(a + orient);
-  }
-
-  if (alpha == null || !Number.isFinite(alpha)) return null;
-
-  const a = alpha * DEG;
-  const b = beta * DEG;
-  const g = gamma * DEG;
-  const ca = Math.cos(a);
-  const sa = Math.sin(a);
-  const cb = Math.cos(b);
-  const sb = Math.sin(b);
-  const cg = Math.cos(g);
-  const sg = Math.sin(g);
-
-  // R = Rz(α) Rx(β) Ry(γ) applied to screen normal (out of display).
-  const vx = -(ca * sg - sa * sb * cg);
-  const vy = -(sa * sg + ca * sb * cg);
-  const vz = cb * cg;
-
-  // Device frame → geographic ENU (east, north, up).
-  return normalize([vx, -vy, vz]);
+  return altAzToEnu(heading, pitch);
 }
 
 export function deviceOrientationToBasis(
@@ -210,8 +204,8 @@ export function deviceOrientationToBasis(
   return buildViewBasis(view, gamma);
 }
 
-/** Smooth ground tint 0 (sky) → 1 (looking down). No hard flip at horizon. */
+/** Subtle ground tint when looking down — no snap at horizon. */
 export function groundBlendFromView(view: Vec3): number {
   const { alt } = enuToAltAz(view);
-  return clamp((-alt - 4) / 36, 0, 1);
+  return clamp((-alt - 12) / 48, 0, 0.55);
 }

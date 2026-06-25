@@ -582,11 +582,14 @@ export function CelestialSkyView({
 
       const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
       const smooth = smoothAttitudeRef.current;
-      const { alt: targetAlt } = enuToAltAz(target.view);
-      const nearHorizon = Math.abs(targetAlt) < 22;
-      const t = nearHorizon ? 0.1 : 0.16;
-      smooth.view = slerpUnit(smooth.view, target.view, t);
-      smooth.roll += (target.roll - smooth.roll) * (nearHorizon ? 0.12 : 0.18);
+      if (liveAttitudeRef) {
+        smooth.view = target.view;
+        smooth.roll = target.roll;
+      } else {
+        const t = 0.2;
+        smooth.view = slerpUnit(smooth.view, target.view, t);
+        smooth.roll += (target.roll - smooth.roll) * t;
+      }
       const viewAtt = enuToAltAz(smooth.view);
       const viewHeading = viewAtt.az;
       const viewPitch = viewAtt.alt;
@@ -601,7 +604,7 @@ export function CelestialSkyView({
       }
 
       const targetGround = groundBlendFromView(smooth.view);
-      groundBlendRef.current += (targetGround - groundBlendRef.current) * 0.14;
+      groundBlendRef.current += (targetGround - groundBlendRef.current) * 0.06;
 
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
@@ -735,7 +738,7 @@ export function CelestialSkyView({
       const locked = findTargetLock(viewHeading, viewPitch, trackables, lockRef.current);
       lockRef.current = locked?.id ?? null;
 
-      if (hapticsEnabled) {
+      if (hapticsEnabled && Math.abs(viewPitch) > 6) {
         hapticsRef.current.update(viewHeading, viewPitch, locked?.id ?? null);
       }
 

@@ -288,7 +288,12 @@ export default function Home() {
     measure();
     const ro = new ResizeObserver(measure);
     ro.observe(el);
-    return () => ro.disconnect();
+    const onResize = () => measure();
+    window.addEventListener("resize", onResize);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", onResize);
+    };
   }, [cycles, tab]);
 
   // Clock tick sound: on by default — unlock audio when splash dismisses.
@@ -445,7 +450,7 @@ export default function Home() {
       }
 
       const now = performance.now();
-      if (now - attitudeHudMs.current < 120) return;
+      if (now - attitudeHudMs.current < 250) return;
       attitudeHudMs.current = now;
 
       const h = reading.viewAz ?? reading.heading;
