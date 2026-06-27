@@ -4,22 +4,32 @@ The app is served at **https://delphi.pauloventura.org** (subdomain of your Wix 
 
 **The app itself runs on Vercel.** Wix only owns the domain name and points the `delphi` subdomain at Vercel with DNS. Your main site stays on Wix; DELPHI stays on Vercel.
 
-## 1. Vercel — add the custom domain
+## 1. Vercel — project settings (fixes 404 NOT_FOUND)
 
-1. Open [Vercel](https://vercel.com) → project **delphi** (`music-mecca-records/delphi`).
-2. **Settings → General → Root Directory** → set to **`agent/web`** → Save.  
-   **Required.** The repo root `package.json` has no `next` dependency; builds fail with  
-   *“No Next.js version detected”* until this points at `agent/web/package.json`.
-3. **Settings → General → Build & Development Settings** — turn **OFF** all overrides:
-   - Install Command (default `npm ci`)
-   - Build Command (default `next build` / `npm run build`)
-   - Output Directory (leave empty — Next.js uses `.next` automatically)  
-   If Output Directory is set to `agent/web/.next` while Root Directory is already `agent/web`,  
-   the deploy succeeds but every URL returns **404 NOT_FOUND**.
-4. **Settings → Domains** → Add **`delphi.pauloventura.org`** (optional until DNS is ready).
-5. Copy the **exact CNAME value** Vercel shows (e.g. `3e5a4f8bbd18a872.vercel-dns-017.com`) — do not guess.
+Use **one** of these modes. Mixing them causes **404 NOT_FOUND** on every URL.
 
-## 2. DNS at Wix (required — fixes “placeholder” / blank page)
+### Mode A — repo root (recommended for `delphi-wine.vercel.app`)
+
+1. Open [Vercel](https://vercel.com) → project **delphi**.
+2. **Settings → General → Root Directory** → **leave empty** (repo root `/`).
+3. **Build & Development Settings** → turn **OFF** every override (Install, Build, Output, Development Command).  
+   The repo root `vercel.json` supplies the commands.
+4. **Deployments → Redeploy** latest `main`.
+
+### Mode B — app subdirectory (alternative)
+
+1. **Root Directory** → **`agent/web`** only.
+2. **All build overrides OFF** — especially **Output Directory** (must stay empty; do **not** use `agent/web/.next`).
+3. Redeploy.
+
+If you set Root Directory to `agent/web` **and** Output Directory to `agent/web/.next`, Vercel looks in the wrong folder and every route returns **404 NOT_FOUND**.
+
+## 2. Vercel — custom domain
+
+1. **Settings → Domains** → Add **`delphi.pauloventura.org`** (optional until DNS is ready).
+2. Copy the **exact CNAME value** Vercel shows — do not guess.
+
+## 3. DNS at Wix (required — fixes “placeholder” / blank page)
 
 **Wix** → **Domains** → **pauloventura.org** → **Manage DNS Records**
 

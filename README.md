@@ -19,7 +19,7 @@ See [docs/DOMAIN.md](docs/DOMAIN.md) for DNS setup (CNAME `delphi` → Vercel).
 
 Pushes to `main` deploy via Vercel Git integration or `.github/workflows/vercel-deploy.yml` (requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`).
 
-In Vercel → project **delphi** → **Root Directory** = `agent/web` → **Domains** → add `delphi.pauloventura.org`.
+In Vercel → project **delphi** → use **Mode A** in [docs/DOMAIN.md](docs/DOMAIN.md) (Root Directory empty, overrides off).
 
 `delphi-wine.vercel.app` redirects to the custom domain. Legacy Netlify (`palotino.netlify.app`) is unrelated.
 
