@@ -10,8 +10,14 @@ The app is served at **https://delphi.pauloventura.org** (subdomain of your Wix 
 2. **Settings → General → Root Directory** → set to **`agent/web`** → Save.  
    **Required.** The repo root `package.json` has no `next` dependency; builds fail with  
    *“No Next.js version detected”* until this points at `agent/web/package.json`.
-3. **Settings → Domains** → Add **`delphi.pauloventura.org`**.
-4. Copy the **exact CNAME value** Vercel shows (e.g. `3e5a4f8bbd18a872.vercel-dns-017.com`) — do not guess.
+3. **Settings → General → Build & Development Settings** — turn **OFF** all overrides:
+   - Install Command (default `npm ci`)
+   - Build Command (default `next build` / `npm run build`)
+   - Output Directory (leave empty — Next.js uses `.next` automatically)  
+   If Output Directory is set to `agent/web/.next` while Root Directory is already `agent/web`,  
+   the deploy succeeds but every URL returns **404 NOT_FOUND**.
+4. **Settings → Domains** → Add **`delphi.pauloventura.org`** (optional until DNS is ready).
+5. Copy the **exact CNAME value** Vercel shows (e.g. `3e5a4f8bbd18a872.vercel-dns-017.com`) — do not guess.
 
 ## 2. DNS at Wix (required — fixes “placeholder” / blank page)
 
@@ -69,7 +75,8 @@ The app is already live at **https://delphi-wine.vercel.app** — use that URL o
 | Old UI / cache | Browser or CDN cache | Hard refresh; or open in private window |
 | App works on `delphi-wine.vercel.app` but not custom domain | DNS only — Vercel deploy is fine | Fix Wix DNS as above |
 | Build: *No Next.js version detected* | Root Directory is repo root, not `agent/web` | Vercel → Settings → General → Root Directory → **`agent/web`** → Redeploy |
-| Build: `npm --prefix agent/web ci` exited with 1 | Stale install override or strict `npm ci` from repo root | Set Root Directory to **`agent/web`**, turn **off** Install Command override, redeploy; or push latest `vercel.json` (uses `npm install --prefix agent/web` as fallback) |
+| Build: `npm --prefix agent/web ci` exited with 1 | Stale install override or strict `npm ci` from repo root | Set Root Directory to **`agent/web`**, turn **off** Install Command override, redeploy |
+| **404 NOT_FOUND** on `delphi-wine.vercel.app` | Output Directory override `agent/web/.next` with Root Directory already `agent/web` | Turn **off** Output Directory override; redeploy. Use `delphi-wine.vercel.app` until custom DNS works |
 | Push to GitHub but site unchanged | Vercel Git not linked or deploy failed | Check Deployments tab; fix Root Directory; add GitHub `VERCEL_*` secrets |
 
 ## Environment (optional)
