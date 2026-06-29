@@ -19,6 +19,7 @@ import { OracleLogo } from "../components/oracle/OracleLogo";
 import { ClockAmbience } from "../components/ClockAmbience";
 import { SensorArray } from "../components/SensorArray";
 import { CosmicNow } from "../components/CosmicNow";
+import { MomentReading } from "../components/MomentReading";
 import { BottomNav, type AppTab } from "../components/BottomNav";
 import { PauloVenturaHub } from "../components/PauloVenturaHub";
 import { WIX_HOME } from "../lib/site";
@@ -217,15 +218,22 @@ export default function Home() {
   const [showLaunch, completeLaunch] = useShowLaunch();
   useScreenWakeLock(true);
 
-  // ── Tabbed app shell (Clock · Sky · Senses · Oracle)
+  // ── Tabbed app shell (Clock · Sky · Moment · Senses · Oracle)
   const [tab, setTab] = useState<AppTab>(() => {
     try {
       const raw = localStorage.getItem("cp-active-tab");
-      return raw === "clock" || raw === "sky" || raw === "senses" || raw === "oracle" ? raw : "clock";
+      return raw === "clock" || raw === "sky" || raw === "moment" || raw === "senses" || raw === "oracle" ? raw : "clock";
     } catch {
       return "clock";
     }
   });
+
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search).get("tab");
+    if (q === "clock" || q === "sky" || q === "moment" || q === "senses" || q === "oracle") {
+      setTab(q);
+    }
+  }, []);
   useEffect(() => {
     try { localStorage.setItem("cp-active-tab", tab); } catch {}
   }, [tab]);
@@ -233,6 +241,7 @@ export default function Home() {
   const TAB_SUBTITLE: Record<AppTab, string> = {
     clock: "COSMIC CLOCK",
     sky: "ASTRONOMICAL GUIDANCE",
+    moment: "THE MOMENT",
     senses: "ORACLE SENSES",
     oracle: "UNVEILING THE ORACLE",
   };
@@ -985,6 +994,19 @@ export default function Home() {
             )}
           </div>
         </section>
+        )}
+
+        {/* ── MOMENT (unified synthesis from main cycle engine) ───────────── */}
+        {tab === "moment" && cycles && (
+          <MomentReading
+            snapshot={cycles}
+            now={cosmic?.now ?? animNow}
+            hasLocation={hasLiveLocation}
+            onRequestLocation={() => {
+              if (toggles.heading || toggles.location) void startOrientationWatch();
+              void captureSensors();
+            }}
+          />
         )}
 
         {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}

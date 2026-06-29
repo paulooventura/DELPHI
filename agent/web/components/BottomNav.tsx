@@ -1,10 +1,11 @@
 "use client";
 
-export type AppTab = "clock" | "sky" | "senses" | "oracle";
+export type AppTab = "clock" | "sky" | "moment" | "senses" | "oracle";
 
 const TABS: { id: AppTab; label: string; glyph: string; hint: string }[] = [
   { id: "clock",  label: "Clock",  glyph: "◴", hint: "Cosmic clock wheels" },
   { id: "sky",    label: "Sky",    glyph: "✦", hint: "Live sky map & compass" },
+  { id: "moment", label: "Moment", glyph: "◎", hint: "Essence of the moment" },
   { id: "senses", label: "Senses", glyph: "◉", hint: "Device sensor array" },
   { id: "oracle", label: "Oracle", glyph: "❖", hint: "Research console" },
 ];

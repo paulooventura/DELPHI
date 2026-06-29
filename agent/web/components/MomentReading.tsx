@@ -1,68 +1,57 @@
-'use client';
+"use client";
 
-// ───────────────────────────────────────────────────────────────
-// COSMOS · MomentReading
-// Ingests live cycles + weather + profile → one essence reading.
-// ───────────────────────────────────────────────────────────────
+import { useMemo } from "react";
+import { motion } from "framer-motion";
+import type { CycleSnapshot } from "../lib/cycleSystems";
+import { synthesizeFromSnapshot } from "../lib/synthesisFromSnapshot";
 
-import { useMemo } from 'react';
-import { motion } from 'framer-motion';
-import { useCosmosStore } from '@/store/useCosmosStore';
-import { resolveCycles } from '@/services/astronomyEngine';
-import { synthesize } from '@/services/synthesisEngine';
-
-export default function MomentReading() {
-  const now = useCosmosStore((s) => s.now);
-  const weather = useCosmosStore((s) => s.weather);
-  const profile = useCosmosStore((s) => s.profile);
-  const coords = useCosmosStore((s) => s.coords);
-  const requestGeo = useCosmosStore((s) => s.requestGeo);
-
-  // The reading recomputes per minute (synthesize seeds on minute).
+export function MomentReading({
+  snapshot,
+  now,
+  hasLocation,
+  onRequestLocation,
+}: {
+  snapshot: CycleSnapshot;
+  now: Date;
+  hasLocation: boolean;
+  onRequestLocation?: () => void;
+}) {
   const minuteKey = Math.floor(now.getTime() / 60000);
-  const reading = useMemo(() => {
-    const cycles = resolveCycles(now);
-    return synthesize(cycles, weather ?? undefined, now, profile);
+  const reading = useMemo(
+    () => synthesizeFromSnapshot(snapshot, now),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [minuteKey, weather, profile]);
+    [minuteKey, snapshot],
+  );
 
   return (
-    <div className="relative flex h-[100dvh] w-full flex-col justify-center overflow-y-auto bg-[radial-gradient(ellipse_at_50%_120%,#1a1230_0%,#0a0a12_60%)] px-7 pb-28 pt-10">
+    <section className="cp-moment cp-card-secondary flex min-h-0 flex-1 flex-col justify-center overflow-y-auto px-6 py-8 pb-28">
       <motion.div
         key={minuteKey}
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7, ease: 'easeOut' }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
         className="mx-auto w-full max-w-md"
       >
-        <p className="font-mono text-[10px] uppercase tracking-[0.4em] text-amber-500/70">
-          The Moment ·{' '}
-          {now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+        <p className="cp-muted text-xs uppercase tracking-[0.35em]">
+          The Moment · {now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
         </p>
 
-        <h1
-          className="mt-4 text-4xl leading-tight text-amber-100"
-          style={{ fontFamily: 'var(--font-display, serif)' }}
-        >
+        <h1 className="mt-4 font-[family-name:var(--font-cinzel)] text-3xl leading-tight text-[var(--cp-accent)]">
           {reading.headline}
         </h1>
 
-        <p className="mt-6 text-[17px] leading-relaxed text-zinc-300">
+        <p className="cp-muted mt-6 text-[17px] leading-relaxed">
           {reading.body}
         </p>
 
-        <div className="mt-8 space-y-4 border-l border-amber-500/25 pl-4">
+        <div className="mt-8 space-y-4 border-l border-[var(--cp-border)] pl-4">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-rose-300/70">
-              Shadow
-            </p>
-            <p className="text-zinc-300">{reading.shadow}</p>
+            <p className="cp-muted text-xs uppercase tracking-[0.3em] text-rose-300/80">Shadow</p>
+            <p className="cp-muted">{reading.shadow}</p>
           </div>
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-emerald-300/70">
-              Focus
-            </p>
-            <p className="text-zinc-300">{reading.focus}</p>
+            <p className="cp-muted text-xs uppercase tracking-[0.3em] text-emerald-300/80">Focus</p>
+            <p className="cp-muted">{reading.focus}</p>
           </div>
         </div>
 
@@ -70,22 +59,19 @@ export default function MomentReading() {
           {reading.tags.map((t) => (
             <span
               key={t}
-              className="rounded-full border border-amber-500/20 px-3 py-1 text-xs text-amber-200/80"
+              className="rounded-full border border-[var(--cp-border)] px-3 py-1 text-xs text-[var(--cp-accent)]"
             >
               {t}
             </span>
           ))}
         </div>
 
-        {!coords && (
-          <button
-            onClick={requestGeo}
-            className="mt-8 rounded-full border border-amber-300/40 px-4 py-2 text-sm text-amber-100"
-          >
+        {!hasLocation && onRequestLocation && (
+          <button type="button" onClick={onRequestLocation} className="cp-btn cp-btn-sm mt-8">
             add local weather to the reading
           </button>
         )}
       </motion.div>
-    </div>
+    </section>
   );
 }
