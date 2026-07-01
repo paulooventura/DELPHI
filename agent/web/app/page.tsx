@@ -177,6 +177,20 @@ export default function Home() {
   });
   const [wheelZoom, setWheelZoom] = useState(1);
   const springZoom = useSpringValue(wheelZoom);
+  const [wheelPan, setWheelPan] = useState({ x: 0, y: 0 });
+  const springPanX = useSpringValue(wheelPan.x);
+  const springPanY = useSpringValue(wheelPan.y);
+  const panDragRef = useRef<{
+    active: boolean;
+    startX: number;
+    startY: number;
+    panX: number;
+    panY: number;
+    moved: boolean;
+  } | null>(null);
+  const suppressRingClickRef = useRef(false);
+  const touchPanRef = useRef<{ startX: number; startY: number; panX: number; panY: number } | null>(null);
+  const [wheelDragging, setWheelDragging] = useState(false);
   const zoomBootstrapped = useRef(false);
   const wheelViewportRef = useRef<HTMLDivElement>(null);
   const viewportHeightRef = useRef(400);
@@ -655,7 +669,63 @@ export default function Home() {
     return Math.max(0.75, Math.min(2.8, z));
   }
 
+  const canPanWheel = springZoom > 1.04 || focusRing != null;
+
+  function onWheelPanPointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (tab !== "clock" || !canPanWheel) return;
+    if (e.button !== 0) return;
+    if ((e.target as HTMLElement).closest(".cp-btn, .cp-wheel-controls-float")) return;
+
+    panDragRef.current = {
+      active: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      panX: wheelPan.x,
+      panY: wheelPan.y,
+      moved: false,
+    };
+    e.currentTarget.setPointerCapture(e.pointerId);
+  }
+
+  function onWheelPanPointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    const drag = panDragRef.current;
+    if (!drag?.active) return;
+    const dx = e.clientX - drag.startX;
+    const dy = e.clientY - drag.startY;
+    if (!drag.moved && Math.hypot(dx, dy) > 6) {
+      drag.moved = true;
+      setWheelDragging(true);
+    }
+    if (!drag.moved) return;
+    e.preventDefault();
+    setWheelPan({ x: drag.panX + dx, y: drag.panY + dy });
+  }
+
+  function finishWheelPan(e?: React.PointerEvent<HTMLDivElement>) {
+    const drag = panDragRef.current;
+    if (!drag?.active) return;
+    if (drag.moved) suppressRingClickRef.current = true;
+    panDragRef.current = null;
+    setWheelDragging(false);
+    setWheelPan({ x: 0, y: 0 });
+    if (e) {
+      try { e.currentTarget.releasePointerCapture(e.pointerId); } catch { /* ignore */ }
+    }
+    if (drag.moved) {
+      window.setTimeout(() => { suppressRingClickRef.current = false; }, 0);
+    }
+  }
+
+  function onWheelPanPointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    finishWheelPan(e);
+  }
+
+  function onWheelPanPointerCancel(e: React.PointerEvent<HTMLDivElement>) {
+    finishWheelPan(e);
+  }
+
   function handleRingSelect(id: string, meta: { radius: number }) {
+    if (suppressRingClickRef.current) return;
     setFocusRing(prev => {
       if (prev === id) {
         setWheelZoom(1);
@@ -669,12 +739,12 @@ export default function Home() {
 
   function clearRingFocus() {
     setFocusRing(null);
+    setWheelPan({ x: 0, y: 0 });
     setWheelZoom(heroZoomDefault);
   }
 
   function onWheelZoom(e: React.WheelEvent<HTMLDivElement>) {
     if (tab !== "clock") return;
-    if (!e.ctrlKey) return;
     e.preventDefault();
     setWheelZoom(prev => clampZoom(prev + (e.deltaY < 0 ? 0.08 : -0.08)));
   }
@@ -688,23 +758,56 @@ export default function Home() {
 
   function onTouchStartZoom(e: React.TouchEvent<HTMLDivElement>) {
     if (tab !== "clock") return;
-    const d = touchDistance(e.touches);
-    if (d == null) return;
-    pinchStartRef.current = d;
-    pinchZoomRef.current = wheelZoom;
+    if (e.touches.length === 2) {
+      touchPanRef.current = null;
+      const d = touchDistance(e.touches);
+      if (d == null) return;
+      pinchStartRef.current = d;
+      pinchZoomRef.current = wheelZoom;
+      return;
+    }
+    if (e.touches.length === 1 && canPanWheel) {
+      const t = e.touches[0]!;
+      touchPanRef.current = {
+        startX: t.clientX,
+        startY: t.clientY,
+        panX: wheelPan.x,
+        panY: wheelPan.y,
+      };
+    }
   }
 
   function onTouchMoveZoom(e: React.TouchEvent<HTMLDivElement>) {
     if (tab !== "clock") return;
-    const d = touchDistance(e.touches);
-    if (d == null || pinchStartRef.current == null) return;
+    if (e.touches.length >= 2) {
+      touchPanRef.current = null;
+      const d = touchDistance(e.touches);
+      if (d == null || pinchStartRef.current == null) return;
+      e.preventDefault();
+      const ratio = d / pinchStartRef.current;
+      setWheelZoom(clampZoom(pinchZoomRef.current * ratio));
+      return;
+    }
+    const pan = touchPanRef.current;
+    if (!pan || e.touches.length !== 1) return;
+    const t = e.touches[0]!;
+    const dx = t.clientX - pan.startX;
+    const dy = t.clientY - pan.startY;
+    if (Math.hypot(dx, dy) <= 6) return;
     e.preventDefault();
-    const ratio = d / pinchStartRef.current;
-    setWheelZoom(clampZoom(pinchZoomRef.current * ratio));
+    suppressRingClickRef.current = true;
+    setWheelPan({ x: pan.panX + dx, y: pan.panY + dy });
   }
 
-  function onTouchEndZoom() {
-    pinchStartRef.current = null;
+  function onTouchEndZoom(e: React.TouchEvent<HTMLDivElement>) {
+    if (e.touches.length === 0) {
+      if (touchPanRef.current) {
+        setWheelPan({ x: 0, y: 0 });
+        window.setTimeout(() => { suppressRingClickRef.current = false; }, 0);
+      }
+      touchPanRef.current = null;
+    }
+    if (e.touches.length < 2) pinchStartRef.current = null;
   }
 
   return (
@@ -815,6 +918,7 @@ export default function Home() {
                   className="cp-btn cp-btn-sm"
                   onClick={() => {
                     clearRingFocus();
+                    setWheelPan({ x: 0, y: 0 });
                     setWheelZoom(fitMobileClockZoom(outerRingR, viewportHeightRef.current, viewportWidthRef.current));
                   }}
                 >
@@ -825,10 +929,16 @@ export default function Home() {
             )}
             <div className="cp-split-hero">
               <div className="cp-split-wheels">
-                <div className="cp-semicircle-clip cp-semicircle-clip-portrait">
+                <div
+                  className={`cp-semicircle-clip cp-semicircle-clip-portrait${canPanWheel ? " cp-semicircle-pannable" : ""}`}
+                  onPointerDown={onWheelPanPointerDown}
+                  onPointerMove={onWheelPanPointerMove}
+                  onPointerUp={onWheelPanPointerUp}
+                  onPointerCancel={onWheelPanPointerCancel}
+                >
                   <div
-                    className={`cp-watch-scaler cp-watch-scaler-spring cp-watch-scaler-portrait${focusRing ? " cp-watch-scaler-focused" : ""}`}
-                    style={{ transform: `scale(${springZoom})` }}
+                    className={`cp-watch-scaler cp-watch-scaler-spring cp-watch-scaler-portrait${focusRing ? " cp-watch-scaler-focused" : ""}${wheelDragging ? " cp-watch-scaler-dragging" : ""}`}
+                    style={{ transform: `translate(${springPanX}px, ${springPanY}px) scale(${springZoom})` }}
                   >
                     <WatchMovement
                       glass

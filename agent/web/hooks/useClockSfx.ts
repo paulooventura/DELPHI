@@ -5,32 +5,28 @@ import {
   getClockAudio,
   playHourBell,
   playMinuteBell,
-  playMsTick,
   playSecondTick,
   resumeClockAudio,
 } from "../lib/clockSfx";
 
 function syncChimeRefs(refs: {
-  lastMs: MutableRefObject<number>;
   lastSec: MutableRefObject<number>;
   lastChimeKey: MutableRefObject<string>;
 }) {
   const d = new Date();
-  refs.lastMs.current = d.getMilliseconds();
   refs.lastSec.current = d.getSeconds();
   refs.lastChimeKey.current = `${d.getHours()}:${d.getMinutes()}`;
 }
 
 export function useClockSfx(enabled: boolean) {
   const [active, setActive] = useState(false);
-  const lastMs = useRef(-1);
   const lastSec = useRef(-1);
   const lastChimeKey = useRef("");
 
   useEffect(() => {
     if (!enabled) return;
 
-    const refs = { lastMs, lastSec, lastChimeKey };
+    const refs = { lastSec, lastChimeKey };
 
     const unlock = () => {
       void resumeClockAudio().then(ctx => {
@@ -48,15 +44,9 @@ export function useClockSfx(enabled: boolean) {
       if (!ctx || ctx.state !== "running") return;
 
       const d = new Date();
-      const ms = d.getMilliseconds();
       const sec = d.getSeconds();
       const min = d.getMinutes();
       const hr = d.getHours();
-
-      if (ms !== lastMs.current) {
-        playMsTick(ctx);
-        lastMs.current = ms;
-      }
 
       if (sec !== lastSec.current) {
         playSecondTick(ctx, sec);
@@ -75,7 +65,7 @@ export function useClockSfx(enabled: boolean) {
           }
         }
       }
-    }, 1);
+    }, 50);
 
     return () => {
       window.removeEventListener("pointerdown", unlock);
@@ -89,7 +79,7 @@ export function useClockSfx(enabled: boolean) {
     enable: () =>
       void resumeClockAudio().then(ctx => {
         if (!ctx) return;
-        syncChimeRefs({ lastMs, lastSec, lastChimeKey });
+        syncChimeRefs({ lastSec, lastChimeKey });
         setActive(true);
       }),
   };

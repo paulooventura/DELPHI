@@ -662,6 +662,20 @@ html,body {
   will-change: transform;
 }
 
+.cp-semicircle-pannable {
+  cursor: grab;
+  touch-action: none;
+}
+
+.cp-semicircle-pannable:active,
+.cp-watch-scaler-dragging {
+  cursor: grabbing;
+}
+
+.cp-watch-plumb rect {
+  filter: drop-shadow(0 0 6px rgba(201, 162, 39, 0.25));
+}
+
 .cp-watch-scaler-focused {
   filter: drop-shadow(0 0 18px rgba(96, 165, 250, 0.12));
 }
@@ -1298,9 +1312,9 @@ html,body {
   z-index: 10000;
   pointer-events: auto;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 0.1rem;
-  padding: 0.3rem 0.4rem calc(0.3rem + var(--safe-b));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.05rem;
+  padding: 0.25rem 0.25rem calc(0.25rem + var(--safe-b));
   background: linear-gradient(0deg, rgba(5, 7, 11, 0.97) 55%, rgba(5, 7, 11, 0.72) 100%);
   border-top: 1px solid rgba(201, 162, 39, 0.18);
   backdrop-filter: blur(16px);
@@ -1313,20 +1327,21 @@ html,body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  padding: 0.4rem 0 0.15rem;
+  gap: 2px;
+  min-width: 0;
+  padding: 0.35rem 0 0.1rem;
   border: 0;
   background: transparent;
   cursor: pointer;
   color: rgba(226, 232, 240, 0.45);
-  font-size: 0.58rem;
-  letter-spacing: 0.1em;
+  font-size: 0.5rem;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   transition: color 0.2s ease, transform 0.15s ease;
   -webkit-tap-highlight-color: transparent;
 }
 .cp-tabbar-glyph {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   line-height: 1;
   transition: transform 0.28s cubic-bezier(0.22, 0.61, 0.36, 1), filter 0.28s ease;
 }

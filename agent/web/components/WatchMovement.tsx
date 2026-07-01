@@ -239,6 +239,111 @@ const COMPASS_DIRS: Array<{ deg: number; label: string; major: boolean }> = [
   { deg: 337.5, label: "NNW", major: false },
 ];
 
+function plumbLabelForRing(spec: RingSpec, now: Date, cycles: CycleSnapshot | null): string {
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  switch (spec.id) {
+    case "ms":
+      return String(now.getMilliseconds()).padStart(3, "0");
+    case "s":
+      return String(now.getSeconds()).padStart(2, "0");
+    case "min":
+      return String(now.getMinutes()).padStart(2, "0");
+    case "h":
+      return String(now.getHours()).padStart(2, "0");
+    case "weather": {
+      const hourly = cycles?.weather?.hourly;
+      const slot = hourly?.find(h => h.hour === now.getHours());
+      return slot?.emoji ?? cycles?.weather?.emoji ?? "·";
+    }
+    case "day":
+      return String(now.getDate());
+    case "weekday":
+      return weekdays[now.getDay()] ?? "·";
+    case "chinese-sign": {
+      if (!cycles) return "·";
+      const idx = CHINESE_ANIMALS.findIndex(a => a === cycles.chineseZodiac.animal);
+      const i = idx >= 0 ? idx : 0;
+      return `${CHINESE_SYMBOLS[i] ?? "·"}${cycles.chineseZodiac.animal.slice(0, 3)}`;
+    }
+    case "tzolkin":
+      return cycles ? `🧭${cycles.tzolkin.sign.slice(0, 4)}` : "·";
+    case "moon":
+      return cycles ? `${cycles.lunar.emoji}${cycles.lunar.phase.slice(0, 3)}` : "·";
+    default: {
+      const w = cycles?.wheelLayers.find(l => l.id === spec.id);
+      if (!w) return "·";
+      const short = w.label.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 5);
+      return `${w.icon}${short}`;
+    }
+  }
+}
+
+function PlumbHighlight({
+  cx,
+  cy,
+  rings,
+  now,
+  cycles,
+  warmth = 0.55,
+  semicircle,
+}: {
+  cx: number;
+  cy: number;
+  rings: RingSpec[];
+  now: Date;
+  cycles: CycleSnapshot | null;
+  warmth?: number;
+  semicircle?: boolean;
+}) {
+  const plumbW = 18;
+  const accent = spectrumAccent(warmth);
+  const labelInk = spectrumBlend(warmth, OBS.day.ink, OBS.night.gold);
+  const height = semicircle ? cy + 6 : cy + (rings[rings.length - 1]?.radius ?? cy);
+
+  return (
+    <g className="cp-watch-plumb" pointerEvents="none">
+      <rect
+        x={cx - plumbW / 2}
+        y={0}
+        width={plumbW}
+        height={height}
+        fill={accent}
+        fillOpacity={0.14}
+        stroke={accent}
+        strokeWidth={0.85}
+        strokeOpacity={0.5}
+        rx={3}
+      />
+      {rings.map(spec => {
+        const band = spec.dense ? Math.max(8, spec.radius * 0.11) : Math.max(3.5, spec.radius * 0.07);
+        const y = cy - spec.radius + band * 0.55;
+        const label = plumbLabelForRing(spec, now, cycles);
+        const fontSize = spec.dense
+          ? Math.max(4.5, Math.min(band * 0.62, 7))
+          : spec.id === "weather"
+            ? Math.max(5.5, band * 0.65)
+            : Math.max(4.8, band * 0.52);
+        return (
+          <text
+            key={spec.id}
+            x={cx}
+            y={y}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={fontSize}
+            fill={labelInk}
+            fontFamily={OBS.typography.micro}
+            fontWeight={700}
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {label}
+          </text>
+        );
+      })}
+    </g>
+  );
+}
+
 function HubCompass({
   cx,
   cy,
@@ -247,6 +352,7 @@ function HubCompass({
   showCompass,
   glass,
   warmth = 0.55,
+  headingUp = false,
 }: {
   cx: number;
   cy: number;
@@ -255,9 +361,13 @@ function HubCompass({
   showCompass: boolean;
   glass?: boolean;
   warmth?: number;
+  /** Rotate the rose with heading so the needle stays fixed up (visible on semicircle clip). */
+  headingUp?: boolean;
 }) {
   const r = 26;
   const needle = showCompass ? heading : 0;
+  const dialSpin = headingUp && showCompass ? -heading : 0;
+  const needleSpin = headingUp ? 0 : needle;
   const op = glass ? 0.92 : 1;
   const accent = spectrumAccent(warmth);
   const labelInk = spectrumBlend(warmth, OBS.day.ink, OBS.night.gold);
@@ -267,6 +377,7 @@ function HubCompass({
       <circle cx={cx} cy={cy} r={r + 4} fill="rgba(5, 7, 11, 0.88)" stroke={OBS.vector.structuralStrong} strokeWidth={1} />
       <circle cx={cx} cy={cy} r={r} fill="rgba(13, 17, 26, 0.55)" stroke={OBS.vector.structural} strokeWidth={0.75} />
 
+      <g transform={`rotate(${dialSpin} ${cx} ${cy})`}>
       {COMPASS_DIRS.map(({ deg, label, major }) => {
         const rad = ((deg - 90) * Math.PI) / 180;
         const inner = r - (major ? 5 : 7);
@@ -299,8 +410,9 @@ function HubCompass({
           </g>
         );
       })}
+      </g>
 
-      <g transform={`rotate(${needle} ${cx} ${cy})`}>
+      <g transform={`rotate(${needleSpin} ${cx} ${cy})`}>
         <polygon points={`${cx},${cy - r + 4} ${cx + 2.5},${cy + 3} ${cx - 2.5},${cy + 3}`} fill={accent} opacity={0.95} />
         <polygon points={`${cx},${cy + r - 4} ${cx + 2},${cy - 1} ${cx - 2},${cy - 1}`} fill={OBS.vector.structuralStrong} opacity={0.75} />
       </g>
@@ -448,16 +560,6 @@ function DistanceDialRing({
           {labels}
         </g>
       </g>
-
-      <line
-        x1={cx}
-        y1={cy - radius - 1}
-        x2={cx}
-        y2={cy - inner + 1}
-        stroke={accent}
-        strokeWidth={1}
-        strokeLinecap="round"
-      />
 
       <text
         x={cx}
@@ -611,17 +713,6 @@ function RotatingDialRing({
           {labels}
         </g>
       </g>
-
-      <line
-        x1={cx}
-        y1={cy - r - 1}
-        x2={cx}
-        y2={cy - inner + 1}
-        stroke={accent}
-        strokeWidth={1}
-        strokeLinecap="round"
-        opacity={focused ? 0.95 : 0.65}
-      />
     </g>
   );
 }
@@ -725,6 +816,16 @@ export function WatchMovement({
         );
       })}
 
+      <PlumbHighlight
+        cx={cx}
+        cy={cy}
+        rings={rings}
+        now={now}
+        cycles={cycles}
+        warmth={spectrumWarmth}
+        semicircle={semicircle}
+      />
+
       <HubCompass
         cx={cx}
         cy={cy}
@@ -733,6 +834,7 @@ export function WatchMovement({
         showCompass={showCompass}
         glass={glass}
         warmth={spectrumWarmth}
+        headingUp={semicircle && showCompass}
       />
       </g>
     </svg>
