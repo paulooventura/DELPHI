@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, type ReactElement, type PointerEvent as ReactPointerEvent } from "react";
+import { useId, useRef, useState, type ReactElement, type PointerEvent as ReactPointerEvent } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { daysInMonth } from "../lib/cycleSystems";
 import { OBS, spectrumAccent, spectrumBlend } from "../lib/design/observatoryTokens";
@@ -46,6 +46,11 @@ type RingSpec = {
 
 function tickRad(index: number, divisions: number): number {
   return ((index / divisions) * 360 - 90) * (Math.PI / 180);
+}
+
+/** True when a label sits at 12 o'clock (plumb column). */
+function isNearTwelveOClock(ang: number): boolean {
+  return Math.sin(ang) < -0.9;
 }
 
 function ringDonutClip(cx: number, cy: number, outer: number, inner: number): string {
@@ -349,6 +354,7 @@ function PlumbHighlight({
   cycles,
   warmth = 0.55,
   semicircle,
+  onDismiss,
 }: {
   cx: number;
   cy: number;
@@ -357,13 +363,18 @@ function PlumbHighlight({
   cycles: CycleSnapshot | null;
   warmth?: number;
   semicircle?: boolean;
+  onDismiss: () => void;
 }) {
-  const plumbW = 118;
+  const plumbW = 128;
   const accent = spectrumAccent(warmth);
-  const height = semicircle ? cy + 6 : cy + (rings[rings.length - 1]?.radius ?? cy);
+  const height = semicircle ? cy + 4 : cy + (rings[rings.length - 1]?.radius ?? cy);
+  const rows = [...rings].reverse().map(spec => ({
+    id: spec.id,
+    ...plumbRowForRing(spec, now, cycles),
+  }));
 
   return (
-    <g className="cp-watch-plumb" pointerEvents="none">
+    <g className="cp-watch-plumb">
       <rect
         x={cx - plumbW / 2}
         y={0}
@@ -373,27 +384,42 @@ function PlumbHighlight({
         stroke={accent}
         strokeWidth={1}
         rx={4}
+        pointerEvents="none"
       />
-      {rings.map(spec => {
-        const band = spec.dense ? Math.max(8, spec.radius * 0.11) : Math.max(3.5, spec.radius * 0.07);
-        const rowH = Math.max(band + 1, spec.dense ? 11 : 13);
-        const y = cy - spec.radius + band * 0.5;
-        const { title, value } = plumbRowForRing(spec, now, cycles);
-        return (
-          <foreignObject
-            key={spec.id}
-            x={cx - plumbW / 2 + 2}
-            y={y - rowH / 2}
-            width={plumbW - 4}
-            height={rowH}
-          >
-            <div className="cp-plumb-row">
-              <div className="cp-plumb-title">{title}</div>
-              <div className="cp-plumb-value">{value}</div>
+      <foreignObject
+        x={cx + plumbW / 2 - 18}
+        y={3}
+        width={16}
+        height={16}
+        className="cp-plumb-close-wrap"
+      >
+        <button
+          type="button"
+          className="cp-plumb-close"
+          aria-label="Hide time column"
+          onClick={e => {
+            e.stopPropagation();
+            onDismiss();
+          }}
+        >
+          ✕
+        </button>
+      </foreignObject>
+      <foreignObject
+        x={cx - plumbW / 2 + 4}
+        y={18}
+        width={plumbW - 8}
+        height={height - 22}
+      >
+        <div className="cp-plumb-list">
+          {rows.map(row => (
+            <div key={row.id} className="cp-plumb-row">
+              <div className="cp-plumb-title">{row.title}</div>
+              <div className="cp-plumb-value">{row.value}</div>
             </div>
-          </foreignObject>
-        );
-      })}
+          ))}
+        </div>
+      </foreignObject>
     </g>
   );
 }
@@ -640,6 +666,7 @@ function RotatingDialRing({
   glass,
   depthNorm,
   warmth = 0.55,
+  hideTopLabels = false,
   onEnter,
   onLeave,
   onSelect,
@@ -654,6 +681,7 @@ function RotatingDialRing({
   /** 0 = inner foreground, 1 = outer cosmic depth. */
   depthNorm: number;
   warmth?: number;
+  hideTopLabels?: boolean;
   onEnter: () => void;
   onLeave: () => void;
   onSelect?: () => void;
@@ -714,6 +742,8 @@ function RotatingDialRing({
     if (!txt) continue;
 
     const ang = tickRad(i + 0.5, spec.divisions);
+    if (hideTopLabels && isNearTwelveOClock(ang)) continue;
+
     const lx = cx + Math.cos(ang) * midR;
     const ly = cy + Math.sin(ang) * midR;
     const rot = (ang * 180) / Math.PI + 90;
@@ -804,6 +834,7 @@ export function WatchMovement({
   const outerRingR = rings.length > 0 ? rings[rings.length - 1]!.radius : hubR + 12;
   const distanceRadius = outerRingR + 14;
   const maxDepth = Math.max(1, rings.length - 1);
+  const [plumbOpen, setPlumbOpen] = useState(true);
 
   return (
     <svg
@@ -863,22 +894,13 @@ export function WatchMovement({
           glass={glass}
           depthNorm={depthNorm}
           warmth={spectrumWarmth}
+          hideTopLabels={plumbOpen && semicircle}
           onEnter={() => onHover(spec.id)}
           onLeave={() => onHover(null)}
           onSelect={() => onRingSelect?.(spec.id, { radius: spec.radius })}
         />
         );
       })}
-
-      <PlumbHighlight
-        cx={cx}
-        cy={cy}
-        rings={rings}
-        now={now}
-        cycles={cycles}
-        warmth={spectrumWarmth}
-        semicircle={semicircle}
-      />
 
       <HubCompass
         cx={cx}
@@ -890,6 +912,33 @@ export function WatchMovement({
         warmth={spectrumWarmth}
         headingUp={semicircle && showCompass}
       />
+
+      {semicircle && !plumbOpen && (
+        <g
+          className="cp-plumb-restore"
+          onClick={e => {
+            e.stopPropagation();
+            setPlumbOpen(true);
+          }}
+          onPointerDown={e => e.stopPropagation()}
+        >
+          <circle cx={cx} cy={cy} r={hubR + 10} fill="transparent" style={{ cursor: "pointer" }} />
+          <title>Show time column</title>
+        </g>
+      )}
+
+      {plumbOpen && (
+        <PlumbHighlight
+          cx={cx}
+          cy={cy}
+          rings={rings}
+          now={now}
+          cycles={cycles}
+          warmth={spectrumWarmth}
+          semicircle={semicircle}
+          onDismiss={() => setPlumbOpen(false)}
+        />
+      )}
       </g>
     </svg>
   );
