@@ -152,17 +152,9 @@ export function createSphericalSkyProjector(
   return { toXY, inView, basis: { view, right, up } };
 }
 
-function compassHeadingDeg(
-  event: DeviceOrientationEvent & { webkitCompassHeading?: number },
-): number | null {
-  if (typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)) {
-    return normalizeHeading(event.webkitCompassHeading);
-  }
-  if (typeof event.alpha !== "number" || !Number.isFinite(event.alpha)) return null;
-  const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
-  const alpha = event.absolute ? event.alpha : normalizeHeading(360 - event.alpha);
-  return normalizeHeading(alpha + orient);
-}
+import { resolveCompassHeadingDeg } from "./orientationCalibration";
+
+export { resetOrientationCalibration } from "./orientationCalibration";
 
 function portraitPitchDeg(
   beta: number,
@@ -185,7 +177,7 @@ export function deviceOrientationToViewEnu(
   const beta = event.beta;
   if (beta == null || !Number.isFinite(beta)) return null;
 
-  const heading = compassHeadingDeg(event);
+  const heading = resolveCompassHeadingDeg(event);
   if (heading == null) return null;
 
   const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;

@@ -6,6 +6,7 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
+import { resetOrientationCalibration } from "../lib/sphericalView";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu } from "../lib/sphericalView";
 import { DashboardContainer } from "../components/DashboardContainer";
@@ -462,6 +463,7 @@ export default function Home() {
 
   async function startOrientationWatch() {
     stopOrientationWatch();
+    resetOrientationCalibration();
     setHeadingLive(false);
     setPitchLive(false);
     const allowed = await requestOrientationPermission();
@@ -970,7 +972,7 @@ export default function Home() {
                 </div>
                 {(hasLiveHeading || hasLivePitch) ? (
                   <p className="cp-muted cp-sky-hint">
-                    Live AR — hold portrait, tilt the top of the phone toward the moon. Gold arrow guides you when off-target.
+                    Live AR — hold portrait upright briefly to calibrate, then tilt the top of the phone toward the sky. The Sun should lock to the crosshair within a few degrees.
                   </p>
                 ) : (
                   <p className="cp-muted cp-sky-hint">Enable Location + Heading for live sky alignment.</p>
@@ -1037,7 +1039,7 @@ export default function Home() {
             )}
             {(hasLiveHeading || hasLivePitch) && (
               <p className="cp-muted">
-                {hasLiveHeading && hasLivePitch && "↗ Live — tilt the top of your phone toward the moon; crosshair should match within a few degrees."}
+                {hasLiveHeading && hasLivePitch && "↗ Live — hold upright to calibrate, then tilt the top of your phone toward the target; crosshair should match within a few degrees."}
                 {hasLiveHeading && !hasLivePitch && "↗ Live heading — enable Location for auto pitch."}
                 {!hasLiveHeading && hasLivePitch && "↕ Live pitch — enable Heading for auto compass."}
               </p>
