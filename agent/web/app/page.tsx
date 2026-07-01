@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
@@ -8,7 +8,8 @@ import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, Confide
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu } from "../lib/sphericalView";
-import { WatchMovement, clockOuterRadius } from "../components/WatchMovement";
+import { CosmicClockWheel, COSMIC_CLOCK_OUTER_RADIUS } from "../components/CosmicClockWheel";
+import { calculateCosmicTime } from "../lib/timeEngine";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
@@ -195,7 +196,7 @@ export default function Home() {
   const wheelViewportRef = useRef<HTMLDivElement>(null);
   const viewportHeightRef = useRef(400);
   const viewportWidthRef = useRef(400);
-  const outerRingR = clockOuterRadius(cycles);
+  const outerRingR = COSMIC_CLOCK_OUTER_RADIUS;
   const heroZoomDefault = fitMobileClockZoom(outerRingR, viewportHeightRef.current);
   const [skyDistance, setSkyDistance] = useState(50);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
@@ -280,6 +281,8 @@ export default function Home() {
     lux: deviceAmbient.lux,
   });
 
+  const cosmicTimeSnapshot = useMemo(() => calculateCosmicTime(animNow), [animNow]);
+
   useEffect(() => { togglesRef.current = toggles; }, [toggles]);
 
   useEffect(() => {
@@ -301,7 +304,7 @@ export default function Home() {
       if (h < 80) return;
       viewportHeightRef.current = h;
       viewportWidthRef.current = w;
-      const fit = fitMobileClockZoom(clockOuterRadius(cycles), h, w);
+      const fit = fitMobileClockZoom(COSMIC_CLOCK_OUTER_RADIUS, h, w);
       if (!zoomBootstrapped.current) {
         setWheelZoom(fit);
         zoomBootstrapped.current = true;
@@ -940,23 +943,7 @@ export default function Home() {
                     className={`cp-watch-scaler cp-watch-scaler-spring cp-watch-scaler-portrait${focusRing ? " cp-watch-scaler-focused" : ""}${wheelDragging ? " cp-watch-scaler-dragging" : ""}`}
                     style={{ transform: `translate(${springPanX}px, ${springPanY}px) scale(${springZoom})` }}
                   >
-                    <WatchMovement
-                      glass
-                      semicircle
-                      portrait
-                      now={animNow}
-                      cycles={cycles}
-                      hoverId={hoverRing}
-                      onHover={setHoverRing}
-                      focusRingId={focusRing}
-                      onRingSelect={handleRingSelect}
-                      heading={activeHeading}
-                      emfUt={toggles.emf ? signals?.emfUt ?? null : null}
-                      showCompass={toggles.compass}
-                      skyDistance={skyDistance}
-                      onSkyDistanceChange={setSkyDistance}
-                      spectrumWarmth={spectrumWarmth}
-                    />
+                    <CosmicClockWheel snapshot={cosmicTimeSnapshot} />
                   </div>
                 </div>
               </div>
