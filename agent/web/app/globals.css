@@ -673,7 +673,42 @@ html,body {
 }
 
 .cp-watch-plumb rect {
-  filter: drop-shadow(0 0 6px rgba(201, 162, 39, 0.25));
+  filter: drop-shadow(0 0 8px rgba(0, 0, 0, 0.45));
+}
+
+.cp-plumb-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  text-align: center;
+  line-height: 1.05;
+  overflow: hidden;
+  padding: 0 2px;
+  font-family: var(--font-mono, ui-monospace, monospace);
+}
+
+.cp-plumb-title {
+  font-size: 6px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: rgba(201, 162, 39, 0.72);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.cp-plumb-value {
+  font-size: 7.5px;
+  font-weight: 700;
+  color: rgba(248, 250, 252, 0.94);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  font-variant-numeric: tabular-nums;
 }
 
 .cp-watch-scaler-focused {

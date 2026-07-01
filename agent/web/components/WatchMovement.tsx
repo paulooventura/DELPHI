@@ -239,41 +239,104 @@ const COMPASS_DIRS: Array<{ deg: number; label: string; major: boolean }> = [
   { deg: 337.5, label: "NNW", major: false },
 ];
 
-function plumbLabelForRing(spec: RingSpec, now: Date, cycles: CycleSnapshot | null): string {
-  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const DREAMSPELL_SIGN_NAMES = [
+  "Dragon", "Wind", "Night", "Seed", "Serpent", "Worldbridger", "Hand", "Star", "Moon", "Dog",
+  "Monkey", "Human", "Skywalker", "Wizard", "Eagle", "Warrior", "Earth", "Mirror", "Storm", "Sun",
+];
+const DREAMSPELL_COLORS = ["Red", "White", "Blue", "Yellow"];
+
+function dreamspellWaveLabel(wavespell: number): string {
+  const startKin = (wavespell - 1) * 13 + 1;
+  const signIdx = (startKin - 1) % 20;
+  const color = DREAMSPELL_COLORS[signIdx % 4];
+  const name = DREAMSPELL_SIGN_NAMES[signIdx] ?? "Sun";
+  return `${wavespell} - ${color} ${name}`;
+}
+
+type PlumbRow = { title: string; value: string };
+
+function plumbRowForRing(spec: RingSpec, now: Date, cycles: CycleSnapshot | null): PlumbRow {
+  const g = cycles?.gregorian;
   switch (spec.id) {
     case "ms":
-      return String(now.getMilliseconds()).padStart(3, "0");
+      return { title: "Milliseconds", value: String(now.getMilliseconds()).padStart(3, "0") };
     case "s":
-      return String(now.getSeconds()).padStart(2, "0");
+      return { title: "Seconds", value: String(now.getSeconds()).padStart(2, "0") };
     case "min":
-      return String(now.getMinutes()).padStart(2, "0");
+      return { title: "Minutes", value: String(now.getMinutes()).padStart(2, "0") };
     case "h":
-      return String(now.getHours()).padStart(2, "0");
+      return { title: "Local Hour", value: String(now.getHours()).padStart(2, "0") };
     case "weather": {
-      const hourly = cycles?.weather?.hourly;
-      const slot = hourly?.find(h => h.hour === now.getHours());
-      return slot?.emoji ?? cycles?.weather?.emoji ?? "·";
+      const slot = cycles?.weather?.hourly?.find(h => h.hour === now.getHours());
+      const emoji = slot?.emoji ?? cycles?.weather?.emoji ?? "·";
+      const condition = slot?.condition ?? cycles?.weather?.condition ?? "—";
+      return { title: "Hourly Weather", value: `${emoji} ${condition}` };
     }
     case "day":
-      return String(now.getDate());
+      return { title: "Gregorian Day", value: String(g?.day ?? now.getDate()) };
     case "weekday":
-      return weekdays[now.getDay()] ?? "·";
-    case "chinese-sign": {
-      if (!cycles) return "·";
-      const idx = CHINESE_ANIMALS.findIndex(a => a === cycles.chineseZodiac.animal);
-      const i = idx >= 0 ? idx : 0;
-      return `${CHINESE_SYMBOLS[i] ?? "·"}${cycles.chineseZodiac.animal.slice(0, 3)}`;
-    }
+      return { title: "Gregorian Weekday", value: g?.weekday ?? now.toLocaleDateString("en", { weekday: "long" }) };
+    case "chinese-sign":
+      return {
+        title: "Chinese Zodiac",
+        value: cycles ? `${cycles.chineseZodiac.symbol} ${cycles.chineseZodiac.animal}` : "—",
+      };
     case "tzolkin":
-      return cycles ? `🧭${cycles.tzolkin.sign.slice(0, 4)}` : "·";
+      return {
+        title: "Tzolkin Sign",
+        value: cycles ? `${cycles.tzolkin.sign} (Tone ${cycles.tzolkin.tone})` : "—",
+      };
     case "moon":
-      return cycles ? `${cycles.lunar.emoji}${cycles.lunar.phase.slice(0, 3)}` : "·";
+      return {
+        title: "Moon Phase",
+        value: cycles ? `${cycles.lunar.emoji} ${cycles.lunar.phase}` : "—",
+      };
+    case "greg-year":
+      return { title: "Gregorian Calendar Year", value: String(g?.year ?? now.getFullYear()) };
+    case "chinese-year":
+      return {
+        title: "Chinese Calendar Year",
+        value: cycles ? `${cycles.chineseZodiac.element} ${cycles.chineseZodiac.animal}` : "—",
+      };
+    case "season":
+      return {
+        title: "Weather Season",
+        value: cycles ? `${cycles.season.emoji} ${cycles.season.name}` : "—",
+      };
+    case "zodiac":
+      return {
+        title: "Western Zodiac",
+        value: cycles ? `${cycles.westernZodiac.symbol} ${cycles.westernZodiac.sign}` : "—",
+      };
+    case "greg-month":
+      return {
+        title: "Gregorian Calendar Month",
+        value: g?.month ?? now.toLocaleDateString("en", { month: "long" }),
+      };
+    case "wavespell":
+      return {
+        title: "Dreamspell Wave",
+        value: cycles ? dreamspellWaveLabel(cycles.mayan.wavespell) : "—",
+      };
+    case "castle":
+      return {
+        title: "Dreamspell Castle",
+        value: cycles?.mayan.castleName ?? "—",
+      };
+    case "kin":
+      return {
+        title: "Tzolkin Kin",
+        value: cycles ? `Kin ${cycles.tzolkin.kin} — ${cycles.tzolkin.sign}` : "—",
+      };
+    case "chinese-month": {
+      const monthNum = (Math.floor((cycles?.lunar.fraction ?? 0) * 12) % 12) + 1;
+      return { title: "Chinese Lunar Month", value: `Lunar Month ${monthNum}` };
+    }
     default: {
       const w = cycles?.wheelLayers.find(l => l.id === spec.id);
-      if (!w) return "·";
-      const short = w.label.replace(/^[^\p{L}\p{N}]+/u, "").slice(0, 5);
-      return `${w.icon}${short}`;
+      if (!w) return { title: spec.id, value: "—" };
+      const clean = w.label.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+      return { title: w.name, value: clean || w.label };
     }
   }
 }
@@ -295,9 +358,8 @@ function PlumbHighlight({
   warmth?: number;
   semicircle?: boolean;
 }) {
-  const plumbW = 18;
+  const plumbW = 118;
   const accent = spectrumAccent(warmth);
-  const labelInk = spectrumBlend(warmth, OBS.day.ink, OBS.night.gold);
   const height = semicircle ? cy + 6 : cy + (rings[rings.length - 1]?.radius ?? cy);
 
   return (
@@ -307,37 +369,29 @@ function PlumbHighlight({
         y={0}
         width={plumbW}
         height={height}
-        fill={accent}
-        fillOpacity={0.14}
+        fill={OBS.space.core}
         stroke={accent}
-        strokeWidth={0.85}
-        strokeOpacity={0.5}
-        rx={3}
+        strokeWidth={1}
+        rx={4}
       />
       {rings.map(spec => {
         const band = spec.dense ? Math.max(8, spec.radius * 0.11) : Math.max(3.5, spec.radius * 0.07);
-        const y = cy - spec.radius + band * 0.55;
-        const label = plumbLabelForRing(spec, now, cycles);
-        const fontSize = spec.dense
-          ? Math.max(4.5, Math.min(band * 0.62, 7))
-          : spec.id === "weather"
-            ? Math.max(5.5, band * 0.65)
-            : Math.max(4.8, band * 0.52);
+        const rowH = Math.max(band + 1, spec.dense ? 11 : 13);
+        const y = cy - spec.radius + band * 0.5;
+        const { title, value } = plumbRowForRing(spec, now, cycles);
         return (
-          <text
+          <foreignObject
             key={spec.id}
-            x={cx}
-            y={y}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={fontSize}
-            fill={labelInk}
-            fontFamily={OBS.typography.micro}
-            fontWeight={700}
-            style={{ fontVariantNumeric: "tabular-nums" }}
+            x={cx - plumbW / 2 + 2}
+            y={y - rowH / 2}
+            width={plumbW - 4}
+            height={rowH}
           >
-            {label}
-          </text>
+            <div className="cp-plumb-row">
+              <div className="cp-plumb-title">{title}</div>
+              <div className="cp-plumb-value">{value}</div>
+            </div>
+          </foreignObject>
         );
       })}
     </g>
