@@ -7,6 +7,8 @@ import { OBS } from "../lib/design/observatoryTokens";
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
   className?: string;
+  /** When false, hides the built-in bottom segment grid (use DashboardContainer readout). */
+  showReadout?: boolean;
 };
 
 /** D3-scale linear map (domain → range). */
@@ -206,7 +208,7 @@ function CosmicRing({
   );
 }
 
-export function CosmicClockWheel({ snapshot, className = "" }: CosmicClockWheelProps) {
+export function CosmicClockWheel({ snapshot, className = "", showReadout = true }: CosmicClockWheelProps) {
   const uid = useId().replace(/:/g, "");
   const rings = useMemo(
     () => [...snapshot.rings].sort((a, b) => a.ringId - b.ringId),
@@ -352,7 +354,7 @@ export function CosmicClockWheel({ snapshot, className = "" }: CosmicClockWheelP
         </g>
       </svg>
 
-      {/* Active segment readout */}
+      {showReadout && (
       <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 px-3 pb-3 pt-1 border-t border-white/5">
         {rings.map(ring => (
           <div
@@ -372,6 +374,7 @@ export function CosmicClockWheel({ snapshot, className = "" }: CosmicClockWheelP
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

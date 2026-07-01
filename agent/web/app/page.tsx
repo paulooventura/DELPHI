@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
@@ -8,8 +8,8 @@ import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, Confide
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu } from "../lib/sphericalView";
-import { CosmicClockWheel, COSMIC_CLOCK_OUTER_RADIUS } from "../components/CosmicClockWheel";
-import { calculateCosmicTime } from "../lib/timeEngine";
+import { DashboardContainer } from "../components/DashboardContainer";
+import { COSMIC_CLOCK_OUTER_RADIUS } from "../components/CosmicClockWheel";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
@@ -280,8 +280,6 @@ export default function Home() {
     pressureHpa: deviceAmbient.pressureHpa ?? cycles?.weather?.pressureHpa ?? null,
     lux: deviceAmbient.lux,
   });
-
-  const cosmicTimeSnapshot = useMemo(() => calculateCosmicTime(animNow), [animNow]);
 
   useEffect(() => { togglesRef.current = toggles; }, [toggles]);
 
@@ -912,41 +910,13 @@ export default function Home() {
               />
             )}
             {tab === "clock" && (
-              <div className="cp-wheel-controls-float">
-                <button type="button" className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z - 0.12))}>−</button>
-                <span className="cp-zoom-label cp-tabular">{Math.round(springZoom * 100)}%</span>
-                <button type="button" className="cp-btn cp-btn-sm" onClick={() => setWheelZoom(z => clampZoom(z + 0.12))}>+</button>
-                <button
-                  type="button"
-                  className="cp-btn cp-btn-sm"
-                  onClick={() => {
-                    clearRingFocus();
-                    setWheelPan({ x: 0, y: 0 });
-                    setWheelZoom(fitMobileClockZoom(outerRingR, viewportHeightRef.current, viewportWidthRef.current));
-                  }}
-                >
-                  Reset
-                </button>
-                <button type="button" className="cp-btn cp-btn-sm" onClick={() => loadCycles(signals?.lat ?? undefined, signals?.lon ?? undefined)}>↺</button>
+              <div className="cp-dashboard-viewport p-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+                <DashboardContainer />
               </div>
             )}
+            {tab === "sky" && (
             <div className="cp-split-hero">
-              <div className="cp-split-wheels">
-                <div
-                  className={`cp-semicircle-clip cp-semicircle-clip-portrait${canPanWheel ? " cp-semicircle-pannable" : ""}`}
-                  onPointerDown={onWheelPanPointerDown}
-                  onPointerMove={onWheelPanPointerMove}
-                  onPointerUp={onWheelPanPointerUp}
-                  onPointerCancel={onWheelPanPointerCancel}
-                >
-                  <div
-                    className={`cp-watch-scaler cp-watch-scaler-spring cp-watch-scaler-portrait${focusRing ? " cp-watch-scaler-focused" : ""}${wheelDragging ? " cp-watch-scaler-dragging" : ""}`}
-                    style={{ transform: `translate(${springPanX}px, ${springPanY}px) scale(${springZoom})` }}
-                  >
-                    <CosmicClockWheel snapshot={cosmicTimeSnapshot} />
-                  </div>
-                </div>
-              </div>
+              <div className="cp-split-wheels" />
 
               {toggles.skyMap ? (
                 <div className="cp-split-skymap cp-split-skymap-with-compass">
@@ -974,6 +944,7 @@ export default function Home() {
                 </div>
               )}
             </div>
+            )}
           </div>
           {tab === "sky" && (
             <details className="cp-sky-details">
