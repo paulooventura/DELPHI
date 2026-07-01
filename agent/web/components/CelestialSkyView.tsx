@@ -56,6 +56,8 @@ export type CelestialSkyViewProps = {
   distanceRank?: number;
   liveHeading?: boolean;
   livePitch?: boolean;
+  /** When false, skip target lock (phone too flat / invalid AR pose). */
+  arPoseReady?: boolean;
   hapticsEnabled?: boolean;
   warmth?: number;
   className?: string;
@@ -537,6 +539,7 @@ export function CelestialSkyView({
   distanceRank = 50,
   liveHeading = false,
   livePitch = false,
+  arPoseReady = true,
   hapticsEnabled = true,
   warmth = 0.55,
   className = "",
@@ -817,7 +820,9 @@ export function CelestialSkyView({
         }
       }
 
-      const locked = findTargetLock(viewHeading, viewPitch, trackables, lockRef.current);
+      const locked = arPoseReady
+        ? findTargetLock(viewHeading, viewPitch, trackables, lockRef.current)
+        : null;
       lockRef.current = locked?.id ?? null;
 
       if (hapticsEnabled && Math.abs(viewPitch) > 6) {
@@ -974,6 +979,7 @@ export function CelestialSkyView({
     hapticsEnabled,
     liveHeading,
     livePitch,
+    arPoseReady,
     observerAltM,
     warmth,
     liveAttitudeRef,

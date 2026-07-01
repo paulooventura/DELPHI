@@ -175,6 +175,8 @@ function pitchFromOrientation(event: DeviceOrientationEvent): number | null {
   return devicePitchDeg(event);
 }
 
+import { describeSkyPose, type SkyPoseHint } from "./orientationCalibration";
+
 export type DeviceOrientationReading = {
   /** Continuous look direction (east, north, up). */
   view: import("./sphericalView").Vec3 | null;
@@ -183,6 +185,9 @@ export type DeviceOrientationReading = {
   pitch: number | null;
   viewAz: number | null;
   viewAlt: number | null;
+  beta: number | null;
+  gamma: number | null;
+  pose: SkyPoseHint;
 };
 
 export { deviceViewAltAz } from "./deviceOrientation";
@@ -196,8 +201,9 @@ export function watchDeviceOrientation(
     const e = event as DeviceOrientationEventWithCompass;
     const view = deviceViewEnu(e);
     if (!view) return;
-    // Roll-free sky view — pan (heading) and tilt (pitch) only, no gamma twist.
-    filter.push({ view, roll: 0 });
+    const beta = typeof e.beta === "number" && Number.isFinite(e.beta) ? e.beta : null;
+    const gamma = typeof e.gamma === "number" && Number.isFinite(e.gamma) ? e.gamma : null;
+    filter.push({ view, roll: 0, beta, gamma });
   };
   const absoluteOk = "ondeviceorientationabsolute" in window;
   if (absoluteOk) {

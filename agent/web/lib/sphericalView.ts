@@ -152,39 +152,51 @@ export function createSphericalSkyProjector(
   return { toXY, inView, basis: { view, right, up } };
 }
 
-import { resolveCompassHeadingDeg } from "./orientationCalibration";
+import { resolveMatrixAlphaDeg } from "./orientationCalibration";
 
-export { resetOrientationCalibration } from "./orientationCalibration";
-
-function portraitPitchDeg(
-  beta: number,
-  gamma: number,
-  screenAngle: number,
-): number {
-  if (screenAngle === 90 || screenAngle === 270) {
-    return clamp(90 - Math.abs(gamma), -89.5, 89.5);
-  }
-  return clamp(90 - beta, -89.5, 89.5);
-}
+export {
+  resetOrientationCalibration,
+  describeSkyPose,
+  skyPoseHintMessage,
+  type SkyPoseHint,
+} from "./orientationCalibration";
 
 /**
- * Continuous look direction from compass + tilt.
- * Near the horizon we use raw compass (tilt-compensation diverges → no flip).
+ * W3C device-orientation rotation (Z–X–Y): unit vector out the back of the screen.
+ * ENU: x east, y north, z up. Used for sky-window AR when the screen faces you.
  */
+export function deviceBackVectorEnu(
+  alphaDeg: number,
+  betaDeg: number,
+  gammaDeg: number,
+): Vec3 {
+  const _x = betaDeg * DEG;
+  const _y = gammaDeg * DEG;
+  const _z = alphaDeg * DEG;
+  const cX = Math.cos(_x);
+  const cY = Math.cos(_y);
+  const cZ = Math.cos(_z);
+  const sX = Math.sin(_x);
+  const sY = Math.sin(_y);
+  const sZ = Math.sin(_z);
+  const e = -cZ * sY - sZ * sX * cY;
+  const n = -sZ * sY + cZ * sX * cY;
+  const u = cX * cY;
+  return normalize([e, n, u]);
+}
+
+/** Sky look direction from calibrated compass + full 3D tilt (handles gamma). */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
   const beta = event.beta;
   if (beta == null || !Number.isFinite(beta)) return null;
 
-  const heading = resolveCompassHeadingDeg(event);
-  if (heading == null) return null;
+  const matrixAlpha = resolveMatrixAlphaDeg(event);
+  if (matrixAlpha == null) return null;
 
   const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
-  const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
-  const pitch = portraitPitchDeg(beta, gamma, orient);
-
-  return altAzToEnu(heading, pitch);
+  return deviceBackVectorEnu(matrixAlpha, beta, gamma);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */

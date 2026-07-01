@@ -54,3 +54,37 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   const base = absolute ? alpha : normalizeHeading(360 - alpha);
   return normalizeHeading(base + orient);
 }
+
+/** Device alpha for W3C rotation matrix (opposite sense to compass azimuth). */
+export function resolveMatrixAlphaDeg(event: CompassEvent): number | null {
+  const heading = resolveCompassHeadingDeg(event);
+  if (heading == null) return null;
+  return normalizeHeading(360 - heading);
+}
+
+export type SkyPoseHint = "ready" | "too-flat" | "too-flat-down";
+
+/**
+ * Portrait sky AR needs the phone mostly vertical with the screen toward you.
+ * When nearly flat (beta ≈ 0–40), the back of the phone points at the sky — not the floor.
+ */
+export function describeSkyPose(beta: number | null, gamma: number | null): SkyPoseHint {
+  if (beta == null || !Number.isFinite(beta)) return "too-flat";
+  if (Math.abs(gamma ?? 0) > 42) return "too-flat";
+  // Nearly horizontal — back of phone points at the sky (lap / texting pose).
+  if (beta < 45) return "too-flat";
+  // Screen nearly face-down — AR window convention breaks down.
+  if (beta > 175) return "too-flat-down";
+  return "ready";
+}
+
+export function skyPoseHintMessage(hint: SkyPoseHint): string {
+  switch (hint) {
+    case "ready":
+      return "";
+    case "too-flat":
+      return "Hold the phone upright — screen toward you, not flat. Tilt the top edge toward the sky.";
+    case "too-flat-down":
+      return "Phone tilted too far down — raise it toward the horizon, then tilt the top edge toward your target.";
+  }
+}

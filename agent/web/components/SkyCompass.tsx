@@ -29,21 +29,34 @@ function cardinal(deg: number): string {
 
 export type SkyCompassProps = {
   headingDeg: number;
+  pitchDeg?: number | null;
   live?: boolean;
+  poseHint?: string;
   emfUt?: number | null;
   warmth?: number;
   className?: string;
 };
 
 /** Steampunk brass compass dock — rose spins with device heading, needle fixed north-up. */
+function formatElevation(pitch: number | null | undefined): string {
+  if (pitch == null || !Number.isFinite(pitch)) return "";
+  const p = Math.round(pitch);
+  if (p > 2) return `↑ ${p}°`;
+  if (p < -2) return `↓ ${Math.abs(p)}°`;
+  return "horizon";
+}
+
 export function SkyCompass({
   headingDeg,
+  pitchDeg = null,
   live = false,
+  poseHint = "",
   emfUt = null,
   warmth = 0.55,
   className = "",
 }: SkyCompassProps) {
   const h = ((headingDeg % 360) + 360) % 360;
+  const elev = formatElevation(pitchDeg);
   const accent = spectrumAccent(warmth);
   const cx = 60;
   const cy = 60;
@@ -184,11 +197,17 @@ export function SkyCompass({
       <div className="cp-sky-compass-readout">
         <span className="cp-sky-compass-deg">{Math.round(h)}°</span>
         <span className="cp-sky-compass-dir">{cardinal(h)}</span>
+        {elev && (
+          <span className="cp-sky-compass-elev">{elev}</span>
+        )}
         <span className={`cp-sky-compass-live${live ? " cp-sky-compass-live-on" : ""}`}>
           {live ? "● LIVE" : "○ MANUAL"}
         </span>
         {emfUt != null && (
           <span className="cp-sky-compass-emf">{emfUt.toFixed(1)} µT</span>
+        )}
+        {poseHint && (
+          <span className="cp-sky-compass-pose-warn">{poseHint}</span>
         )}
       </div>
     </div>

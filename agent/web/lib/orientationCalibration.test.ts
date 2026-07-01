@@ -4,6 +4,7 @@ import {
   isUprightPortrait,
   resetOrientationCalibration,
   resolveCompassHeadingDeg,
+  resolveMatrixAlphaDeg,
 } from "./orientationCalibration";
 
 describe("resolveCompassHeadingDeg", () => {
@@ -49,5 +50,17 @@ describe("resolveCompassHeadingDeg", () => {
   it("detects upright portrait", () => {
     expect(isUprightPortrait(90, 0)).toBe(true);
     expect(isUprightPortrait(28, 0)).toBe(false);
+  });
+
+  it("maps compass to matrix alpha", () => {
+    const upright = {
+      alpha: 45,
+      beta: 88,
+      gamma: 0,
+      webkitCompassHeading: 110,
+      absolute: false,
+    } as DeviceOrientationEvent & { webkitCompassHeading: number };
+    expect(resolveCompassHeadingDeg(upright)).toBe(110);
+    expect(resolveMatrixAlphaDeg(upright)).toBe(250);
   });
 });

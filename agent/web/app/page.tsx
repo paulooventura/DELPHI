@@ -6,7 +6,7 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
-import { resetOrientationCalibration } from "../lib/sphericalView";
+import { resetOrientationCalibration, describeSkyPose, skyPoseHintMessage, type SkyPoseHint } from "../lib/sphericalView";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu } from "../lib/sphericalView";
 import { DashboardContainer } from "../components/DashboardContainer";
@@ -168,6 +168,7 @@ export default function Home() {
   const [locDenied, setLocDenied] = useState(false);
   const [headingLive, setHeadingLive] = useState(false);
   const [pitchLive, setPitchLive] = useState(false);
+  const [skyPose, setSkyPose] = useState<SkyPoseHint>("too-flat");
   const [manualHeading, setManualHeading] = useState(() => {
     try {
       const raw = localStorage.getItem(MANUAL_HEADING_KEY);
@@ -466,6 +467,7 @@ export default function Home() {
     resetOrientationCalibration();
     setHeadingLive(false);
     setPitchLive(false);
+    setSkyPose("too-flat");
     const allowed = await requestOrientationPermission();
     if (!allowed) return;
     headingCleanupRef.current = watchDeviceOrientation((reading) => {
@@ -474,6 +476,7 @@ export default function Home() {
         liveAttitudeRef.current.view = reading.view;
         liveAttitudeRef.current.roll = 0;
       }
+      setSkyPose(reading.pose);
 
       const now = performance.now();
       if (now - attitudeHudMs.current < 250) return;
@@ -660,6 +663,8 @@ export default function Home() {
   const hasLivePitch = pitchLive && toggles.location;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
   const activePitch = signals?.pitch ?? 0;
+  const skyArPoseReady = skyPose === "ready";
+  const skyPoseHint = skyPoseHintMessage(skyPose);
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
@@ -933,6 +938,7 @@ export default function Home() {
                     distanceRank={skyDistance}
                     liveHeading={hasLiveHeading}
                     livePitch={hasLivePitch}
+                    arPoseReady={skyArPoseReady}
                     hapticsEnabled={toggles.location || toggles.heading}
                     warmth={spectrumWarmth}
                   />
@@ -972,7 +978,7 @@ export default function Home() {
                 </div>
                 {(hasLiveHeading || hasLivePitch) ? (
                   <p className="cp-muted cp-sky-hint">
-                    Live AR — hold portrait upright briefly to calibrate, then tilt the top of the phone toward the sky. The Sun should lock to the crosshair within a few degrees.
+                    Live AR — hold the phone upright with the screen facing you (not flat). Calibrate upright briefly, then tilt the top edge toward the Sun or stars — not the screen at the ground.
                   </p>
                 ) : (
                   <p className="cp-muted cp-sky-hint">Enable Location + Heading for live sky alignment.</p>
@@ -1039,7 +1045,8 @@ export default function Home() {
             )}
             {(hasLiveHeading || hasLivePitch) && (
               <p className="cp-muted">
-                {hasLiveHeading && hasLivePitch && "↗ Live — hold upright to calibrate, then tilt the top of your phone toward the target; crosshair should match within a few degrees."}
+                {hasLiveHeading && hasLivePitch && skyArPoseReady && "↗ Live — tilt the top edge toward your target; the crosshair should match within a few degrees."}
+                {hasLiveHeading && hasLivePitch && !skyArPoseReady && skyPoseHint}
                 {hasLiveHeading && !hasLivePitch && "↗ Live heading — enable Location for auto pitch."}
                 {!hasLiveHeading && hasLivePitch && "↕ Live pitch — enable Heading for auto compass."}
               </p>
@@ -1397,7 +1404,9 @@ export default function Home() {
       {tab === "sky" && toggles.compass && toggles.skyMap && (
         <SkyCompass
           headingDeg={activeHeading}
+          pitchDeg={hasLivePitch ? activePitch : null}
           live={hasLiveHeading}
+          poseHint={hasLivePitch && !skyArPoseReady ? skyPoseHint : ""}
           emfUt={signals?.emfUt ?? null}
           warmth={spectrumWarmth}
         />

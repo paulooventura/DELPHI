@@ -2009,6 +2009,22 @@ html,body {
   color: rgba(148, 163, 184, 0.65);
 }
 .cp-sky-compass-live-on { color: #34d399; }
+.cp-sky-compass-elev {
+  font-size: 0.52rem;
+  letter-spacing: 0.08em;
+  color: rgba(125, 211, 252, 0.85);
+  font-variant-numeric: tabular-nums;
+}
+.cp-sky-compass-pose-warn {
+  max-width: 11rem;
+  margin-top: 0.15rem;
+  font-size: 0.46rem;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: #fbbf24;
+  text-align: center;
+  white-space: normal;
+}
 .cp-sky-compass-emf {
   font-size: 0.48rem;
   color: rgba(148, 163, 184, 0.55);

@@ -103,6 +103,9 @@ export class GeoFixFilter {
 import type { Vec3 } from "./sphericalView";
 import { enuToAltAz, slerpUnit } from "./sphericalView";
 
+import type { SkyPoseHint } from "./orientationCalibration";
+import { describeSkyPose } from "./orientationCalibration";
+
 export type SmoothedOrientation = {
   view: Vec3;
   roll: number;
@@ -110,6 +113,9 @@ export type SmoothedOrientation = {
   pitch: number | null;
   viewAz: number | null;
   viewAlt: number | null;
+  beta: number | null;
+  gamma: number | null;
+  pose: SkyPoseHint;
 };
 
 /** RAF-throttled view-vector smoothing — continuous on the full sphere. */
@@ -123,7 +129,7 @@ export class OrientationFilter {
 
   constructor(private readonly onEmit: (reading: SmoothedOrientation) => void) {}
 
-  push(raw: { view: Vec3; roll: number }): void {
+  push(raw: { view: Vec3; roll: number; beta: number | null; gamma: number | null }): void {
     const { az, alt } = enuToAltAz(raw.view);
     this.pending = {
       view: raw.view,
@@ -132,6 +138,9 @@ export class OrientationFilter {
       pitch: alt,
       viewAz: az,
       viewAlt: alt,
+      beta: raw.beta,
+      gamma: raw.gamma,
+      pose: describeSkyPose(raw.beta, raw.gamma),
     };
     if (this.rafId) return;
     this.rafId = requestAnimationFrame(() => this.flush());
@@ -164,6 +173,7 @@ export class OrientationFilter {
     }
 
     const smoothed = enuToAltAz(this.view);
+    const pending = raw;
     this.onEmit({
       view: this.view,
       roll: 0,
@@ -171,6 +181,9 @@ export class OrientationFilter {
       pitch: smoothed.alt,
       viewAz: smoothed.az,
       viewAlt: smoothed.alt,
+      beta: pending.beta,
+      gamma: pending.gamma,
+      pose: pending.pose,
     });
   }
 
