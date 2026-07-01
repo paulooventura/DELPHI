@@ -8,23 +8,15 @@ import {
   formatStandardDigitalTime,
   type ClockRingData,
 } from "../lib/timeEngine";
+import { ringAccentColor } from "../lib/cosmicAssets";
 
 export type DashboardContainerProps = {
   className?: string;
 };
 
-const RING_ACCENT: Record<number, string> = {
-  1: "#fbbf24",
-  2: "#f97316",
-  3: "#d946ef",
-  4: "#fcd34d",
-  5: "#fb923c",
-  6: "#94a3b8",
-  7: "#22d3ee",
-  8: "#7c3aed",
-  9: "#e879f9",
-  10: "#dc2626",
-};
+const RING_ACCENT: Record<number, string> = Object.fromEntries(
+  Array.from({ length: 10 }, (_, i) => [i + 1, ringAccentColor(i + 1)]),
+) as Record<number, string>;
 
 function formatNumericValue(ring: ClockRingData): string {
   const { ringId, normalizedProgress, activeSegment } = ring;

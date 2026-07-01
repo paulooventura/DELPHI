@@ -4,6 +4,7 @@ import { useId, useMemo, type ReactElement, type CSSProperties } from "react";
 import type { ClockRingData, CosmicTimeSnapshot } from "../lib/timeEngine";
 import { COSMIC_RING_COUNT, formatStandardDigitalTime, ringCycleFraction } from "../lib/timeEngine";
 import { OBS } from "../lib/design/observatoryTokens";
+import { COSMIC_ASSETS, ringAccentColor } from "../lib/cosmicAssets";
 
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
@@ -29,8 +30,8 @@ const OUTER_R = 400;
 
 export const COSMIC_CLOCK_OUTER_RADIUS = OUTER_R;
 
-const SEASON_QUADRANT_COLORS = ["#22c55e", "#eab308", "#f97316", "#38bdf8"] as const;
-const SEASON_QUADRANT_LABELS = ["🌸", "☀️", "🍁", "❄️"] as const;
+const SEASON_QUADRANT_COLORS = COSMIC_ASSETS.solar.quadrantColors();
+const SEASON_QUADRANT_LABELS = COSMIC_ASSETS.solar.quadrantSymbols();
 
 const RING_STYLE: Record<
   number,
@@ -43,16 +44,16 @@ const RING_STYLE: Record<
     clockStyle?: boolean;
   }
 > = {
-  1: { divisions: 60, labelEvery: 15, color: "#fbbf24", shortName: "Sec", smooth: true, clockStyle: true },
-  2: { divisions: 60, labelEvery: 10, color: "#f97316", shortName: "Min", clockStyle: true },
-  3: { divisions: 24, labelEvery: 3, color: "#d946ef", shortName: "Hr", clockStyle: true },
-  4: { divisions: 100, labelEvery: 25, color: "#fcd34d", shortName: "Kè" },
-  5: { divisions: 12, labelEvery: 1, color: "#fb923c", shortName: "Shí" },
-  6: { divisions: 8, labelEvery: 1, color: "#94a3b8", shortName: "Moon" },
-  7: { divisions: 4, labelEvery: 1, color: "#22d3ee", shortName: "Season" },
-  8: { divisions: 20, labelEvery: 5, color: "#7c3aed", shortName: "Tzolk'in" },
-  9: { divisions: 12, labelEvery: 1, color: "#e879f9", shortName: "Zodiac" },
-  10: { divisions: 60, labelEvery: 15, color: "#dc2626", shortName: "60-yr" },
+  1: { divisions: 60, labelEvery: 15, color: ringAccentColor(1), shortName: "Sec", smooth: true, clockStyle: true },
+  2: { divisions: 60, labelEvery: 10, color: ringAccentColor(2), shortName: "Min", clockStyle: true },
+  3: { divisions: 24, labelEvery: 3, color: ringAccentColor(3), shortName: "Hr", clockStyle: true },
+  4: { divisions: 100, labelEvery: 25, color: ringAccentColor(4), shortName: "Kè" },
+  5: { divisions: 12, labelEvery: 1, color: ringAccentColor(5), shortName: "Shí" },
+  6: { divisions: 8, labelEvery: 1, color: ringAccentColor(6), shortName: "Moon" },
+  7: { divisions: 4, labelEvery: 1, color: ringAccentColor(7), shortName: "Season" },
+  8: { divisions: 20, labelEvery: 5, color: ringAccentColor(8), shortName: "Tzolk'in" },
+  9: { divisions: 12, labelEvery: 1, color: ringAccentColor(9), shortName: "Zodiac" },
+  10: { divisions: 60, labelEvery: 15, color: ringAccentColor(10), shortName: "60-yr" },
 };
 
 function ringRadii(index: number, ringCount: number): { inner: number; outer: number; mid: number } {
@@ -212,14 +213,13 @@ function CosmicRing({
     else if (ring.ringId === 2) txt = String(i).padStart(2, "0");
     else if (ring.ringId === 3) txt = String(i);
     else if (ring.ringId === 5) {
-      const animals = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
-      txt = animals[i] ?? txt;
+      txt = COSMIC_ASSETS.chinese.shi.animals[i]?.glyph ?? txt;
     } else if (ring.ringId === 6) {
-      txt = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"][i] ?? "·";
+      txt = COSMIC_ASSETS.lunar.symbols()[i] ?? "·";
     } else if (ring.ringId === 7) {
       txt = SEASON_QUADRANT_LABELS[i] ?? "·";
     } else if (ring.ringId === 9) {
-      txt = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"][i] ?? "·";
+      txt = COSMIC_ASSETS.zodiac.glyphs()[i] ?? "·";
     }
 
     labels.push(
