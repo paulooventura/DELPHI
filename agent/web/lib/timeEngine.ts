@@ -25,9 +25,11 @@ export type ClockRingData = {
 export type CosmicTimeSnapshot = {
   /** Input instant (unchanged reference). */
   date: Date;
-  /** Rings ordered innermost (ringId 1) → outermost (ringId 7). */
+  /** Rings ordered innermost (ringId 1) → outermost (10). */
   rings: ClockRingData[];
 };
+
+export const COSMIC_RING_COUNT = 10;
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -36,6 +38,7 @@ const TROPICAL_YEAR = 365.2422;
 const KE_PER_DAY = 100;
 const SHI_PER_DAY = 12;
 const SEXAGENARY_CYCLE = 60;
+const DEG_PER_DAY = 0.9856;
 
 /** J2000.0 new moon anchor (UTC). */
 const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14, 0);
@@ -94,6 +97,13 @@ const LUNAR_PHASES: Array<{ max: number; name: string; symbol: string }> = [
   { max: 1.0, name: "Waning Crescent", symbol: "🌘" },
 ];
 
+const SEASONS = [
+  { name: "Spring", emoji: "🌸", nextEvent: "Summer Solstice" },
+  { name: "Summer", emoji: "☀️", nextEvent: "Autumn Equinox" },
+  { name: "Autumn", emoji: "🍁", nextEvent: "Winter Solstice" },
+  { name: "Winter", emoji: "❄️", nextEvent: "Vernal Equinox" },
+] as const;
+
 // ─── Math helpers ─────────────────────────────────────────────────────────────
 
 function clamp01(n: number): number {
@@ -106,7 +116,15 @@ function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
-/** Local civil day fraction 0.0–1.0 (exclusive of 1.0 at midnight rollover). */
+function pad2(n: number): string {
+  return String(n).padStart(2, "0");
+}
+
+function pad3(n: number): string {
+  return String(n).padStart(3, "0");
+}
+
+/** Local civil day fraction 0.0–1.0. */
 function localDayFraction(date: Date): number {
   const ms =
     date.getHours() * 3_600_000
@@ -126,10 +144,6 @@ function dayOfYear(date: Date): number {
   return Math.floor((today.getTime() - start.getTime()) / 86_400_000);
 }
 
-/**
- * Approximate vernal equinox (March, tropical year anchor) in local civil ms.
- * Uses Meeus-style day-of-March for years 1900–2100.
- */
 function vernalEquinoxMs(year: number): number {
   const y = year;
   const marchDay =
@@ -141,7 +155,6 @@ function vernalEquinoxMs(year: number): number {
   return new Date(year, 2, day, Math.floor(hourFrac * 24), Math.floor((hourFrac * 24 % 1) * 60), 0).getTime();
 }
 
-/** Mean solar ecliptic longitude (degrees, tropical), low-precision analytic model. */
 function solarEclipticLongitudeDeg(date: Date): number {
   const jd = date.getTime() / 86_400_000 + 2_440_587.5;
   const d = jd - 2_451_545.0;
@@ -166,7 +179,88 @@ function sexagenaryYearIndex(year: number): number {
   return mod(year - 4, SEXAGENARY_CYCLE);
 }
 
+function continuousSeconds(date: Date): number {
+  return date.getSeconds() + date.getMilliseconds() / 1000;
+}
+
+function continuousMinutes(date: Date): number {
+  return date.getMinutes() + continuousSeconds(date) / 60;
+}
+
+function continuousHours24(date: Date): number {
+  return date.getHours() + continuousMinutes(date) / 60;
+}
+
+function astronomicalSeason(solarLambda: number) {
+  const seasonIndex = Math.floor(solarLambda / 90) % 4;
+  const season = SEASONS[seasonIndex]!;
+  const progressInSeason = (solarLambda % 90) / 90;
+  const nextBoundary = (seasonIndex + 1) * 90;
+  const degToNext = nextBoundary >= 360 ? 360 - solarLambda : nextBoundary - solarLambda;
+  const daysToNext = Math.max(0, degToNext / DEG_PER_DAY);
+  return { ...season, seasonIndex, progressInSeason, daysToNext };
+}
+
 // ─── Layer builders ───────────────────────────────────────────────────────────
+
+function buildSecondsRing(date: Date): ClockRingData {
+  const sec = date.getSeconds();
+  const ms = date.getMilliseconds();
+  const continuous = continuousSeconds(date);
+  const progress = clamp01(continuous / 60);
+
+  return {
+    ringId: 1,
+    name: "Seconds",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: "seconds",
+      name: `${sec}.${pad3(ms)} s`,
+      symbol: "⏱",
+      numericalValue: sec,
+      metadata: `Smooth 0–60 s sweep · ${continuous.toFixed(3)} s in current minute`,
+    },
+  };
+}
+
+function buildMinutesRing(date: Date): ClockRingData {
+  const min = date.getMinutes();
+  const continuous = continuousMinutes(date);
+  const progress = clamp01(continuous / 60);
+
+  return {
+    ringId: 2,
+    name: "Minutes",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: "minutes",
+      name: `${pad2(min)} min`,
+      symbol: "🕐",
+      numericalValue: min,
+      metadata: `60-minute cycle · ${continuous.toFixed(4)} m past the hour`,
+    },
+  };
+}
+
+function buildHoursRing(date: Date): ClockRingData {
+  const hr = date.getHours();
+  const continuous = continuousHours24(date);
+  const progress = clamp01(continuous / 24);
+  const h12 = hr % 12 || 12;
+
+  return {
+    ringId: 3,
+    name: "Hours",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: "hours",
+      name: `${pad2(hr)} h (${h12} · ${hr >= 12 ? "PM" : "AM"})`,
+      symbol: "🕛",
+      numericalValue: hr,
+      metadata: `24-hour cycle · ${continuous.toFixed(5)} h since midnight`,
+    },
+  };
+}
 
 function buildKeRing(date: Date): ClockRingData {
   const dayFrac = localDayFraction(date);
@@ -176,7 +270,7 @@ function buildKeRing(date: Date): ClockRingData {
   const keNumber = keIndex + 1;
 
   return {
-    ringId: 1,
+    ringId: 4,
     name: "Chinese Kè",
     normalizedProgress: progress,
     activeSegment: {
@@ -191,7 +285,6 @@ function buildKeRing(date: Date): ClockRingData {
 
 function buildShiRing(date: Date): ClockRingData {
   const dayFrac = localDayFraction(date);
-  // Shift so 23:00 local = start of 子 (Rat) period.
   const shifted = mod(dayFrac + 1 / 24, 1);
   const shiFloat = shifted * SHI_PER_DAY;
   const shiIndex = Math.floor(shiFloat) % SHI_PER_DAY;
@@ -200,7 +293,7 @@ function buildShiRing(date: Date): ClockRingData {
   const hour24 = date.getHours();
 
   return {
-    ringId: 2,
+    ringId: 5,
     name: "Chinese Shí",
     normalizedProgress: progress,
     activeSegment: {
@@ -208,7 +301,7 @@ function buildShiRing(date: Date): ClockRingData {
       name: `${animal.han} ${animal.name}`,
       symbol: animal.symbol,
       numericalValue: shiIndex,
-      metadata: `Dual-hour ${shiIndex + 1}/12 · local hour ${hour24} · 24h index ${hour24}`,
+      metadata: `Dual-hour ${shiIndex + 1}/12 · local hour ${hour24}`,
     },
   };
 }
@@ -219,7 +312,7 @@ function buildLunarRing(date: Date): ClockRingData {
   const ageDays = phase * SYNODIC_MONTH;
 
   return {
-    ringId: 3,
+    ringId: 6,
     name: "Lunar Phase",
     normalizedProgress: clamp01(phase),
     activeSegment: {
@@ -235,6 +328,8 @@ function buildLunarRing(date: Date): ClockRingData {
 function buildSolarYearRing(date: Date): ClockRingData {
   const year = date.getFullYear();
   const t = date.getTime();
+  const solarLambda = solarEclipticLongitudeDeg(date);
+  const season = astronomicalSeason(solarLambda);
 
   let startMs = vernalEquinoxMs(year);
   let endMs = vernalEquinoxMs(year + 1);
@@ -248,15 +343,20 @@ function buildSolarYearRing(date: Date): ClockRingData {
   const doy = dayOfYear(date);
 
   return {
-    ringId: 4,
-    name: "Solar Year",
+    ringId: 7,
+    name: "Solar Year & Seasons",
     normalizedProgress: progress,
     activeSegment: {
       id: `solar-year-${year}`,
-      name: `Tropical Year ${year}`,
-      symbol: "☀️",
+      name: `${season.emoji} ${season.name} · ${year}`,
+      symbol: season.emoji,
       numericalValue: doy,
-      metadata: `Day ${doy} · anchored at vernal equinox · ${TROPICAL_YEAR} d cycle`,
+      metadata: [
+        `Astronomical season: ${season.name} (${(season.progressInSeason * 100).toFixed(1)}% through)`,
+        `Year progress: ${(progress * 100).toFixed(1)}% · Day ${doy}`,
+        `${season.daysToNext.toFixed(1)} d to ${season.nextEvent}`,
+        `Tropical year · ${TROPICAL_YEAR} d · λ ${solarLambda.toFixed(1)}°`,
+      ].join(" · "),
     },
   };
 }
@@ -269,7 +369,7 @@ function buildTzolkinRing(date: Date): ClockRingData {
   const dayFrac = localDayFraction(date);
 
   return {
-    ringId: 5,
+    ringId: 8,
     name: "Tzolk'in Day Sign",
     normalizedProgress: clamp01(dayFrac),
     activeSegment: {
@@ -289,7 +389,7 @@ function buildZodiacRing(date: Date): ClockRingData {
   const sign = ZODIAC_SIGNS[signIndex]!;
 
   return {
-    ringId: 6,
+    ringId: 9,
     name: "Western Tropical Zodiac",
     normalizedProgress: clamp01(progressInSign),
     activeSegment: {
@@ -318,7 +418,7 @@ function buildSexagenaryRing(date: Date): ClockRingData {
   const cycleProgress = clamp01((cycleIndex + yearProgress) / SEXAGENARY_CYCLE);
 
   return {
-    ringId: 7,
+    ringId: 10,
     name: "Chinese Sexagenary Cycle",
     normalizedProgress: cycleProgress,
     activeSegment: {
@@ -333,9 +433,14 @@ function buildSexagenaryRing(date: Date): ClockRingData {
 
 // ─── Public API ───────────────────────────────────────────────────────────────
 
+/** Digital wall-clock string `HH:MM:SS.mmm` (local civil). */
+export function formatStandardDigitalTime(date: Date): string {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}.${pad3(date.getMilliseconds())}`;
+}
+
 /**
  * Calculate normalized cosmic clock rings for a single instant.
- * Rings are ordered innermost (1) → outermost (7).
+ * Rings are ordered innermost (1) → outermost (10).
  */
 export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
   const instant = new Date(date.getTime());
@@ -343,6 +448,9 @@ export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
   return {
     date: instant,
     rings: [
+      buildSecondsRing(instant),
+      buildMinutesRing(instant),
+      buildHoursRing(instant),
       buildKeRing(instant),
       buildShiRing(instant),
       buildLunarRing(instant),
@@ -357,4 +465,34 @@ export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
 /** Convenience: progress angle in degrees for a ring (0–360). */
 export function ringAngleDeg(ring: ClockRingData): number {
   return ring.normalizedProgress * 360;
+}
+
+/** Combined cycle fraction (0–1) for dial rotation under the NOW playhead. */
+export function ringCycleFraction(ring: ClockRingData): number {
+  const { ringId, normalizedProgress, activeSegment } = ring;
+  const v = activeSegment.numericalValue;
+  switch (ringId) {
+    case 1:
+      return normalizedProgress;
+    case 2:
+      return normalizedProgress;
+    case 3:
+      return normalizedProgress;
+    case 4:
+      return (v + normalizedProgress) / 100;
+    case 5:
+      return (v + normalizedProgress) / 12;
+    case 6:
+      return normalizedProgress;
+    case 7:
+      return normalizedProgress;
+    case 8:
+      return (v + normalizedProgress) / 20;
+    case 9:
+      return (v + normalizedProgress) / 12;
+    case 10:
+      return normalizedProgress;
+    default:
+      return normalizedProgress;
+  }
 }

@@ -3,7 +3,11 @@
 import { useMemo } from "react";
 import { CosmicClockWheel } from "./CosmicClockWheel";
 import { useRealtimeDate } from "../hooks/useRealtimeDate";
-import { calculateCosmicTime, type ClockRingData } from "../lib/timeEngine";
+import {
+  calculateCosmicTime,
+  formatStandardDigitalTime,
+  type ClockRingData,
+} from "../lib/timeEngine";
 
 export type DashboardContainerProps = {
   className?: string;
@@ -12,11 +16,14 @@ export type DashboardContainerProps = {
 const RING_ACCENT: Record<number, string> = {
   1: "#fbbf24",
   2: "#f97316",
-  3: "#94a3b8",
-  4: "#22d3ee",
-  5: "#7c3aed",
-  6: "#e879f9",
-  7: "#dc2626",
+  3: "#d946ef",
+  4: "#fcd34d",
+  5: "#fb923c",
+  6: "#94a3b8",
+  7: "#22d3ee",
+  8: "#7c3aed",
+  9: "#e879f9",
+  10: "#dc2626",
 };
 
 function formatNumericValue(ring: ClockRingData): string {
@@ -25,18 +32,24 @@ function formatNumericValue(ring: ClockRingData): string {
 
   switch (ringId) {
     case 1:
-      return `Kè ${activeSegment.numericalValue + 1} · Progress: ${pct}%`;
+      return `${activeSegment.name} · Sweep: ${pct}%`;
     case 2:
-      return `Shí ${activeSegment.numericalValue + 1}/12 · Progress: ${pct}%`;
+      return `Minute ${activeSegment.numericalValue} · Progress: ${pct}%`;
     case 3:
-      return `Phase: ${pct}% · Index ${activeSegment.numericalValue}`;
+      return `Hour ${activeSegment.numericalValue} · Progress: ${pct}%`;
     case 4:
-      return `Year progress: ${pct}% · Day ${activeSegment.numericalValue}`;
+      return `Kè ${activeSegment.numericalValue + 1} · Progress: ${pct}%`;
     case 5:
-      return `Sign ${activeSegment.numericalValue}/19 · Day: ${pct}%`;
+      return `Shí ${activeSegment.numericalValue + 1}/12 · Progress: ${pct}%`;
     case 6:
-      return `Sign ${activeSegment.numericalValue + 1}/12 · In-sign: ${pct}%`;
+      return `Phase: ${pct}% · Index ${activeSegment.numericalValue}`;
     case 7:
+      return `Year: ${pct}% · Day ${activeSegment.numericalValue}`;
+    case 8:
+      return `Sign ${activeSegment.numericalValue}/19 · Day: ${pct}%`;
+    case 9:
+      return `Sign ${activeSegment.numericalValue + 1}/12 · In-sign: ${pct}%`;
+    case 10:
       return `Cycle index ${activeSegment.numericalValue}/59 · Progress: ${pct}%`;
     default:
       return `Progress: ${pct}%`;
@@ -88,33 +101,19 @@ export function DashboardContainer({ className = "" }: DashboardContainerProps) 
     [snapshot.rings],
   );
 
-  const timeLabel = currentDate.toLocaleTimeString(undefined, {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
-  const msLabel = String(currentDate.getMilliseconds()).padStart(3, "0");
+  const digitalTime = formatStandardDigitalTime(currentDate);
 
   return (
-    <div
-      className={[
-        "w-full min-h-0",
-        className,
-      ].join(" ")}
-    >
+    <div className={["w-full min-h-0", className].join(" ")}>
       <header className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
         <div>
           <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gold-lt)]">
             Cosmic Clock Dashboard
           </h2>
           <p className="text-[0.65rem] text-[var(--ink-dim)] mt-0.5">
-            Visual engine &amp; playhead readout · synchronized live
+            Real-time clock · visual engine &amp; playhead readout
           </p>
         </div>
-        <p className="text-sm font-semibold tabular-nums text-[var(--ink)]">
-          {timeLabel}
-          <span className="text-[var(--ink-dim)] font-normal">.{msLabel}</span>
-        </p>
       </header>
 
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] gap-4 lg:gap-5 items-start">
@@ -126,9 +125,24 @@ export function DashboardContainer({ className = "" }: DashboardContainerProps) 
         </section>
 
         <aside
-          className="min-w-0 flex flex-col gap-2.5 max-h-[min(72vh,720px)] overflow-y-auto pr-0.5 scrollbar-thin"
+          className="min-w-0 flex flex-col gap-2.5 max-h-[min(72vh,720px)] overflow-y-auto pr-0.5"
           aria-label="Data readout"
         >
+          <div className="sticky top-0 z-10 rounded-xl border border-[var(--gold-dp)]/35 bg-[var(--void)]/95 backdrop-blur-sm px-4 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
+            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-[var(--gold-dp)]">
+              Standard Time
+            </p>
+            <p
+              className="mt-1 text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {digitalTime}
+            </p>
+            <p className="mt-1 text-[0.62rem] text-[var(--ink-dim)]">
+              Local civil · synchronized with inner rings
+            </p>
+          </div>
+
           {rings.map(ring => (
             <LayerReadoutCard key={ring.ringId} ring={ring} />
           ))}

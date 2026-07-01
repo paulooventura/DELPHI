@@ -1,17 +1,16 @@
 "use client";
 
-import { useId, useMemo, type ReactElement } from "react";
+import { useId, useMemo, type ReactElement, type CSSProperties } from "react";
 import type { ClockRingData, CosmicTimeSnapshot } from "../lib/timeEngine";
+import { COSMIC_RING_COUNT, formatStandardDigitalTime, ringCycleFraction } from "../lib/timeEngine";
 import { OBS } from "../lib/design/observatoryTokens";
 
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
   className?: string;
-  /** When false, hides the built-in bottom segment grid (use DashboardContainer readout). */
   showReadout?: boolean;
 };
 
-/** D3-scale linear map (domain → range). */
 function scaleLinear(
   domain: [number, number],
   range: [number, number],
@@ -24,54 +23,43 @@ function scaleLinear(
 
 const CX = 400;
 const CY = 420;
-const INNER_R = 100;
+const HUB_R = 28;
+const INNER_R = 55;
 const OUTER_R = 400;
-const RING_COUNT = 7;
 
 export const COSMIC_CLOCK_OUTER_RADIUS = OUTER_R;
 
+const SEASON_QUADRANT_COLORS = ["#22c55e", "#eab308", "#f97316", "#38bdf8"] as const;
+const SEASON_QUADRANT_LABELS = ["🌸", "☀️", "🍁", "❄️"] as const;
+
 const RING_STYLE: Record<
   number,
-  { divisions: number; labelEvery: number; color: string; shortName: string }
+  {
+    divisions: number;
+    labelEvery: number;
+    color: string;
+    shortName: string;
+    smooth?: boolean;
+    clockStyle?: boolean;
+  }
 > = {
-  1: { divisions: 100, labelEvery: 25, color: "#fbbf24", shortName: "Kè" },
-  2: { divisions: 12, labelEvery: 1, color: "#f97316", shortName: "Shí" },
-  3: { divisions: 8, labelEvery: 1, color: "#94a3b8", shortName: "Moon" },
-  4: { divisions: 24, labelEvery: 6, color: "#22d3ee", shortName: "Sun" },
-  5: { divisions: 20, labelEvery: 5, color: "#7c3aed", shortName: "Tzolk'in" },
-  6: { divisions: 12, labelEvery: 1, color: "#e879f9", shortName: "Zodiac" },
-  7: { divisions: 60, labelEvery: 15, color: "#dc2626", shortName: "60-yr" },
+  1: { divisions: 60, labelEvery: 15, color: "#fbbf24", shortName: "Sec", smooth: true, clockStyle: true },
+  2: { divisions: 60, labelEvery: 10, color: "#f97316", shortName: "Min", clockStyle: true },
+  3: { divisions: 24, labelEvery: 3, color: "#d946ef", shortName: "Hr", clockStyle: true },
+  4: { divisions: 100, labelEvery: 25, color: "#fcd34d", shortName: "Kè" },
+  5: { divisions: 12, labelEvery: 1, color: "#fb923c", shortName: "Shí" },
+  6: { divisions: 8, labelEvery: 1, color: "#94a3b8", shortName: "Moon" },
+  7: { divisions: 4, labelEvery: 1, color: "#22d3ee", shortName: "Season" },
+  8: { divisions: 20, labelEvery: 5, color: "#7c3aed", shortName: "Tzolk'in" },
+  9: { divisions: 12, labelEvery: 1, color: "#e879f9", shortName: "Zodiac" },
+  10: { divisions: 60, labelEvery: 15, color: "#dc2626", shortName: "60-yr" },
 };
 
-function ringRadii(index: number): { inner: number; outer: number; mid: number } {
-  const band = (OUTER_R - INNER_R) / RING_COUNT;
+function ringRadii(index: number, ringCount: number): { inner: number; outer: number; mid: number } {
+  const band = (OUTER_R - INNER_R) / ringCount;
   const inner = INNER_R + index * band;
   const outer = INNER_R + (index + 1) * band;
   return { inner, outer, mid: (inner + outer) / 2 };
-}
-
-/** Fractional position around full cycle (0–1) for dial rotation. */
-function cycleFraction(ring: ClockRingData): number {
-  const { ringId, normalizedProgress, activeSegment } = ring;
-  const v = activeSegment.numericalValue;
-  switch (ringId) {
-    case 1:
-      return (v + normalizedProgress) / 100;
-    case 2:
-      return (v + normalizedProgress) / 12;
-    case 3:
-      return normalizedProgress;
-    case 4:
-      return normalizedProgress;
-    case 5:
-      return (v + normalizedProgress) / 20;
-    case 6:
-      return (v + normalizedProgress) / 12;
-    case 7:
-      return normalizedProgress;
-    default:
-      return normalizedProgress;
-  }
 }
 
 function tickAngle(index: number, divisions: number): number {
@@ -88,20 +76,100 @@ function semicircleAnnulusPath(cx: number, cy: number, outer: number, inner: num
   ].join(" ");
 }
 
+function donutSectorPath(
+  cx: number,
+  cy: number,
+  inner: number,
+  outer: number,
+  startDeg: number,
+  endDeg: number,
+): string {
+  const toRad = (d: number) => ((d - 90) * Math.PI) / 180;
+  const a0 = toRad(startDeg);
+  const a1 = toRad(endDeg);
+  const x0o = cx + Math.cos(a0) * outer;
+  const y0o = cy + Math.sin(a0) * outer;
+  const x1o = cx + Math.cos(a1) * outer;
+  const y1o = cy + Math.sin(a1) * outer;
+  const x1i = cx + Math.cos(a1) * inner;
+  const y1i = cy + Math.sin(a1) * inner;
+  const x0i = cx + Math.cos(a0) * inner;
+  const y0i = cy + Math.sin(a0) * inner;
+  const large = endDeg - startDeg > 180 ? 1 : 0;
+  return [
+    `M ${x0o} ${y0o}`,
+    `A ${outer} ${outer} 0 ${large} 1 ${x1o} ${y1o}`,
+    `L ${x1i} ${y1i}`,
+    `A ${inner} ${inner} 0 ${large} 0 ${x0i} ${y0i}`,
+    "Z",
+  ].join(" ");
+}
+
+function SeasonQuadrants({ inner, outer }: { inner: number; outer: number }) {
+  return (
+    <>
+      {SEASON_QUADRANT_COLORS.map((color, q) => (
+        <path
+          key={q}
+          d={donutSectorPath(CX, CY, inner, outer, q * 90, (q + 1) * 90)}
+          fill={color}
+          fillOpacity={0.35}
+          stroke={color}
+          strokeWidth={0.5}
+          strokeOpacity={0.55}
+        />
+      ))}
+      {SEASON_QUADRANT_LABELS.map((label, q) => {
+        const ang = tickAngle(q * 90 + 45, 360);
+        const lx = CX + Math.cos(ang) * ((inner + outer) / 2);
+        const ly = CY + Math.sin(ang) * ((inner + outer) / 2);
+        return (
+          <text
+            key={`sq${q}`}
+            x={lx}
+            y={ly}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={Math.max(6, (outer - inner) * 0.35)}
+          >
+            {label}
+          </text>
+        );
+      })}
+    </>
+  );
+}
+
+function ringSpinStyle(ring: ClockRingData, dialSpin: number): CSSProperties {
+  const style = RING_STYLE[ring.ringId];
+  return {
+    transform: `rotate(${dialSpin}deg)`,
+    transformOrigin: `${CX}px ${CY}px`,
+    transformBox: "fill-box" as CSSProperties["transformBox"],
+    transition: style?.smooth
+      ? "transform 0.06s linear"
+      : style?.clockStyle
+        ? "transform 0.12s linear"
+        : "transform 0.2s ease-out",
+  };
+}
+
 function CosmicRing({
   ring,
   index,
   uid,
+  ringCount,
 }: {
   ring: ClockRingData;
   index: number;
   uid: string;
+  ringCount: number;
 }) {
   const style = RING_STYLE[ring.ringId] ?? RING_STYLE[1]!;
-  const { inner, outer, mid } = ringRadii(index);
+  const { inner, outer, mid } = ringRadii(index, ringCount);
   const band = outer - inner;
-  const dialSpin = -cycleFraction(ring) * 360;
-  const labelScale = scaleLinear([INNER_R, OUTER_R], [5, 8]);
+  const dialSpin = -ringCycleFraction(ring) * 360;
+  const labelScale = scaleLinear([INNER_R, OUTER_R], [4.5, 8]);
 
   const ticks: ReactElement[] = [];
   const labels: ReactElement[] = [];
@@ -111,17 +179,18 @@ function CosmicRing({
     const cos = Math.cos(ang);
     const sin = Math.sin(ang);
     const major = i % style.labelEvery === 0;
+    const isClock = style.clockStyle;
     ticks.push(
       <line
         key={`t${i}`}
         x1={CX + cos * inner}
         y1={CY + sin * inner}
-        x2={CX + cos * (outer - 1)}
-        y2={CY + sin * (outer - 1)}
+        x2={CX + cos * (outer - (isClock && major ? 2 : 1))}
+        y2={CY + sin * (outer - (isClock && major ? 2 : 1))}
         stroke={major ? style.color : OBS.vector.structural}
-        strokeWidth={major ? 1 : 0.6}
+        strokeWidth={major ? (isClock ? 1.2 : 1) : 0.55}
         strokeLinecap="round"
-        opacity={major ? 0.85 : 0.35}
+        opacity={major ? 0.9 : 0.35}
       />,
     );
   }
@@ -139,12 +208,17 @@ function CosmicRing({
     const fs = labelScale(mid);
 
     let txt = String(i);
-    if (ring.ringId === 2) {
+    if (ring.ringId === 1) txt = String(i);
+    else if (ring.ringId === 2) txt = String(i).padStart(2, "0");
+    else if (ring.ringId === 3) txt = String(i);
+    else if (ring.ringId === 5) {
       const animals = ["鼠", "牛", "虎", "兔", "龙", "蛇", "马", "羊", "猴", "鸡", "狗", "猪"];
       txt = animals[i] ?? txt;
-    } else if (ring.ringId === 3) {
-      txt = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"][i] ?? "·";
     } else if (ring.ringId === 6) {
+      txt = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"][i] ?? "·";
+    } else if (ring.ringId === 7) {
+      txt = SEASON_QUADRANT_LABELS[i] ?? "·";
+    } else if (ring.ringId === 9) {
       txt = ["♈", "♉", "♊", "♋", "♌", "♍", "♎", "♏", "♐", "♑", "♒", "♓"][i] ?? "·";
     }
 
@@ -158,7 +232,8 @@ function CosmicRing({
         fontSize={fs}
         fill={OBS.day.ink}
         fontFamily={OBS.typography.micro}
-        fontWeight={600}
+        fontWeight={style.clockStyle ? 700 : 600}
+        style={{ fontVariantNumeric: "tabular-nums" }}
         transform={`rotate(${rot}, ${lx}, ${ly})`}
       >
         {txt}
@@ -167,23 +242,25 @@ function CosmicRing({
   }
 
   return (
-    <g className="cosmic-ring" transform={`rotate(${dialSpin} ${CX} ${CY})`}>
+    <g className="cosmic-ring" style={ringSpinStyle(ring, dialSpin)}>
       <defs>
         <linearGradient id={`cosmic-ring-${uid}-${ring.ringId}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={style.color} stopOpacity={0.55} />
-          <stop offset="100%" stopColor={OBS.space.core} stopOpacity={0.9} />
+          <stop offset="0%" stopColor={style.color} stopOpacity={0.5} />
+          <stop offset="100%" stopColor={OBS.space.core} stopOpacity={0.92} />
         </linearGradient>
         <clipPath id={`cosmic-clip-${uid}-${ring.ringId}`}>
           <path d={semicircleAnnulusPath(CX, CY, outer, inner)} />
         </clipPath>
       </defs>
 
+      {ring.ringId === 7 && <SeasonQuadrants inner={inner} outer={outer} />}
+
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
-        fill={`url(#cosmic-ring-${uid}-${ring.ringId})`}
+        fill={ring.ringId === 7 ? "none" : `url(#cosmic-ring-${uid}-${ring.ringId})`}
         stroke={style.color}
-        strokeWidth={0.6}
-        strokeOpacity={0.45}
+        strokeWidth={0.65}
+        strokeOpacity={0.5}
       />
 
       <g clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>
@@ -191,31 +268,34 @@ function CosmicRing({
         {labels}
       </g>
 
-      <text
-        x={CX}
-        y={CY - mid}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fontSize={Math.max(5, Math.min(band * 0.38, 9))}
-        fill={style.color}
-        fontFamily={OBS.typography.micro}
-        fontWeight={700}
-        pointerEvents="none"
-      >
-        {ring.activeSegment.symbol}
-      </text>
+      {ring.ringId === 1 && (
+        <line
+          x1={CX}
+          y1={CY}
+          x2={CX}
+          y2={CY - mid}
+          stroke={style.color}
+          strokeWidth={1.5}
+          strokeLinecap="round"
+          opacity={0.95}
+        />
+      )}
     </g>
   );
 }
 
 export function CosmicClockWheel({ snapshot, className = "", showReadout = true }: CosmicClockWheelProps) {
   const uid = useId().replace(/:/g, "");
+  const ringCount = snapshot.rings.length || COSMIC_RING_COUNT;
   const rings = useMemo(
     () => [...snapshot.rings].sort((a, b) => a.ringId - b.ringId),
     [snapshot.rings],
   );
 
   const playheadTop = CY - OUTER_R - 16;
+  const digitalTime = formatStandardDigitalTime(snapshot.date);
+  const secondsRing = rings.find(r => r.ringId === 1);
+  const secondsSpin = secondsRing ? -ringCycleFraction(secondsRing) * 360 : 0;
 
   return (
     <div
@@ -253,11 +333,10 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = true 
 
         <g clipPath={`url(#cosmic-dome-${uid})`}>
           {rings.map((ring, index) => (
-            <CosmicRing key={ring.ringId} ring={ring} index={index} uid={uid} />
+            <CosmicRing key={ring.ringId} ring={ring} index={index} uid={uid} ringCount={ringCount} />
           ))}
         </g>
 
-        {/* NOW alignment playhead — fixed at 12 o'clock dome apex */}
         <g className="cosmic-playhead" filter={`url(#cosmic-glow-${uid})`}>
           <line
             x1={CX}
@@ -297,44 +376,32 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = true 
           </text>
         </g>
 
-        {/* Hub — active inner cycle */}
-        <circle cx={CX} cy={CY} r={INNER_R - 8} fill="rgba(5, 7, 11, 0.92)" stroke="var(--gold-dp)" strokeWidth={1} />
+        <circle cx={CX} cy={CY} r={HUB_R} fill="rgba(5, 7, 11, 0.95)" stroke="var(--gold-dp)" strokeWidth={1.2} />
+        <g
+          style={{
+            transform: `rotate(${secondsSpin}deg)`,
+            transformOrigin: `${CX}px ${CY}px`,
+            transition: "transform 0.06s linear",
+          }}
+        >
+          <circle cx={CX} cy={CY - HUB_R + 6} r={2.5} fill="#fbbf24" />
+        </g>
         <text
           x={CX}
-          y={CY - 10}
+          y={CY - 4}
           textAnchor="middle"
-          fontSize={8}
+          fontSize={7}
           fill="var(--gold-lt)"
           fontFamily={OBS.typography.micro}
           fontWeight={700}
+          style={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {rings[0]?.activeSegment.symbol}
-        </text>
-        <text
-          x={CX}
-          y={CY + 4}
-          textAnchor="middle"
-          fontSize={6.5}
-          fill={OBS.day.ink}
-          fontFamily={OBS.typography.micro}
-        >
-          {rings[0]?.activeSegment.name}
-        </text>
-        <text
-          x={CX}
-          y={CY + 16}
-          textAnchor="middle"
-          fontSize={5.5}
-          fill="rgba(226, 232, 240, 0.55)"
-          fontFamily={OBS.typography.micro}
-        >
-          {Math.round((rings[0]?.normalizedProgress ?? 0) * 100)}%
+          {digitalTime}
         </text>
 
-        {/* Ring legend — outer labels without overlapping dial */}
         <g className="cosmic-legend">
           {rings.map((ring, index) => {
-            const { outer } = ringRadii(index);
+            const { outer } = ringRadii(index, ringCount);
             const y = CY - outer + 10;
             return (
               <text
@@ -355,25 +422,25 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = true 
       </svg>
 
       {showReadout && (
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-1.5 px-3 pb-3 pt-1 border-t border-white/5">
-        {rings.map(ring => (
-          <div
-            key={ring.ringId}
-            className="min-w-0 rounded-lg bg-white/[0.03] px-2 py-1.5 border border-white/[0.06]"
-          >
-            <p className="text-[0.5rem] uppercase tracking-wider text-[var(--gold-dp)] truncate">
-              {ring.name}
-            </p>
-            <p className="text-[0.65rem] font-semibold text-[var(--ink)] truncate flex items-center gap-1">
-              <span>{ring.activeSegment.symbol}</span>
-              <span className="truncate">{ring.activeSegment.name}</span>
-            </p>
-            <p className="text-[0.5rem] text-[var(--ink-dim)] tabular-nums">
-              {(ring.normalizedProgress * 100).toFixed(1)}%
-            </p>
-          </div>
-        ))}
-      </div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-1.5 px-3 pb-3 pt-1 border-t border-white/5">
+          {rings.map(ring => (
+            <div
+              key={ring.ringId}
+              className="min-w-0 rounded-lg bg-white/[0.03] px-2 py-1.5 border border-white/[0.06]"
+            >
+              <p className="text-[0.5rem] uppercase tracking-wider text-[var(--gold-dp)] truncate">
+                {ring.name}
+              </p>
+              <p className="text-[0.65rem] font-semibold text-[var(--ink)] truncate flex items-center gap-1">
+                <span>{ring.activeSegment.symbol}</span>
+                <span className="truncate">{ring.activeSegment.name}</span>
+              </p>
+              <p className="text-[0.5rem] text-[var(--ink-dim)] tabular-nums">
+                {(ring.normalizedProgress * 100).toFixed(1)}%
+              </p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
