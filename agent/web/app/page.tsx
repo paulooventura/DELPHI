@@ -470,7 +470,7 @@ export default function Home() {
       const t = togglesRef.current;
       if (reading.view) {
         liveAttitudeRef.current.view = reading.view;
-        liveAttitudeRef.current.roll = reading.roll;
+        liveAttitudeRef.current.roll = 0;
       }
 
       const now = performance.now();
@@ -919,7 +919,7 @@ export default function Home() {
               <div className="cp-split-wheels" />
 
               {toggles.skyMap ? (
-                <div className="cp-split-skymap cp-split-skymap-with-compass">
+                <div className="cp-split-skymap">
                   <CelestialSkyView
                     lat={mapLat}
                     lon={mapLon}
@@ -934,9 +934,6 @@ export default function Home() {
                     hapticsEnabled={toggles.location || toggles.heading}
                     warmth={spectrumWarmth}
                   />
-                  {tab === "sky" && toggles.compass && (
-                    <SkyCompass headingDeg={activeHeading} live={hasLiveHeading} />
-                  )}
                 </div>
               ) : (
                 <div className="cp-split-skymap cp-split-skymap-off">
@@ -1394,6 +1391,15 @@ export default function Home() {
     </main>
 
       <BottomNav tab={tab} onChange={setTab} />
+
+      {tab === "sky" && toggles.compass && toggles.skyMap && (
+        <SkyCompass
+          headingDeg={activeHeading}
+          live={hasLiveHeading}
+          emfUt={signals?.emfUt ?? null}
+          warmth={spectrumWarmth}
+        />
+      )}
     </>
   );
 }

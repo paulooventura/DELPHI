@@ -4,10 +4,14 @@ import { eclipticToEquatorial, julianDay } from "./math";
 export type CelestialBodyId =
   | "sun"
   | "moon"
+  | "mercury"
   | "venus"
   | "mars"
   | "jupiter"
-  | "saturn";
+  | "saturn"
+  | "uranus"
+  | "neptune"
+  | "pluto";
 
 export type CelestialBody = {
   id: CelestialBodyId;

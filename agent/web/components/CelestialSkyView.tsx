@@ -8,6 +8,7 @@ import {
   sampleMeridianArcs,
   type CelestialBody,
 } from "../lib/cosmic/celestialBodies";
+import { computeMinorBodies, type MinorBody } from "../lib/cosmic/minorBodies";
 import { sampleHorizon } from "../lib/cosmic/celestialProjection";
 import { createPinchGestureController } from "../lib/cosmic/pinchGesture";
 import {
@@ -62,7 +63,7 @@ export type CelestialSkyViewProps = {
 
 type Trackable = {
   id: string;
-  kind: "planet" | "satellite" | "satellite-cluster" | "aircraft";
+  kind: "planet" | "satellite" | "satellite-cluster" | "aircraft" | "asteroid" | "comet";
   name: string;
   az: number;
   alt: number;
@@ -247,6 +248,68 @@ function drawBody(
     : `rgba(226, 232, 240, ${belowHorizon ? 0.38 : 0.72})`;
   ctx.textAlign = "center";
   ctx.fillText(label, x, y - baseR - (locked ? 14 : 7));
+  ctx.restore();
+}
+
+function drawMinorBody(
+  ctx: CanvasRenderingContext2D,
+  body: MinorBody,
+  x: number,
+  y: number,
+  belowHorizon: boolean,
+  locked: boolean,
+  scale: number,
+) {
+  const baseR = body.kind === "comet" ? 3.5 : 2.8;
+  const alpha = belowHorizon ? 0.28 : 1;
+  const showLabel = locked || scale >= 1.35;
+
+  ctx.save();
+  if (locked) {
+    ctx.strokeStyle = `rgba(16, 185, 129, ${alpha * 0.95})`;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.arc(x, y, baseR + 9, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  if (body.kind === "comet") {
+    ctx.globalAlpha = alpha * 0.85;
+    const tailLen = locked ? 14 : 10;
+    const grad = ctx.createLinearGradient(x, y, x - tailLen, y - tailLen * 0.4);
+    grad.addColorStop(0, body.color);
+    grad.addColorStop(1, "transparent");
+    ctx.strokeStyle = grad;
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x, y);
+    ctx.lineTo(x - tailLen, y - tailLen * 0.35);
+    ctx.stroke();
+  }
+
+  ctx.globalAlpha = alpha;
+  ctx.fillStyle = body.color;
+  ctx.shadowColor = body.kind === "comet" ? "rgba(136, 200, 232, 0.35)" : "rgba(200, 190, 170, 0.2)";
+  ctx.shadowBlur = locked ? 6 : 2;
+  ctx.beginPath();
+  ctx.arc(x, y, baseR, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
+
+  if (showLabel) {
+    ctx.font = locked ? `600 9px ${MICRO}` : `500 8px ${MICRO}`;
+    ctx.fillStyle = locked
+      ? "rgba(16, 185, 129, 0.95)"
+      : `rgba(226, 232, 240, ${belowHorizon ? 0.32 : 0.62})`;
+    ctx.textAlign = "center";
+    const suffix = body.kind === "comet" ? " ☄" : " ◇";
+    ctx.fillText(
+      locked ? `${body.name} · ${Math.round(body.az)}° · ${Math.round(body.alt)}°` : `${body.name}${suffix}`,
+      x,
+      y - baseR - (locked ? 12 : 6),
+    );
+  }
   ctx.restore();
 }
 
@@ -507,6 +570,11 @@ export function CelestialSkyView({
     [observationTime, lat, lon, observerAltM],
   );
 
+  const minorBodies = useMemo(
+    () => computeMinorBodies(observationTime, lat, lon, observerAltM),
+    [observationTime, lat, lon, observerAltM],
+  );
+
   const stars = useMemo(
     () => skyObjectsInView(lat, lon, 0, 0, observationTime, 360, 180, distanceRank).stars,
     [lat, lon, observationTime, distanceRank],
@@ -584,16 +652,16 @@ export function CelestialSkyView({
       const smooth = smoothAttitudeRef.current;
       if (liveAttitudeRef) {
         smooth.view = target.view;
-        smooth.roll = target.roll;
+        smooth.roll = 0;
       } else {
         const t = 0.2;
         smooth.view = slerpUnit(smooth.view, target.view, t);
-        smooth.roll += (target.roll - smooth.roll) * t;
+        smooth.roll = 0;
       }
       const viewAtt = enuToAltAz(smooth.view);
       const viewHeading = viewAtt.az;
       const viewPitch = viewAtt.alt;
-      const basis = buildViewBasis(smooth.view, smooth.roll);
+      const basis = buildViewBasis(smooth.view, 0);
 
       pinchRef.current.tick(dt);
       const scale = pinchRef.current.getScale();
@@ -679,13 +747,27 @@ export function CelestialSkyView({
         ctx.globalAlpha = 1;
       }
 
-      const trackables: Trackable[] = bodies.map(b => ({
-        id: b.id,
-        kind: "planet" as const,
-        name: b.name,
-        az: b.az,
-        alt: b.alt,
-      }));
+      const trackables: Trackable[] = [];
+
+      for (const body of bodies) {
+        trackables.push({
+          id: body.id,
+          kind: "planet" as const,
+          name: body.name,
+          az: body.az,
+          alt: body.alt,
+        });
+      }
+
+      for (const mb of minorBodies) {
+        trackables.push({
+          id: mb.id,
+          kind: mb.kind,
+          name: mb.name,
+          az: mb.az,
+          alt: mb.alt,
+        });
+      }
 
       for (const ac of aircraftRef.current) {
         trackables.push({
@@ -779,6 +861,14 @@ export function CelestialSkyView({
         const [x, y] = project.toXY(body.az, body.alt);
         if (!project.inView(x, y, w, h, 24)) continue;
         drawBody(ctx, body, x, y, body.alt < 0, locked?.id === body.id, texBlend);
+      }
+
+      if (detail !== "wide" || scale >= 1.1) {
+        for (const mb of minorBodies) {
+          const [x, y] = project.toXY(mb.az, mb.alt);
+          if (!project.inView(x, y, w, h, 16)) continue;
+          drawMinorBody(ctx, mb, x, y, mb.alt < 0, locked?.id === mb.id, scale);
+        }
       }
 
       const cx = w / 2;
@@ -879,6 +969,7 @@ export function CelestialSkyView({
     lon,
     observationTime,
     bodies,
+    minorBodies,
     stars,
     hapticsEnabled,
     liveHeading,

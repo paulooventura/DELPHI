@@ -196,8 +196,8 @@ export function watchDeviceOrientation(
     const e = event as DeviceOrientationEventWithCompass;
     const view = deviceViewEnu(e);
     if (!view) return;
-    const gamma = typeof e.gamma === "number" && Number.isFinite(e.gamma) ? e.gamma : 0;
-    filter.push({ view, roll: gamma });
+    // Roll-free sky view — pan (heading) and tilt (pitch) only, no gamma twist.
+    filter.push({ view, roll: 0 });
   };
   const absoluteOk = "ondeviceorientationabsolute" in window;
   if (absoluteOk) {

@@ -1827,7 +1827,7 @@ html,body {
   position: fixed;
   left: 0;
   right: 0;
-  bottom: calc(56px + var(--safe-b));
+  bottom: calc(54px + 118px + var(--safe-b));
   z-index: 35;
   flex-shrink: 0;
   margin: 0;
@@ -1946,79 +1946,79 @@ html,body {
   .cp-tabbar-glyph, .cp-tabbar-item, .cp-now-tile { transition: none; }
 }
 
-/* ─── Sky compass overlay (Sky tab) ─────────────────────────────────────── */
-.cp-split-skymap-with-compass {
-  position: relative;
-}
-.cp-sky-compass {
-  position: absolute;
-  right: 0.65rem;
-  bottom: 0.65rem;
-  width: 92px;
-  height: 92px;
-  z-index: 12;
-  pointer-events: none;
-}
-.cp-sky-compass-ring {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 1.5px solid rgba(201, 162, 39, 0.45);
-  background: radial-gradient(circle at 50% 50%, rgba(5, 7, 11, 0.88) 0%, rgba(5, 7, 11, 0.72) 100%);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.45), inset 0 0 12px rgba(201, 162, 39, 0.08);
-  transition: transform 0.12s ease-out;
-}
-.cp-sky-compass-cardinal {
-  position: absolute;
-  font-size: 0.55rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  color: rgba(226, 232, 240, 0.75);
-}
-.cp-sky-compass-cardinal-n { top: 4px; left: 50%; transform: translateX(-50%); color: var(--gold-lt); }
-.cp-sky-compass-cardinal-e { right: 5px; top: 50%; transform: translateY(-50%); }
-.cp-sky-compass-cardinal-s { bottom: 4px; left: 50%; transform: translateX(-50%); }
-.cp-sky-compass-cardinal-w { left: 5px; top: 50%; transform: translateY(-50%); }
-.cp-sky-compass-needle {
-  position: absolute;
+/* ─── Sky compass dock (Sky tab) — steampunk brass, above tab bar ─────────── */
+.cp-sky-compass-dock {
+  position: fixed;
   left: 50%;
-  top: 14%;
-  width: 2px;
-  height: 38%;
-  margin-left: -1px;
-  background: linear-gradient(180deg, #f87171 0%, var(--gold) 100%);
-  border-radius: 2px;
-  transform-origin: 50% 100%;
-  box-shadow: 0 0 8px rgba(248, 113, 113, 0.5);
+  bottom: calc(54px + var(--safe-b));
+  transform: translateX(-50%);
+  z-index: 10002;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: none;
+  padding: 0 0.35rem;
+}
+.cp-sky-compass-bracket {
+  position: absolute;
+  top: 18px;
+  width: 18px;
+  height: 52px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-bottom: none;
+  opacity: 0.7;
+}
+.cp-sky-compass-bracket-l {
+  left: -22px;
+  border-right: none;
+  border-radius: 6px 0 0 0;
+}
+.cp-sky-compass-bracket-r {
+  right: -22px;
+  border-left: none;
+  border-radius: 0 6px 0 0;
+}
+.cp-sky-compass-svg {
+  display: block;
+  filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 18px rgba(201, 162, 39, 0.12));
 }
 .cp-sky-compass-readout {
-  position: absolute;
-  left: 50%;
-  bottom: -1.35rem;
-  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 1px;
+  margin-top: -2px;
   white-space: nowrap;
 }
 .cp-sky-compass-deg {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: var(--gold-lt);
   font-variant-numeric: tabular-nums;
+  text-shadow: 0 1px 8px rgba(201, 162, 39, 0.35);
 }
 .cp-sky-compass-dir {
-  font-size: 0.52rem;
-  letter-spacing: 0.12em;
-  color: rgba(226, 232, 240, 0.65);
+  font-size: 0.54rem;
+  letter-spacing: 0.14em;
+  color: rgba(226, 232, 240, 0.7);
   text-transform: uppercase;
 }
 .cp-sky-compass-live {
   font-size: 0.48rem;
-  color: rgba(148, 163, 184, 0.7);
+  letter-spacing: 0.1em;
+  color: rgba(148, 163, 184, 0.65);
 }
 .cp-sky-compass-live-on { color: #34d399; }
+.cp-sky-compass-emf {
+  font-size: 0.48rem;
+  color: rgba(148, 163, 184, 0.55);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Legacy overlay class — unused */
+.cp-split-skymap-with-compass {
+  position: relative;
+}
 
 /* ─── Sky object catalog (Sky tab) ────────────────────────────────────────── */
 .cp-sky-catalog-blurb {

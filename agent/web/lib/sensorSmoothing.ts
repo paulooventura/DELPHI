@@ -156,17 +156,17 @@ export class OrientationFilter {
 
     if (!this.hasView) {
       this.view = raw.view;
-      this.roll = raw.roll;
+      this.roll = 0;
       this.hasView = true;
     } else {
       this.view = slerpUnit(this.view, raw.view, t);
-      this.roll += (raw.roll - this.roll) * (nearHorizon ? 0.12 : 0.2);
+      this.roll = 0;
     }
 
     const smoothed = enuToAltAz(this.view);
     this.onEmit({
       view: this.view,
-      roll: this.roll,
+      roll: 0,
       heading: smoothed.az,
       pitch: smoothed.alt,
       viewAz: smoothed.az,

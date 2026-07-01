@@ -62,7 +62,17 @@ export function bodyEquatorHorizon(
 }
 
 export const SKY_BODIES: Array<{
-  id: "sun" | "moon" | "venus" | "mars" | "jupiter" | "saturn";
+  id:
+    | "sun"
+    | "moon"
+    | "mercury"
+    | "venus"
+    | "mars"
+    | "jupiter"
+    | "saturn"
+    | "uranus"
+    | "neptune"
+    | "pluto";
   body: Body;
   name: string;
   magnitude: number;
@@ -70,8 +80,12 @@ export const SKY_BODIES: Array<{
 }> = [
   { id: "sun", body: Body.Sun, name: "Sun", magnitude: -26.7, color: "#fff8e8" },
   { id: "moon", body: Body.Moon, name: "Moon", magnitude: -12.6, color: "#e8eef8" },
+  { id: "mercury", body: Body.Mercury, name: "Mercury", magnitude: -0.4, color: "#c8c4b8" },
   { id: "venus", body: Body.Venus, name: "Venus", magnitude: -4.2, color: "#e8d5a0" },
   { id: "mars", body: Body.Mars, name: "Mars", magnitude: 0.5, color: "#e07050" },
   { id: "jupiter", body: Body.Jupiter, name: "Jupiter", magnitude: -2.0, color: "#d4c4a8" },
   { id: "saturn", body: Body.Saturn, name: "Saturn", magnitude: 0.8, color: "#c9b896" },
+  { id: "uranus", body: Body.Uranus, name: "Uranus", magnitude: 5.7, color: "#9ec8d8" },
+  { id: "neptune", body: Body.Neptune, name: "Neptune", magnitude: 7.8, color: "#6a9fd8" },
+  { id: "pluto", body: Body.Pluto, name: "Pluto", magnitude: 14.5, color: "#b0a898" },
 ];

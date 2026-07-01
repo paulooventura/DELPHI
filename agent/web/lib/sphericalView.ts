@@ -195,13 +195,13 @@ export function deviceOrientationToViewEnu(
   return altAzToEnu(heading, pitch);
 }
 
+/** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */
 export function deviceOrientationToBasis(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): ViewBasis | null {
   const view = deviceOrientationToViewEnu(event);
   if (!view) return null;
-  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
-  return buildViewBasis(view, gamma);
+  return buildViewBasis(view, 0);
 }
 
 /** Subtle ground tint when looking down — no snap at horizon. */
