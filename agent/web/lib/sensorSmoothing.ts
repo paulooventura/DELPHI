@@ -160,8 +160,8 @@ export class OrientationFilter {
     this.pending = null;
 
     const { alt } = enuToAltAz(raw.view);
-    const nearHorizon = Math.abs(alt) < 18;
-    const t = nearHorizon ? 0.28 : 0.35;
+    const nearHorizon = Math.abs(alt) < 22;
+    const t = nearHorizon ? 0.12 : 0.32;
 
     if (!this.hasView) {
       this.view = raw.view;

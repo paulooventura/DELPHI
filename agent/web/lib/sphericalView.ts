@@ -68,28 +68,59 @@ function rotateAroundAxis(v: Vec3, axis: Vec3, angleRad: number): Vec3 {
   ]);
 }
 
-/** Screen basis: roll applied once (gamma), stable at horizon/zenith/nadir. */
-export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
+/** Screen basis: roll-free; parallel-transport previous basis to avoid horizon twist. */
+export function buildViewBasis(
+  viewEnu: Vec3,
+  rollDeg = 0,
+  prev?: ViewBasis | null,
+): ViewBasis {
   const view = normalize(viewEnu);
-  const roll = rollDeg * DEG;
+
+  if (prev) {
+    const pv = prev.view;
+    const cosA = clamp(dot(pv, view), -1, 1);
+    if (cosA > 0.99995) {
+      return { view, right: prev.right, up: prev.up };
+    }
+    const axisVec = cross(pv, view);
+    const axisLen = Math.hypot(axisVec[0], axisVec[1], axisVec[2]);
+    if (axisLen > 1e-6) {
+      const axis = normalize(axisVec);
+      const angle = Math.acos(cosA);
+      let right = rotateAroundAxis(prev.right, axis, angle);
+      let up = normalize(cross(view, right));
+      if (Math.abs(rollDeg) > 1e-6) {
+        right = rotateAroundAxis(right, view, rollDeg * DEG);
+        up = normalize(cross(view, right));
+      }
+      return { view, right, up };
+    }
+  }
+
   const worldUp: Vec3 = [0, 0, 1];
+  const worldNorth: Vec3 = [0, 1, 0];
 
-  let right = cross(worldUp, view);
-  let rLen = Math.hypot(right[0], right[1], right[2]);
-  if (rLen < 1e-4) {
-    const { az } = enuToAltAz(view);
-    const azR = az * DEG;
-    right = [Math.cos(azR), -Math.sin(azR), 0];
-    rLen = 1;
-  } else {
-    right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
+  let east = cross(worldUp, view);
+  let eLen = Math.hypot(east[0], east[1], east[2]);
+  if (eLen < 1e-4) {
+    east = cross(worldNorth, view);
+    eLen = Math.hypot(east[0], east[1], east[2]);
+    if (eLen < 1e-4) east = [1, 0, 0];
+  }
+  east = [east[0] / eLen, east[1] / eLen, east[2] / eLen];
+
+  let up = normalize(cross(view, east));
+  if (view[2] >= 0 ? dot(up, worldUp) < 0 : dot(up, worldUp) > 0) {
+    up = [-up[0], -up[1], -up[2]];
+    east = [-east[0], -east[1], -east[2]];
   }
 
-  if (Math.abs(roll) > 1e-6) {
-    right = rotateAroundAxis(right, view, roll);
+  let right = east;
+  if (Math.abs(rollDeg) > 1e-6) {
+    right = rotateAroundAxis(right, view, rollDeg * DEG);
+    up = normalize(cross(view, right));
   }
 
-  const up = normalize(cross(view, right));
   return { view, right, up };
 }
 

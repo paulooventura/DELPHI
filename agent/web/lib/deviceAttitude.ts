@@ -55,13 +55,21 @@ export function mat3MulVec(m: Mat3, [x, y, z]: Vec3): Vec3 {
   ];
 }
 
+/** Damp device roll (γ) when the camera sight line is near the horizon — reduces azimuth twitch. */
+export function horizonGammaFactor(betaDeg: number): number {
+  const d = Math.abs(betaDeg - 90);
+  if (d >= 22) return 1;
+  return clamp(d / 22, 0, 1);
+}
+
 /** Unit vector in ENU along the camera axis after attitude rotation. */
 export function deviceCameraVectorEnu(
   alphaDeg: number,
   betaDeg: number,
   gammaDeg: number,
 ): Vec3 {
-  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, gammaDeg);
+  const g = gammaDeg * horizonGammaFactor(betaDeg);
+  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, g);
   return normalize(mat3MulVec(R, DEVICE_CAMERA_AXIS));
 }
 

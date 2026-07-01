@@ -4,6 +4,7 @@ import {
   cameraAzimuthAltitude,
   deviceCameraVectorEnu,
   deviceToEnuRotationMatrix,
+  horizonGammaFactor,
   mat3MulVec,
 } from "./deviceAttitude";
 import { enuToAltAz } from "./sphericalView";
@@ -51,5 +52,20 @@ describe("camera pointing — W3C R · (0,0,−1)", () => {
     expect(cameraAlt).toBeCloseTo(-90, 0);
     expect(Math.sign(screenAlt)).toBe(1);
     expect(Math.sign(cameraAlt)).toBe(-1);
+  });
+});
+
+describe("horizonGammaFactor", () => {
+  it("zeros roll at horizontal sight line (β ≈ 90°)", () => {
+    expect(horizonGammaFactor(90)).toBe(0);
+    expect(horizonGammaFactor(88)).toBeLessThan(0.15);
+    expect(horizonGammaFactor(68)).toBe(1);
+  });
+
+  it("zeros γ at horizontal sight line so azimuth does not spin", () => {
+    const ref = cameraAzimuthAltitude(0, 90, 0);
+    const withGamma = enuToAltAz(deviceCameraVectorEnu(0, 90, 8));
+    expect(withGamma.az).toBeCloseTo(ref.az, 0);
+    expect(withGamma.alt).toBeCloseTo(ref.alt, 0);
   });
 });
