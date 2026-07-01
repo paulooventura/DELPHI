@@ -978,7 +978,7 @@ export default function Home() {
                 </div>
                 {(hasLiveHeading || hasLivePitch) ? (
                   <p className="cp-muted cp-sky-hint">
-                    Live AR — hold the phone upright with the screen facing you (not flat). Calibrate upright briefly, then tilt the top edge toward the Sun or stars — not the screen at the ground.
+                    Live AR — hold portrait with the screen facing you. Calibrate upright briefly, then aim the back of the phone (camera side) at the Sun or stars — the crosshair follows the camera axis.
                   </p>
                 ) : (
                   <p className="cp-muted cp-sky-hint">Enable Location + Heading for live sky alignment.</p>
@@ -1045,7 +1045,7 @@ export default function Home() {
             )}
             {(hasLiveHeading || hasLivePitch) && (
               <p className="cp-muted">
-                {hasLiveHeading && hasLivePitch && skyArPoseReady && "↗ Live — tilt the top edge toward your target; the crosshair should match within a few degrees."}
+                {hasLiveHeading && hasLivePitch && skyArPoseReady && "↗ Live — aim the camera side at your target; the crosshair should match within a few degrees."}
                 {hasLiveHeading && hasLivePitch && !skyArPoseReady && skyPoseHint}
                 {hasLiveHeading && !hasLivePitch && "↗ Live heading — enable Location for auto pitch."}
                 {!hasLiveHeading && hasLivePitch && "↕ Live pitch — enable Heading for auto compass."}

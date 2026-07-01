@@ -152,51 +152,54 @@ export function createSphericalSkyProjector(
   return { toXY, inView, basis: { view, right, up } };
 }
 
-import { resolveMatrixAlphaDeg } from "./orientationCalibration";
+import { resolveDeviceAlphaDeg } from "./orientationCalibration";
+import {
+  deviceCameraVectorEnu,
+  deviceToEnuRotationMatrix,
+  mat3MulVec,
+  DEVICE_CAMERA_AXIS,
+} from "./deviceAttitude";
 
 export {
   resetOrientationCalibration,
   describeSkyPose,
   skyPoseHintMessage,
+  resolveDeviceAlphaDeg,
   type SkyPoseHint,
 } from "./orientationCalibration";
 
-/**
- * W3C device-orientation rotation (Z–X–Y): unit vector out the back of the screen.
- * ENU: x east, y north, z up. Used for sky-window AR when the screen faces you.
- */
+export {
+  deviceCameraVectorEnu,
+  deviceToEnuRotationMatrix,
+  mat3MulVec,
+  DEVICE_CAMERA_AXIS,
+} from "./deviceAttitude";
+
+/** @deprecated Use deviceCameraVectorEnu — was +Z (screen-back), not camera −Z. */
 export function deviceBackVectorEnu(
   alphaDeg: number,
   betaDeg: number,
   gammaDeg: number,
 ): Vec3 {
-  const _x = betaDeg * DEG;
-  const _y = gammaDeg * DEG;
-  const _z = alphaDeg * DEG;
-  const cX = Math.cos(_x);
-  const cY = Math.cos(_y);
-  const cZ = Math.cos(_z);
-  const sX = Math.sin(_x);
-  const sY = Math.sin(_y);
-  const sZ = Math.sin(_z);
-  const e = -cZ * sY - sZ * sX * cY;
-  const n = -sZ * sY + cZ * sX * cY;
-  const u = cX * cY;
-  return normalize([e, n, u]);
+  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, gammaDeg);
+  return normalize(mat3MulVec(R, [0, 0, 1]));
 }
 
-/** Sky look direction from calibrated compass + full 3D tilt (handles gamma). */
+/**
+ * Camera pointing ray in ENU from a DeviceOrientation event.
+ * Uses full R · (0,0,−1), not decoupled yaw/pitch or screen +Z.
+ */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
   const beta = event.beta;
   if (beta == null || !Number.isFinite(beta)) return null;
 
-  const matrixAlpha = resolveMatrixAlphaDeg(event);
-  if (matrixAlpha == null) return null;
+  const alpha = resolveDeviceAlphaDeg(event);
+  if (alpha == null) return null;
 
   const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
-  return deviceBackVectorEnu(matrixAlpha, beta, gamma);
+  return deviceCameraVectorEnu(alpha, beta, gamma);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */
