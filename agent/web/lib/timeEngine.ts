@@ -438,6 +438,24 @@ export function formatStandardDigitalTime(date: Date): string {
   return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}.${pad3(date.getMilliseconds())}`;
 }
 
+/** Hub readout matching reference UI: `NOW 12:00:23 AM`. */
+export function formatHubClockTime(date: Date): string {
+  const h24 = date.getHours();
+  const ampm = h24 >= 12 ? "PM" : "AM";
+  const h12 = h24 % 12 || 12;
+  return `NOW ${pad2(h12)}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())} ${ampm}`;
+}
+
+/** Rings rendered on the semi-circle wheel (intraday layers live in the hub). */
+export const WHEEL_VISIBLE_RING_IDS = [4, 5, 6, 7, 8, 9, 10] as const;
+
+/** Primary dashboard layer cards (cosmic layers 1–6 in the reference). */
+export const DASHBOARD_COSMIC_LAYER_IDS = [4, 5, 6, 7, 8, 9] as const;
+
+export function dashboardLayerNumber(ringId: number): number {
+  return Math.max(1, ringId - 3);
+}
+
 /**
  * Calculate normalized cosmic clock rings for a single instant.
  * Rings are ordered innermost (1) → outermost (10).

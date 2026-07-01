@@ -5,30 +5,40 @@ import { CosmicClockWheel } from "./CosmicClockWheel";
 import { useRealtimeDate } from "../hooks/useRealtimeDate";
 import {
   calculateCosmicTime,
+  dashboardLayerNumber,
+  DASHBOARD_COSMIC_LAYER_IDS,
+  formatHubClockTime,
   formatStandardDigitalTime,
   type ClockRingData,
 } from "../lib/timeEngine";
-import { ringAccentColor } from "../lib/cosmicAssets";
+import { COSMIC_ASSETS, ringAccentColor } from "../lib/cosmicAssets";
 
 export type DashboardContainerProps = {
   className?: string;
 };
 
-const RING_ACCENT: Record<number, string> = Object.fromEntries(
-  Array.from({ length: 10 }, (_, i) => [i + 1, ringAccentColor(i + 1)]),
-) as Record<number, string>;
+function parseToneFromMetadata(metadata: string): number | null {
+  const m = metadata.match(/Tone (\d+)/);
+  return m ? Number(m[1]) : null;
+}
+
+function ProgressBar({ value, accent }: { value: number; accent: string }) {
+  const pct = Math.max(0, Math.min(100, value * 100));
+  return (
+    <div className="mt-2 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
+      <div
+        className="h-full rounded-full transition-[width] duration-150 ease-linear"
+        style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${accent}99, ${accent})` }}
+      />
+    </div>
+  );
+}
 
 function formatNumericValue(ring: ClockRingData): string {
   const { ringId, normalizedProgress, activeSegment } = ring;
   const pct = (normalizedProgress * 100).toFixed(1);
 
   switch (ringId) {
-    case 1:
-      return `${activeSegment.name} · Sweep: ${pct}%`;
-    case 2:
-      return `Minute ${activeSegment.numericalValue} · Progress: ${pct}%`;
-    case 3:
-      return `Hour ${activeSegment.numericalValue} · Progress: ${pct}%`;
     case 4:
       return `Kè ${activeSegment.numericalValue + 1} · Progress: ${pct}%`;
     case 5:
@@ -36,7 +46,7 @@ function formatNumericValue(ring: ClockRingData): string {
     case 6:
       return `Phase: ${pct}% · Index ${activeSegment.numericalValue}`;
     case 7:
-      return `Year: ${pct}% · Day ${activeSegment.numericalValue}`;
+      return `Year progress: ${pct}% · Day ${activeSegment.numericalValue}`;
     case 8:
       return `Sign ${activeSegment.numericalValue}/19 · Day: ${pct}%`;
     case 9:
@@ -48,36 +58,61 @@ function formatNumericValue(ring: ClockRingData): string {
   }
 }
 
-function LayerReadoutCard({ ring }: { ring: ClockRingData }) {
-  const accent = RING_ACCENT[ring.ringId] ?? "var(--gold-dp)";
+function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: string }) {
+  const accent = ringAccentColor(ring.ringId);
+  const layerNum = dashboardLayerNumber(ring.ringId);
+  const isKe = ring.ringId === 4;
+  const isMayan = ring.ringId === 8;
+  const tone = isMayan ? parseToneFromMetadata(ring.activeSegment.metadata) : null;
 
   return (
     <article
-      className="group relative min-w-0 rounded-xl border border-white/[0.08] bg-[var(--panel2)] p-3.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] transition-colors hover:border-white/[0.14]"
+      className="group relative min-w-0 rounded-xl border border-white/[0.1] bg-[#0d1118]/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
       style={{ borderLeftWidth: 3, borderLeftColor: accent }}
     >
-      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.12em] text-[var(--gold-dp)]">
-        Layer {ring.ringId}: {ring.name}
+      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[var(--gold-dp)]">
+        Layer {layerNum}: {ring.name}
       </p>
 
-      <div className="mt-2 flex items-center gap-2.5 min-w-0">
-        <span
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-lg"
-          style={{ background: `${accent}22`, color: accent }}
-          aria-hidden
-        >
-          {ring.activeSegment.symbol}
-        </span>
-        <p className="text-sm font-semibold text-[var(--ink)] leading-snug truncate">
-          {ring.activeSegment.name}
+      {isKe ? (
+        <p className="mt-2 text-sm font-semibold text-[var(--ink)] tabular-nums">
+          <span className="text-[var(--gold-lt)]">刻</span> Kè {ring.activeSegment.numericalValue + 1}
+          <span className="text-[var(--ink-dim)] font-normal"> · {hubTime.replace(/^NOW\s/, "")}</span>
         </p>
-      </div>
+      ) : (
+        <div className="mt-2 flex items-start gap-3 min-w-0">
+          <span
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl border border-white/10"
+            style={{ background: `${accent}18`, color: accent }}
+            aria-hidden
+          >
+            {ring.activeSegment.symbol}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-[var(--ink)] leading-snug">
+              {ring.activeSegment.name}
+            </p>
+            <p className="mt-1 text-xs font-medium text-[var(--ink)] tabular-nums">
+              {formatNumericValue(ring)}
+            </p>
+          </div>
+          {isMayan && tone != null && (
+            <div className="shrink-0 rounded-lg border border-[var(--gold-dp)]/30 bg-[#0a0a0c] px-2 py-1.5 text-center">
+              <p className="text-[0.45rem] uppercase tracking-widest text-[var(--gold-dp)]">Tone</p>
+              <div
+                className="mx-auto mt-0.5 w-6 h-8 [&_svg]:w-full [&_svg]:h-full"
+                dangerouslySetInnerHTML={{ __html: COSMIC_ASSETS.mayan.renderNumeral(tone) }}
+              />
+            </div>
+          )}
+        </div>
+      )}
 
-      <p className="mt-2 text-xs font-medium text-[var(--ink)] tabular-nums">
-        {formatNumericValue(ring)}
-      </p>
+      {!isKe && <ProgressBar value={ring.normalizedProgress} accent={accent} />}
 
-      <p className="mt-2 text-[0.68rem] leading-relaxed text-[var(--ink-dim)]">
+      {isKe && <ProgressBar value={ring.normalizedProgress} accent={accent} />}
+
+      <p className="mt-2.5 text-[0.68rem] leading-relaxed text-[var(--ink-dim)]">
         {ring.activeSegment.metadata}
       </p>
     </article>
@@ -87,56 +122,37 @@ function LayerReadoutCard({ ring }: { ring: ClockRingData }) {
 export function DashboardContainer({ className = "" }: DashboardContainerProps) {
   const currentDate = useRealtimeDate();
   const snapshot = useMemo(() => calculateCosmicTime(currentDate), [currentDate]);
-
-  const rings = useMemo(
-    () => [...snapshot.rings].sort((a, b) => a.ringId - b.ringId),
-    [snapshot.rings],
-  );
-
+  const hubTime = formatHubClockTime(currentDate);
   const digitalTime = formatStandardDigitalTime(currentDate);
+
+  const cosmicLayers = useMemo(() => {
+    const byId = new Map(snapshot.rings.map(r => [r.ringId, r]));
+    return DASHBOARD_COSMIC_LAYER_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+  }, [snapshot.rings]);
 
   return (
     <div className={["w-full min-h-0", className].join(" ")}>
-      <header className="mb-3 flex flex-wrap items-end justify-between gap-2 px-1">
-        <div>
-          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--gold-lt)]">
-            Cosmic Clock Dashboard
-          </h2>
-          <p className="text-[0.65rem] text-[var(--ink-dim)] mt-0.5">
-            Real-time clock · visual engine &amp; playhead readout
-          </p>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.15fr)_minmax(280px,0.85fr)] gap-4 lg:gap-5 items-start">
-        <section
-          className="min-w-0 rounded-2xl border border-white/[0.08] bg-[var(--void-core)] p-2 sm:p-3"
-          aria-label="Visual engine"
-        >
+      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] gap-4 lg:gap-6 items-start">
+        <section className="min-w-0" aria-label="Visual engine">
           <CosmicClockWheel snapshot={snapshot} showReadout={false} />
         </section>
 
         <aside
-          className="min-w-0 flex flex-col gap-2.5 max-h-[min(72vh,720px)] overflow-y-auto pr-0.5"
+          className="min-w-0 flex flex-col gap-3 max-h-[min(78vh,760px)] overflow-y-auto pr-0.5"
           aria-label="Data readout"
         >
-          <div className="sticky top-0 z-10 rounded-xl border border-[var(--gold-dp)]/35 bg-[var(--void)]/95 backdrop-blur-sm px-4 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.35)]">
-            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.2em] text-[var(--gold-dp)]">
+          <div className="sticky top-0 z-10 rounded-xl border border-[var(--gold-dp)]/40 bg-[#0a0a0c]/98 backdrop-blur-md px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+            <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[var(--gold-dp)]">
               Standard Time
             </p>
-            <p
-              className="mt-1 text-2xl sm:text-3xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]"
-              style={{ fontVariantNumeric: "tabular-nums" }}
-            >
+            <p className="mt-1.5 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]">
               {digitalTime}
             </p>
-            <p className="mt-1 text-[0.62rem] text-[var(--ink-dim)]">
-              Local civil · synchronized with inner rings
-            </p>
+            <p className="mt-1 text-xs text-[var(--ink-dim)]">{hubTime}</p>
           </div>
 
-          {rings.map(ring => (
-            <LayerReadoutCard key={ring.ringId} ring={ring} />
+          {cosmicLayers.map(ring => (
+            <LayerReadoutCard key={ring.ringId} ring={ring} hubTime={hubTime} />
           ))}
         </aside>
       </div>

@@ -343,6 +343,57 @@ export function ringAccentColor(ringId: number): string {
   return ringVisual(ringId)?.accent ?? "#C9A227";
 }
 
+export type SegmentVisual = {
+  fill: string;
+  stroke: string;
+  label: string;
+};
+
+/** Per-cell fill, stroke, and label for discrete wheel segments. */
+export function ringSegmentVisual(ringId: number, index: number, divisions: number): SegmentVisual {
+  const i = ((index % divisions) + divisions) % divisions;
+  switch (ringId) {
+    case 4: {
+      const major = i % 10 === 0;
+      return {
+        fill: major ? "#3D3018" : "#1A1510",
+        stroke: major ? "#C9A227" : "#5C4A1F",
+        label: major ? String(i) : "",
+      };
+    }
+    case 5: {
+      const a = CHINESE_IMPERIAL.shi.animals[i]!;
+      return { fill: `${a.color}33`, stroke: a.color, label: a.glyph };
+    }
+    case 6: {
+      const p = LUNAR_PHASES[i % LUNAR_PHASES.length]!;
+      return { fill: "#1E293B", stroke: p.color.hex, label: p.symbol };
+    }
+    case 7: {
+      const s = SEASONS[i % 4]!;
+      return { fill: `${s.color.hex}44`, stroke: s.color.hex, label: s.icon };
+    }
+    case 8: {
+      const seal = TZOLKIN_SEALS[i % 20]!;
+      return { fill: `${seal.color}55`, stroke: seal.color, label: seal.name.slice(0, 3) };
+    }
+    case 9: {
+      const z = ZODIAC_SIGNS[i % 12]!;
+      return { fill: `${z.color.hex}40`, stroke: z.color.hex, label: z.glyph };
+    }
+    case 10: {
+      const alt = i % 2 === 0;
+      return {
+        fill: alt ? "#3D1515" : "#152A18",
+        stroke: alt ? "#C9A227" : "#4ADE80",
+        label: alt ? "🧧" : "🟢",
+      };
+    }
+    default:
+      return { fill: "#1A1510", stroke: "#4A3A22", label: "" };
+  }
+}
+
 // ─── Master export ────────────────────────────────────────────────────────────
 
 export const COSMIC_ASSETS = {
@@ -380,6 +431,7 @@ export const COSMIC_ASSETS = {
   rings: RING_VISUALS,
   ringVisual,
   ringAccentColor,
+  ringSegmentVisual,
 } as const;
 
 export default COSMIC_ASSETS;
