@@ -1,0 +1,360 @@
+/**
+ * Pure time-cycle engine — maps a single Date to normalized cosmic clock rings.
+ * Zero external dependencies; deterministic 0.0–1.0 progress ratios.
+ */
+
+// ─── Output types ───────────────────────────────────────────────────────────
+
+export type CycleSegment = {
+  id: string;
+  name: string;
+  symbol: string;
+  /** Index or scalar identifier within the ring's cycle (e.g. ke 0–99, sign 0–19). */
+  numericalValue: number;
+  metadata: string;
+};
+
+export type ClockRingData = {
+  ringId: number;
+  name: string;
+  /** Progress through the active segment, 0.0 (start) → 1.0 (end). */
+  normalizedProgress: number;
+  activeSegment: CycleSegment;
+};
+
+export type CosmicTimeSnapshot = {
+  /** Input instant (unchanged reference). */
+  date: Date;
+  /** Rings ordered innermost (ringId 1) → outermost (ringId 7). */
+  rings: ClockRingData[];
+};
+
+// ─── Constants ──────────────────────────────────────────────────────────────
+
+const SYNODIC_MONTH = 29.530588853;
+const TROPICAL_YEAR = 365.2422;
+const KE_PER_DAY = 100;
+const SHI_PER_DAY = 12;
+const SEXAGENARY_CYCLE = 60;
+
+/** J2000.0 new moon anchor (UTC). */
+const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14, 0);
+
+/** Tzolkin kin 1 anchor (local civil midnight). */
+const TZOLKIN_ANCHOR_MS = new Date(2024, 6, 26).getTime();
+
+const TZOLKIN_SIGNS = [
+  "Imix", "Ik", "Akbal", "Kan", "Chikchan", "Kimi", "Manik", "Lamat", "Muluk", "Ok",
+  "Chuen", "Eb", "Ben", "Ix", "Men", "Kib", "Kaban", "Etznab", "Kawak", "Ajaw",
+] as const;
+
+const SHI_ANIMALS = [
+  { id: "zi", name: "Rat", han: "子", symbol: "🐀" },
+  { id: "chou", name: "Ox", han: "丑", symbol: "🐂" },
+  { id: "yin", name: "Tiger", han: "寅", symbol: "🐅" },
+  { id: "mao", name: "Rabbit", han: "卯", symbol: "🐇" },
+  { id: "chen", name: "Dragon", han: "辰", symbol: "🐉" },
+  { id: "si", name: "Snake", han: "巳", symbol: "🐍" },
+  { id: "wu", name: "Horse", han: "午", symbol: "🐴" },
+  { id: "wei", name: "Goat", han: "未", symbol: "🐑" },
+  { id: "shen", name: "Monkey", han: "申", symbol: "🐒" },
+  { id: "you", name: "Rooster", han: "酉", symbol: "🐓" },
+  { id: "xu", name: "Dog", han: "戌", symbol: "🐕" },
+  { id: "hai", name: "Pig", han: "亥", symbol: "🐖" },
+] as const;
+
+const ZODIAC_SIGNS = [
+  { name: "Aries", symbol: "♈" },
+  { name: "Taurus", symbol: "♉" },
+  { name: "Gemini", symbol: "♊" },
+  { name: "Cancer", symbol: "♋" },
+  { name: "Leo", symbol: "♌" },
+  { name: "Virgo", symbol: "♍" },
+  { name: "Libra", symbol: "♎" },
+  { name: "Scorpio", symbol: "♏" },
+  { name: "Sagittarius", symbol: "♐" },
+  { name: "Capricorn", symbol: "♑" },
+  { name: "Aquarius", symbol: "♒" },
+  { name: "Pisces", symbol: "♓" },
+] as const;
+
+const HEAVENLY_STEMS = ["Jia", "Yi", "Bing", "Ding", "Wu", "Ji", "Geng", "Xin", "Ren", "Gui"] as const;
+const EARTHLY_BRANCHES = ["Zi", "Chou", "Yin", "Mao", "Chen", "Si", "Wu", "Wei", "Shen", "You", "Xu", "Hai"] as const;
+const STEM_HAN = ["甲", "乙", "丙", "丁", "戊", "己", "庚", "辛", "壬", "癸"] as const;
+const BRANCH_HAN = ["子", "丑", "寅", "卯", "辰", "巳", "午", "未", "申", "酉", "戌", "亥"] as const;
+
+const LUNAR_PHASES: Array<{ max: number; name: string; symbol: string }> = [
+  { max: 0.0625, name: "New Moon", symbol: "🌑" },
+  { max: 0.1875, name: "Waxing Crescent", symbol: "🌒" },
+  { max: 0.3125, name: "First Quarter", symbol: "🌓" },
+  { max: 0.4375, name: "Waxing Gibbous", symbol: "🌔" },
+  { max: 0.5625, name: "Full Moon", symbol: "🌕" },
+  { max: 0.6875, name: "Waning Gibbous", symbol: "🌖" },
+  { max: 0.8125, name: "Last Quarter", symbol: "🌗" },
+  { max: 1.0, name: "Waning Crescent", symbol: "🌘" },
+];
+
+// ─── Math helpers ─────────────────────────────────────────────────────────────
+
+function clamp01(n: number): number {
+  if (n <= 0) return 0;
+  if (n >= 1) return 1;
+  return n;
+}
+
+function mod(n: number, m: number): number {
+  return ((n % m) + m) % m;
+}
+
+/** Local civil day fraction 0.0–1.0 (exclusive of 1.0 at midnight rollover). */
+function localDayFraction(date: Date): number {
+  const ms =
+    date.getHours() * 3_600_000
+    + date.getMinutes() * 60_000
+    + date.getSeconds() * 1_000
+    + date.getMilliseconds();
+  return ms / 86_400_000;
+}
+
+function localMidnightMs(date: Date): number {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
+}
+
+function dayOfYear(date: Date): number {
+  const start = new Date(date.getFullYear(), 0, 0);
+  const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  return Math.floor((today.getTime() - start.getTime()) / 86_400_000);
+}
+
+/**
+ * Approximate vernal equinox (March, tropical year anchor) in local civil ms.
+ * Uses Meeus-style day-of-March for years 1900–2100.
+ */
+function vernalEquinoxMs(year: number): number {
+  const y = year;
+  const marchDay =
+    y <= 2100
+      ? 20.69115 + 0.2421904 * (y - 1900) - Math.floor((y - 1900) / 4)
+      : 20.69115;
+  const day = Math.floor(marchDay);
+  const hourFrac = marchDay - day;
+  return new Date(year, 2, day, Math.floor(hourFrac * 24), Math.floor((hourFrac * 24 % 1) * 60), 0).getTime();
+}
+
+/** Mean solar ecliptic longitude (degrees, tropical), low-precision analytic model. */
+function solarEclipticLongitudeDeg(date: Date): number {
+  const jd = date.getTime() / 86_400_000 + 2_440_587.5;
+  const d = jd - 2_451_545.0;
+  const L = mod(280.460 + 0.9856474 * d, 360);
+  const g = mod(357.528 + 0.9856003 * d, 360) * (Math.PI / 180);
+  const lambda = L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g);
+  return mod(lambda, 360);
+}
+
+function lunarPhaseFraction(date: Date): number {
+  const elapsedDays = (date.getTime() - KNOWN_NEW_MOON_MS) / 86_400_000;
+  return mod(elapsedDays, SYNODIC_MONTH) / SYNODIC_MONTH;
+}
+
+function tzolkinKin(date: Date): number {
+  const civilMidnight = localMidnightMs(date);
+  const diffDays = Math.floor((civilMidnight - TZOLKIN_ANCHOR_MS) / 86_400_000);
+  return mod(diffDays, 260) + 1;
+}
+
+function sexagenaryYearIndex(year: number): number {
+  return mod(year - 4, SEXAGENARY_CYCLE);
+}
+
+// ─── Layer builders ───────────────────────────────────────────────────────────
+
+function buildKeRing(date: Date): ClockRingData {
+  const dayFrac = localDayFraction(date);
+  const keFloat = dayFrac * KE_PER_DAY;
+  const keIndex = Math.floor(keFloat) % KE_PER_DAY;
+  const progress = clamp01(keFloat - keIndex);
+  const keNumber = keIndex + 1;
+
+  return {
+    ringId: 1,
+    name: "Chinese Kè",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: `ke-${keIndex}`,
+      name: `Kè ${keNumber}`,
+      symbol: "刻",
+      numericalValue: keIndex,
+      metadata: `${keNumber} of ${KE_PER_DAY} daily divisions (~14.4 min each)`,
+    },
+  };
+}
+
+function buildShiRing(date: Date): ClockRingData {
+  const dayFrac = localDayFraction(date);
+  // Shift so 23:00 local = start of 子 (Rat) period.
+  const shifted = mod(dayFrac + 1 / 24, 1);
+  const shiFloat = shifted * SHI_PER_DAY;
+  const shiIndex = Math.floor(shiFloat) % SHI_PER_DAY;
+  const progress = clamp01(shiFloat - shiIndex);
+  const animal = SHI_ANIMALS[shiIndex]!;
+  const hour24 = date.getHours();
+
+  return {
+    ringId: 2,
+    name: "Chinese Shí",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: `shi-${animal.id}`,
+      name: `${animal.han} ${animal.name}`,
+      symbol: animal.symbol,
+      numericalValue: shiIndex,
+      metadata: `Dual-hour ${shiIndex + 1}/12 · local hour ${hour24} · 24h index ${hour24}`,
+    },
+  };
+}
+
+function buildLunarRing(date: Date): ClockRingData {
+  const phase = lunarPhaseFraction(date);
+  const phaseInfo = LUNAR_PHASES.find(p => phase <= p.max) ?? LUNAR_PHASES[LUNAR_PHASES.length - 1]!;
+  const ageDays = phase * SYNODIC_MONTH;
+
+  return {
+    ringId: 3,
+    name: "Lunar Phase",
+    normalizedProgress: clamp01(phase),
+    activeSegment: {
+      id: `lunar-${phaseInfo.name.toLowerCase().replace(/\s+/g, "-")}`,
+      name: phaseInfo.name,
+      symbol: phaseInfo.symbol,
+      numericalValue: Math.round(phase * 1000) / 1000,
+      metadata: `Age ${ageDays.toFixed(2)} d · synodic ${SYNODIC_MONTH.toFixed(5)} d`,
+    },
+  };
+}
+
+function buildSolarYearRing(date: Date): ClockRingData {
+  const year = date.getFullYear();
+  const t = date.getTime();
+
+  let startMs = vernalEquinoxMs(year);
+  let endMs = vernalEquinoxMs(year + 1);
+  if (t < startMs) {
+    startMs = vernalEquinoxMs(year - 1);
+    endMs = vernalEquinoxMs(year);
+  }
+
+  const spanMs = endMs - startMs;
+  const progress = clamp01(spanMs > 0 ? (t - startMs) / spanMs : 0);
+  const doy = dayOfYear(date);
+
+  return {
+    ringId: 4,
+    name: "Solar Year",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: `solar-year-${year}`,
+      name: `Tropical Year ${year}`,
+      symbol: "☀️",
+      numericalValue: doy,
+      metadata: `Day ${doy} · anchored at vernal equinox · ${TROPICAL_YEAR} d cycle`,
+    },
+  };
+}
+
+function buildTzolkinRing(date: Date): ClockRingData {
+  const kin = tzolkinKin(date);
+  const signIndex = mod(kin - 1, 20);
+  const signName = TZOLKIN_SIGNS[signIndex]!;
+  const tone = mod(kin - 1, 13) + 1;
+  const dayFrac = localDayFraction(date);
+
+  return {
+    ringId: 5,
+    name: "Tzolk'in Day Sign",
+    normalizedProgress: clamp01(dayFrac),
+    activeSegment: {
+      id: `tzolkin-${signName.toLowerCase()}`,
+      name: signName,
+      symbol: "🧭",
+      numericalValue: signIndex,
+      metadata: `Kin ${kin} · Tone ${tone} · sign index ${signIndex}/19`,
+    },
+  };
+}
+
+function buildZodiacRing(date: Date): ClockRingData {
+  const lambda = solarEclipticLongitudeDeg(date);
+  const signIndex = Math.floor(lambda / 30) % 12;
+  const progressInSign = mod(lambda, 30) / 30;
+  const sign = ZODIAC_SIGNS[signIndex]!;
+
+  return {
+    ringId: 6,
+    name: "Western Tropical Zodiac",
+    normalizedProgress: clamp01(progressInSign),
+    activeSegment: {
+      id: `zodiac-${sign.name.toLowerCase()}`,
+      name: sign.name,
+      symbol: sign.symbol,
+      numericalValue: signIndex,
+      metadata: `Solar longitude ${lambda.toFixed(2)}° · sign ${signIndex + 1}/12`,
+    },
+  };
+}
+
+function buildSexagenaryRing(date: Date): ClockRingData {
+  const year = date.getFullYear();
+  const cycleIndex = sexagenaryYearIndex(year);
+  const stemIdx = cycleIndex % 10;
+  const branchIdx = cycleIndex % 12;
+  const stem = HEAVENLY_STEMS[stemIdx]!;
+  const branch = EARTHLY_BRANCHES[branchIdx]!;
+  const stemHan = STEM_HAN[stemIdx]!;
+  const branchHan = BRANCH_HAN[branchIdx]!;
+
+  const yearStart = new Date(year, 0, 1).getTime();
+  const yearEnd = new Date(year + 1, 0, 1).getTime();
+  const yearProgress = (date.getTime() - yearStart) / (yearEnd - yearStart);
+  const cycleProgress = clamp01((cycleIndex + yearProgress) / SEXAGENARY_CYCLE);
+
+  return {
+    ringId: 7,
+    name: "Chinese Sexagenary Cycle",
+    normalizedProgress: cycleProgress,
+    activeSegment: {
+      id: `sexagenary-${stemHan}${branchHan}`,
+      name: `${stemHan}${branchHan} (${stem}-${branch})`,
+      symbol: "🧧",
+      numericalValue: cycleIndex,
+      metadata: `Year ${year} · stem ${stemIdx + 1}/10 · branch ${branchIdx + 1}/12 · 60-year index ${cycleIndex}`,
+    },
+  };
+}
+
+// ─── Public API ───────────────────────────────────────────────────────────────
+
+/**
+ * Calculate normalized cosmic clock rings for a single instant.
+ * Rings are ordered innermost (1) → outermost (7).
+ */
+export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
+  const instant = new Date(date.getTime());
+
+  return {
+    date: instant,
+    rings: [
+      buildKeRing(instant),
+      buildShiRing(instant),
+      buildLunarRing(instant),
+      buildSolarYearRing(instant),
+      buildTzolkinRing(instant),
+      buildZodiacRing(instant),
+      buildSexagenaryRing(instant),
+    ],
+  };
+}
+
+/** Convenience: progress angle in degrees for a ring (0–360). */
+export function ringAngleDeg(ring: ClockRingData): number {
+  return ring.normalizedProgress * 360;
+}
