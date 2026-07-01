@@ -5,8 +5,9 @@ import {
   resetOrientationCalibration,
   resolveCompassHeadingDeg,
   resolveDeviceAlphaDeg,
+  resolveDevicePitchDeg,
 } from "./orientationCalibration";
-import { deviceOrientationToViewEnu, enuToAltAz } from "./sphericalView";
+import { deviceOrientationToViewEnu, dot, enuToAltAz } from "./sphericalView";
 
 describe("resolveCompassHeadingDeg", () => {
   beforeEach(() => {
@@ -53,7 +54,7 @@ describe("deviceOrientationToViewEnu", () => {
     resetOrientationCalibration();
   });
 
-  it("uses camera −Z via full matrix (floor when beta low)", () => {
+  it("uses decoupled pitch from beta only (floor when beta low)", () => {
     const event = {
       alpha: 0,
       beta: 25,
@@ -65,6 +66,22 @@ describe("deviceOrientationToViewEnu", () => {
     expect(view).not.toBeNull();
     const { alt } = enuToAltAz(view!);
     expect(alt).toBeLessThan(-50);
+    expect(resolveDevicePitchDeg(event)).toBe(-65);
+  });
+
+  it("ignores roll (gamma) when alpha and beta are fixed", () => {
+    const base = {
+      alpha: 120,
+      beta: 90,
+      absolute: true,
+    } as DeviceOrientationEvent;
+
+    const view0 = deviceOrientationToViewEnu({ ...base, gamma: 0 });
+    for (const gamma of [-75, -45, 0, 45, 75]) {
+      const view = deviceOrientationToViewEnu({ ...base, gamma });
+      expect(view).not.toBeNull();
+      expect(dot(view!, view0!)).toBeGreaterThan(0.9999);
+    }
   });
 });
 

@@ -2,6 +2,10 @@ function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;
 }
 
+function clamp(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
+
 /** iOS: webkitCompassHeading is only valid near portrait-upright; store alpha offset there. */
 let iosAlphaOffset: number | null = null;
 
@@ -55,6 +59,16 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   return normalizeHeading(base + orient);
 }
 
+/**
+ * Camera elevation from forward/back tilt (β) only — ignores roll (γ).
+ * Portrait upright (β ≈ 90°) → 0°; top toward sky (β < 90) → positive; toward ground → negative.
+ */
+export function resolveDevicePitchDeg(event: CompassEvent): number | null {
+  const beta = event.beta;
+  if (beta == null || !Number.isFinite(beta)) return null;
+  return clamp(beta - 90, -89.5, 89.5);
+}
+
 /** W3C α for Rz(α)·Rx(β)·Ry(γ) — opposite sense to compass azimuth; true north via resolveCompassHeadingDeg. */
 export function resolveDeviceAlphaDeg(event: CompassEvent): number | null {
   const heading = resolveCompassHeadingDeg(event);
@@ -73,9 +87,8 @@ export type SkyPoseHint = "ready" | "too-flat" | "too-flat-down";
  * Portrait sky AR — camera should have room to tilt without extreme roll.
  * (Flat-on-table is valid: camera points at nadir.)
  */
-export function describeSkyPose(beta: number | null, gamma: number | null): SkyPoseHint {
+export function describeSkyPose(beta: number | null, _gamma: number | null): SkyPoseHint {
   if (beta == null || !Number.isFinite(beta)) return "too-flat";
-  if (Math.abs(gamma ?? 0) > 42) return "too-flat-down";
   return "ready";
 }
 

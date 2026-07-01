@@ -37,7 +37,6 @@ import {
   groundBlendFromView,
   slerpUnit,
   type Vec3,
-  type ViewBasis,
 } from "../lib/sphericalView";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
@@ -564,7 +563,6 @@ export function CelestialSkyView({
     view: altAzToEnu(headingDeg, pitchDeg),
     roll: 0,
   });
-  const viewBasisRef = useRef<ViewBasis | null>(null);
 
   useLayoutEffect(() => {
     propsAttitudeRef.current = { view: altAzToEnu(headingDeg, pitchDeg), roll: 0 };
@@ -664,8 +662,7 @@ export function CelestialSkyView({
       const viewAtt = enuToAltAz(smooth.view);
       const viewHeading = viewAtt.az;
       const viewPitch = viewAtt.alt;
-      const basis = buildViewBasis(smooth.view, 0, viewBasisRef.current);
-      viewBasisRef.current = basis;
+      const basis = buildViewBasis(smooth.view, 0);
 
       pinchRef.current.tick(dt);
       const scale = pinchRef.current.getScale();
