@@ -131,31 +131,29 @@ export function DashboardContainer({ className = "" }: DashboardContainerProps) 
   }, [snapshot.rings]);
 
   return (
-    <div className={["w-full min-h-0", className].join(" ")}>
-      <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1.2fr)_minmax(300px,0.8fr)] gap-4 lg:gap-6 items-start">
-        <section className="min-w-0" aria-label="Visual engine">
-          <CosmicClockWheel snapshot={snapshot} showReadout={false} />
-        </section>
+    <div className={["cp-dashboard-layout w-full min-h-0", className].join(" ")}>
+      <section className="cp-dashboard-wheel-zone min-w-0" aria-label="Visual engine">
+        <CosmicClockWheel snapshot={snapshot} showReadout={false} />
+        <p className="cp-dashboard-wheel-hint" aria-hidden>
+          Scroll for layer readouts
+        </p>
+      </section>
 
-        <aside
-          className="min-w-0 flex flex-col gap-3 max-h-[min(78vh,760px)] overflow-y-auto pr-0.5"
-          aria-label="Data readout"
-        >
-          <div className="sticky top-0 z-10 rounded-xl border border-[var(--gold-dp)]/40 bg-[#0a0a0c]/98 backdrop-blur-md px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
-            <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[var(--gold-dp)]">
-              Standard Time
-            </p>
-            <p className="mt-1.5 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]">
-              {digitalTime}
-            </p>
-            <p className="mt-1 text-xs text-[var(--ink-dim)]">{hubTime}</p>
-          </div>
+      <aside className="cp-dashboard-details-zone min-w-0" aria-label="Data readout">
+        <div className="cp-dashboard-time-card rounded-xl border border-[var(--gold-dp)]/40 bg-[#0a0a0c]/98 backdrop-blur-md px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+          <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[var(--gold-dp)]">
+            Standard Time
+          </p>
+          <p className="mt-1.5 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]">
+            {digitalTime}
+          </p>
+          <p className="mt-1 text-xs text-[var(--ink-dim)]">{hubTime}</p>
+        </div>
 
-          {cosmicLayers.map(ring => (
-            <LayerReadoutCard key={ring.ringId} ring={ring} hubTime={hubTime} />
-          ))}
-        </aside>
-      </div>
+        {cosmicLayers.map(ring => (
+          <LayerReadoutCard key={ring.ringId} ring={ring} hubTime={hubTime} />
+        ))}
+      </aside>
     </div>
   );
 }

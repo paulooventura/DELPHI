@@ -921,7 +921,7 @@ export default function Home() {
               />
             )}
             {tab === "clock" && (
-              <div className="cp-dashboard-viewport p-3 sm:p-4 overflow-y-auto overflow-x-hidden">
+              <div className="cp-dashboard-viewport">
                 <DashboardContainer />
               </div>
             )}

@@ -1533,6 +1533,136 @@ html,body {
   box-shadow: none;
   background: transparent;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Clock dashboard: wheel dominates viewport; layer cards scroll below */
+.cp-app[data-tab="clock"] .cp-dashboard-viewport {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  padding:
+    calc(2.35rem + var(--safe-t))
+    max(0.65rem, env(safe-area-inset-left, 0px))
+    calc(4.75rem + var(--safe-b))
+    max(0.65rem, env(safe-area-inset-right, 0px));
+  scroll-behavior: smooth;
+}
+
+.cp-dashboard-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-height: min(100%, 100dvh);
+  gap: 0;
+}
+
+.cp-dashboard-wheel-zone {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+  min-height: min(80dvh, calc(100dvh - 4.25rem - var(--safe-b) - var(--safe-t)));
+  padding-bottom: 0;
+  overflow: hidden;
+}
+
+.cp-dashboard-wheel-hint {
+  flex: 0 0 auto;
+  margin-top: 0.35rem;
+  padding-bottom: 0.5rem;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(201, 162, 39, 0.42);
+  text-align: center;
+}
+
+@media (min-width: 1280px) {
+  .cp-dashboard-wheel-hint {
+    display: none;
+  }
+}
+
+.cp-dashboard-details-zone {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  padding-top: 0.35rem;
+  padding-bottom: 1.25rem;
+}
+
+.cp-dashboard-details-zone .cp-dashboard-time-card {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.cp-cosmic-clock-wheel {
+  width: 100%;
+  max-width: none;
+  border-radius: 1rem;
+}
+
+.cp-cosmic-clock-svg {
+  height: min(78dvh, calc(100vw * 1.12));
+  max-height: 680px;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .cp-app[data-tab="clock"] .cp-dashboard-viewport {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .cp-cosmic-clock-svg {
+    height: min(72dvh, 560px);
+  }
+}
+
+@media (min-width: 1280px) {
+  .cp-dashboard-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  .cp-dashboard-wheel-zone {
+    min-height: 0;
+    align-items: center;
+    padding-bottom: 0;
+  }
+
+  .cp-dashboard-details-zone {
+    max-height: min(78vh, 760px);
+    overflow-y: auto;
+    padding-top: 0;
+    padding-right: 0.125rem;
+  }
+
+  .cp-cosmic-clock-wheel {
+    max-width: 900px;
+  }
+
+  .cp-cosmic-clock-svg {
+    height: auto;
+    max-height: none;
+    aspect-ratio: 800 / 450;
+  }
 }
 
 .cp-app[data-tab="clock"] .cp-split-hero,

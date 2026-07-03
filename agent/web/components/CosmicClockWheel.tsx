@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, type CSSProperties } from "react";
+import { useId, useMemo, useEffect, useState, type CSSProperties } from "react";
 import type { ClockRingData, CosmicTimeSnapshot } from "../lib/timeEngine";
 import {
   formatHubClockTime,
@@ -195,11 +195,20 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
   const wheelCount = wheelRings.length;
   const playheadTop = CY - OUTER_R - 12;
   const hubTime = formatHubClockTime(snapshot.date);
+  const [mobileFill, setMobileFill] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1279px)");
+    const apply = () => setMobileFill(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
 
   return (
     <div
       className={[
-        "relative w-full max-w-[900px] mx-auto overflow-hidden",
+        "cp-cosmic-clock-wheel relative w-full mx-auto overflow-hidden",
         "rounded-2xl border border-[var(--gold-dp)]/20 bg-[#0a0a0c]",
         "shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(201,162,39,0.08)]",
         className,
@@ -207,7 +216,8 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
     >
       <svg
         viewBox="0 0 800 450"
-        className="block w-full h-auto aspect-[800/450] select-none"
+        className="cp-cosmic-clock-svg block w-full select-none"
+        preserveAspectRatio={mobileFill ? "xMidYMax slice" : "xMidYMax meet"}
         role="img"
         aria-label="Cosmic clock semi-circle wheel"
       >
