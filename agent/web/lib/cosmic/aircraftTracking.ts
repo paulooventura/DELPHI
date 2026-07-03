@@ -3,6 +3,7 @@
  */
 
 import { geoToAltAz, type GeoPosition } from "./geoHorizon";
+import { inferAircraftIconKind, type AircraftIconKind } from "./skyIcons";
 
 export type AircraftReport = {
   icao24: string;
@@ -25,6 +26,7 @@ export type AircraftTrack = {
   baroAltFt: number;
   headingDeg: number;
   gsKnots: number;
+  iconKind: AircraftIconKind;
   trail: Array<{ az: number; alt: number }>;
 };
 
@@ -80,6 +82,7 @@ export function aircraftReportToTrack(
     baroAltFt: report.baroAltFt,
     headingDeg: report.headingDeg,
     gsKnots: report.gsKnots,
+    iconKind: inferAircraftIconKind(report.callsign, report.gsKnots, report.baroAltFt),
     trail: trail.map(t => ({ az: t.az, alt: t.alt })),
   };
 }
@@ -110,6 +113,8 @@ export function generateMockAircraft(
     { cs: "BAW117", alt: 37000, hdg: 135, gs: 470 },
     { cs: "JBU523", alt: 34000, hdg: 225, gs: 430 },
     { cs: "NKS301", alt: 32000, hdg: 0, gs: 410 },
+    { cs: "LIFE1", alt: 1800, hdg: 120, gs: 95 },
+    { cs: "N172SP", alt: 4500, hdg: 200, gs: 115 },
   ];
 
   for (let i = 0; i < Math.min(count, flights.length); i++) {

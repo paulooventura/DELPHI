@@ -7,6 +7,8 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { resetOrientationCalibration, describeSkyPose, skyPoseHintMessage, type SkyPoseHint } from "../lib/sphericalView";
+import { setMagneticDeclinationDeg } from "../lib/orientationCalibration";
+import { fetchDeclinationDeg } from "../lib/magneticDeclination";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu } from "../lib/sphericalView";
 import { DashboardContainer } from "../components/DashboardContainer";
@@ -419,6 +421,7 @@ export default function Home() {
           lastLat = fix.latitude;
           lastLon = fix.longitude;
           void loadCyclesRef.current(fix.latitude, fix.longitude);
+          void fetchDeclinationDeg(fix.latitude, fix.longitude).then(setMagneticDeclinationDeg);
         }
       },
       () => setLocDenied(true),
@@ -446,6 +449,7 @@ export default function Home() {
       });
       if (t.location && location?.latitude != null && location.longitude != null) {
         void loadCycles(location.latitude, location.longitude);
+        void fetchDeclinationDeg(location.latitude, location.longitude).then(setMagneticDeclinationDeg);
         void startOrientationWatch();
         startLocationWatch();
       } else if (t.location) {

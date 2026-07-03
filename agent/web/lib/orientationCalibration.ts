@@ -8,9 +8,20 @@ function clamp(n: number, lo: number, hi: number): number {
 
 /** iOS: webkitCompassHeading is only valid near portrait-upright; store alpha offset there. */
 let iosAlphaOffset: number | null = null;
+/** East-positive magnetic declination for non-absolute / magnetic compass paths. */
+let magneticDeclinationDeg = 0;
 
 export function resetOrientationCalibration(): void {
   iosAlphaOffset = null;
+}
+
+export function setMagneticDeclinationDeg(deg: number): void {
+  if (!Number.isFinite(deg)) return;
+  magneticDeclinationDeg = deg;
+}
+
+export function getMagneticDeclinationDeg(): number {
+  return magneticDeclinationDeg;
 }
 
 export function getIosAlphaOffset(): number | null {
@@ -56,7 +67,11 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
   const absolute = event.absolute === true;
   const base = absolute ? alpha : normalizeHeading(360 - alpha);
-  return normalizeHeading(base + orient);
+  let heading = normalizeHeading(base + orient);
+  if (!absolute) {
+    heading = normalizeHeading(heading + magneticDeclinationDeg);
+  }
+  return heading;
 }
 
 /**

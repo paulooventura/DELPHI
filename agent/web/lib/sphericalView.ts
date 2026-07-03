@@ -68,9 +68,10 @@ function rotateAroundAxis(v: Vec3, axis: Vec3, angleRad: number): Vec3 {
   ]);
 }
 
-/** Roll-free screen basis: world-up aligned, no device γ twist. */
+/** Roll-free screen basis: world-up aligned; stabilizes near the horizon. */
 export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
   const view = normalize(viewEnu);
+  const { alt: viewAlt } = enuToAltAz(view);
   const worldUp: Vec3 = [0, 0, 1];
   const worldNorth: Vec3 = [0, 1, 0];
 
@@ -89,6 +90,24 @@ export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
   if (view[2] >= 0 ? dot(up, worldUp) < 0 : dot(up, worldUp) > 0) {
     up = [-up[0], -up[1], -up[2]];
     east = [-east[0], -east[1], -east[2]];
+  }
+
+  const horizonW = clamp(1 - Math.abs(viewAlt) / 14, 0, 1);
+  if (horizonW > 0.01) {
+    let stableUp = cross(view, cross(worldUp, view));
+    const sLen = Math.hypot(stableUp[0], stableUp[1], stableUp[2]);
+    if (sLen > 1e-4) {
+      stableUp = [stableUp[0] / sLen, stableUp[1] / sLen, stableUp[2] / sLen];
+      if (dot(stableUp, worldUp) < 0) {
+        stableUp = [-stableUp[0], -stableUp[1], -stableUp[2]];
+      }
+      up = normalize([
+        up[0] * (1 - horizonW) + stableUp[0] * horizonW,
+        up[1] * (1 - horizonW) + stableUp[1] * horizonW,
+        up[2] * (1 - horizonW) + stableUp[2] * horizonW,
+      ]);
+      east = normalize(cross(view, up));
+    }
   }
 
   let right = east;
@@ -159,8 +178,9 @@ export function createSphericalSkyProjector(
   return { toXY, inView, basis: { view, right, up } };
 }
 
-import { resolveCompassHeadingDeg, resolveDevicePitchDeg } from "./orientationCalibration";
+import { resolveDeviceAlphaDeg } from "./orientationCalibration";
 import {
+  deviceCameraVectorEnu,
   deviceToEnuRotationMatrix,
   mat3MulVec,
   DEVICE_CAMERA_AXIS,
@@ -173,6 +193,8 @@ export {
   resolveDeviceAlphaDeg,
   resolveDevicePitchDeg,
   resolveCompassHeadingDeg,
+  setMagneticDeclinationDeg,
+  getMagneticDeclinationDeg,
   type SkyPoseHint,
 } from "./orientationCalibration";
 
@@ -194,16 +216,19 @@ export function deviceBackVectorEnu(
 }
 
 /**
- * Sky look direction: true-north heading (α) + forward/back pitch (β) only.
- * Roll (γ) is ignored — diagonal phone tilt must not skew the view.
+ * Camera pointing ray in ENU — full attitude with γ forced to 0 (roll-free).
+ * Uses calibrated true-north α and β via the W3C camera axis (0,0,−1).
  */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
-  const heading = resolveCompassHeadingDeg(event);
-  const pitch = resolveDevicePitchDeg(event);
-  if (heading == null || pitch == null) return null;
-  return altAzToEnu(heading, pitch);
+  const beta = event.beta;
+  if (beta == null || !Number.isFinite(beta)) return null;
+
+  const alpha = resolveDeviceAlphaDeg(event);
+  if (alpha == null) return null;
+
+  return deviceCameraVectorEnu(alpha, beta, 0);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */

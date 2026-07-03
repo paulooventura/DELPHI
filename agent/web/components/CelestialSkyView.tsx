@@ -9,7 +9,6 @@ import {
   type CelestialBody,
 } from "../lib/cosmic/celestialBodies";
 import { computeMinorBodies, type MinorBody } from "../lib/cosmic/minorBodies";
-import { sampleHorizon } from "../lib/cosmic/celestialProjection";
 import { createPinchGestureController } from "../lib/cosmic/pinchGesture";
 import {
   clusterSatellites,
@@ -29,6 +28,17 @@ import {
   starFieldOpacity,
 } from "../lib/cosmic/skyZoom";
 import { angularSeparationDeg } from "../lib/cosmic/celestialBodies";
+import {
+  drawAircraftGlyph,
+  drawAsteroidGlyph,
+  drawCometGlyph,
+  drawMoonGlyph,
+  drawPlanetGlyph,
+  drawSatelliteClusterGlyph,
+  drawSatelliteGlyph,
+  drawStarGlyph,
+  drawSunGlyph,
+} from "../lib/cosmic/skyIcons";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
 import {
   altAzToEnu,
@@ -77,8 +87,70 @@ type Trackable = {
 const FOV_AZ = 90;
 const FOV_ALT_HALF = 60;
 const MICRO = OBS.typography.micro;
-const TARGET_ENTER = 2;
-const TARGET_EXIT = 3.5;
+const TARGET_ENTER = 1.5;
+const TARGET_EXIT = 2.8;
+
+function drawHorizonRing(
+  ctx: CanvasRenderingContext2D,
+  project: (az: number, alt: number) => [number, number],
+  w: number,
+  h: number,
+  stroke: string,
+  width: number,
+  glow?: string,
+) {
+  ctx.save();
+  if (glow) {
+    ctx.shadowColor = glow;
+    ctx.shadowBlur = 6;
+  }
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = width;
+  ctx.lineCap = "round";
+  ctx.beginPath();
+  let started = false;
+  for (let az = 0; az <= 360; az += 3) {
+    const [x, y] = project(az, 0);
+    if (x < -9000) {
+      started = false;
+      continue;
+    }
+    if (x < -30 || x > w + 30 || y < -30 || y > h + 30) continue;
+    if (!started) {
+      ctx.moveTo(x, y);
+      started = true;
+    } else {
+      ctx.lineTo(x, y);
+    }
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+/** Screen-stabilized horizon band when the sight line is near level. */
+function drawStableHorizonOverlay(
+  ctx: CanvasRenderingContext2D,
+  w: number,
+  h: number,
+  viewPitch: number,
+  fovAltHalf: number,
+  warmth: number,
+) {
+  const fade = Math.max(0, 1 - Math.abs(viewPitch) / 16);
+  if (fade < 0.04) return;
+  const y = h / 2 - (viewPitch / fovAltHalf) * (h / 2);
+  ctx.save();
+  ctx.globalAlpha = fade;
+  ctx.strokeStyle = warmth > 0.5 ? "rgba(245, 158, 11, 0.42)" : "rgba(255, 255, 255, 0.28)";
+  ctx.lineWidth = 1.2;
+  ctx.shadowColor = warmth > 0.5 ? "rgba(245, 158, 11, 0.25)" : "rgba(255, 255, 255, 0.15)";
+  ctx.shadowBlur = 4;
+  ctx.beginPath();
+  ctx.moveTo(0, y);
+  ctx.lineTo(w, y);
+  ctx.stroke();
+  ctx.restore();
+}
 
 function drawPath(
   ctx: CanvasRenderingContext2D,
@@ -231,15 +303,29 @@ function drawBody(
 
   drawPlanetTexture(ctx, body, x, y, texBlend, baseR);
 
-  ctx.globalAlpha = alpha * (1 - texBlend * 0.6);
-  ctx.fillStyle = body.color;
-  ctx.shadowColor = locked ? OBS.celestial.targetGlow : "rgba(226, 232, 240, 0.25)";
-  ctx.shadowBlur = locked ? 8 : 3;
-  ctx.beginPath();
-  ctx.arc(x, y, baseR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.globalAlpha = 1;
+  if (body.id === "sun") {
+    ctx.globalAlpha = alpha;
+    drawSunGlyph(ctx, x, y, baseR * 1.05, locked);
+    ctx.globalAlpha = 1;
+  } else if (body.id === "moon") {
+    ctx.globalAlpha = alpha;
+    drawMoonGlyph(ctx, x, y, baseR, 0.52, locked);
+    ctx.globalAlpha = 1;
+  } else if (texBlend < 0.35) {
+    ctx.globalAlpha = alpha;
+    drawPlanetGlyph(ctx, body.id, x, y, baseR, body.color);
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.globalAlpha = alpha * (1 - texBlend * 0.6);
+    ctx.fillStyle = body.color;
+    ctx.shadowColor = locked ? OBS.celestial.targetGlow : "rgba(226, 232, 240, 0.25)";
+    ctx.shadowBlur = locked ? 8 : 3;
+    ctx.beginPath();
+    ctx.arc(x, y, baseR, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.globalAlpha = 1;
+  }
 
   const label = body.id === "moon" || locked
     ? `${body.name} · ${Math.round(body.az)}° · ${Math.round(body.alt)}°`
@@ -276,28 +362,14 @@ function drawMinorBody(
   }
 
   if (body.kind === "comet") {
-    ctx.globalAlpha = alpha * 0.85;
-    const tailLen = locked ? 14 : 10;
-    const grad = ctx.createLinearGradient(x, y, x - tailLen, y - tailLen * 0.4);
-    grad.addColorStop(0, body.color);
-    grad.addColorStop(1, "transparent");
-    ctx.strokeStyle = grad;
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(x, y);
-    ctx.lineTo(x - tailLen, y - tailLen * 0.35);
-    ctx.stroke();
+    ctx.globalAlpha = alpha;
+    drawCometGlyph(ctx, x, y, baseR, body.color, locked);
+    ctx.globalAlpha = 1;
+  } else {
+    ctx.globalAlpha = alpha;
+    drawAsteroidGlyph(ctx, x, y, baseR, body.color, locked);
+    ctx.globalAlpha = 1;
   }
-
-  ctx.globalAlpha = alpha;
-  ctx.fillStyle = body.color;
-  ctx.shadowColor = body.kind === "comet" ? "rgba(136, 200, 232, 0.35)" : "rgba(200, 190, 170, 0.2)";
-  ctx.shadowBlur = locked ? 6 : 2;
-  ctx.beginPath();
-  ctx.arc(x, y, baseR, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.globalAlpha = 1;
 
   if (showLabel) {
     ctx.font = locked ? `600 9px ${MICRO}` : `500 8px ${MICRO}`;
@@ -324,7 +396,6 @@ function drawAircraft(
   locked: boolean,
 ) {
   ctx.save();
-  const hdg = track.headingDeg * (Math.PI / 180);
   const size = locked ? 7 : 5;
 
   if (track.trail.length > 1) {
@@ -340,22 +411,11 @@ function drawAircraft(
     ctx.stroke();
   }
 
-  ctx.translate(x, y);
-  ctx.rotate(hdg);
-  ctx.strokeStyle = locked ? OBS.celestial.targetLock : "rgba(226, 232, 240, 0.75)";
-  ctx.lineWidth = 1;
-  ctx.beginPath();
-  ctx.moveTo(size, 0);
-  ctx.lineTo(-size * 0.6, -size * 0.45);
-  ctx.lineTo(-size * 0.3, 0);
-  ctx.lineTo(-size * 0.6, size * 0.45);
-  ctx.closePath();
-  ctx.stroke();
-
+  drawAircraftGlyph(ctx, x, y, size, track.headingDeg, track.iconKind, locked);
   if (locked) {
     ctx.strokeStyle = OBS.celestial.targetLock;
     ctx.lineWidth = 0.85;
-    ctx.strokeRect(-size - 6, -size - 6, (size + 6) * 2, (size + 6) * 2);
+    ctx.strokeRect(x - size - 6, y - size - 6, (size + 6) * 2, (size + 6) * 2);
   }
 
   ctx.restore();
@@ -381,7 +441,8 @@ function drawSatellite(
   locked: boolean,
   pulse: number,
 ) {
-  const r = locked ? 3.5 : 2 + Math.sin(pulse) * 0.6;
+  ctx.save();
+  const size = locked ? 5.5 : 4.2 + Math.sin(pulse) * 0.4;
 
   if (track.trail.length > 1) {
     ctx.beginPath();
@@ -396,19 +457,12 @@ function drawSatellite(
     ctx.stroke();
   }
 
-  ctx.save();
-  ctx.fillStyle = locked ? OBS.celestial.targetLock : "rgba(96, 165, 250, 0.85)";
-  ctx.shadowColor = locked ? OBS.celestial.targetGlow : "rgba(96, 165, 250, 0.35)";
-  ctx.shadowBlur = locked ? 6 : 3 + Math.sin(pulse) * 2;
-  ctx.beginPath();
-  ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.shadowBlur = 0;
+  drawSatelliteGlyph(ctx, x, y, size, locked, pulse);
 
   if (locked) {
     ctx.strokeStyle = OBS.celestial.targetLock;
     ctx.lineWidth = 0.85;
-    ctx.strokeRect(x - r - 5, y - r - 5, (r + 5) * 2, (r + 5) * 2);
+    ctx.strokeRect(x - size - 5, y - size - 5, (size + 5) * 2, (size + 5) * 2);
   }
   ctx.restore();
 
@@ -421,7 +475,7 @@ function drawSatellite(
   ctx.font = `500 7px ${MICRO}`;
   ctx.fillStyle = locked ? "rgba(16, 185, 129, 0.92)" : "rgba(148, 163, 184, 0.68)";
   ctx.textAlign = "center";
-  ctx.fillText(label, x, y - r - 4);
+  ctx.fillText(label, x, y - size - 4);
 }
 
 function drawSatelliteCluster(
@@ -430,19 +484,11 @@ function drawSatelliteCluster(
   x: number,
   y: number,
 ) {
-  ctx.save();
-  ctx.fillStyle = "rgba(96, 165, 250, 0.55)";
-  ctx.strokeStyle = "rgba(96, 165, 250, 0.75)";
-  ctx.lineWidth = 0.85;
-  ctx.beginPath();
-  ctx.arc(x, y, 5, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.stroke();
+  drawSatelliteClusterGlyph(ctx, x, y, cluster.count);
   ctx.font = `600 7px ${MICRO}`;
   ctx.fillStyle = "rgba(148, 163, 184, 0.8)";
   ctx.textAlign = "center";
-  ctx.fillText(`${cluster.count} SATS`, x, y - 8);
-  ctx.restore();
+  ctx.fillText(`${cluster.count} SATS`, x, y - 10);
 }
 
 function drawTargetLockFrame(
@@ -653,10 +699,14 @@ export function CelestialSkyView({
 
       const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
       const smooth = smoothAttitudeRef.current;
-      const { alt: targetAlt } = enuToAltAz(target.view);
-      const nearHorizon = Math.abs(targetAlt) < 28;
-      const viewT = liveAttitudeRef ? (nearHorizon ? 0.14 : 0.36) : 0.2;
-      smooth.view = slerpUnit(smooth.view, target.view, viewT);
+      if (liveAttitudeRef) {
+        smooth.view = target.view;
+      } else {
+        const { alt: targetAlt } = enuToAltAz(target.view);
+        const nearHorizon = Math.abs(targetAlt) < 28;
+        const viewT = nearHorizon ? 0.18 : 0.28;
+        smooth.view = slerpUnit(smooth.view, target.view, viewT);
+      }
       smooth.roll = 0;
 
       const viewAtt = enuToAltAz(smooth.view);
@@ -693,17 +743,16 @@ export function CelestialSkyView({
       const project = createZoomedSkyProjector(w, h, basis, scale, FOV_AZ, FOV_ALT_HALF);
       const accent = spectrumAccent(warmth);
 
-      drawPath(
+      drawHorizonRing(
         ctx,
-        sampleHorizon(viewHeading, viewPitch),
         project.toXY,
         w,
         h,
         OBS.celestial.horizon,
         OBS.vector.strokeMax,
-        undefined,
         warmth > 0.5 ? OBS.night.glow : OBS.day.glow,
       );
+      drawStableHorizonOverlay(ctx, w, h, viewPitch, FOV_ALT_HALF, warmth);
 
       if (detail === "wide") {
         drawPath(
@@ -738,13 +787,14 @@ export function CelestialSkyView({
         const below = star.alt < 0;
         const r = Math.max(0.5, (3.4 - star.mag) * 0.85);
         ctx.globalAlpha = starAlpha * (below ? 0.3 : Math.min(1, 0.4 + (3.4 - star.mag) / 5.5));
-        ctx.fillStyle = below ? OBS.celestial.starBelow : OBS.celestial.starAbove;
-        ctx.shadowColor = "rgba(226, 232, 240, 0.2)";
-        ctx.shadowBlur = below ? 0 : 2;
-        ctx.beginPath();
-        ctx.arc(x, y, r, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
+        drawStarGlyph(
+          ctx,
+          x,
+          y,
+          r,
+          below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
+          !below && star.mag < 2.2,
+        );
         ctx.globalAlpha = 1;
       }
 
