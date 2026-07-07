@@ -11,7 +11,8 @@ import {
   formatStandardDigitalTime,
   type ClockRingData,
 } from "../lib/timeEngine";
-import { COSMIC_ASSETS, ringAccentColor } from "../lib/cosmicAssets";
+import { COSMIC_ASSETS, ringAccentColor, segmentGraphicKey } from "../lib/cosmicAssets";
+import { CosmicGraphicBadge } from "../lib/cosmicGraphicIcons";
 
 export type DashboardContainerProps = {
   className?: string;
@@ -81,13 +82,26 @@ function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: str
         </p>
       ) : (
         <div className="mt-2 flex items-start gap-3 min-w-0">
-          <span
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl border border-white/10"
-            style={{ background: `${accent}18`, color: accent }}
-            aria-hidden
-          >
-            {ring.activeSegment.symbol}
-          </span>
+          {(() => {
+            const graphicKey = segmentGraphicKey(ring.ringId, ring.activeSegment.numericalValue);
+            return graphicKey ? (
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-white/10"
+                style={{ background: `${accent}18` }}
+                aria-hidden
+              >
+                <CosmicGraphicBadge graphicKey={graphicKey} color={accent} />
+              </span>
+            ) : (
+              <span
+                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg text-xl border border-white/10"
+                style={{ background: `${accent}18`, color: accent }}
+                aria-hidden
+              >
+                {ring.activeSegment.symbol}
+              </span>
+            );
+          })()}
           <div className="min-w-0 flex-1">
             <p className="text-sm font-bold text-[var(--ink)] leading-snug">
               {ring.activeSegment.name}

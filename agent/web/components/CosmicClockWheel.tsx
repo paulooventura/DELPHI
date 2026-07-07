@@ -9,6 +9,7 @@ import {
 } from "../lib/timeEngine";
 import { OBS } from "../lib/design/observatoryTokens";
 import { ringAccentColor, ringSegmentVisual } from "../lib/cosmicAssets";
+import { CosmicGraphicIcon } from "../lib/cosmicGraphicIcons";
 
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
@@ -133,6 +134,9 @@ function CosmicSegmentRing({
     const ang = tickAngle(start + (end - start) / 2);
     const sin = Math.sin(ang);
     const showLabel = sin < -0.12 && (i % cfg.labelEvery === 0 || vis.label.length <= 2);
+    const iconSize = Math.max(8, Math.min(band * 0.75, ring.ringId === 5 ? 14 : 12));
+    const lx = CX + Math.cos(ang) * mid;
+    const ly = CY + Math.sin(ang) * mid;
 
     segments.push(
       <g key={i}>
@@ -143,17 +147,27 @@ function CosmicSegmentRing({
           strokeWidth={isActive ? 1.1 : 0.45}
           strokeOpacity={isActive ? 0.95 : 0.65}
         />
-        {showLabel && vis.label && (
+        {showLabel && vis.graphicKey && (
+          <CosmicGraphicIcon
+            graphicKey={vis.graphicKey}
+            x={lx}
+            y={ly}
+            size={iconSize}
+            color={isActive ? "var(--gold-lt)" : vis.stroke}
+            active={isActive}
+          />
+        )}
+        {showLabel && !vis.graphicKey && vis.label && (
           <text
-            x={CX + Math.cos(ang) * mid}
-            y={CY + Math.sin(ang) * mid}
+            x={lx}
+            y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize={Math.max(5, Math.min(band * 0.42, ring.ringId === 5 ? 9 : 7))}
             fill={isActive ? "var(--gold-lt)" : OBS.day.ink}
             fontFamily={OBS.typography.micro}
             fontWeight={isActive ? 700 : 500}
-            transform={`rotate(${(ang * 180) / Math.PI + 90}, ${CX + Math.cos(ang) * mid}, ${CY + Math.sin(ang) * mid})`}
+            transform={`rotate(${(ang * 180) / Math.PI + 90}, ${lx}, ${ly})`}
           >
             {vis.label}
           </text>
