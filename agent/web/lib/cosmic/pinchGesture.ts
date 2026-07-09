@@ -86,7 +86,7 @@ export function createPinchGestureController(opts: PinchGestureOptions = {}): Pi
       opts.onScaleChange?.(target);
     },
     tick(dtSec) {
-      const step = stepSpring(value, velocity, target, dtSec, { stiffness: 140, damping: 26 });
+      const step = stepSpring(value, velocity, target, dtSec, { stiffness: 88, damping: 20 });
       value = step.value;
       velocity = step.velocity;
     },

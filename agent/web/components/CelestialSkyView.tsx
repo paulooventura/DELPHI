@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import type { AircraftTrack } from "../lib/cosmic/aircraftTracking";
 import {
   computeCelestialBodies,
@@ -59,6 +59,7 @@ import {
 } from "../lib/cosmic/skyWeather";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
+import { SkyObjectDetailPanel, type SkyObjectDetail } from "./SkyObjectDetailPanel";
 
 export type LiveAttitude = { view: Vec3; roll: number };
 
@@ -93,7 +94,82 @@ type Trackable = {
   gsKnots?: number;
   baroAltFt?: number;
   altKm?: number;
+  magnitude?: number;
+  bodyId?: string;
+  iconKind?: AircraftTrack["iconKind"];
 };
+
+type HitTarget = {
+  id: string;
+  x: number;
+  y: number;
+  radius: number;
+  trackable: Trackable;
+};
+
+const KIND_META: Record<Trackable["kind"], { label: string; emoji: string; accent: string }> = {
+  planet: { label: "Planet", emoji: "🪐", accent: "#a5b4fc" },
+  satellite: { label: "Satellite", emoji: "🛰", accent: "#7dd3fc" },
+  "satellite-cluster": { label: "Satellite cluster", emoji: "🛰", accent: "#7dd3fc" },
+  aircraft: { label: "Aircraft", emoji: "✈", accent: "#cbd5e1" },
+  asteroid: { label: "Asteroid", emoji: "◇", accent: "#d6d3d1" },
+  comet: { label: "Comet", emoji: "☄", accent: "#bae6fd" },
+};
+
+function buildObjectDetail(
+  trackable: Trackable,
+  bodies: CelestialBody[],
+  minorBodies: MinorBody[],
+): SkyObjectDetail {
+  const meta = KIND_META[trackable.kind];
+  const lines: Array<{ label: string; value: string }> = [
+    { label: "Azimuth", value: `${Math.round(trackable.az)}°` },
+    { label: "Elevation", value: `${Math.round(trackable.alt)}°` },
+  ];
+
+  const planet = bodies.find(b => b.id === trackable.id);
+  if (planet) {
+    lines.push(
+      { label: "Magnitude", value: planet.magnitude.toFixed(1) },
+      { label: "Right ascension", value: `${planet.raHours.toFixed(2)} h` },
+      { label: "Declination", value: `${planet.decDeg.toFixed(2)}°` },
+    );
+  }
+
+  const minor = minorBodies.find(m => m.id === trackable.id);
+  if (minor) {
+    lines.push(
+      { label: "Type", value: minor.kind === "comet" ? "Comet" : "Main-belt asteroid" },
+      { label: "Magnitude", value: minor.magnitude.toFixed(1) },
+    );
+  }
+
+  if (trackable.gsKnots != null) {
+    lines.push(
+      { label: "Ground speed", value: `${Math.round(trackable.gsKnots)} kt` },
+      { label: "Baro altitude", value: `${Math.round(trackable.baroAltFt ?? 0).toLocaleString()} ft` },
+    );
+  }
+
+  if (trackable.altKm != null) {
+    lines.push({ label: "Orbital altitude", value: `${trackable.altKm.toFixed(0)} km` });
+  }
+
+  if (trackable.kind === "satellite-cluster") {
+    lines.push({ label: "Group", value: "Multiple LEO objects in this patch of sky" });
+  }
+
+  return {
+    id: trackable.id,
+    kind: meta.label,
+    name: trackable.name,
+    az: trackable.az,
+    alt: trackable.alt,
+    emoji: meta.emoji,
+    accent: meta.accent,
+    lines,
+  };
+}
 
 const FOV_AZ = 90;
 const FOV_ALT_HALF = 60;
@@ -263,7 +339,7 @@ function drawBody(
   locked: boolean,
   texBlend: number,
 ) {
-  const baseR = body.id === "sun" ? 8 : body.id === "moon" ? 6.5 : 4.5;
+  const baseR = body.id === "sun" ? 9.5 : body.id === "moon" ? 7.5 : 5.5;
   const alpha = belowHorizon ? 0.3 : 1;
 
   ctx.save();
@@ -335,9 +411,9 @@ function drawMinorBody(
   locked: boolean,
   scale: number,
 ) {
-  const baseR = body.kind === "comet" ? 3.5 : 2.8;
-  const alpha = belowHorizon ? 0.28 : 1;
-  const showLabel = locked || scale >= 1.35;
+  const baseR = body.kind === "comet" ? 4.8 : 4;
+  const alpha = belowHorizon ? 0.32 : 1;
+  const showLabel = true;
 
   ctx.save();
   if (locked) {
@@ -383,7 +459,7 @@ function drawAircraft(
   locked: boolean,
 ) {
   ctx.save();
-  const size = locked ? 7 : 5;
+  const size = locked ? 8 : 6.5;
 
   if (track.trail.length > 1) {
     ctx.beginPath();
@@ -429,7 +505,7 @@ function drawSatellite(
   pulse: number,
 ) {
   ctx.save();
-  const size = locked ? 5.5 : 4.2 + Math.sin(pulse) * 0.4;
+  const size = locked ? 6.5 : 5.2 + Math.sin(pulse) * 0.35;
 
   if (track.trail.length > 1) {
     ctx.beginPath();
@@ -483,22 +559,28 @@ function drawTargetLockFrame(
   x: number,
   y: number,
   size: number,
+  pulse: number,
 ) {
   ctx.save();
-  ctx.strokeStyle = OBS.celestial.targetLock;
-  ctx.shadowColor = OBS.celestial.targetGlow;
-  ctx.shadowBlur = 8;
-  ctx.lineWidth = 0.85;
-  const s = size;
+  const breathe = 0.85 + Math.sin(pulse * 0.9) * 0.15;
+  const s = size * breathe;
+  ctx.strokeStyle = "rgba(52, 211, 153, 0.82)";
+  ctx.shadowColor = "rgba(52, 211, 153, 0.55)";
+  ctx.shadowBlur = 10;
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(x - s - 8, y);
+  ctx.arc(x, y, s + 10, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 0.75;
+  ctx.beginPath();
+  ctx.moveTo(x - s - 10, y);
   ctx.lineTo(x - s, y);
   ctx.moveTo(x + s, y);
-  ctx.lineTo(x + s + 8, y);
-  ctx.moveTo(x, y - s - 8);
+  ctx.lineTo(x + s + 10, y);
+  ctx.moveTo(x, y - s - 10);
   ctx.lineTo(x, y - s);
   ctx.moveTo(x, y + s);
-  ctx.lineTo(x, y + s + 8);
+  ctx.lineTo(x, y + s + 10);
   ctx.stroke();
   ctx.restore();
 }
@@ -595,12 +677,17 @@ export function CelestialSkyView({
   const pinchRef = useRef(createPinchGestureController());
   const groundBlendRef = useRef(0);
   const lockRef = useRef<string | null>(null);
+  const lockGlowRef = useRef(0);
   const pulseRef = useRef(0);
   const aircraftRef = useRef<AircraftTrack[]>([]);
   const satellitesRef = useRef<SatelliteTrack[]>([]);
+  const hitTargetsRef = useRef<HitTarget[]>([]);
+  const tapRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
   const hudZoomRef = useRef("1.0×");
+  const hudLayersRef = useRef("");
   const lockReadoutRef = useRef<string | null>(null);
   const hudTickRef = useRef(0);
+  const [selectedDetail, setSelectedDetail] = useState<SkyObjectDetail | null>(null);
   const propsAttitudeRef = useRef<LiveAttitude>({
     view: altAzToEnu(headingDeg, pitchDeg),
     roll: 0,
@@ -643,38 +730,77 @@ export function CelestialSkyView({
     if (!canvas) return;
     const pinch = pinchRef.current;
     pinch.attach(canvas);
-    return () => pinch.detach();
-  }, []);
+
+    const onPointerDown = (e: PointerEvent) => {
+      if (e.button !== 0) return;
+      tapRef.current = { x: e.clientX, y: e.clientY, active: true };
+    };
+    const onPointerUp = (e: PointerEvent) => {
+      const tap = tapRef.current;
+      tapRef.current = null;
+      if (!tap?.active) return;
+      const moved = Math.hypot(e.clientX - tap.x, e.clientY - tap.y);
+      if (moved > 10) return;
+      const rect = canvas.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      let best: HitTarget | null = null;
+      for (const hit of hitTargetsRef.current) {
+        const d = Math.hypot(px - hit.x, py - hit.y);
+        if (d <= hit.radius && (!best || d < Math.hypot(px - best.x, py - best.y))) {
+          best = hit;
+        }
+      }
+      if (best) {
+        setSelectedDetail(buildObjectDetail(best.trackable, bodies, minorBodies));
+        if (hapticsEnabled) {
+          try { navigator.vibrate?.([4, 36, 8]); } catch { /* ignore */ }
+        }
+      }
+    };
+    const onPointerCancel = () => { tapRef.current = null; };
+
+    canvas.addEventListener("pointerdown", onPointerDown);
+    canvas.addEventListener("pointerup", onPointerUp);
+    canvas.addEventListener("pointercancel", onPointerCancel);
+    return () => {
+      pinch.detach();
+      canvas.removeEventListener("pointerdown", onPointerDown);
+      canvas.removeEventListener("pointerup", onPointerUp);
+      canvas.removeEventListener("pointercancel", onPointerCancel);
+    };
+  }, [bodies, minorBodies, hapticsEnabled]);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
       try {
         const q = `lat=${lat}&lon=${lon}&alt=200`;
+        const mockAircraft = computeAircraftTracks(
+          generateMockAircraft({ latDeg: lat, lonDeg: lon, altM: 200 }, Math.floor(lat * 10 + lon), 8),
+          { latDeg: lat, lonDeg: lon, altM: 200 },
+        );
+        const mockSatellites = computeSatelliteTracks(
+          tleCatalog,
+          { latDeg: lat, lonDeg: lon, altM: 200 },
+          observationTime,
+        );
         const [acRes, satRes] = await Promise.all([
           fetch(`/api/sky/aircraft?${q}`).then(r => r.ok ? r.json() : null),
           fetch(`/api/sky/satellites?${q}`).then(r => r.ok ? r.json() : null),
         ]);
         if (cancelled) return;
-        if (acRes?.aircraft) aircraftRef.current = acRes.aircraft;
-        else {
-          aircraftRef.current = computeAircraftTracks(
-            generateMockAircraft({ latDeg: lat, lonDeg: lon, altM: 200 }),
-            { latDeg: lat, lonDeg: lon, altM: 200 },
-          );
-        }
-        if (satRes?.satellites) satellitesRef.current = satRes.satellites;
-        else {
-          satellitesRef.current = computeSatelliteTracks(
-            tleCatalog,
-            { latDeg: lat, lonDeg: lon, altM: 200 },
-            observationTime,
-          );
+        if (acRes?.aircraft?.length) aircraftRef.current = acRes.aircraft;
+        else aircraftRef.current = mockAircraft;
+        if (satRes?.satellites?.length) {
+          satellitesRef.current = satRes.satellites;
+        } else {
+          satellitesRef.current = mockSatellites;
         }
       } catch {
         if (!cancelled) {
           aircraftRef.current = computeAircraftTracks(
-            generateMockAircraft({ latDeg: lat, lonDeg: lon, altM: 200 }),
+            generateMockAircraft({ latDeg: lat, lonDeg: lon, altM: 200 }, Math.floor(lat * 10 + lon), 8),
             { latDeg: lat, lonDeg: lon, altM: 200 },
           );
           satellitesRef.current = computeSatelliteTracks(
@@ -702,7 +828,7 @@ export function CelestialSkyView({
     const paint = (now: number) => {
       const dt = Math.min(0.064, (now - last) / 1000);
       last = now;
-      pulseRef.current += dt * 4;
+      pulseRef.current += dt * 2.6;
 
       const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
       const smooth = smoothAttitudeRef.current;
@@ -724,12 +850,12 @@ export function CelestialSkyView({
       }
 
       const targetGround = groundBlendFromView(smooth.view);
-      groundBlendRef.current += (targetGround - groundBlendRef.current) * 0.06;
+      groundBlendRef.current += (targetGround - groundBlendRef.current) * 0.028;
 
       weatherAppearRef.current = lerpAppearance(
         weatherAppearRef.current,
         weatherTargetRef.current,
-        0.08,
+        0.035,
       );
       const sky = weatherAppearRef.current;
       const skyWarmth = sky.effectiveWarmth;
@@ -789,19 +915,23 @@ export function CelestialSkyView({
         }
       }
 
-      for (const star of stars) {
+      const hits: HitTarget[] = [];
+
+      for (let si = 0; si < stars.length; si++) {
+        const star = stars[si]!;
         const [x, y] = project.toXY(star.az, star.alt);
         if (!project.inView(x, y, w, h)) continue;
         const below = star.alt < 0;
-        const r = Math.max(0.5, (3.4 - star.mag) * 0.85);
-        ctx.globalAlpha = starAlpha * (below ? 0.3 : Math.min(1, 0.4 + (3.4 - star.mag) / 5.5));
+        const r = Math.max(0.65, (3.6 - star.mag) * 0.95);
+        ctx.globalAlpha = starAlpha * (below ? 0.35 : Math.min(1, 0.5 + (3.4 - star.mag) / 5));
         drawStarGlyph(
           ctx,
           x,
           y,
           r,
           below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
-          !below && star.mag < 2.2,
+          !below && star.mag < 2.4,
+          pulseRef.current + si * 0.37,
         );
         ctx.globalAlpha = 1;
       }
@@ -825,6 +955,7 @@ export function CelestialSkyView({
           name: mb.name,
           az: mb.az,
           alt: mb.alt,
+          magnitude: mb.magnitude,
         });
       }
 
@@ -837,6 +968,7 @@ export function CelestialSkyView({
           alt: ac.alt,
           gsKnots: ac.gsKnots,
           baroAltFt: ac.baroAltFt,
+          iconKind: ac.iconKind,
         });
       }
 
@@ -880,9 +1012,12 @@ export function CelestialSkyView({
         ? findTargetLock(viewHeading, viewPitch, trackables, lockRef.current)
         : null;
       lockRef.current = locked?.id ?? null;
+      lockGlowRef.current += ((locked ? 1 : 0) - lockGlowRef.current) * 0.06;
 
-      if (hapticsEnabled && Math.abs(viewPitch) > 6) {
-        hapticsRef.current.update(viewHeading, viewPitch, locked?.id ?? null);
+      if (hapticsEnabled) {
+        hapticsRef.current.update(viewHeading, viewPitch, locked?.id ?? null, {
+          cardinalsEnabled: Math.abs(viewPitch) > 6,
+        });
       }
 
       if (locked) {
@@ -901,20 +1036,51 @@ export function CelestialSkyView({
         const [x, y] = project.toXY(ac.az, ac.alt);
         if (!project.inView(x, y, w, h, 20)) continue;
         drawAircraft(ctx, ac, x, y, project.toXY, locked?.id === ac.id);
+        hits.push({
+          id: ac.id,
+          x,
+          y,
+          radius: 18,
+          trackable: trackables.find(t => t.id === ac.id)!,
+        });
       }
 
       if (shouldClusterSatellites(scale)) {
         for (const item of clusterSatellites(satTracks)) {
-          if (!("count" in item)) continue;
           const [x, y] = project.toXY(item.az, item.alt);
           if (!project.inView(x, y, w, h, 16)) continue;
-          drawSatelliteCluster(ctx, item, x, y);
+          if ("count" in item) {
+            drawSatelliteCluster(ctx, item, x, y);
+            hits.push({
+              id: item.id,
+              x,
+              y,
+              radius: 16,
+              trackable: trackables.find(t => t.id === item.id)!,
+            });
+          } else {
+            drawSatellite(ctx, item, x, y, project.toXY, locked?.id === item.id, pulseRef.current);
+            hits.push({
+              id: item.id,
+              x,
+              y,
+              radius: 16,
+              trackable: trackables.find(t => t.id === item.id)!,
+            });
+          }
         }
       } else {
         for (const sat of satTracks) {
           const [x, y] = project.toXY(sat.az, sat.alt);
           if (!project.inView(x, y, w, h, 16)) continue;
           drawSatellite(ctx, sat, x, y, project.toXY, locked?.id === sat.id, pulseRef.current);
+          hits.push({
+            id: sat.id,
+            x,
+            y,
+            radius: 16,
+            trackable: trackables.find(t => t.id === sat.id)!,
+          });
         }
       }
 
@@ -922,15 +1088,38 @@ export function CelestialSkyView({
         const [x, y] = project.toXY(body.az, body.alt);
         if (!project.inView(x, y, w, h, 24)) continue;
         drawBody(ctx, body, x, y, body.alt < 0, locked?.id === body.id, texBlend);
+        hits.push({
+          id: body.id,
+          x,
+          y,
+          radius: body.id === "sun" ? 22 : body.id === "moon" ? 20 : 16,
+          trackable: trackables.find(t => t.id === body.id)!,
+        });
       }
 
-      if (detail !== "wide" || scale >= 1.1) {
-        for (const mb of minorBodies) {
-          const [x, y] = project.toXY(mb.az, mb.alt);
-          if (!project.inView(x, y, w, h, 16)) continue;
-          drawMinorBody(ctx, mb, x, y, mb.alt < 0, locked?.id === mb.id, scale);
-        }
+      for (const mb of minorBodies) {
+        const [x, y] = project.toXY(mb.az, mb.alt);
+        if (!project.inView(x, y, w, h, 16)) continue;
+        drawMinorBody(ctx, mb, x, y, mb.alt < 0, locked?.id === mb.id, scale);
+        hits.push({
+          id: mb.id,
+          x,
+          y,
+          radius: 14,
+          trackable: trackables.find(t => t.id === mb.id)!,
+        });
       }
+
+      hitTargetsRef.current = hits.filter(h => h.trackable);
+      const inViewAc = aircraftRef.current.filter(ac => {
+        const [x, y] = project.toXY(ac.az, ac.alt);
+        return project.inView(x, y, w, h, 20);
+      }).length;
+      const inViewSat = satTracks.filter(sat => {
+        const [x, y] = project.toXY(sat.az, sat.alt);
+        return project.inView(x, y, w, h, 16);
+      }).length;
+      hudLayersRef.current = `${inViewAc}/${aircraftRef.current.length} aircraft · ${inViewSat}/${satTracks.length} sats · ${minorBodies.length} minor bodies`;
 
       const cx = w / 2;
       const cy = h / 2;
@@ -951,7 +1140,7 @@ export function CelestialSkyView({
         const lt = trackables.find(t => t.id === locked.id);
         if (lt) {
           const [lx, ly] = project.toXY(lt.az, lt.alt);
-          drawTargetLockFrame(ctx, lx, ly, locked.kind === "aircraft" ? 7 : 5);
+          drawTargetLockFrame(ctx, lx, ly, locked.kind === "aircraft" ? 8 : 6, pulseRef.current);
         }
       }
 
@@ -963,6 +1152,10 @@ export function CelestialSkyView({
         10,
         15,
       );
+      ctx.font = `500 8px ${MICRO}`;
+      ctx.fillStyle = "rgba(186, 230, 253, 0.62)";
+      ctx.textAlign = "left";
+      ctx.fillText(`${hudLayersRef.current} · tap object for details`, 10, 27);
       ctx.textAlign = "right";
       ctx.fillText(
         `${Math.round(viewHeading).toString().padStart(3, " ")}° az · ${Math.round(viewPitch).toString().padStart(2, " ")}° alt`,
@@ -982,7 +1175,7 @@ export function CelestialSkyView({
         ctx.font = `600 9px ${MICRO}`;
         ctx.fillStyle = sep < 6 ? "rgba(251, 191, 36, 0.95)" : "rgba(226, 232, 240, 0.72)";
         ctx.textAlign = "left";
-        ctx.fillText(moonLabel, 10, 28);
+        ctx.fillText(moonLabel, 10, 40);
 
         if (sep > 8) {
           const edgePad = 22;
@@ -1043,10 +1236,15 @@ export function CelestialSkyView({
   ]);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className={`cp-celestial-sky cp-tabular${className ? ` ${className}` : ""}`}
-      aria-label="Celestial sky view with horizon, tracking layers, and pinch zoom"
-    />
+    <div className="cp-sky-canvas-wrap">
+      <canvas
+        ref={canvasRef}
+        className={`cp-celestial-sky cp-tabular${className ? ` ${className}` : ""}`}
+        aria-label="Celestial sky view with horizon, tracking layers, and pinch zoom"
+      />
+      {selectedDetail && (
+        <SkyObjectDetailPanel detail={selectedDetail} onClose={() => setSelectedDetail(null)} />
+      )}
+    </div>
   );
 }

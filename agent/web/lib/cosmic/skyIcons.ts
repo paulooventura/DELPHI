@@ -24,18 +24,34 @@ export function drawStarGlyph(
   r: number,
   color: string,
   glow = false,
+  twinkle = 0,
 ) {
   ctx.save();
+  const bloom = glow ? 1.35 + Math.sin(twinkle) * 0.12 : 1;
+  const coreR = r * bloom;
+
+  if (glow || r > 1.8) {
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, coreR * 3.2);
+    halo.addColorStop(0, "rgba(220, 235, 255, 0.35)");
+    halo.addColorStop(0.35, "rgba(200, 220, 255, 0.12)");
+    halo.addColorStop(1, "transparent");
+    ctx.fillStyle = halo;
+    ctx.beginPath();
+    ctx.arc(x, y, coreR * 3.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
   ctx.fillStyle = color;
   if (glow) {
     ctx.shadowColor = color;
-    ctx.shadowBlur = r * 2.5;
+    ctx.shadowBlur = coreR * 3.8;
   }
+
   const spikes = 4;
   ctx.beginPath();
   for (let i = 0; i < spikes * 2; i++) {
     const a = (i * Math.PI) / spikes - Math.PI / 2;
-    const rad = i % 2 === 0 ? r : r * 0.38;
+    const rad = i % 2 === 0 ? coreR : coreR * 0.42;
     const px = x + Math.cos(a) * rad;
     const py = y + Math.sin(a) * rad;
     if (i === 0) ctx.moveTo(px, py);
@@ -43,7 +59,21 @@ export function drawStarGlyph(
   }
   ctx.closePath();
   ctx.fill();
+
+  if (glow) {
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    ctx.moveTo(x - coreR * 2.2, y);
+    ctx.lineTo(x + coreR * 2.2, y);
+    ctx.moveTo(x, y - coreR * 2.2);
+    ctx.lineTo(x, y + coreR * 2.2);
+    ctx.lineWidth = Math.max(0.4, coreR * 0.22);
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  }
+
   ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
   ctx.restore();
 }
 
@@ -55,23 +85,33 @@ export function drawSunGlyph(
   locked: boolean,
 ) {
   ctx.save();
-  const core = ctx.createRadialGradient(x, y, 0, x, y, r);
-  core.addColorStop(0, "#fff8e0");
-  core.addColorStop(0.45, "#fbbf24");
-  core.addColorStop(1, "#d97706");
+  const corona = ctx.createRadialGradient(x, y, r * 0.2, x, y, r * 2.8);
+  corona.addColorStop(0, "rgba(255, 236, 170, 0.55)");
+  corona.addColorStop(0.45, "rgba(251, 191, 36, 0.18)");
+  corona.addColorStop(1, "transparent");
+  ctx.fillStyle = corona;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 2.8, 0, Math.PI * 2);
+  ctx.fill();
+
+  const core = ctx.createRadialGradient(x - r * 0.15, y - r * 0.15, 0, x, y, r);
+  core.addColorStop(0, "#fffef0");
+  core.addColorStop(0.35, "#fde68a");
+  core.addColorStop(0.7, "#fbbf24");
+  core.addColorStop(1, "#ea580c");
   ctx.fillStyle = core;
-  ctx.shadowColor = locked ? "rgba(251, 191, 36, 0.9)" : "rgba(251, 191, 36, 0.55)";
-  ctx.shadowBlur = locked ? 14 : 8;
+  ctx.shadowColor = locked ? "rgba(251, 191, 36, 0.95)" : "rgba(251, 191, 36, 0.65)";
+  ctx.shadowBlur = locked ? 18 : 12;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
-  ctx.strokeStyle = "rgba(255, 248, 200, 0.55)";
-  ctx.lineWidth = 0.8;
+  ctx.strokeStyle = "rgba(255, 248, 200, 0.45)";
+  ctx.lineWidth = 0.7;
   for (let i = 0; i < 8; i++) {
     const a = (i * Math.PI) / 4;
     ctx.beginPath();
-    ctx.moveTo(x + Math.cos(a) * r * 1.15, y + Math.sin(a) * r * 1.15);
-    ctx.lineTo(x + Math.cos(a) * r * 1.55, y + Math.sin(a) * r * 1.55);
+    ctx.moveTo(x + Math.cos(a) * r * 1.2, y + Math.sin(a) * r * 1.2);
+    ctx.lineTo(x + Math.cos(a) * r * 1.65, y + Math.sin(a) * r * 1.65);
     ctx.stroke();
   }
   ctx.shadowBlur = 0;
@@ -88,20 +128,44 @@ export function drawMoonGlyph(
 ) {
   ctx.save();
   const lit = Math.max(0.08, Math.min(1, illumination));
-  ctx.fillStyle = "#e8ecf4";
-  ctx.shadowColor = locked ? "rgba(200, 210, 230, 0.8)" : "rgba(200, 210, 230, 0.35)";
-  ctx.shadowBlur = locked ? 8 : 4;
+
+  const halo = ctx.createRadialGradient(x, y, r * 0.5, x, y, r * 2.4);
+  halo.addColorStop(0, "rgba(220, 230, 255, 0.28)");
+  halo.addColorStop(1, "transparent");
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 2.4, 0, Math.PI * 2);
+  ctx.fill();
+
+  const sphere = ctx.createRadialGradient(x - r * 0.28, y - r * 0.28, r * 0.08, x, y, r);
+  sphere.addColorStop(0, "#f8fafc");
+  sphere.addColorStop(0.55, "#dbe4f0");
+  sphere.addColorStop(1, "#94a3b8");
+  ctx.fillStyle = sphere;
+  ctx.shadowColor = locked ? "rgba(200, 210, 230, 0.85)" : "rgba(200, 210, 230, 0.45)";
+  ctx.shadowBlur = locked ? 12 : 7;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
   const shadowOff = (1 - lit) * r * 1.6 - r * 0.2;
-  ctx.fillStyle = "rgba(8, 12, 22, 0.92)";
+  ctx.fillStyle = "rgba(8, 12, 22, 0.88)";
   ctx.beginPath();
   ctx.arc(x + shadowOff, y, r * 0.96, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.restore();
 }
+
+const PLANET_PALETTES: Record<string, [string, string, string]> = {
+  mercury: ["#d6d0c4", "#9a9288", "#5c564e"],
+  venus: ["#fff4d6", "#f5d78e", "#c9a227"],
+  mars: ["#f0a090", "#c45c48", "#7a2820"],
+  jupiter: ["#f0e6d0", "#d4b888", "#9a7048"],
+  saturn: ["#f2ead8", "#d4c4a8", "#9a8868"],
+  uranus: ["#b8e8f8", "#78c8e8", "#3898b8"],
+  neptune: ["#88b8f8", "#4878d8", "#2848a8"],
+  pluto: ["#d8c8b8", "#a89888", "#686058"],
+};
 
 export function drawPlanetGlyph(
   ctx: CanvasRenderingContext2D,
@@ -120,20 +184,37 @@ export function drawPlanetGlyph(
     return;
   }
   ctx.save();
-  const g = ctx.createRadialGradient(x - r * 0.25, y - r * 0.25, r * 0.1, x, y, r);
-  g.addColorStop(0, color);
-  g.addColorStop(1, "rgba(0,0,0,0.45)");
+  const palette = PLANET_PALETTES[id] ?? [color, color, "rgba(0,0,0,0.45)"];
+  const atmo = ctx.createRadialGradient(x, y, r * 0.6, x, y, r * 1.85);
+  atmo.addColorStop(0, `${palette[0]}33`);
+  atmo.addColorStop(1, "transparent");
+  ctx.fillStyle = atmo;
+  ctx.beginPath();
+  ctx.arc(x, y, r * 1.85, 0, Math.PI * 2);
+  ctx.fill();
+
+  const g = ctx.createRadialGradient(x - r * 0.28, y - r * 0.28, r * 0.05, x, y, r);
+  g.addColorStop(0, palette[0]!);
+  g.addColorStop(0.55, palette[1]!);
+  g.addColorStop(1, palette[2]!);
   ctx.fillStyle = g;
+  ctx.shadowColor = `${palette[0]}88`;
+  ctx.shadowBlur = r * 1.8;
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
   if (id === "saturn") {
-    ctx.strokeStyle = "rgba(210, 190, 160, 0.7)";
-    ctx.lineWidth = 0.7;
+    ctx.strokeStyle = "rgba(230, 210, 175, 0.75)";
+    ctx.lineWidth = 0.75;
+    ctx.shadowBlur = 0;
     ctx.beginPath();
-    ctx.ellipse(x, y, r * 1.55, r * 0.34, -0.15, 0, Math.PI * 2);
+    ctx.ellipse(x, y, r * 1.65, r * 0.36, -0.15, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(x, y, r * 1.4, r * 0.28, -0.15, 0, Math.PI * 2);
     ctx.stroke();
   }
+  ctx.shadowBlur = 0;
   ctx.restore();
 }
 
@@ -146,12 +227,12 @@ export function drawSatelliteGlyph(
   pulse: number,
 ) {
   ctx.save();
-  const s = size * (locked ? 1.15 : 1);
-  const fill = locked ? "rgba(16, 185, 129, 0.95)" : "rgba(96, 165, 250, 0.9)";
-  const stroke = locked ? "rgba(16, 185, 129, 0.7)" : "rgba(148, 163, 184, 0.65)";
+  const s = size * (locked ? 1.2 : 1.05);
+  const fill = locked ? "rgba(52, 211, 153, 0.95)" : "rgba(125, 211, 252, 0.92)";
+  const stroke = locked ? "rgba(52, 211, 153, 0.75)" : "rgba(186, 230, 253, 0.7)";
   ctx.translate(x, y);
-  ctx.shadowColor = locked ? "rgba(16, 185, 129, 0.5)" : "rgba(96, 165, 250, 0.4)";
-  ctx.shadowBlur = 3 + Math.sin(pulse) * 1.5;
+  ctx.shadowColor = locked ? "rgba(52, 211, 153, 0.55)" : "rgba(125, 211, 252, 0.5)";
+  ctx.shadowBlur = 4 + Math.sin(pulse) * 1.2;
 
   ctx.fillStyle = fill;
   ctx.strokeStyle = stroke;
@@ -277,11 +358,11 @@ export function drawAircraftGlyph(
   ctx.translate(x, y);
   ctx.rotate(headingDeg * (Math.PI / 180));
   const s = size * (locked ? 1.2 : 1);
-  ctx.fillStyle = locked ? "rgba(16, 185, 129, 0.92)" : "rgba(226, 232, 240, 0.88)";
-  ctx.strokeStyle = locked ? "rgba(16, 185, 129, 0.75)" : "rgba(148, 163, 184, 0.7)";
+  ctx.fillStyle = locked ? "rgba(52, 211, 153, 0.92)" : "rgba(240, 248, 255, 0.9)";
+  ctx.strokeStyle = locked ? "rgba(52, 211, 153, 0.75)" : "rgba(186, 230, 253, 0.75)";
   ctx.lineWidth = 0.85;
-  ctx.shadowColor = locked ? "rgba(16, 185, 129, 0.45)" : "rgba(148, 163, 184, 0.25)";
-  ctx.shadowBlur = locked ? 5 : 2;
+  ctx.shadowColor = locked ? "rgba(52, 211, 153, 0.45)" : "rgba(186, 230, 253, 0.35)";
+  ctx.shadowBlur = locked ? 6 : 3.5;
 
   switch (kind) {
     case "helicopter":
@@ -310,22 +391,26 @@ export function drawCometGlyph(
   locked: boolean,
 ) {
   ctx.save();
-  const tail = size * (locked ? 4.5 : 3.2);
+  const tail = size * (locked ? 5.2 : 4);
   const grad = ctx.createLinearGradient(x, y, x - tail, y - tail * 0.35);
   grad.addColorStop(0, color);
-  grad.addColorStop(0.35, "rgba(136, 200, 232, 0.45)");
+  grad.addColorStop(0.25, "rgba(186, 230, 253, 0.55)");
   grad.addColorStop(1, "transparent");
   ctx.strokeStyle = grad;
-  ctx.lineWidth = locked ? 2 : 1.4;
+  ctx.lineWidth = locked ? 2.2 : 1.6;
   ctx.beginPath();
   ctx.moveTo(x, y);
   ctx.lineTo(x - tail, y - tail * 0.35);
   ctx.stroke();
-  ctx.fillStyle = color;
-  ctx.shadowColor = "rgba(136, 200, 232, 0.5)";
-  ctx.shadowBlur = locked ? 6 : 3;
+  const nucleus = ctx.createRadialGradient(x, y, 0, x, y, size * 0.7);
+  nucleus.addColorStop(0, "#f0f9ff");
+  nucleus.addColorStop(0.5, color);
+  nucleus.addColorStop(1, "rgba(56, 120, 160, 0.8)");
+  ctx.fillStyle = nucleus;
+  ctx.shadowColor = "rgba(186, 230, 253, 0.65)";
+  ctx.shadowBlur = locked ? 10 : 6;
   ctx.beginPath();
-  ctx.arc(x, y, size * 0.55, 0, Math.PI * 2);
+  ctx.arc(x, y, size * 0.65, 0, Math.PI * 2);
   ctx.fill();
   ctx.shadowBlur = 0;
   ctx.restore();
@@ -340,9 +425,19 @@ export function drawAsteroidGlyph(
   locked: boolean,
 ) {
   ctx.save();
+  const glow = ctx.createRadialGradient(x, y, 0, x, y, size * 2.2);
+  glow.addColorStop(0, `${color}55`);
+  glow.addColorStop(1, "transparent");
+  ctx.fillStyle = glow;
+  ctx.beginPath();
+  ctx.arc(x, y, size * 2.2, 0, Math.PI * 2);
+  ctx.fill();
+
   ctx.fillStyle = color;
-  ctx.strokeStyle = locked ? "rgba(16, 185, 129, 0.7)" : "rgba(180, 170, 150, 0.5)";
-  ctx.lineWidth = 0.7;
+  ctx.strokeStyle = locked ? "rgba(52, 211, 153, 0.75)" : "rgba(210, 200, 175, 0.55)";
+  ctx.lineWidth = 0.8;
+  ctx.shadowColor = locked ? "rgba(52, 211, 153, 0.45)" : "rgba(210, 200, 175, 0.35)";
+  ctx.shadowBlur = locked ? 6 : 3;
   ctx.beginPath();
   for (let i = 0; i < 6; i++) {
     const a = (i * Math.PI * 2) / 6 + 0.2;

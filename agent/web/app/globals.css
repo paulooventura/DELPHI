@@ -599,6 +599,126 @@ html,body {
   touch-action: none;
 }
 
+.cp-sky-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: inherit;
+}
+
+.cp-sky-object-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 12;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0.75rem;
+  pointer-events: none;
+}
+
+.cp-sky-object-panel-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.45);
+  backdrop-filter: blur(4px);
+  pointer-events: auto;
+}
+
+.cp-sky-object-panel-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 22rem);
+  border-radius: 1rem;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.96), rgba(8, 12, 22, 0.98));
+  padding: 1rem 1.05rem 1.1rem;
+  pointer-events: auto;
+  animation: cp-sky-panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes cp-sky-panel-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.cp-sky-object-panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.cp-sky-object-panel-emoji {
+  font-size: 1.45rem;
+  line-height: 1;
+  filter: drop-shadow(0 0 8px rgba(186, 230, 253, 0.35));
+}
+
+.cp-sky-object-panel-title-wrap { flex: 1; min-width: 0; }
+
+.cp-sky-object-panel-kind {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(148, 163, 184, 0.85);
+}
+
+.cp-sky-object-panel-name {
+  margin: 0.15rem 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1.25;
+}
+
+.cp-sky-object-panel-close {
+  border: none;
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 999px;
+  font-size: 1.1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.cp-sky-object-panel-coords {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  font-size: 0.72rem;
+  color: rgba(186, 230, 253, 0.82);
+}
+
+.cp-sky-object-panel-facts {
+  margin: 0.75rem 0 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.cp-sky-object-panel-fact {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-size: 0.72rem;
+  padding-top: 0.35rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.cp-sky-object-panel-fact dt {
+  color: rgba(148, 163, 184, 0.9);
+}
+
+.cp-sky-object-panel-fact dd {
+  margin: 0;
+  color: #e2e8f0;
+  font-weight: 600;
+  text-align: right;
+}
+
 .cp-split-skymap-off {
   display: flex;
   align-items: center;
