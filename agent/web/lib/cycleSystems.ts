@@ -19,11 +19,17 @@ export type WeatherInfo = {
   windKmh: number | null;
   /** Sea-level adjusted surface pressure (hPa) for barometric breath ring */
   pressureHpa: number | null;
+  /** WMO code + cloud cover for current conditions */
+  weatherCode?: number | null;
+  cloudCover?: number | null;
+  isDay?: boolean;
+  precipProb?: number | null;
   /** Local forecast per clock hour (0–23) in the viewer's timezone */
   hourly?: Array<{
     hour: number;
     emoji: string;
     condition: string;
+    weatherCode?: number | null;
     tempC: number | null;
     precipProb?: number | null;
     cloudCover?: number | null;

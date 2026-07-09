@@ -31,6 +31,7 @@ import { SkyCompass } from "../components/SkyCompass";
 import { SkyCatalog } from "../components/SkyCatalog";
 import { labelForDistanceRank } from "../lib/starmap";
 import { estimateOutdoorLux } from "../lib/platform";
+import { weatherAdjustedLux, weatherSlotForHour } from "../lib/cosmic/skyWeather";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -276,7 +277,7 @@ export default function Home() {
     setDeviceAmbient(prev => (prev.lux === a.lux && prev.pressureHpa === a.pressureHpa ? prev : a));
   }, []);
 
-  const { now: animNow, state: cosmic } = useCosmicClock({
+  const { now: animNow, state: cosmic, engine: cosmicEngine } = useCosmicClock({
     lat: signals?.lat ?? FALLBACK_LAT,
     lon: signals?.lon ?? FALLBACK_LON,
     headingDeg: signals?.heading ?? manualHeading,
@@ -676,6 +677,16 @@ export default function Home() {
   const atmosphericBreath = cosmic?.sensors.atmosphericBreath ?? 0;
   const sensesAwake = hasLiveLocation || hasLiveHeading || pitchLive || Boolean(signals?.network);
   const estimatedLux = estimateOutdoorLux(cosmic?.solarDayAngleDeg);
+  const skyWeatherSlot = weatherSlotForHour(cycles?.weather ?? null, cosmic?.now ?? animNow);
+  const weatherLux = weatherAdjustedLux(
+    deviceAmbient.lux ?? estimatedLux,
+    skyWeatherSlot?.cloudCover,
+    skyWeatherSlot?.isDay ?? false,
+  );
+
+  useEffect(() => {
+    if (weatherLux != null) cosmicEngine?.setLux(weatherLux);
+  }, [weatherLux, cosmicEngine]);
 
   function clampZoom(z: number) {
     return Math.max(0.75, Math.min(2.8, z));
@@ -945,6 +956,7 @@ export default function Home() {
                     arPoseReady={skyArPoseReady}
                     hapticsEnabled={toggles.location || toggles.heading}
                     warmth={spectrumWarmth}
+                    weather={skyWeatherSlot}
                   />
                 </div>
               ) : (
@@ -1348,7 +1360,7 @@ export default function Home() {
               <div className="cp-sources">
                 <p className="cp-label">Sources ({res.sources.length})</p>
                 {res.sources.slice(0, 14).map((s: SourceResult, i) => {
-                  const meta = PROVIDER_TIER_META[s.providerTier];
+                  const meta = PROVIDER_TIER_META[s.providerTier] ?? PROVIDER_TIER_META[3];
                   return (
                     <article key={i} className="cp-source">
                       <a href={s.url} target="_blank" rel="noreferrer">{s.title}</a>

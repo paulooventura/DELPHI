@@ -49,6 +49,14 @@ import {
   type Vec3,
   type ViewBasis,
 } from "../lib/sphericalView";
+import {
+  drawCloudLayer,
+  drawFogLayer,
+  drawRainLayer,
+  lerpAppearance,
+  resolveSkyWeatherAppearance,
+  type SkyWeatherSlot,
+} from "../lib/cosmic/skyWeather";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
 
@@ -71,6 +79,8 @@ export type CelestialSkyViewProps = {
   arPoseReady?: boolean;
   hapticsEnabled?: boolean;
   warmth?: number;
+  /** Open-Meteo slot for local sky palette + clouds */
+  weather?: SkyWeatherSlot | null;
   className?: string;
 };
 
@@ -522,18 +532,30 @@ function paintBackground(
   w: number,
   h: number,
   subBlend: number,
-  warmth: number,
+  appearance: ReturnType<typeof resolveSkyWeatherAppearance>,
+  timeSec: number,
 ) {
   const cx = w * 0.5;
   const cy = h * 0.42;
   const r = Math.max(w, h) * 0.85;
 
   const cosmic = ctx.createRadialGradient(cx, cy, r * 0.05, cx, cy, r);
-  cosmic.addColorStop(0, OBS.space.core);
-  cosmic.addColorStop(0.55, "#0a0e16");
-  cosmic.addColorStop(1, OBS.space.outer);
+  cosmic.addColorStop(0, appearance.skyMid);
+  cosmic.addColorStop(0.45, appearance.skyTop);
+  cosmic.addColorStop(1, appearance.skyBottom);
   ctx.fillStyle = cosmic;
   ctx.fillRect(0, 0, w, h);
+
+  const horizonWash = ctx.createLinearGradient(0, h * 0.2, 0, h);
+  horizonWash.addColorStop(0, "transparent");
+  horizonWash.addColorStop(0.55, appearance.isDay ? "rgba(255,255,255,0.04)" : "rgba(30,41,59,0.12)");
+  horizonWash.addColorStop(1, appearance.isDay ? "rgba(200,220,240,0.08)" : "rgba(15,23,42,0.22)");
+  ctx.fillStyle = horizonWash;
+  ctx.fillRect(0, 0, w, h);
+
+  drawCloudLayer(ctx, w, h, appearance.cloudCover, appearance.cloudBrightness, appearance.isDay, timeSec);
+  drawFogLayer(ctx, w, h, appearance.fogOpacity);
+  drawRainLayer(ctx, w, h, appearance.rainIntensity, timeSec);
 
   if (subBlend > 0.001) {
     const earth = ctx.createLinearGradient(0, h * 0.35, 0, h);
@@ -546,7 +568,7 @@ function paintBackground(
 
   const vignette = ctx.createRadialGradient(cx, cy, r * 0.2, cx, cy, r);
   vignette.addColorStop(0, "transparent");
-  vignette.addColorStop(1, warmth > 0.5 ? "rgba(217, 119, 6, 0.06)" : "rgba(96, 165, 250, 0.05)");
+  vignette.addColorStop(1, appearance.vignette);
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, w, h);
 }
@@ -565,6 +587,7 @@ export function CelestialSkyView({
   arPoseReady = true,
   hapticsEnabled = true,
   warmth = 0.55,
+  weather = null,
   className = "",
 }: CelestialSkyViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -587,6 +610,12 @@ export function CelestialSkyView({
     roll: 0,
   });
   const basisRef = useRef<ViewBasis | null>(null);
+  const weatherAppearRef = useRef(resolveSkyWeatherAppearance(weather, warmth));
+  const weatherTargetRef = useRef(resolveSkyWeatherAppearance(weather, warmth));
+
+  useLayoutEffect(() => {
+    weatherTargetRef.current = resolveSkyWeatherAppearance(weather, warmth);
+  }, [weather, warmth]);
 
   useLayoutEffect(() => {
     propsAttitudeRef.current = { view: altAzToEnu(headingDeg, pitchDeg), roll: 0 };
@@ -697,6 +726,14 @@ export function CelestialSkyView({
       const targetGround = groundBlendFromView(smooth.view);
       groundBlendRef.current += (targetGround - groundBlendRef.current) * 0.06;
 
+      weatherAppearRef.current = lerpAppearance(
+        weatherAppearRef.current,
+        weatherTargetRef.current,
+        0.08,
+      );
+      const sky = weatherAppearRef.current;
+      const skyWarmth = sky.effectiveWarmth;
+
       const dpr = window.devicePixelRatio || 1;
       const rect = canvas.getBoundingClientRect();
       const w = Math.max(1, rect.width);
@@ -707,13 +744,13 @@ export function CelestialSkyView({
       }
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-      paintBackground(ctx, w, h, groundBlendRef.current, warmth);
+      paintBackground(ctx, w, h, groundBlendRef.current, sky, pulseRef.current);
 
       const detail = getSkyDetailLevel(scale);
-      const starAlpha = starFieldOpacity(scale);
+      const starAlpha = starFieldOpacity(scale) * sky.starScale;
       const texBlend = planetTextureBlend(scale);
       const project = createZoomedSkyProjector(w, h, basis, scale, FOV_AZ, FOV_ALT_HALF);
-      const accent = spectrumAccent(warmth);
+      const accent = spectrumAccent(skyWarmth);
 
       drawHorizonRing(
         ctx,
@@ -722,7 +759,7 @@ export function CelestialSkyView({
         h,
         OBS.celestial.horizon,
         OBS.vector.strokeMax,
-        warmth > 0.5 ? OBS.night.glow : OBS.day.glow,
+        skyWarmth > 0.5 ? OBS.night.glow : OBS.day.glow,
       );
 
       if (detail === "wide") {
@@ -899,7 +936,7 @@ export function CelestialSkyView({
       const cy = h / 2;
       ctx.save();
       ctx.strokeStyle = accent;
-      ctx.shadowColor = warmth > 0.5 ? OBS.night.glow : OBS.day.glow;
+      ctx.shadowColor = skyWarmth > 0.5 ? OBS.night.glow : OBS.day.glow;
       ctx.shadowBlur = 5;
       ctx.lineWidth = 0.85;
       ctx.beginPath();
@@ -919,10 +956,10 @@ export function CelestialSkyView({
       }
 
       ctx.font = `500 10px ${MICRO}`;
-      ctx.fillStyle = warmth > 0.5 ? "rgba(245, 158, 11, 0.88)" : "rgba(226, 232, 240, 0.88)";
+      ctx.fillStyle = skyWarmth > 0.5 ? "rgba(245, 158, 11, 0.88)" : "rgba(226, 232, 240, 0.88)";
       ctx.textAlign = "left";
       ctx.fillText(
-        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${observationTime.toLocaleTimeString()} · ${hudZoomRef.current} · astro`,
+        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${observationTime.toLocaleTimeString()} · ${hudZoomRef.current}${weather?.condition ? ` · ${weather.condition}` : ""}`,
         10,
         15,
       );
@@ -1001,6 +1038,7 @@ export function CelestialSkyView({
     arPoseReady,
     observerAltM,
     warmth,
+    weather,
     liveAttitudeRef,
   ]);
 

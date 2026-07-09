@@ -67,6 +67,7 @@ async function fetchWeather(
         hour,
         emoji: hMeta.emoji,
         condition: hMeta.condition,
+        weatherCode: hCode,
         tempC: typeof hourlyTemps[idx] === "number" ? hourlyTemps[idx]! : null,
         precipProb: typeof hourlyPrecip[idx] === "number" ? hourlyPrecip[idx]! : null,
         cloudCover: typeof hourlyCloud[idx] === "number" ? hourlyCloud[idx]! : null,
@@ -82,6 +83,7 @@ async function fetchWeather(
         hour: h,
         emoji: near?.emoji ?? emoji,
         condition: near?.condition ?? condition,
+        weatherCode: near?.weatherCode ?? code,
         tempC: near?.tempC ?? (typeof cur.temperature_2m === "number" ? cur.temperature_2m : null),
         precipProb: near?.precipProb ?? null,
         cloudCover: near?.cloudCover ?? null,
@@ -89,12 +91,19 @@ async function fetchWeather(
       };
     }
 
+    const curHour = new Date().getHours();
+    const curSlot = hourly[curHour];
+
     return {
       condition,
       emoji,
       tempC: typeof cur.temperature_2m === "number" ? cur.temperature_2m : null,
       windKmh: typeof cur.wind_speed_10m === "number" ? cur.wind_speed_10m : null,
       pressureHpa: typeof cur.surface_pressure === "number" ? cur.surface_pressure : null,
+      weatherCode: code,
+      cloudCover: typeof cur.cloud_cover === "number" ? cur.cloud_cover : curSlot?.cloudCover ?? null,
+      isDay: curIsDay,
+      precipProb: curSlot?.precipProb ?? null,
       hourly,
     };
   } catch {

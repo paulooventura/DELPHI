@@ -351,14 +351,29 @@ export type SegmentVisual = {
   graphicKey?: string;
 };
 
+const RING_SEGMENT_DIVISIONS: Partial<Record<number, number>> = {
+  4: 100,
+  5: 12,
+  6: 8,
+  7: 4,
+  8: 20,
+  9: 12,
+  10: 12,
+};
+
 /** Resolve a graphic key from ring + segment index for dashboard readouts. */
-export function segmentGraphicKey(ringId: number, index: number, divisions = 12): string | undefined {
-  return ringSegmentVisual(ringId, index, divisions).graphicKey;
+export function segmentGraphicKey(ringId: number, index: number, divisions?: number): string | undefined {
+  const div = divisions ?? RING_SEGMENT_DIVISIONS[ringId] ?? 12;
+  if (ringId === 6 && index >= 0 && index <= 1) {
+    const phase = lunarPhaseFromFraction(index);
+    return `lunar:${phase.id}`;
+  }
+  return ringSegmentVisual(ringId, index, div).graphicKey;
 }
 
 /** Per-cell fill, stroke, and label for discrete wheel segments. */
 export function ringSegmentVisual(ringId: number, index: number, divisions: number): SegmentVisual {
-  const i = ((index % divisions) + divisions) % divisions;
+  const i = Math.floor(((index % divisions) + divisions) % divisions);
   switch (ringId) {
     case 4: {
       const major = i % 10 === 0;
