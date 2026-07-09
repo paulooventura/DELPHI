@@ -46,3 +46,21 @@ GEMINI_API_KEY=...
 ```
 
 These are entirely optional — with none set, zero paid calls are ever made. The app only spends a key's quota you've explicitly provided, and only on the final synthesis step (not every phase).
+
+### Optional: live aircraft (AirLabs)
+
+For real ADS-B traffic on the Sky tab, add your [AirLabs](https://airlabs.co/) API key to Vercel (or `agent/web/.env.local` locally):
+
+```
+AIRLABS_API_KEY=your_key_here
+```
+
+With the key set, the app uses AirLabs for:
+
+- **Live flights** within ~250 km of your GPS (`/api/v9/flights`)
+- **Nearest airport** context on the sky HUD and catalog (`/api/v9/nearby`)
+- Rich aircraft tap-details: route (dep→arr), airline, aircraft type, registration, status, vertical rate
+
+Without the key, demo traffic is shown so the sky layer still works offline.
+
+Other AirLabs endpoints (schedules, airlines DB, routes) can be wired later for departure boards and flight lookup.

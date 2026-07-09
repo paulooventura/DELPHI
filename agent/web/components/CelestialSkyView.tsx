@@ -97,6 +97,14 @@ type Trackable = {
   magnitude?: number;
   bodyId?: string;
   iconKind?: AircraftTrack["iconKind"];
+  depIata?: string;
+  arrIata?: string;
+  airlineIata?: string;
+  aircraftIcao?: string;
+  regNumber?: string;
+  status?: string;
+  verticalRateMps?: number;
+  rangeM?: number;
 };
 
 type HitTarget = {
@@ -145,10 +153,32 @@ function buildObjectDetail(
   }
 
   if (trackable.gsKnots != null) {
+    if (trackable.depIata && trackable.arrIata) {
+      lines.push({ label: "Route", value: `${trackable.depIata} → ${trackable.arrIata}` });
+    }
+    if (trackable.airlineIata) {
+      lines.push({ label: "Airline", value: trackable.airlineIata });
+    }
+    if (trackable.aircraftIcao) {
+      lines.push({ label: "Aircraft", value: trackable.aircraftIcao });
+    }
+    if (trackable.regNumber) {
+      lines.push({ label: "Registration", value: trackable.regNumber });
+    }
+    if (trackable.status) {
+      lines.push({ label: "Status", value: trackable.status });
+    }
     lines.push(
       { label: "Ground speed", value: `${Math.round(trackable.gsKnots)} kt` },
-      { label: "Baro altitude", value: `${Math.round(trackable.baroAltFt ?? 0).toLocaleString()} ft` },
+      { label: "Altitude", value: `${Math.round(trackable.baroAltFt ?? 0).toLocaleString()} ft` },
     );
+    if (trackable.rangeM != null) {
+      lines.push({ label: "Slant range", value: `${(trackable.rangeM / 1000).toFixed(1)} km` });
+    }
+    if (trackable.verticalRateMps != null && Math.abs(trackable.verticalRateMps) > 0.2) {
+      const fpm = Math.round(trackable.verticalRateMps * 196.85);
+      lines.push({ label: "Vertical rate", value: `${fpm > 0 ? "+" : ""}${fpm} ft/min` });
+    }
   }
 
   if (trackable.altKm != null) {
@@ -488,7 +518,9 @@ function drawAircraft(
     : `${Math.round(track.baroAltFt)}ft`;
   const label = locked
     ? `${track.callsign} · ${Math.round(track.az)}° az · ${Math.round(track.alt)}° alt · ${track.gsKnots}kt`
-    : `${track.callsign} | ${altStr.replace(",", ",")}`;
+    : track.depIata && track.arrIata
+      ? `${track.callsign} · ${track.depIata}→${track.arrIata}`
+      : `${track.callsign} | ${altStr.replace(",", ",")}`;
   ctx.font = `500 7px ${MICRO}`;
   ctx.fillStyle = locked ? "rgba(16, 185, 129, 0.92)" : "rgba(148, 163, 184, 0.72)";
   ctx.textAlign = "center";
@@ -685,6 +717,8 @@ export function CelestialSkyView({
   const tapRef = useRef<{ x: number; y: number; active: boolean } | null>(null);
   const hudZoomRef = useRef("1.0×");
   const hudLayersRef = useRef("");
+  const aircraftSourceRef = useRef<"live" | "mock">("mock");
+  const nearestAirportRef = useRef<string | null>(null);
   const lockReadoutRef = useRef<string | null>(null);
   const hudTickRef = useRef(0);
   const [selectedDetail, setSelectedDetail] = useState<SkyObjectDetail | null>(null);
@@ -790,8 +824,17 @@ export function CelestialSkyView({
           fetch(`/api/sky/satellites?${q}`).then(r => r.ok ? r.json() : null),
         ]);
         if (cancelled) return;
-        if (acRes?.aircraft?.length) aircraftRef.current = acRes.aircraft;
-        else aircraftRef.current = mockAircraft;
+        if (acRes?.aircraft?.length) {
+          aircraftRef.current = acRes.aircraft;
+          aircraftSourceRef.current = acRes.source === "live" ? "live" : "mock";
+          nearestAirportRef.current = acRes.nearestAirport
+            ? `${acRes.nearestAirport.name} (${acRes.nearestAirport.iata}) · ${acRes.nearestAirport.distanceKm.toFixed(0)} km`
+            : null;
+        } else {
+          aircraftRef.current = mockAircraft;
+          aircraftSourceRef.current = "mock";
+          nearestAirportRef.current = null;
+        }
         if (satRes?.satellites?.length) {
           satellitesRef.current = satRes.satellites;
         } else {
@@ -969,6 +1012,14 @@ export function CelestialSkyView({
           gsKnots: ac.gsKnots,
           baroAltFt: ac.baroAltFt,
           iconKind: ac.iconKind,
+          depIata: ac.depIata,
+          arrIata: ac.arrIata,
+          airlineIata: ac.airlineIata,
+          aircraftIcao: ac.aircraftIcao,
+          regNumber: ac.regNumber,
+          status: ac.status,
+          verticalRateMps: ac.verticalRateMps,
+          rangeM: ac.rangeM,
         });
       }
 
@@ -1119,7 +1170,7 @@ export function CelestialSkyView({
         const [x, y] = project.toXY(sat.az, sat.alt);
         return project.inView(x, y, w, h, 16);
       }).length;
-      hudLayersRef.current = `${inViewAc}/${aircraftRef.current.length} aircraft · ${inViewSat}/${satTracks.length} sats · ${minorBodies.length} minor bodies`;
+      hudLayersRef.current = `${aircraftSourceRef.current === "live" ? "● LIVE ADS-B" : "○ Demo traffic"} · ${inViewAc}/${aircraftRef.current.length} aircraft · ${inViewSat}/${satTracks.length} sats · ${minorBodies.length} minor bodies`;
 
       const cx = w / 2;
       const cy = h / 2;
@@ -1156,6 +1207,11 @@ export function CelestialSkyView({
       ctx.fillStyle = "rgba(186, 230, 253, 0.62)";
       ctx.textAlign = "left";
       ctx.fillText(`${hudLayersRef.current} · tap object for details`, 10, 27);
+      if (nearestAirportRef.current) {
+        ctx.font = `500 8px ${MICRO}`;
+        ctx.fillStyle = "rgba(148, 163, 184, 0.58)";
+        ctx.fillText(`Nearest airport · ${nearestAirportRef.current}`, 10, 39);
+      }
       ctx.textAlign = "right";
       ctx.fillText(
         `${Math.round(viewHeading).toString().padStart(3, " ")}° az · ${Math.round(viewPitch).toString().padStart(2, " ")}° alt`,
@@ -1175,7 +1231,7 @@ export function CelestialSkyView({
         ctx.font = `600 9px ${MICRO}`;
         ctx.fillStyle = sep < 6 ? "rgba(251, 191, 36, 0.95)" : "rgba(226, 232, 240, 0.72)";
         ctx.textAlign = "left";
-        ctx.fillText(moonLabel, 10, 40);
+        ctx.fillText(moonLabel, 10, nearestAirportRef.current ? 52 : 40);
 
         if (sep > 8) {
           const edgePad = 22;

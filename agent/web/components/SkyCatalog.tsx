@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { computeCelestialBodies, type CelestialBody } from "../lib/cosmic/celestialBodies";
 import type { AircraftTrack } from "../lib/cosmic/aircraftTracking";
 import { computeAircraftTracks, generateMockAircraft } from "../lib/cosmic/aircraftTracking";
+import type { NearbyAirport } from "../lib/cosmic/airlabs";
 import {
   computeSatelliteTracks,
   DEFAULT_TLE_CATALOG,
@@ -81,6 +82,8 @@ export function SkyCatalog({ lat, lon, observationTime, observerAltM = 0, classN
   const tleCatalog = useMemo(() => parseTLECatalog(DEFAULT_TLE_CATALOG), []);
   const [aircraft, setAircraft] = useState<AircraftTrack[]>([]);
   const [satellites, setSatellites] = useState<SatelliteTrack[]>([]);
+  const [aircraftSource, setAircraftSource] = useState<"live" | "mock">("mock");
+  const [nearestAirport, setNearestAirport] = useState<NearbyAirport | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -95,12 +98,17 @@ export function SkyCatalog({ lat, lon, observationTime, observerAltM = 0, classN
           fetch(`/api/sky/satellites?${q}`).then(r => r.ok ? r.json() : null),
         ]);
         if (cancelled) return;
-        if (acRes?.aircraft) setAircraft(acRes.aircraft);
-        else {
+        if (acRes?.aircraft?.length) {
+          setAircraft(acRes.aircraft);
+          setAircraftSource(acRes.source === "live" ? "live" : "mock");
+          setNearestAirport(acRes.nearestAirport ?? null);
+        } else {
           setAircraft(computeAircraftTracks(
             generateMockAircraft(observer, Math.floor(Date.now() / 60000), 12),
             observer,
           ));
+          setAircraftSource("mock");
+          setNearestAirport(null);
         }
         if (satRes?.satellites) setSatellites(satRes.satellites);
         else {
@@ -155,9 +163,27 @@ export function SkyCatalog({ lat, lon, observationTime, observerAltM = 0, classN
     name: a.callsign,
     az: a.az,
     alt: a.alt,
-    detail: `${a.gsKnots} kt · ${a.baroAltFt.toFixed(0)} ft`,
+    detail: [
+      a.depIata && a.arrIata ? `${a.depIata}→${a.arrIata}` : null,
+      `${a.gsKnots} kt`,
+      `${Math.round(a.baroAltFt).toLocaleString()} ft`,
+      a.aircraftIcao,
+    ].filter(Boolean).join(" · "),
     visible: a.alt > 0,
   }));
+
+  const airportRows: CatalogRow[] = nearestAirport
+    ? [{
+        id: `apt-${nearestAirport.iata}`,
+        kind: "aircraft",
+        glyph: "🛫",
+        name: nearestAirport.name,
+        az: 0,
+        alt: 0,
+        detail: `${nearestAirport.iata} · ${nearestAirport.distanceKm.toFixed(1)} km away`,
+        visible: true,
+      }]
+    : [];
 
   const rootClass = className ? `cp-sky-catalog ${className}` : "cp-sky-catalog";
 
@@ -169,10 +195,19 @@ export function SkyCatalog({ lat, lon, observationTime, observerAltM = 0, classN
       </div>
       <p className="cp-muted cp-sky-catalog-blurb">
         Planets, satellites, and aircraft overhead — point your phone at an object to lock it on the sky map.
+        {aircraftSource === "live"
+          ? " Live ADS-B traffic via AirLabs."
+          : " Demo aircraft shown until AIRLABS_API_KEY is configured."}
       </p>
+      {nearestAirport && (
+        <p className="cp-muted" style={{ fontSize: "0.68rem", marginTop: "-0.2rem" }}>
+          Nearest airport: <strong>{nearestAirport.name}</strong> ({nearestAirport.iata}) · {nearestAirport.distanceKm.toFixed(1)} km
+        </p>
+      )}
       <CatalogSection title="Planets & Moon" rows={planets} />
       <CatalogSection title={`Satellites (${satellites.length})`} rows={sats} />
-      <CatalogSection title={`Aircraft (${aircraft.length})`} rows={planes} />
+      <CatalogSection title={`Aircraft (${aircraft.length}${aircraftSource === "live" ? " · live" : " · demo"})`} rows={planes} />
+      {airportRows.length > 0 && <CatalogSection title="Aviation context" rows={airportRows} />}
     </section>
   );
 }

@@ -4,6 +4,7 @@ import {
   fetchLiveAircraft,
   generateMockAircraft,
 } from "../../../../lib/cosmic/aircraftTracking";
+import { fetchNearbyAirports, getAirLabsApiKey } from "../../../../lib/cosmic/airlabs";
 
 export async function GET(req: Request) {
   try {
@@ -13,8 +14,8 @@ export async function GET(req: Request) {
     const altM = Number(searchParams.get("alt") ?? 200);
     const observer = { latDeg: lat, lonDeg: lon, altM };
 
-    const apiKey = process.env.AIRLABS_API_KEY ?? process.env.AVIATIONSTACK_API_KEY;
-    const provider = process.env.AIRLABS_API_KEY ? "airlabs" as const : "aviationstack" as const;
+    const apiKey = getAirLabsApiKey() ?? process.env.AVIATIONSTACK_API_KEY;
+    const provider = getAirLabsApiKey() ? "airlabs" as const : "aviationstack" as const;
 
     let source: "live" | "mock" = "mock";
     let reports;
@@ -27,13 +28,24 @@ export async function GET(req: Request) {
 
     const now = new Date();
     const tracks = computeAircraftTracks(reports, observer);
+    let nearestAirport = null;
+    if (getAirLabsApiKey()) {
+      try {
+        const nearby = await fetchNearbyAirports(lat, lon, 80);
+        nearestAirport = nearby?.nearest ?? null;
+      } catch {
+        /* optional context */
+      }
+    }
 
     return NextResponse.json({
       updatedAt: now.toISOString(),
       source,
+      provider: getAirLabsApiKey() ? "airlabs" : apiKey ? "aviationstack" : "mock",
       observer: { lat, lon, altM },
       count: tracks.length,
       aircraft: tracks,
+      nearestAirport,
     });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 500 });

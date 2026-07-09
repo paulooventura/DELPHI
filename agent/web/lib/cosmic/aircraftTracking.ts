@@ -13,8 +13,15 @@ export type AircraftReport = {
   baroAltFt: number;
   headingDeg: number;
   gsKnots: number;
-  verticalRateFpm?: number;
+  verticalRateMps?: number;
   trail?: Array<{ latDeg: number; lonDeg: number; baroAltFt: number }>;
+  depIata?: string;
+  arrIata?: string;
+  airlineIata?: string;
+  aircraftIcao?: string;
+  regNumber?: string;
+  status?: string;
+  updatedAt?: number;
 };
 
 export type AircraftTrack = {
@@ -28,6 +35,14 @@ export type AircraftTrack = {
   gsKnots: number;
   iconKind: AircraftIconKind;
   trail: Array<{ az: number; alt: number }>;
+  depIata?: string;
+  arrIata?: string;
+  airlineIata?: string;
+  aircraftIcao?: string;
+  regNumber?: string;
+  status?: string;
+  verticalRateMps?: number;
+  updatedAt?: number;
 };
 
 /** Aviationstack-compatible response shape. */
@@ -40,16 +55,31 @@ export type AviationstackResponse = {
   }>;
 };
 
-/** AirLabs-compatible response shape. */
+/** AirLabs-compatible response shape — alt in meters, speed in km/h. */
 export type AirLabsResponse = {
   response: Array<{
     hex?: string;
-    flight_iata?: string;
+    reg_number?: string;
+    flag?: string;
     lat?: number;
     lng?: number;
     alt?: number;
     dir?: number;
     speed?: number;
+    v_speed?: number;
+    squawk?: string;
+    flight_number?: string;
+    flight_icao?: string;
+    flight_iata?: string;
+    dep_icao?: string;
+    dep_iata?: string;
+    arr_icao?: string;
+    arr_iata?: string;
+    airline_icao?: string;
+    airline_iata?: string;
+    aircraft_icao?: string;
+    updated?: number;
+    status?: string;
   }>;
 };
 
@@ -84,6 +114,14 @@ export function aircraftReportToTrack(
     gsKnots: report.gsKnots,
     iconKind: inferAircraftIconKind(report.callsign, report.gsKnots, report.baroAltFt),
     trail: trail.map(t => ({ az: t.az, alt: t.alt })),
+    depIata: report.depIata,
+    arrIata: report.arrIata,
+    airlineIata: report.airlineIata,
+    aircraftIcao: report.aircraftIcao,
+    regNumber: report.regNumber,
+    status: report.status,
+    verticalRateMps: report.verticalRateMps,
+    updatedAt: report.updatedAt,
   };
 }
 
@@ -105,16 +143,16 @@ export function generateMockAircraft(
   const baseLon = observer.lonDeg;
 
   const flights = [
-    { cs: "UAL901", alt: 35000, hdg: 270, gs: 460 },
-    { cs: "DAL412", alt: 38000, hdg: 90, gs: 480 },
-    { cs: "SWA1847", alt: 33000, hdg: 180, gs: 420 },
-    { cs: "AAL220", alt: 36000, hdg: 45, gs: 450 },
-    { cs: "FDX88", alt: 39000, hdg: 315, gs: 490 },
-    { cs: "BAW117", alt: 37000, hdg: 135, gs: 470 },
-    { cs: "JBU523", alt: 34000, hdg: 225, gs: 430 },
-    { cs: "NKS301", alt: 32000, hdg: 0, gs: 410 },
-    { cs: "LIFE1", alt: 1800, hdg: 120, gs: 95 },
-    { cs: "N172SP", alt: 4500, hdg: 200, gs: 115 },
+    { cs: "UAL901", alt: 35000, hdg: 270, gs: 460, dep: "ORD", arr: "DEN" },
+    { cs: "DAL412", alt: 38000, hdg: 90, gs: 480, dep: "ATL", arr: "JFK" },
+    { cs: "SWA1847", alt: 33000, hdg: 180, gs: 420, dep: "BNA", arr: "MCO" },
+    { cs: "AAL220", alt: 36000, hdg: 45, gs: 450, dep: "DFW", arr: "LAX" },
+    { cs: "FDX88", alt: 39000, hdg: 315, gs: 490, dep: "MEM", arr: "IND" },
+    { cs: "BAW117", alt: 37000, hdg: 135, gs: 470, dep: "LHR", arr: "JFK" },
+    { cs: "JBU523", alt: 34000, hdg: 225, gs: 430, dep: "BOS", arr: "FLL" },
+    { cs: "NKS301", alt: 32000, hdg: 0, gs: 410, dep: "LAS", arr: "SEA" },
+    { cs: "LIFE1", alt: 1800, hdg: 120, gs: 95, dep: "BNA", arr: "BNA" },
+    { cs: "N172SP", alt: 4500, hdg: 200, gs: 115, dep: "MQY", arr: "MQY" },
   ];
 
   for (let i = 0; i < Math.min(count, flights.length); i++) {
@@ -140,6 +178,11 @@ export function generateMockAircraft(
       baroAltFt: f.alt,
       headingDeg: f.hdg,
       gsKnots: f.gs,
+      depIata: f.dep,
+      arrIata: f.arr,
+      airlineIata: f.cs.slice(0, 2),
+      aircraftIcao: f.cs.startsWith("N") ? "C172" : "B738",
+      status: "en-route",
       trail,
     });
   }
@@ -166,14 +209,24 @@ export function parseAviationstackResponse(json: AviationstackResponse): Aircraf
 export function parseAirLabsResponse(json: AirLabsResponse): AircraftReport[] {
   return (json.response ?? []).flatMap(item => {
     if (item.lat == null || item.lng == null) return [];
+    const altM = item.alt ?? 9000;
+    const speedKmh = item.speed ?? 740;
     return [{
       icao24: item.hex ?? "unknown",
-      callsign: item.flight_iata ?? item.hex ?? "UNKN",
+      callsign: item.flight_iata ?? item.flight_icao ?? item.hex ?? "UNKN",
       latDeg: item.lat,
       lonDeg: item.lng,
-      baroAltFt: item.alt ?? 30000,
+      baroAltFt: Math.round(altM * 3.28084),
       headingDeg: item.dir ?? 0,
-      gsKnots: item.speed ?? 400,
+      gsKnots: Math.round(speedKmh / 1.852),
+      verticalRateMps: item.v_speed,
+      depIata: item.dep_iata,
+      arrIata: item.arr_iata,
+      airlineIata: item.airline_iata,
+      aircraftIcao: item.aircraft_icao,
+      regNumber: item.reg_number,
+      status: item.status,
+      updatedAt: item.updated,
     }];
   });
 }
@@ -191,6 +244,11 @@ export async function fetchLiveAircraft(
       lat: String(observer.latDeg),
       lng: String(observer.lonDeg),
       distance: "250",
+      _fields: [
+        "hex", "reg_number", "lat", "lng", "alt", "dir", "speed", "v_speed",
+        "flight_iata", "flight_icao", "dep_iata", "arr_iata", "airline_iata",
+        "aircraft_icao", "updated", "status",
+      ].join(","),
     });
     const res = await fetch(`https://airlabs.co/api/v9/flights?${params}`, {
       signal: AbortSignal.timeout(8000),
