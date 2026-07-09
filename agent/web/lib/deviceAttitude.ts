@@ -11,6 +11,7 @@
  */
 
 import { clamp, normalize, type Vec3 } from "./sphericalView";
+import { resolveCompassHeadingDeg, resolveDeviceAlphaDeg } from "./orientationCalibration";
 
 const DEG = Math.PI / 180;
 
@@ -83,4 +84,42 @@ export function cameraAzimuthAltitude(
   let az = Math.atan2(east, north) * (180 / Math.PI);
   if (az < 0) az += 360;
   return { az, alt };
+}
+
+type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
+
+/** Elevation from camera axis (γ=0) with roll-heavy β fallback. */
+export function resolveStablePitchDeg(event: CompassEvent): number | null {
+  const beta = event.beta;
+  if (beta == null || !Number.isFinite(beta)) return null;
+
+  const alpha = resolveDeviceAlphaDeg(event);
+  if (alpha == null) return null;
+
+  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
+  const { alt: cameraAlt } = cameraAzimuthAltitude(alpha, beta, 0);
+
+  const roll = Math.abs(gamma);
+  if (roll <= 22) return clamp(cameraAlt, -89.5, 89.5);
+
+  const portraitAlt = clamp((beta - 90) * Math.cos(gamma * DEG), -89.5, 89.5);
+  const w = clamp((roll - 22) / 35, 0, 0.55);
+  return clamp(cameraAlt * (1 - w) + portraitAlt * w, -89.5, 89.5);
+}
+
+/** Topocentric look direction: true-north az + stable pitch (roll ignored). */
+export function resolveStableLookAzAlt(event: CompassEvent): { az: number; alt: number } | null {
+  const az = resolveCompassHeadingDeg(event);
+  const alt = resolveStablePitchDeg(event);
+  if (az == null || alt == null) return null;
+  return { az, alt };
+}
+
+export function deviceOrientationToStableViewEnu(event: CompassEvent): Vec3 | null {
+  const look = resolveStableLookAzAlt(event);
+  if (look == null) return null;
+  const az = look.az * DEG;
+  const alt = look.alt * DEG;
+  const c = Math.cos(alt);
+  return normalize([c * Math.sin(az), c * Math.cos(az), Math.sin(alt)]);
 }

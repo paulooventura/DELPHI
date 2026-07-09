@@ -40,13 +40,14 @@ import {
   drawSunGlyph,
 } from "../lib/cosmic/skyIcons";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
+import { smoothViewAzAltAdaptive } from "../lib/sensorSmoothing";
 import {
   altAzToEnu,
-  buildViewBasis,
+  buildStableViewBasis,
   enuToAltAz,
   groundBlendFromView,
-  slerpUnit,
   type Vec3,
+  type ViewBasis,
 } from "../lib/sphericalView";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
@@ -90,6 +91,7 @@ const MICRO = OBS.typography.micro;
 const TARGET_ENTER = 1.5;
 const TARGET_EXIT = 2.8;
 
+/** Horizon great-circle — single source, no screen overlay. */
 function drawHorizonRing(
   ctx: CanvasRenderingContext2D,
   project: (az: number, alt: number) => [number, number],
@@ -123,31 +125,6 @@ function drawHorizonRing(
       ctx.lineTo(x, y);
     }
   }
-  ctx.stroke();
-  ctx.restore();
-}
-
-/** Screen-stabilized horizon band when the sight line is near level. */
-function drawStableHorizonOverlay(
-  ctx: CanvasRenderingContext2D,
-  w: number,
-  h: number,
-  viewPitch: number,
-  fovAltHalf: number,
-  warmth: number,
-) {
-  const fade = Math.max(0, 1 - Math.abs(viewPitch) / 16);
-  if (fade < 0.04) return;
-  const y = h / 2 - (viewPitch / fovAltHalf) * (h / 2);
-  ctx.save();
-  ctx.globalAlpha = fade;
-  ctx.strokeStyle = warmth > 0.5 ? "rgba(245, 158, 11, 0.42)" : "rgba(255, 255, 255, 0.28)";
-  ctx.lineWidth = 1.2;
-  ctx.shadowColor = warmth > 0.5 ? "rgba(245, 158, 11, 0.25)" : "rgba(255, 255, 255, 0.15)";
-  ctx.shadowBlur = 4;
-  ctx.beginPath();
-  ctx.moveTo(0, y);
-  ctx.lineTo(w, y);
   ctx.stroke();
   ctx.restore();
 }
@@ -609,6 +586,7 @@ export function CelestialSkyView({
     view: altAzToEnu(headingDeg, pitchDeg),
     roll: 0,
   });
+  const basisRef = useRef<ViewBasis | null>(null);
 
   useLayoutEffect(() => {
     propsAttitudeRef.current = { view: altAzToEnu(headingDeg, pitchDeg), roll: 0 };
@@ -699,20 +677,14 @@ export function CelestialSkyView({
 
       const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
       const smooth = smoothAttitudeRef.current;
-      if (liveAttitudeRef) {
-        smooth.view = target.view;
-      } else {
-        const { alt: targetAlt } = enuToAltAz(target.view);
-        const nearHorizon = Math.abs(targetAlt) < 28;
-        const viewT = nearHorizon ? 0.18 : 0.28;
-        smooth.view = slerpUnit(smooth.view, target.view, viewT);
-      }
+      smooth.view = smoothViewAzAltAdaptive(smooth.view, target.view);
       smooth.roll = 0;
 
       const viewAtt = enuToAltAz(smooth.view);
       const viewHeading = viewAtt.az;
       const viewPitch = viewAtt.alt;
-      const basis = buildViewBasis(smooth.view, 0);
+      const basis = buildStableViewBasis(smooth.view, basisRef.current);
+      basisRef.current = basis;
 
       pinchRef.current.tick(dt);
       const scale = pinchRef.current.getScale();
@@ -752,7 +724,6 @@ export function CelestialSkyView({
         OBS.vector.strokeMax,
         warmth > 0.5 ? OBS.night.glow : OBS.day.glow,
       );
-      drawStableHorizonOverlay(ctx, w, h, viewPitch, FOV_ALT_HALF, warmth);
 
       if (detail === "wide") {
         drawPath(

@@ -101,7 +101,7 @@ export class GeoFixFilter {
 }
 
 import type { Vec3 } from "./sphericalView";
-import { enuToAltAz, slerpUnit } from "./sphericalView";
+import { altAzToEnu, enuToAltAz } from "./sphericalView";
 
 import type { SkyPoseHint } from "./orientationCalibration";
 import { describeSkyPose } from "./orientationCalibration";
@@ -117,6 +117,28 @@ export type SmoothedOrientation = {
   gamma: number | null;
   pose: SkyPoseHint;
 };
+
+/** Decoupled az/alt smoothing — avoids horizon coupling from spherical slerp. */
+export function smoothViewAzAlt(
+  prev: Vec3,
+  target: Vec3,
+  tAz: number,
+  tAlt: number,
+): Vec3 {
+  const p = enuToAltAz(prev);
+  const q = enuToAltAz(target);
+  const az = lerpAngle(p.az, q.az, tAz);
+  const alt = lerpScalar(p.alt, q.alt, tAlt);
+  return altAzToEnu(az, alt);
+}
+
+export function smoothViewAzAltAdaptive(prev: Vec3, target: Vec3): Vec3 {
+  const { alt } = enuToAltAz(target);
+  const nearHorizon = Math.abs(alt) < 20;
+  const tAz = nearHorizon ? 0.3 : 0.46;
+  const tAlt = nearHorizon ? 0.12 : 0.46;
+  return smoothViewAzAlt(prev, target, tAz, tAlt);
+}
 
 /** RAF-throttled view-vector smoothing — continuous on the full sphere. */
 export class OrientationFilter {
@@ -159,16 +181,12 @@ export class OrientationFilter {
     this.lastEmitMs = now;
     this.pending = null;
 
-    const { alt } = enuToAltAz(raw.view);
-    const nearHorizon = Math.abs(alt) < 18;
-    const t = nearHorizon ? 0.2 : 0.48;
-
     if (!this.hasView) {
       this.view = raw.view;
       this.roll = 0;
       this.hasView = true;
     } else {
-      this.view = slerpUnit(this.view, raw.view, t);
+      this.view = smoothViewAzAltAdaptive(this.view, raw.view);
       this.roll = 0;
     }
 

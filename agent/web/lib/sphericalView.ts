@@ -68,54 +68,69 @@ function rotateAroundAxis(v: Vec3, axis: Vec3, angleRad: number): Vec3 {
   ]);
 }
 
-/** Roll-free screen basis: world-up aligned; stabilizes near the horizon. */
-export function buildViewBasis(viewEnu: Vec3, rollDeg = 0): ViewBasis {
+const WORLD_UP: Vec3 = [0, 0, 1];
+const WORLD_NORTH: Vec3 = [0, 1, 0];
+
+/** Roll-free projection basis with frame-to-frame continuity (no 180° flips). */
+export function buildStableViewBasis(viewEnu: Vec3, prev?: ViewBasis | null): ViewBasis {
   const view = normalize(viewEnu);
-  const { alt: viewAlt } = enuToAltAz(view);
-  const worldUp: Vec3 = [0, 0, 1];
-  const worldNorth: Vec3 = [0, 1, 0];
 
-  let east = cross(worldUp, view);
-  let eLen = Math.hypot(east[0], east[1], east[2]);
-  if (eLen < 1e-4) {
-    east = cross(worldNorth, view);
-    eLen = Math.hypot(east[0], east[1], east[2]);
-    if (eLen < 1e-4) east = [1, 0, 0];
-    else east = [east[0] / eLen, east[1] / eLen, east[2] / eLen];
+  let right = cross(WORLD_UP, view);
+  let rLen = Math.hypot(right[0], right[1], right[2]);
+  if (rLen < 1e-3) {
+    right = cross(WORLD_NORTH, view);
+    rLen = Math.hypot(right[0], right[1], right[2]);
+  }
+  if (rLen < 1e-3 && prev) {
+    right = prev.right;
+  } else if (rLen < 1e-3) {
+    right = [1, 0, 0];
   } else {
-    east = [east[0] / eLen, east[1] / eLen, east[2] / eLen];
+    right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
   }
 
-  let up = normalize(cross(view, east));
-  if (view[2] >= 0 ? dot(up, worldUp) < 0 : dot(up, worldUp) > 0) {
+  if (prev && dot(right, prev.right) < 0) {
+    right = [-right[0], -right[1], -right[2]];
+  }
+
+  let up = cross(view, right);
+  let uLen = Math.hypot(up[0], up[1], up[2]);
+  if (uLen < 1e-6) {
+    up = prev?.up ?? WORLD_UP;
+  } else {
+    up = [up[0] / uLen, up[1] / uLen, up[2] / uLen];
+  }
+
+  if (view[2] > -0.05 && dot(up, WORLD_UP) < 0) {
     up = [-up[0], -up[1], -up[2]];
-    east = [-east[0], -east[1], -east[2]];
+    right = [-right[0], -right[1], -right[2]];
   }
 
-  const horizonW = clamp(1 - Math.abs(viewAlt) / 14, 0, 1);
-  if (horizonW > 0.01) {
-    let stableUp = cross(view, cross(worldUp, view));
-    const sLen = Math.hypot(stableUp[0], stableUp[1], stableUp[2]);
-    if (sLen > 1e-4) {
-      stableUp = [stableUp[0] / sLen, stableUp[1] / sLen, stableUp[2] / sLen];
-      if (dot(stableUp, worldUp) < 0) {
-        stableUp = [-stableUp[0], -stableUp[1], -stableUp[2]];
-      }
-      up = normalize([
-        up[0] * (1 - horizonW) + stableUp[0] * horizonW,
-        up[1] * (1 - horizonW) + stableUp[1] * horizonW,
-        up[2] * (1 - horizonW) + stableUp[2] * horizonW,
-      ]);
-      east = normalize(cross(view, up));
-    }
+  if (prev && dot(up, prev.up) < 0) {
+    up = [-up[0], -up[1], -up[2]];
+    right = [-right[0], -right[1], -right[2]];
   }
 
-  let right = east;
-  if (Math.abs(rollDeg) > 1e-6) {
-    right = rotateAroundAxis(right, view, rollDeg * DEG);
-    up = normalize(cross(view, right));
-  }
+  return { view, right, up };
+}
 
+/** Roll-free screen basis — delegates to continuity-stable builder. */
+export function buildViewBasis(viewEnu: Vec3, rollDeg = 0, prev?: ViewBasis | null): ViewBasis {
+  const basis = buildStableViewBasis(viewEnu, prev);
+  if (Math.abs(rollDeg) < 1e-6) return basis;
+  const view = basis.view;
+  const D = Math.PI / 180;
+  const k = normalize(view);
+  const c = Math.cos(rollDeg * D);
+  const s = Math.sin(rollDeg * D);
+  const v = basis.right;
+  const kd = dot(k, v);
+  const right = normalize([
+    v[0] * c + (k[1] * v[2] - k[2] * v[1]) * s + k[0] * kd * (1 - c),
+    v[1] * c + (k[2] * v[0] - k[0] * v[2]) * s + k[1] * kd * (1 - c),
+    v[2] * c + (k[0] * v[1] - k[1] * v[0]) * s + k[2] * kd * (1 - c),
+  ]);
+  const up = normalize(cross(view, right));
   return { view, right, up };
 }
 
@@ -178,12 +193,14 @@ export function createSphericalSkyProjector(
   return { toXY, inView, basis: { view, right, up } };
 }
 
-import { resolveDeviceAlphaDeg } from "./orientationCalibration";
 import {
   deviceCameraVectorEnu,
   deviceToEnuRotationMatrix,
   mat3MulVec,
   DEVICE_CAMERA_AXIS,
+  deviceOrientationToStableViewEnu,
+  resolveStableLookAzAlt,
+  resolveStablePitchDeg,
 } from "./deviceAttitude";
 
 export {
@@ -199,6 +216,9 @@ export {
 } from "./orientationCalibration";
 
 export {
+  deviceOrientationToStableViewEnu,
+  resolveStableLookAzAlt,
+  resolveStablePitchDeg,
   deviceCameraVectorEnu,
   deviceToEnuRotationMatrix,
   mat3MulVec,
@@ -216,19 +236,12 @@ export function deviceBackVectorEnu(
 }
 
 /**
- * Camera pointing ray in ENU — full attitude with γ forced to 0 (roll-free).
- * Uses calibrated true-north α and β via the W3C camera axis (0,0,−1).
+ * Stable topocentric look vector — compass az + roll-free pitch, γ never moves the view.
  */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
-  const beta = event.beta;
-  if (beta == null || !Number.isFinite(beta)) return null;
-
-  const alpha = resolveDeviceAlphaDeg(event);
-  if (alpha == null) return null;
-
-  return deviceCameraVectorEnu(alpha, beta, 0);
+  return deviceOrientationToStableViewEnu(event);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */
