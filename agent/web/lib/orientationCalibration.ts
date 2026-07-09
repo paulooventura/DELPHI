@@ -10,6 +10,8 @@ function clamp(n: number, lo: number, hi: number): number {
 let iosAlphaOffset: number | null = null;
 /** East-positive magnetic declination for non-absolute / magnetic compass paths. */
 let magneticDeclinationDeg = 0;
+/** User fine-tune after sun / landmark alignment (degrees, shortest-path east positive). */
+let userAzimuthOffsetDeg = 0;
 
 export function resetOrientationCalibration(): void {
   iosAlphaOffset = null;
@@ -22,6 +24,23 @@ export function setMagneticDeclinationDeg(deg: number): void {
 
 export function getMagneticDeclinationDeg(): number {
   return magneticDeclinationDeg;
+}
+
+export function setUserAzimuthOffsetDeg(deg: number): void {
+  if (!Number.isFinite(deg)) return;
+  userAzimuthOffsetDeg = clamp(deg, -20, 20);
+}
+
+export function getUserAzimuthOffsetDeg(): number {
+  return userAzimuthOffsetDeg;
+}
+
+function finalizeTrueHeading(heading: number, applyDeclination: boolean): number {
+  let out = heading;
+  if (applyDeclination) {
+    out = normalizeHeading(out + magneticDeclinationDeg);
+  }
+  return normalizeHeading(out + userAzimuthOffsetDeg);
 }
 
 export function getIosAlphaOffset(): number | null {
@@ -53,13 +72,14 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   if (webkit != null && typeof alpha === "number" && Number.isFinite(alpha)) {
     if (isUprightPortrait(beta, gamma)) {
       iosAlphaOffset = normalizeHeading(webkit - alpha);
-      return normalizeHeading(webkit);
+      // webkitCompassHeading is magnetic north — convert to true north for ephemeris.
+      return finalizeTrueHeading(webkit, true);
     }
     if (iosAlphaOffset != null) {
-      return normalizeHeading(alpha + iosAlphaOffset);
+      return finalizeTrueHeading(normalizeHeading(alpha + iosAlphaOffset), true);
     }
-    // Before calibration: prefer alpha (tracks yaw while tilting) over tilt-corrupted webkit.
-    return normalizeHeading(alpha);
+    // Before portrait calibration: alpha-only track (no declination yet).
+    return finalizeTrueHeading(normalizeHeading(alpha), false);
   }
 
   if (typeof alpha !== "number" || !Number.isFinite(alpha)) return null;
@@ -67,11 +87,11 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
   const absolute = event.absolute === true;
   const base = absolute ? alpha : normalizeHeading(360 - alpha);
-  let heading = normalizeHeading(base + orient);
+  const heading = normalizeHeading(base + orient);
   if (!absolute) {
-    heading = normalizeHeading(heading + magneticDeclinationDeg);
+    return finalizeTrueHeading(heading, true);
   }
-  return heading;
+  return finalizeTrueHeading(heading, false);
 }
 
 /**

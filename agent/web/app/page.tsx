@@ -1,13 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { resetOrientationCalibration, describeSkyPose, skyPoseHintMessage, type SkyPoseHint } from "../lib/sphericalView";
-import { setMagneticDeclinationDeg } from "../lib/orientationCalibration";
+import {
+  setMagneticDeclinationDeg,
+  setUserAzimuthOffsetDeg,
+} from "../lib/orientationCalibration";
+import { computeCelestialBodies } from "../lib/cosmic/celestialBodies";
 import { fetchDeclinationDeg } from "../lib/magneticDeclination";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu } from "../lib/sphericalView";
@@ -58,6 +62,7 @@ const DEFAULT_TOGGLES: SensorToggles = {
 const TOGGLES_STORAGE_KEY = "cp-sensor-toggles-v2";
 const RESEARCH_TIER_KEY = "cp-research-tier";
 const MANUAL_HEADING_KEY = "cp-manual-heading";
+const SKY_AZ_OFFSET_KEY = "cp-sky-az-offset";
 
 // ─── Research tiers (mirrors TIER_CONFIG in lib/researchEngine.ts) ──────────────
 // The user picks the computation tier per query. instant/standard are free and
@@ -204,6 +209,18 @@ export default function Home() {
   const outerRingR = COSMIC_CLOCK_OUTER_RADIUS;
   const heroZoomDefault = fitMobileClockZoom(outerRingR, viewportHeightRef.current);
   const [skyDistance, setSkyDistance] = useState(50);
+  const [skyAzOffset, setSkyAzOffset] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SKY_AZ_OFFSET_KEY);
+      const v = raw != null ? Number(raw) : 0;
+      if (Number.isFinite(v)) {
+        setUserAzimuthOffsetDeg(v);
+        return v;
+      }
+    } catch { /* ignore */ }
+    return 0;
+  });
+  const [declinationDeg, setDeclinationDeg] = useState(0);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
   const [clockSfxOn, setClockSfxOn] = useState(true);
@@ -422,7 +439,10 @@ export default function Home() {
           lastLat = fix.latitude;
           lastLon = fix.longitude;
           void loadCyclesRef.current(fix.latitude, fix.longitude);
-          void fetchDeclinationDeg(fix.latitude, fix.longitude).then(setMagneticDeclinationDeg);
+          void fetchDeclinationDeg(fix.latitude, fix.longitude).then(d => {
+            setMagneticDeclinationDeg(d);
+            setDeclinationDeg(d);
+          });
         }
       },
       () => setLocDenied(true),
@@ -450,7 +470,10 @@ export default function Home() {
       });
       if (t.location && location?.latitude != null && location.longitude != null) {
         void loadCycles(location.latitude, location.longitude);
-        void fetchDeclinationDeg(location.latitude, location.longitude).then(setMagneticDeclinationDeg);
+        void fetchDeclinationDeg(location.latitude, location.longitude).then(d => {
+          setMagneticDeclinationDeg(d);
+          setDeclinationDeg(d);
+        });
         void startOrientationWatch();
         startLocationWatch();
       } else if (t.location) {
@@ -475,6 +498,12 @@ export default function Home() {
     setSkyPose("too-flat");
     const allowed = await requestOrientationPermission();
     if (!allowed) return;
+    const lat = signals?.lat ?? FALLBACK_LAT;
+    const lon = signals?.lon ?? FALLBACK_LON;
+    void fetchDeclinationDeg(lat, lon).then(d => {
+      setMagneticDeclinationDeg(d);
+      setDeclinationDeg(d);
+    });
     headingCleanupRef.current = watchDeviceOrientation((reading) => {
       const t = togglesRef.current;
       if (reading.view) {
@@ -666,13 +695,42 @@ export default function Home() {
 
   const hasLiveHeading = headingLive && signals?.heading != null && toggles.heading;
   const hasLivePitch = pitchLive && toggles.location;
+  const hasLiveLocation = signals?.lat != null && signals?.lon != null;
+  const mapLat = signals?.lat ?? FALLBACK_LAT;
+  const mapLon = signals?.lon ?? FALLBACK_LON;
+
+  function applySkyAzOffset(value: number) {
+    const v = Math.max(-20, Math.min(20, value));
+    setSkyAzOffset(v);
+    setUserAzimuthOffsetDeg(v);
+    try { localStorage.setItem(SKY_AZ_OFFSET_KEY, String(v)); } catch { /* ignore */ }
+  }
+
+  function calibrateCompassToSun() {
+    const bodies = computeCelestialBodies(
+      cosmic?.now ?? animNow,
+      mapLat,
+      mapLon,
+      signals?.altM ?? 0,
+    );
+    const sun = bodies.find(b => b.id === "sun");
+    if (!sun || sun.alt < 3) return;
+    const heading = hasLiveHeading ? signals!.heading! : manualHeading;
+    const delta = ((sun.az - heading + 540) % 360) - 180;
+    applySkyAzOffset(skyAzOffset + delta);
+  }
+
+  const sunAboveHorizon = useMemo(() => {
+    const sun = computeCelestialBodies(cosmic?.now ?? animNow, mapLat, mapLon, signals?.altM ?? 0)
+      .find(b => b.id === "sun");
+    return sun != null && sun.alt > 3;
+  }, [cosmic?.now, animNow, mapLat, mapLon, signals?.altM]);
+
+  const magneticDeclination = declinationDeg;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
   const activePitch = signals?.pitch ?? 0;
   const skyArPoseReady = skyPose === "ready";
   const skyPoseHint = skyPoseHintMessage(skyPose);
-  const hasLiveLocation = signals?.lat != null && signals?.lon != null;
-  const mapLat = signals?.lat ?? FALLBACK_LAT;
-  const mapLon = signals?.lon ?? FALLBACK_LON;
   const spectrumWarmth = cosmic?.ui.warmth ?? cosmic?.sensors.lightSpectrum ?? 0.55;
   const atmosphericBreath = cosmic?.sensors.atmosphericBreath ?? 0;
   const sensesAwake = hasLiveLocation || hasLiveHeading || pitchLive || Boolean(signals?.network);
@@ -683,6 +741,13 @@ export default function Home() {
     skyWeatherSlot?.cloudCover,
     skyWeatherSlot?.isDay ?? false,
   );
+
+  useEffect(() => {
+    void fetchDeclinationDeg(mapLat, mapLon).then(d => {
+      setMagneticDeclinationDeg(d);
+      setDeclinationDeg(d);
+    });
+  }, [mapLat, mapLon]);
 
   useEffect(() => {
     if (weatherLux != null) cosmicEngine?.setLux(weatherLux);
@@ -999,6 +1064,36 @@ export default function Home() {
                 ) : (
                   <p className="cp-muted cp-sky-hint">Enable Location + Heading for live sky alignment.</p>
                 )}
+                {(hasLiveHeading || hasLivePitch) && (
+                  <div className="cp-sky-compass-tune">
+                    <p className="cp-label" style={{ fontSize: "0.72rem", marginTop: "0.5rem" }}>Compass alignment</p>
+                    <p className="cp-muted" style={{ fontSize: "0.65rem", marginBottom: 6 }}>
+                      True-north correction {magneticDeclination.toFixed(1)}°
+                      {skyAzOffset !== 0 ? ` · fine-tune ${skyAzOffset > 0 ? "+" : ""}${skyAzOffset.toFixed(1)}°` : ""}
+                    </p>
+                    <button
+                      type="button"
+                      className="cp-btn cp-btn-ghost"
+                      style={{ fontSize: "0.68rem", marginBottom: 8 }}
+                      onClick={calibrateCompassToSun}
+                      disabled={!sunAboveHorizon || !hasLiveHeading}
+                    >
+                      Align to Sun — point at the Sun, then tap
+                    </button>
+                    <label className="cp-dir-label">
+                      <span>Fine-tune · {skyAzOffset > 0 ? "+" : ""}{skyAzOffset.toFixed(1)}°</span>
+                      <input
+                        type="range"
+                        min={-15}
+                        max={15}
+                        step={0.5}
+                        value={skyAzOffset}
+                        onChange={e => applySkyAzOffset(Number(e.target.value))}
+                        className="cp-dir-range"
+                      />
+                    </label>
+                  </div>
+                )}
                 <SkyCatalog
                   lat={mapLat}
                   lon={mapLon}
@@ -1066,6 +1161,36 @@ export default function Home() {
                 {hasLiveHeading && !hasLivePitch && "↗ Live heading — enable Location for auto pitch."}
                 {!hasLiveHeading && hasLivePitch && "↕ Live pitch — enable Heading for auto compass."}
               </p>
+            )}
+            {(hasLiveHeading || hasLivePitch) && (
+              <div className="cp-sky-compass-tune" style={{ marginTop: 8 }}>
+                <p className="cp-label" style={{ fontSize: "0.72rem" }}>Compass alignment</p>
+                <p className="cp-muted" style={{ fontSize: "0.65rem", marginBottom: 6 }}>
+                  True-north correction {magneticDeclination.toFixed(1)}°
+                  {skyAzOffset !== 0 ? ` · fine-tune ${skyAzOffset > 0 ? "+" : ""}${skyAzOffset.toFixed(1)}°` : ""}
+                </p>
+                <button
+                  type="button"
+                  className="cp-btn cp-btn-ghost"
+                  style={{ fontSize: "0.68rem", marginBottom: 8 }}
+                  onClick={calibrateCompassToSun}
+                  disabled={!sunAboveHorizon || !hasLiveHeading}
+                >
+                  Align to Sun — point at the Sun, then tap
+                </button>
+                <label className="cp-dir-label">
+                  <span>Fine-tune · {skyAzOffset > 0 ? "+" : ""}{skyAzOffset.toFixed(1)}°</span>
+                  <input
+                    type="range"
+                    min={-15}
+                    max={15}
+                    step={0.5}
+                    value={skyAzOffset}
+                    onChange={e => applySkyAzOffset(Number(e.target.value))}
+                    className="cp-dir-range"
+                  />
+                </label>
+              </div>
             )}
             {!hasLiveHeading && !hasLivePitch && toggles.location && (
               <p className="cp-muted">Tap Locate Me to enable live sky orientation (requires motion permission on iOS).</p>
