@@ -375,6 +375,32 @@ export function segmentGraphicKey(ringId: number, index: number, divisions?: num
 export function ringSegmentVisual(ringId: number, index: number, divisions: number): SegmentVisual {
   const i = Math.floor(((index % divisions) + divisions) % divisions);
   switch (ringId) {
+    case 1: {
+      const major = i % 15 === 0;
+      const half = i % 2 === 0;
+      return {
+        fill: half ? "#2a2218" : "#1a1510",
+        stroke: major ? "#e8c86a" : "#6a5420",
+        label: major ? String(i) : "",
+      };
+    }
+    case 2: {
+      const major = i % 10 === 0;
+      const half = i % 5 === 0;
+      return {
+        fill: half ? "#322818" : "#1c1610",
+        stroke: major ? "#c9a227" : "#5c4a1f",
+        label: major ? String(i) : "",
+      };
+    }
+    case 3: {
+      const major = i % 6 === 0;
+      return {
+        fill: i % 2 === 0 ? "#2e2418" : "#181410",
+        stroke: major ? "#d4af37" : "#4a3a22",
+        label: major ? String(i) : "",
+      };
+    }
     case 4: {
       const major = i % 10 === 0;
       return {

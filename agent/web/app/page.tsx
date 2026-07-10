@@ -6,7 +6,7 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
-import { resetOrientationCalibration, describeSkyPose, skyPoseHintMessage, type SkyPoseHint } from "../lib/sphericalView";
+import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
@@ -25,6 +25,7 @@ import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
 import { LaunchScreen, useShowLaunch } from "../components/LaunchScreen";
 import { OracleLogo } from "../components/oracle/OracleLogo";
 import { ClockAmbience } from "../components/ClockAmbience";
+import { EmfReader } from "../components/EmfReader";
 import { SensorArray } from "../components/SensorArray";
 import { CosmicNow } from "../components/CosmicNow";
 import { MomentReading } from "../components/MomentReading";
@@ -221,6 +222,7 @@ export default function Home() {
     return 0;
   });
   const [declinationDeg, setDeclinationDeg] = useState(0);
+  const [compassCalibrated, setCompassCalibrated] = useState(() => getIosAlphaOffset() != null);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
   const [clockSfxOn, setClockSfxOn] = useState(true);
@@ -490,9 +492,13 @@ export default function Home() {
     headingCleanupRef.current = null;
   }
 
-  async function startOrientationWatch() {
+  async function startOrientationWatch(options?: { resetCalibration?: boolean }) {
     stopOrientationWatch();
-    resetOrientationCalibration();
+    if (options?.resetCalibration) {
+      resetOrientationCalibration();
+    } else {
+      restoreOrientationCalibration();
+    }
     setHeadingLive(false);
     setPitchLive(false);
     setSkyPose("too-flat");
@@ -500,10 +506,9 @@ export default function Home() {
     if (!allowed) return;
     const lat = signals?.lat ?? FALLBACK_LAT;
     const lon = signals?.lon ?? FALLBACK_LON;
-    void fetchDeclinationDeg(lat, lon).then(d => {
-      setMagneticDeclinationDeg(d);
-      setDeclinationDeg(d);
-    });
+    const d = await fetchDeclinationDeg(lat, lon);
+    setMagneticDeclinationDeg(d);
+    setDeclinationDeg(d);
     headingCleanupRef.current = watchDeviceOrientation((reading) => {
       const t = togglesRef.current;
       if (reading.view) {
@@ -522,6 +527,7 @@ export default function Home() {
       if (h != null && (t.heading || t.location)) {
         setHeadingLive(true);
         if (p != null) setPitchLive(true);
+        setCompassCalibrated(getIosAlphaOffset() != null);
         setSignals(prev =>
           prev
             ? { ...prev, heading: h, pitch: p ?? prev.pitch }
@@ -719,6 +725,28 @@ export default function Home() {
     const delta = ((sun.az - heading + 540) % 360) - 180;
     applySkyAzOffset(skyAzOffset + delta);
   }
+
+  function calibrateCompassToMoon() {
+    const bodies = computeCelestialBodies(
+      cosmic?.now ?? animNow,
+      mapLat,
+      mapLon,
+      signals?.altM ?? 0,
+    );
+    const moon = bodies.find(b => b.id === "moon");
+    if (!moon || moon.alt < 8) return;
+    const heading = hasLiveHeading ? signals!.heading! : manualHeading;
+    const delta = ((moon.az - heading + 540) % 360) - 180;
+    applySkyAzOffset(skyAzOffset + delta);
+  }
+
+  const moonAboveHorizon = useMemo(() => {
+    const moon = computeCelestialBodies(cosmic?.now ?? animNow, mapLat, mapLon, signals?.altM ?? 0)
+      .find(b => b.id === "moon");
+    return moon != null && moon.alt > 8;
+  }, [cosmic?.now, animNow, mapLat, mapLon, signals?.altM]);
+
+  const compassPortraitCalibrated = compassCalibrated;
 
   const sunAboveHorizon = useMemo(() => {
     const sun = computeCelestialBodies(cosmic?.now ?? animNow, mapLat, mapLon, signals?.altM ?? 0)
@@ -998,7 +1026,26 @@ export default function Home() {
             )}
             {tab === "clock" && (
               <div className="cp-dashboard-viewport">
-                <DashboardContainer />
+                <DashboardContainer
+                  lat={mapLat}
+                  lon={mapLon}
+                  cosmic={cosmic}
+                  liveCoords={hasLiveLocation && toggles.location}
+                  usingFallback={!hasLiveLocation && toggles.location}
+                  locationDenied={locDenied}
+                  locationEnabled={toggles.location}
+                  accuracyM={signals?.accuracyM ?? null}
+                  altM={signals?.altM ?? null}
+                  altAccuracyM={signals?.altAccuracyM ?? null}
+                  speedMps={signals?.speedMps ?? null}
+                  gpsHeading={signals?.gpsHeading ?? null}
+                  locationAtMs={signals?.locationAtMs ?? null}
+                  compassHeading={hasLiveHeading ? activeHeading : null}
+                  compassOffsetDeg={skyAzOffset}
+                  declinationDeg={magneticDeclination}
+                  pitchDeg={signals?.pitch ?? null}
+                  emfUt={signals?.emfUt ?? null}
+                />
               </div>
             )}
             {tab === "sky" && (
@@ -1165,19 +1212,43 @@ export default function Home() {
             {(hasLiveHeading || hasLivePitch) && (
               <div className="cp-sky-compass-tune" style={{ marginTop: 8 }}>
                 <p className="cp-label" style={{ fontSize: "0.72rem" }}>Compass alignment</p>
+                {!compassPortraitCalibrated && (
+                  <p className="cp-compass-cal-hint">
+                    Hold the phone upright in portrait for 2 seconds to lock true north — then point at the sky.
+                  </p>
+                )}
                 <p className="cp-muted" style={{ fontSize: "0.65rem", marginBottom: 6 }}>
                   True-north correction {magneticDeclination.toFixed(1)}°
                   {skyAzOffset !== 0 ? ` · fine-tune ${skyAzOffset > 0 ? "+" : ""}${skyAzOffset.toFixed(1)}°` : ""}
                 </p>
-                <button
-                  type="button"
-                  className="cp-btn cp-btn-ghost"
-                  style={{ fontSize: "0.68rem", marginBottom: 8 }}
-                  onClick={calibrateCompassToSun}
-                  disabled={!sunAboveHorizon || !hasLiveHeading}
-                >
-                  Align to Sun — point at the Sun, then tap
-                </button>
+                <div className="cp-compass-align-btns">
+                  <button
+                    type="button"
+                    className="cp-btn cp-btn-ghost"
+                    style={{ fontSize: "0.68rem" }}
+                    onClick={calibrateCompassToSun}
+                    disabled={!sunAboveHorizon || !hasLiveHeading}
+                  >
+                    Align to Sun
+                  </button>
+                  <button
+                    type="button"
+                    className="cp-btn cp-btn-ghost"
+                    style={{ fontSize: "0.68rem" }}
+                    onClick={calibrateCompassToMoon}
+                    disabled={!moonAboveHorizon || !hasLiveHeading}
+                  >
+                    Align to Moon
+                  </button>
+                  <button
+                    type="button"
+                    className="cp-btn cp-btn-ghost"
+                    style={{ fontSize: "0.68rem" }}
+                    onClick={() => void startOrientationWatch({ resetCalibration: true })}
+                  >
+                    Recalibrate
+                  </button>
+                </div>
                 <label className="cp-dir-label">
                   <span>Fine-tune · {skyAzOffset > 0 ? "+" : ""}{skyAzOffset.toFixed(1)}°</span>
                   <input
@@ -1241,6 +1312,11 @@ export default function Home() {
             cycles={cycles}
           />
           </div>
+          <EmfReader
+            className="cp-card"
+            emfUt={toggles.emf ? signals?.emfUt ?? null : null}
+            live={toggles.emf && signals?.emfUt != null}
+          />
           <SensorArray
             className="cp-card"
             autoAwaken
@@ -1547,6 +1623,7 @@ export default function Home() {
           headingDeg={activeHeading}
           pitchDeg={hasLivePitch ? activePitch : null}
           live={hasLiveHeading}
+          compassReady={compassPortraitCalibrated}
           poseHint={hasLivePitch && !skyArPoseReady ? skyPoseHint : ""}
           emfUt={signals?.emfUt ?? null}
           warmth={spectrumWarmth}

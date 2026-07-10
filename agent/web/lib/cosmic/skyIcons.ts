@@ -2,6 +2,8 @@
  * Canvas glyphs for sky objects — satellites, aircraft, planets, stars.
  */
 
+import { OBS } from "../design/observatoryTokens";
+
 export type AircraftIconKind = "jet" | "helicopter" | "prop" | "cargo";
 
 export function inferAircraftIconKind(
@@ -450,5 +452,126 @@ export function drawAsteroidGlyph(
   ctx.closePath();
   ctx.fill();
   ctx.stroke();
+  ctx.restore();
+}
+
+/** Soft constellation stick figure between projected star points. */
+export function drawConstellationLines(
+  ctx: CanvasRenderingContext2D,
+  segments: Array<[[number, number], [number, number]]>,
+  color: string,
+  glow: string,
+  pulse: number,
+) {
+  if (segments.length === 0) return;
+  ctx.save();
+  const breathe = 0.88 + Math.sin(pulse * 0.7) * 0.06;
+  ctx.globalAlpha = breathe;
+  ctx.strokeStyle = color;
+  ctx.lineWidth = 1.15;
+  ctx.lineCap = "round";
+  ctx.shadowColor = glow;
+  ctx.shadowBlur = 6;
+  for (const [[x0, y0], [x1, y1]] of segments) {
+    if (x0 < -5000 || x1 < -5000) continue;
+    ctx.beginPath();
+    ctx.moveTo(x0, y0);
+    ctx.lineTo(x1, y1);
+    ctx.stroke();
+  }
+  ctx.shadowBlur = 0;
+  ctx.restore();
+}
+
+export function drawConstellationLabel(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  name: string,
+  color: string,
+) {
+  ctx.save();
+  ctx.font = `600 9px ${OBS.typography.micro}`;
+  ctx.textAlign = "center";
+  ctx.fillStyle = color;
+  ctx.shadowColor = "rgba(201, 162, 39, 0.35)";
+  ctx.shadowBlur = 4;
+  ctx.fillText(name, x, y);
+  ctx.restore();
+}
+
+export function drawDeepSkyGlyph(
+  ctx: CanvasRenderingContext2D,
+  kind: "galaxy" | "nebula" | "cluster",
+  x: number,
+  y: number,
+  size: number,
+  color: string,
+  pulse: number,
+) {
+  ctx.save();
+  const breathe = 0.9 + Math.sin(pulse * 0.5) * 0.08;
+  const halo = ctx.createRadialGradient(x, y, 0, x, y, size * 3.2);
+  halo.addColorStop(0, `${color}44`);
+  halo.addColorStop(0.5, `${color}18`);
+  halo.addColorStop(1, "transparent");
+  ctx.fillStyle = halo;
+  ctx.beginPath();
+  ctx.arc(x, y, size * 3.2 * breathe, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = color;
+  ctx.fillStyle = `${color}88`;
+  ctx.lineWidth = 0.7;
+  ctx.shadowColor = color;
+  ctx.shadowBlur = 8;
+
+  if (kind === "galaxy") {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(0.4 + Math.sin(pulse * 0.3) * 0.05);
+    ctx.scale(1, 0.42);
+    ctx.beginPath();
+    ctx.ellipse(0, 0, size * 1.6, size * 0.9, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(0, 0, size * 0.55, size * 0.3, 0, 0, Math.PI * 2);
+    ctx.strokeStyle = "rgba(255,255,255,0.35)";
+    ctx.stroke();
+    ctx.restore();
+  } else if (kind === "nebula") {
+    for (let i = 0; i < 3; i++) {
+      const a = pulse * 0.2 + i * 2.1;
+      ctx.beginPath();
+      ctx.ellipse(
+        x + Math.cos(a) * size * 0.3,
+        y + Math.sin(a) * size * 0.2,
+        size * (1.1 + i * 0.15),
+        size * (0.65 + i * 0.1),
+        a * 0.5,
+        0,
+        Math.PI * 2,
+      );
+      ctx.globalAlpha = 0.35 - i * 0.08;
+      ctx.fill();
+    }
+  } else {
+    for (let i = 0; i < 5; i++) {
+      const a = (i / 5) * Math.PI * 2 + pulse * 0.15;
+      const sx = x + Math.cos(a) * size * 0.9;
+      const sy = y + Math.sin(a) * size * 0.65;
+      ctx.beginPath();
+      ctx.arc(sx, sy, size * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.beginPath();
+    ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = "#fff8e7";
+    ctx.fill();
+  }
+
+  ctx.shadowBlur = 0;
+  ctx.globalAlpha = 1;
   ctx.restore();
 }

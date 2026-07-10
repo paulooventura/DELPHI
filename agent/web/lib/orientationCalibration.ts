@@ -6,6 +6,8 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
+const IOS_OFFSET_KEY = "cp-ios-alpha-offset";
+
 /** iOS: webkitCompassHeading is only valid near portrait-upright; store alpha offset there. */
 let iosAlphaOffset: number | null = null;
 /** East-positive magnetic declination for non-absolute / magnetic compass paths. */
@@ -13,8 +15,47 @@ let magneticDeclinationDeg = 0;
 /** User fine-tune after sun / landmark alignment (degrees, shortest-path east positive). */
 let userAzimuthOffsetDeg = 0;
 
+function persistIosAlphaOffset(): void {
+  if (iosAlphaOffset == null) return;
+  try {
+    sessionStorage.setItem(IOS_OFFSET_KEY, String(iosAlphaOffset));
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Restore portrait α offset from this session — avoids re-pointing at sky after tab switch. */
+export function restoreOrientationCalibration(): void {
+  try {
+    const raw = sessionStorage.getItem(IOS_OFFSET_KEY);
+    if (raw == null) return;
+    const v = Number(raw);
+    if (Number.isFinite(v)) iosAlphaOffset = v;
+  } catch {
+    /* ignore */
+  }
+}
+
 export function resetOrientationCalibration(): void {
   iosAlphaOffset = null;
+  try {
+    sessionStorage.removeItem(IOS_OFFSET_KEY);
+  } catch {
+    /* ignore */
+  }
+}
+
+export type CompassReadyState = "ready" | "needs-portrait" | "no-sensor";
+
+/** Whether true-north compass is trustworthy enough for AR sky lock. */
+export function compassReadyState(event?: CompassEvent | null): CompassReadyState {
+  if (typeof window === "undefined") return "no-sensor";
+  const hasWebkit = "DeviceOrientationEvent" in window;
+  if (!hasWebkit) return "no-sensor";
+  if (event?.webkitCompassHeading != null) {
+    return iosAlphaOffset != null ? "ready" : "needs-portrait";
+  }
+  return "ready";
 }
 
 export function setMagneticDeclinationDeg(deg: number): void {
@@ -72,6 +113,7 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   if (webkit != null && typeof alpha === "number" && Number.isFinite(alpha)) {
     if (isUprightPortrait(beta, gamma)) {
       iosAlphaOffset = normalizeHeading(webkit - alpha);
+      persistIosAlphaOffset();
       // webkitCompassHeading is magnetic north — convert to true north for ephemeris.
       return finalizeTrueHeading(webkit, true);
     }
@@ -88,15 +130,13 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   const absolute = event.absolute === true;
   const base = absolute ? alpha : normalizeHeading(360 - alpha);
   const heading = normalizeHeading(base + orient);
-  if (!absolute) {
-    return finalizeTrueHeading(heading, true);
-  }
-  return finalizeTrueHeading(heading, false);
+  // Most mobile "absolute" streams are still magnetic — apply declination for ephemeris alignment.
+  return finalizeTrueHeading(heading, true);
 }
 
 /**
  * Camera elevation from forward/back tilt (β) only — ignores roll (γ).
- * Portrait upright (β ≈ 90°) → 0°; top toward sky (β < 90) → positive; toward ground → negative.
+ * Portrait upright (β ≈ 90°) → 0°; top toward sky (β > 90) → positive; toward ground → negative.
  */
 export function resolveDevicePitchDeg(event: CompassEvent): number | null {
   const beta = event.beta;

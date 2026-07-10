@@ -202,9 +202,12 @@ import {
   resolveStableLookAzAlt,
   resolveStablePitchDeg,
 } from "./deviceAttitude";
+import { resolveDeviceAlphaDeg } from "./orientationCalibration";
 
 export {
   resetOrientationCalibration,
+  restoreOrientationCalibration,
+  compassReadyState,
   describeSkyPose,
   skyPoseHintMessage,
   resolveDeviceAlphaDeg,
@@ -212,7 +215,9 @@ export {
   resolveCompassHeadingDeg,
   setMagneticDeclinationDeg,
   getMagneticDeclinationDeg,
+  getIosAlphaOffset,
   type SkyPoseHint,
+  type CompassReadyState,
 } from "./orientationCalibration";
 
 export {
@@ -235,13 +240,36 @@ export function deviceBackVectorEnu(
   return normalize(mat3MulVec(R, [0, 0, 1]));
 }
 
+/** Physical camera axis in ENU — uses full attitude matrix with horizon-damped roll. */
+export function deviceOrientationToCameraViewEnu(
+  event: DeviceOrientationEvent & { webkitCompassHeading?: number },
+): Vec3 | null {
+  const beta = event.beta;
+  if (beta == null || !Number.isFinite(beta)) return null;
+  const alpha = resolveDeviceAlphaDeg(event);
+  if (alpha == null) return null;
+  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
+  return deviceCameraVectorEnu(alpha, beta, gamma);
+}
+
 /**
- * Stable topocentric look vector — compass az + roll-free pitch, γ never moves the view.
+ * Topocentric look vector — camera matrix with light horizon stabilization.
  */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
-  return deviceOrientationToStableViewEnu(event);
+  const camera = deviceOrientationToCameraViewEnu(event);
+  const stable = deviceOrientationToStableViewEnu(event);
+  if (!camera) return stable;
+  if (!stable) return camera;
+  const { alt: camAlt } = enuToAltAz(camera);
+  if (Math.abs(camAlt) >= 10) return camera;
+  const t = clamp((10 - Math.abs(camAlt)) / 10, 0, 0.25);
+  return normalize([
+    camera[0] * (1 - t) + stable[0] * t,
+    camera[1] * (1 - t) + stable[1] * t,
+    camera[2] * (1 - t) + stable[2] * t,
+  ]);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */

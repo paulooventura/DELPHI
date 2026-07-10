@@ -315,6 +315,238 @@ html,body {
   letter-spacing: 0.06em;
 }
 
+/* ── Spacetime anchor (clock navigation reference) ── */
+.cp-spacetime-anchor {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto 0.65rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(13, 17, 26, 0.92) 0%, rgba(8, 10, 16, 0.88) 100%);
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+}
+
+.cp-st-anchor-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.55rem;
+  margin-bottom: 0.45rem;
+}
+
+.cp-st-fix,
+.cp-st-compass,
+.cp-st-next-event {
+  font-size: 0.52rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.45rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.cp-st-fix-live {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.35);
+  background: rgba(52, 211, 153, 0.1);
+}
+
+.cp-st-fix-fallback {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.08);
+}
+
+.cp-st-fix-denied,
+.cp-st-fix-off {
+  color: #f87171;
+  border-color: rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.08);
+}
+
+.cp-st-compass-high {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.25);
+  background: rgba(52, 211, 153, 0.06);
+}
+
+.cp-st-compass-medium {
+  color: #a3e635;
+  border-color: rgba(163, 230, 53, 0.25);
+  background: rgba(163, 230, 53, 0.06);
+}
+
+.cp-st-compass-low {
+  color: #fbbf24;
+  border-color: rgba(251, 191, 36, 0.25);
+  background: rgba(251, 191, 36, 0.06);
+}
+
+.cp-st-compass-unknown {
+  color: rgba(148, 163, 184, 0.9);
+  border-color: rgba(148, 163, 184, 0.2);
+  background: rgba(148, 163, 184, 0.06);
+}
+
+.cp-st-next-event {
+  color: var(--gold-lt);
+  border-color: rgba(201, 162, 39, 0.28);
+  background: rgba(201, 162, 39, 0.08);
+  margin-left: auto;
+}
+
+.cp-st-place {
+  margin: 0;
+  font-size: 0.62rem;
+  font-family: var(--font-geist-mono, "JetBrains Mono", Consolas, monospace);
+  color: var(--ink-dim);
+  letter-spacing: 0.02em;
+}
+
+.cp-st-narrative {
+  margin: 0.35rem 0 0.55rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.45;
+  color: var(--ink);
+  letter-spacing: 0.01em;
+}
+
+.cp-st-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.cp-st-chip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  padding: 0.3rem 0.5rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  min-width: 4.5rem;
+}
+
+.cp-st-chip-measured { border-left: 2px solid #34d399; }
+.cp-st-chip-computed { border-left: 2px solid #60a5fa; }
+.cp-st-chip-cultural { border-left: 2px solid #c9a227; }
+
+.cp-st-chip-label {
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+
+.cp-st-chip-value {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.cp-st-anchor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: 0.6rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.cp-st-provenance-hint {
+  margin: 0;
+  flex: 1 1 12rem;
+  font-size: 0.52rem;
+  color: rgba(148, 163, 184, 0.75);
+  line-height: 1.4;
+}
+
+.cp-st-expand-btn {
+  flex: 0 0 auto;
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gold-lt);
+  background: rgba(201, 162, 39, 0.1);
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  border-radius: 8px;
+  padding: 0.35rem 0.65rem;
+  cursor: pointer;
+}
+
+.cp-st-expand-btn:hover {
+  background: rgba(201, 162, 39, 0.18);
+}
+
+.cp-st-expanded {
+  margin-top: 0.65rem;
+}
+
+.cp-st-expanded .cp-spacetime {
+  margin: 0;
+}
+
+.cp-st-compass-note {
+  margin: 0.45rem 0 0;
+  font-size: 0.58rem;
+  color: var(--ink-dim);
+}
+
+.cp-fix-banner {
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+}
+
+.cp-fix-banner-warn {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.08);
+  border-color: rgba(248, 113, 113, 0.28);
+}
+
+.cp-layer-tier {
+  flex-shrink: 0;
+  font-size: 0.48rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.cp-layer-tier-measured {
+  color: #34d399;
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(52, 211, 153, 0.08);
+}
+
+.cp-layer-tier-computed {
+  color: #60a5fa;
+  border-color: rgba(96, 165, 250, 0.3);
+  background: rgba(96, 165, 250, 0.08);
+}
+
+.cp-layer-tier-cultural {
+  color: #c9a227;
+  border-color: rgba(201, 162, 39, 0.3);
+  background: rgba(201, 162, 39, 0.08);
+}
+
 .cp-zoom-label {
   font-size: 0.72rem;
   color: var(--ink-dim);
@@ -1736,6 +1968,13 @@ html,body {
   border-radius: 1rem;
 }
 
+.cp-app[data-tab="clock"] .cp-cosmic-clock-wheel {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 .cp-cosmic-clock-svg {
   height: min(78dvh, calc(100vw * 1.12));
   max-height: 680px;
@@ -1893,8 +2132,153 @@ html,body {
     radial-gradient(ellipse 55% 45% at 50% 88%, hsla(var(--amb-hue, 42), 72%, 52%, 0.28) 0%, transparent 62%),
     radial-gradient(ellipse 70% 55% at 22% 18%, rgba(125, 211, 252, 0.14) 0%, transparent 58%),
     radial-gradient(ellipse 65% 50% at 78% 12%, rgba(145, 116, 248, 0.16) 0%, transparent 55%);
-  animation: cp-aurora-drift 18s ease-in-out infinite alternate;
+  animation: cp-aurora-drift 22s ease-in-out infinite alternate;
   filter: blur(2px);
+  transition: opacity 1.2s ease, transform 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cp-clock-aurora-alt {
+  animation: cp-aurora-drift-alt 28s ease-in-out infinite alternate-reverse;
+  filter: blur(3px);
+  mix-blend-mode: screen;
+}
+
+.cp-clock-stars {
+  position: absolute;
+  inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%, rgba(255, 255, 255, 0.55) 50%, transparent 100%),
+    radial-gradient(1px 1px at 28% 8%, rgba(201, 162, 39, 0.45) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 44% 22%, rgba(255, 255, 255, 0.4) 50%, transparent 100%),
+    radial-gradient(1px 1px at 62% 12%, rgba(125, 211, 252, 0.5) 50%, transparent 100%),
+    radial-gradient(1px 1px at 78% 28%, rgba(255, 255, 255, 0.35) 50%, transparent 100%),
+    radial-gradient(1.5px 1.5px at 88% 16%, rgba(201, 162, 39, 0.38) 50%, transparent 100%),
+    radial-gradient(1px 1px at 36% 32%, rgba(255, 255, 255, 0.3) 50%, transparent 100%),
+    radial-gradient(1px 1px at 54% 6%, rgba(255, 255, 255, 0.42) 50%, transparent 100%);
+  opacity: 0.55;
+  animation: cp-clock-stars-twinkle 6s ease-in-out infinite;
+}
+
+.cp-clock-orbit-traces {
+  position: absolute;
+  left: 50%;
+  bottom: calc(56px + var(--safe-b));
+  width: min(96vw, 440px);
+  height: min(48vw, 220px);
+  margin-left: min(-48vw, -220px);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  border: 1px solid rgba(201, 162, 39, 0.06);
+  border-bottom: none;
+  opacity: 0.4;
+  animation: cp-orbit-trace 14s ease-in-out infinite;
+}
+
+.cp-cosmic-star {
+  animation: cp-star-pulse 4s ease-in-out infinite;
+}
+
+.cp-cosmic-horizon-glow {
+  filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.12));
+}
+
+.cp-cosmic-needle {
+  animation: cp-needle-breathe 3.5s ease-in-out infinite;
+}
+
+.cp-cosmic-needle-cap {
+  filter: drop-shadow(0 0 6px rgba(201, 162, 39, 0.55));
+}
+
+.cp-cosmic-now-label {
+  animation: cp-now-label-glow 2.8s ease-in-out infinite;
+}
+
+.cp-cosmic-hub-pulse-ring {
+  animation: cp-hub-ring-pulse 4.5s ease-in-out infinite;
+}
+
+.cp-cosmic-hub-time {
+  filter: drop-shadow(0 0 4px rgba(201, 162, 39, 0.35));
+}
+
+.cp-dashboard-time-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.cp-dashboard-time-card::before {
+  content: "";
+  position: absolute;
+  inset: -40% -20%;
+  background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(201, 162, 39, 0.14) 0%, transparent 68%);
+  pointer-events: none;
+  animation: cp-time-card-glow 5s ease-in-out infinite;
+}
+
+.cp-dashboard-digital-time {
+  text-shadow: 0 0 24px rgba(201, 162, 39, 0.28), 0 0 48px rgba(201, 162, 39, 0.12);
+  letter-spacing: 0.02em;
+}
+
+.cp-layer-readout-card {
+  transition: border-color 0.35s ease, box-shadow 0.35s ease, transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.cp-layer-readout-card:hover {
+  border-color: color-mix(in srgb, var(--layer-accent, #c9a227) 35%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 8px 28px rgba(0, 0, 0, 0.35),
+    0 0 20px color-mix(in srgb, var(--layer-accent, #c9a227) 12%, transparent);
+}
+
+.cp-layer-progress-fill {
+  will-change: width;
+}
+
+@keyframes cp-aurora-drift-alt {
+  from { transform: rotate(4deg) scale(1.02) translateX(-2%); opacity: 0.65; }
+  to   { transform: rotate(-3deg) scale(1.08) translateX(2%); opacity: 1; }
+}
+
+@keyframes cp-clock-stars-twinkle {
+  0%, 100% { opacity: 0.42; }
+  50%      { opacity: 0.72; }
+}
+
+@keyframes cp-orbit-trace {
+  0%, 100% { transform: scaleX(0.98) scaleY(1); opacity: 0.28; }
+  50%      { transform: scaleX(1.03) scaleY(1.02); opacity: 0.52; }
+}
+
+@keyframes cp-star-pulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50%      { opacity: 1; transform: scale(1.35); }
+}
+
+@keyframes cp-needle-breathe {
+  0%, 100% { stroke-opacity: 0.92; }
+  50%      { stroke-opacity: 1; }
+}
+
+@keyframes cp-now-label-glow {
+  0%, 100% { opacity: 0.75; }
+  50%      { opacity: 1; }
+}
+
+@keyframes cp-hub-ring-pulse {
+  0%, 100% { stroke-opacity: 0.1; transform: scale(1); }
+  50%      { stroke-opacity: 0.28; transform: scale(1.02); }
+}
+
+@keyframes cp-time-card-glow {
+  0%, 100% { opacity: 0.55; transform: translateY(0); }
+  50%      { opacity: 1; transform: translateY(2%); }
+}
+
+@keyframes cp-aurora-drift {
+  from { transform: rotate(-2deg) scale(1); opacity: 0.75; }
+  to   { transform: rotate(3deg) scale(1.06); opacity: 1; }
 }
 
 .cp-clock-nebula {
@@ -1914,7 +2298,8 @@ html,body {
   border-radius: 50%;
   border: 1px solid rgba(201, 162, 39, 0.08);
   opacity: 0.35;
-  animation: cp-breath-ring 6s ease-in-out infinite;
+  animation: cp-breath-ring 7s ease-in-out infinite;
+  transition: transform 0.7s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.6s ease;
 }
 
 .cp-clock-pulse-ring-live {
@@ -1931,14 +2316,9 @@ html,body {
   mix-blend-mode: overlay;
 }
 
-@keyframes cp-aurora-drift {
-  from { transform: rotate(-2deg) scale(1); opacity: 0.75; }
-  to   { transform: rotate(3deg) scale(1.06); opacity: 1; }
-}
-
 @keyframes cp-breath-ring {
-  0%, 100% { transform: scale(0.96); opacity: 0.3; }
-  50%      { transform: scale(1.04); opacity: 0.55; }
+  0%, 100% { transform: scale(0.94); opacity: 0.25; }
+  50%      { transform: scale(1.06); opacity: 0.58; }
 }
 
 /* Floating app bar on clock */
@@ -2281,6 +2661,28 @@ html,body {
   font-variant-numeric: tabular-nums;
 }
 
+.cp-sky-compass-rose {
+  will-change: transform;
+}
+
+.cp-compass-cal-hint {
+  margin: 0 0 0.5rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  line-height: 1.4;
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.1);
+  border: 1px solid rgba(251, 191, 36, 0.28);
+}
+
+.cp-compass-align-btns {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.65rem;
+}
+
 /* Legacy overlay class — unused */
 .cp-split-skymap-with-compass {
   position: relative;
@@ -2415,4 +2817,148 @@ html,body {
 }
 .cp-pv-hub-label {
   letter-spacing: 0.04em;
+}
+
+/* ─── Moment tab — zeitgeist phrase ─────────────────────────────────────── */
+.cp-moment-zeitgeist {
+  background:
+    radial-gradient(ellipse 80% 60% at 50% 20%, rgba(201, 162, 39, 0.08) 0%, transparent 65%),
+    radial-gradient(ellipse 70% 50% at 30% 80%, rgba(125, 211, 252, 0.06) 0%, transparent 55%),
+    var(--bg);
+}
+.cp-moment-eyebrow {
+  font-family: var(--font-cinzel), serif;
+  font-size: 0.72rem;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--gold-dp);
+  margin: 0 0 1.25rem;
+}
+.cp-moment-time {
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--ink-dim);
+  margin: 0 0 2rem;
+  font-variant-numeric: tabular-nums;
+}
+.cp-moment-phrase {
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-family: var(--font-cinzel), serif;
+  font-size: clamp(1.05rem, 4.2vw, 1.45rem);
+  line-height: 1.65;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  text-wrap: balance;
+}
+.cp-moment-glyphs {
+  display: flex;
+  justify-content: center;
+  gap: 1.25rem;
+  margin-top: 2.5rem;
+  font-size: 1.35rem;
+  opacity: 0.75;
+  filter: drop-shadow(0 0 8px rgba(201, 162, 39, 0.25));
+}
+
+/* ─── Senses tab — EMF reader ─────────────────────────────────────────────── */
+.cp-emf-reader {
+  padding: 1rem 1.1rem 1.15rem;
+}
+.cp-emf-reader-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+.cp-emf-reader-title {
+  font-family: var(--font-cinzel), serif;
+  font-size: 0.82rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gold-lt);
+}
+.cp-emf-reader-live {
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+}
+.cp-emf-reader-live-on {
+  color: #34d399;
+  animation: cp-sense-live 2s ease-in-out infinite;
+}
+.cp-emf-gauge {
+  display: flex;
+  justify-content: center;
+  margin: 0.25rem 0 0.5rem;
+}
+.cp-emf-gauge-svg {
+  width: min(100%, 220px);
+  height: auto;
+}
+.cp-emf-arc-fill {
+  transition: stroke-dasharray 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cp-emf-value {
+  text-align: center;
+  margin: 0;
+  line-height: 1;
+}
+.cp-emf-number {
+  font-size: 2rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.cp-emf-unit {
+  font-size: 0.85rem;
+  color: var(--gold-dp);
+  margin-left: 0.25rem;
+}
+.cp-emf-label {
+  text-align: center;
+  margin: 0.35rem 0 0;
+  font-size: 0.72rem;
+  color: var(--ink-dim);
+  letter-spacing: 0.04em;
+}
+.cp-emf-method {
+  text-align: center;
+  margin: 0.25rem 0 0;
+  font-size: 0.58rem;
+  color: var(--ink-dim);
+  opacity: 0.7;
+}
+
+/* ─── Steampunk clock mechanism ───────────────────────────────────────────── */
+.cp-steampunk-clock-wheel {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 100%, rgba(61, 48, 24, 0.35) 0%, transparent 70%),
+    #0a0806;
+}
+.cp-steampunk-clock-wheel.cp-steampunk-tick .cp-steampunk-playhead-slot {
+  animation: cp-steampunk-click 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.cp-steampunk-clock-wheel.cp-steampunk-tick .cp-steampunk-escapement {
+  animation: cp-steampunk-escape 0.12s ease-out;
+}
+.cp-steampunk-ring .cp-cosmic-segment-active path {
+  filter: drop-shadow(0 0 3px rgba(232, 200, 106, 0.45));
+}
+.cp-steampunk-hub {
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
+}
+
+@keyframes cp-steampunk-click {
+  0% { transform: translateY(0); }
+  40% { transform: translateY(2px); }
+  100% { transform: translateY(0); }
+}
+@keyframes cp-steampunk-escape {
+  0% { transform: rotate(0deg); transform-origin: 400px 430px; }
+  50% { transform: rotate(4deg); transform-origin: 400px 430px; }
+  100% { transform: rotate(0deg); transform-origin: 400px 430px; }
 }

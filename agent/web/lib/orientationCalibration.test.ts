@@ -67,19 +67,18 @@ describe("deviceOrientationToViewEnu", () => {
     expect(alt).toBeLessThan(-50);
   });
 
-  it("ignores roll (gamma) when alpha and beta are fixed", () => {
+  it("camera matrix responds to roll when pitched toward sky", () => {
     const base = {
       alpha: 120,
-      beta: 90,
+      beta: 55,
       absolute: true,
     } as DeviceOrientationEvent;
 
     const view0 = deviceOrientationToViewEnu({ ...base, gamma: 0 });
-    for (const gamma of [-75, -45, 0, 45, 75]) {
-      const view = deviceOrientationToViewEnu({ ...base, gamma });
-      expect(view).not.toBeNull();
-      expect(dot(view!, view0!)).toBeGreaterThan(0.9999);
-    }
+    const viewR = deviceOrientationToViewEnu({ ...base, gamma: 40 });
+    expect(view0).not.toBeNull();
+    expect(viewR).not.toBeNull();
+    expect(dot(view0!, viewR!)).toBeLessThan(0.995);
   });
 });
 

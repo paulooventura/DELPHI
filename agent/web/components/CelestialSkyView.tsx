@@ -32,6 +32,9 @@ import {
   drawAircraftGlyph,
   drawAsteroidGlyph,
   drawCometGlyph,
+  drawConstellationLabel,
+  drawConstellationLines,
+  drawDeepSkyGlyph,
   drawMoonGlyph,
   drawPlanetGlyph,
   drawSatelliteClusterGlyph,
@@ -39,6 +42,9 @@ import {
   drawStarGlyph,
   drawSunGlyph,
 } from "../lib/cosmic/skyIcons";
+import { CONSTELLATION_FIGURES } from "../lib/constellationLines";
+import { DEEP_SKY_OBJECTS } from "../lib/deepSkyCatalog";
+import { raDecToAltAz } from "../lib/skyPositions";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
 import { smoothViewAzAltAdaptive } from "../lib/sensorSmoothing";
 import {
@@ -48,6 +54,7 @@ import {
   groundBlendFromView,
   type Vec3,
   type ViewBasis,
+  type SkyProjector,
 } from "../lib/sphericalView";
 import {
   drawCloudLayer,
@@ -87,7 +94,7 @@ export type CelestialSkyViewProps = {
 
 type Trackable = {
   id: string;
-  kind: "planet" | "satellite" | "satellite-cluster" | "aircraft" | "asteroid" | "comet";
+  kind: "planet" | "satellite" | "satellite-cluster" | "aircraft" | "asteroid" | "comet" | "deepsky";
   name: string;
   az: number;
   alt: number;
@@ -122,6 +129,7 @@ const KIND_META: Record<Trackable["kind"], { label: string; emoji: string; accen
   aircraft: { label: "Aircraft", emoji: "✈", accent: "#cbd5e1" },
   asteroid: { label: "Asteroid", emoji: "◇", accent: "#d6d3d1" },
   comet: { label: "Comet", emoji: "☄", accent: "#bae6fd" },
+  deepsky: { label: "Deep sky", emoji: "✦", accent: "#c4b5fd" },
 };
 
 function buildObjectDetail(
@@ -187,6 +195,11 @@ function buildObjectDetail(
 
   if (trackable.kind === "satellite-cluster") {
     lines.push({ label: "Group", value: "Multiple LEO objects in this patch of sky" });
+  }
+
+  if (trackable.kind === "deepsky") {
+    const dso = DEEP_SKY_OBJECTS.find(d => d.id === trackable.id);
+    if (dso?.subtitle) lines.push({ label: "Catalog", value: dso.subtitle });
   }
 
   return {
@@ -617,6 +630,56 @@ function drawTargetLockFrame(
   ctx.restore();
 }
 
+function projectRaDecToScreen(
+  raHours: number,
+  decDeg: number,
+  date: Date,
+  latDeg: number,
+  lonDeg: number,
+  altM: number,
+  toXY: SkyProjector["toXY"],
+): { x: number; y: number; az: number; alt: number } | null {
+  const { az, alt } = raDecToAltAz(date, latDeg, lonDeg, raHours, decDeg, altM);
+  if (alt < -6) return null;
+  const [x, y] = toXY(az, alt);
+  if (x < -8000) return null;
+  return { x, y, az, alt };
+}
+
+function drawWarmCrosshair(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  accent: string,
+  pulse: number,
+  warmth: number,
+) {
+  const breathe = 0.92 + Math.sin(pulse * 1.1) * 0.05;
+  ctx.save();
+  const ring = ctx.createRadialGradient(cx, cy, 4, cx, cy, 28 * breathe);
+  ring.addColorStop(0, warmth > 0.5 ? "rgba(251, 191, 36, 0.18)" : "rgba(96, 165, 250, 0.14)");
+  ring.addColorStop(1, "transparent");
+  ctx.fillStyle = ring;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 28 * breathe, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = accent;
+  ctx.shadowColor = warmth > 0.5 ? OBS.night.glow : OBS.day.glow;
+  ctx.shadowBlur = 8;
+  ctx.lineWidth = 0.9;
+  ctx.beginPath();
+  ctx.arc(cx, cy, 14 * breathe, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(cx - 16, cy);
+  ctx.lineTo(cx + 16, cy);
+  ctx.moveTo(cx, cy - 16);
+  ctx.lineTo(cx, cy + 16);
+  ctx.stroke();
+  ctx.restore();
+}
+
 function findTargetLock(
   headingDeg: number,
   pitchDeg: number,
@@ -684,6 +747,13 @@ function paintBackground(
   vignette.addColorStop(0, "transparent");
   vignette.addColorStop(1, appearance.vignette);
   ctx.fillStyle = vignette;
+  ctx.fillRect(0, 0, w, h);
+
+  const warmthHaze = ctx.createLinearGradient(0, h * 0.5, 0, h);
+  warmthHaze.addColorStop(0, "transparent");
+  warmthHaze.addColorStop(0.7, "rgba(201, 162, 39, 0.05)");
+  warmthHaze.addColorStop(1, "rgba(120, 90, 40, 0.14)");
+  ctx.fillStyle = warmthHaze;
   ctx.fillRect(0, 0, w, h);
 }
 
@@ -809,19 +879,21 @@ export function CelestialSkyView({
     let cancelled = false;
     const load = async () => {
       try {
-        const q = `lat=${lat}&lon=${lon}&alt=200`;
+        const altM = Math.max(0, observerAltM ?? 0);
+        const obs = { latDeg: lat, lonDeg: lon, altM };
+        const q = `lat=${lat}&lon=${lon}&alt=${Math.round(altM)}`;
         const mockAircraft = computeAircraftTracks(
-          generateMockAircraft({ latDeg: lat, lonDeg: lon, altM: 200 }, Math.floor(lat * 10 + lon), 8),
-          { latDeg: lat, lonDeg: lon, altM: 200 },
+          generateMockAircraft(obs, Math.floor(lat * 10 + lon), 8),
+          obs,
         );
         const mockSatellites = computeSatelliteTracks(
           tleCatalog,
-          { latDeg: lat, lonDeg: lon, altM: 200 },
+          obs,
           observationTime,
         );
         const [acRes, satRes] = await Promise.all([
           fetch(`/api/sky/aircraft?${q}`).then(r => r.ok ? r.json() : null),
-          fetch(`/api/sky/satellites?${q}`).then(r => r.ok ? r.json() : null),
+          fetch(`/api/sky/satellites?${q}&live=1`).then(r => r.ok ? r.json() : null),
         ]);
         if (cancelled) return;
         if (acRes?.aircraft?.length) {
@@ -842,13 +914,15 @@ export function CelestialSkyView({
         }
       } catch {
         if (!cancelled) {
+          const altM = Math.max(0, observerAltM ?? 0);
+          const obs = { latDeg: lat, lonDeg: lon, altM };
           aircraftRef.current = computeAircraftTracks(
-            generateMockAircraft({ latDeg: lat, lonDeg: lon, altM: 200 }, Math.floor(lat * 10 + lon), 8),
-            { latDeg: lat, lonDeg: lon, altM: 200 },
+            generateMockAircraft(obs, Math.floor(lat * 10 + lon), 8),
+            obs,
           );
           satellitesRef.current = computeSatelliteTracks(
             tleCatalog,
-            { latDeg: lat, lonDeg: lon, altM: 200 },
+            obs,
             observationTime,
           );
         }
@@ -857,7 +931,7 @@ export function CelestialSkyView({
     void load();
     const id = setInterval(load, 45000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [lat, lon, tleCatalog, observationTime]);
+  }, [lat, lon, observerAltM, tleCatalog, observationTime]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -959,27 +1033,19 @@ export function CelestialSkyView({
       }
 
       const hits: HitTarget[] = [];
-
-      for (let si = 0; si < stars.length; si++) {
-        const star = stars[si]!;
-        const [x, y] = project.toXY(star.az, star.alt);
-        if (!project.inView(x, y, w, h)) continue;
-        const below = star.alt < 0;
-        const r = Math.max(0.65, (3.6 - star.mag) * 0.95);
-        ctx.globalAlpha = starAlpha * (below ? 0.35 : Math.min(1, 0.5 + (3.4 - star.mag) / 5));
-        drawStarGlyph(
-          ctx,
-          x,
-          y,
-          r,
-          below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
-          !below && star.mag < 2.4,
-          pulseRef.current + si * 0.37,
-        );
-        ctx.globalAlpha = 1;
-      }
-
       const trackables: Trackable[] = [];
+
+      for (const dso of DEEP_SKY_OBJECTS) {
+        const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
+        if (!pt || pt.alt < 8) continue;
+        trackables.push({
+          id: dso.id,
+          kind: "deepsky",
+          name: dso.name,
+          az: pt.az,
+          alt: pt.alt,
+        });
+      }
 
       for (const body of bodies) {
         trackables.push({
@@ -1056,6 +1122,66 @@ export function CelestialSkyView({
             alt: sat.alt,
             altKm: sat.altKm,
           });
+        }
+      }
+
+      for (let si = 0; si < stars.length; si++) {
+        const star = stars[si]!;
+        const [x, y] = project.toXY(star.az, star.alt);
+        if (!project.inView(x, y, w, h)) continue;
+        const below = star.alt < 0;
+        const r = Math.max(0.65, (3.6 - star.mag) * 0.95);
+        ctx.globalAlpha = starAlpha * (below ? 0.35 : Math.min(1, 0.5 + (3.4 - star.mag) / 5));
+        drawStarGlyph(
+          ctx,
+          x,
+          y,
+          r,
+          below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
+          !below && star.mag < 2.4,
+          pulseRef.current + si * 0.37,
+        );
+        ctx.globalAlpha = 1;
+      }
+
+      if (detail !== "wide" && starAlpha > 0.12) {
+        for (const fig of CONSTELLATION_FIGURES) {
+          const segments: Array<[[number, number], [number, number]]> = [];
+          let visibleLines = 0;
+          for (const [a, b] of fig.lines) {
+            const p0 = projectRaDecToScreen(a[0], a[1], observationTime, lat, lon, observerAltM, project.toXY);
+            const p1 = projectRaDecToScreen(b[0], b[1], observationTime, lat, lon, observerAltM, project.toXY);
+            if (!p0 || !p1) continue;
+            segments.push([[p0.x, p0.y], [p1.x, p1.y]]);
+            visibleLines++;
+          }
+          if (visibleLines < 2) continue;
+          drawConstellationLines(ctx, segments, fig.color, fig.glow, pulseRef.current);
+          const labelPt = projectRaDecToScreen(
+            fig.label.ra, fig.label.dec, observationTime, lat, lon, observerAltM, project.toXY,
+          );
+          if (labelPt && labelPt.alt > 5) {
+            drawConstellationLabel(ctx, labelPt.x, labelPt.y - 8, fig.name, fig.color);
+          }
+        }
+
+        for (const dso of DEEP_SKY_OBJECTS) {
+          const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
+          if (!pt || !project.inView(pt.x, pt.y, w, h, 20)) continue;
+          const size = Math.max(5, 9 - dso.mag * 0.35);
+          drawDeepSkyGlyph(ctx, dso.kind, pt.x, pt.y, size, dso.color, pulseRef.current);
+          if (scale >= 0.85) {
+            ctx.save();
+            ctx.font = `500 8px ${MICRO}`;
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(226, 232, 240, 0.72)";
+            ctx.fillText(dso.name, pt.x, pt.y + size + 10);
+            ctx.restore();
+          }
+          const tr = trackables.find(t => t.id === dso.id);
+          if (tr) {
+            hits.push({ id: dso.id, x: pt.x, y: pt.y, radius: 14, trackable: tr });
+          }
         }
       }
 
@@ -1174,18 +1300,7 @@ export function CelestialSkyView({
 
       const cx = w / 2;
       const cy = h / 2;
-      ctx.save();
-      ctx.strokeStyle = accent;
-      ctx.shadowColor = skyWarmth > 0.5 ? OBS.night.glow : OBS.day.glow;
-      ctx.shadowBlur = 5;
-      ctx.lineWidth = 0.85;
-      ctx.beginPath();
-      ctx.moveTo(cx - 12, cy);
-      ctx.lineTo(cx + 12, cy);
-      ctx.moveTo(cx, cy - 12);
-      ctx.lineTo(cx, cy + 12);
-      ctx.stroke();
-      ctx.restore();
+      drawWarmCrosshair(ctx, cx, cy, accent, pulseRef.current, skyWarmth);
 
       if (locked) {
         const lt = trackables.find(t => t.id === locked.id);
@@ -1247,14 +1362,19 @@ export function CelestialSkyView({
           ctx.save();
           ctx.strokeStyle = "rgba(251, 191, 36, 0.75)";
           ctx.fillStyle = "rgba(251, 191, 36, 0.9)";
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([4, 5]);
           ctx.beginPath();
           ctx.moveTo(w / 2, h / 2);
           ctx.lineTo(ax, ay);
           ctx.stroke();
+          ctx.setLineDash([]);
           ctx.font = `700 11px ${MICRO}`;
           ctx.textAlign = "center";
           ctx.fillText("☽", ax, ay + 4);
+          ctx.font = `500 7px ${MICRO}`;
+          ctx.fillStyle = "rgba(251, 191, 36, 0.75)";
+          ctx.fillText("align compass", ax, ay + 14);
           ctx.restore();
         }
       }

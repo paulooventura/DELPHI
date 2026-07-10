@@ -4,12 +4,12 @@ import { useId, useMemo, useEffect, useState, type CSSProperties } from "react";
 import type { ClockRingData, CosmicTimeSnapshot } from "../lib/timeEngine";
 import {
   formatHubClockTime,
-  ringCycleFraction,
   WHEEL_VISIBLE_RING_IDS,
 } from "../lib/timeEngine";
 import { OBS } from "../lib/design/observatoryTokens";
 import { ringAccentColor, ringSegmentVisual } from "../lib/cosmicAssets";
 import { CosmicGraphicIcon } from "../lib/cosmicGraphicIcons";
+import { useRingFractionSprings } from "../hooks/useSpringMotion";
 
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
@@ -19,8 +19,8 @@ export type CosmicClockWheelProps = {
 
 const CX = 400;
 const CY = 430;
-const HUB_R = 36;
-const INNER_R = 68;
+const HUB_R = 28;
+const INNER_R = 52;
 const OUTER_R = 400;
 
 export const COSMIC_CLOCK_OUTER_RADIUS = OUTER_R;
@@ -29,6 +29,9 @@ const WHEEL_RING_CONFIG: Record<
   number,
   { divisions: number; labelEvery: number; shortName: string }
 > = {
+  1: { divisions: 60, labelEvery: 15, shortName: "Sec" },
+  2: { divisions: 60, labelEvery: 10, shortName: "Min" },
+  3: { divisions: 24, labelEvery: 6, shortName: "Hr" },
   4: { divisions: 100, labelEvery: 10, shortName: "Kè" },
   5: { divisions: 12, labelEvery: 1, shortName: "Shí" },
   6: { divisions: 8, labelEvery: 1, shortName: "Moon" },
@@ -87,17 +90,40 @@ function donutSectorPath(
   ].join(" ");
 }
 
+function gearTeethPath(cx: number, cy: number, radius: number, count: number, depth: number): string {
+  const parts: string[] = [];
+  for (let i = 0; i < count; i++) {
+    const a0 = tickAngle((i / count) * 360);
+    const a1 = tickAngle(((i + 0.55) / count) * 360);
+    const a2 = tickAngle(((i + 1) / count) * 360);
+    const x0 = cx + Math.cos(a0) * radius;
+    const y0 = cy + Math.sin(a0) * radius;
+    const x1 = cx + Math.cos(a1) * (radius + depth);
+    const y1 = cy + Math.sin(a1) * (radius + depth);
+    const x2 = cx + Math.cos(a2) * radius;
+    const y2 = cy + Math.sin(a2) * radius;
+    parts.push(`${i === 0 ? "M" : "L"} ${x0} ${y0} L ${x1} ${y1} L ${x2} ${y2}`);
+  }
+  return parts.join(" ") + " Z";
+}
+
 function PlayheadSlot({ inner, outer }: { inner: number; outer: number }) {
   return (
-    <path
-      d={donutSectorPath(CX, CY, inner, outer, -10, 10)}
-      fill="var(--gold-lt)"
-      fillOpacity={0.22}
-      stroke="var(--gold-lt)"
-      strokeWidth={1.2}
-      strokeOpacity={0.85}
-      pointerEvents="none"
-    />
+    <g className="cp-steampunk-playhead-slot">
+      <path
+        d={donutSectorPath(CX, CY, inner, outer, -14, 14)}
+        fill="url(#cp-steam-pawl-fill)"
+        stroke="#e8c86a"
+        strokeWidth={1.6}
+        pointerEvents="none"
+      />
+      <path
+        d={`M ${CX - 4} ${CY - outer + 2} L ${CX} ${CY - outer - 6} L ${CX + 4} ${CY - outer + 2} Z`}
+        fill="#c9a227"
+        stroke="#8a6b1e"
+        strokeWidth={0.6}
+      />
+    </g>
   );
 }
 
@@ -106,23 +132,26 @@ function CosmicSegmentRing({
   wheelIndex,
   uid,
   wheelCount,
+  cycleFraction,
 }: {
   ring: ClockRingData;
   wheelIndex: number;
   uid: string;
   wheelCount: number;
+  cycleFraction: number;
 }) {
   const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[4]!;
   const { inner, outer, mid } = ringRadii(wheelIndex, wheelCount);
   const band = outer - inner;
-  const dialSpin = -ringCycleFraction(ring) * 360;
+  const dialSpin = -cycleFraction * 360;
   const accent = ringAccentColor(ring.ringId);
-  const activeIdx = Math.floor(ringCycleFraction(ring) * cfg.divisions) % cfg.divisions;
+  const activeIdx = Math.floor(cycleFraction * cfg.divisions) % cfg.divisions;
+  const depth = 0.72 + (wheelIndex / Math.max(1, wheelCount - 1)) * 0.28;
 
   const spinStyle: CSSProperties = {
     transform: `rotate(${dialSpin}deg)`,
     transformOrigin: `${CX}px ${CY}px`,
-    transition: "transform 0.15s linear",
+    willChange: "transform",
   };
 
   const segments = [];
@@ -137,15 +166,26 @@ function CosmicSegmentRing({
     const iconSize = Math.max(8, Math.min(band * 0.75, ring.ringId === 5 ? 14 : 12));
     const lx = CX + Math.cos(ang) * mid;
     const ly = CY + Math.sin(ang) * mid;
+    const sectorPath = donutSectorPath(CX, CY, inner + 0.5, outer - 0.5, start, end);
 
     segments.push(
-      <g key={i}>
+      <g key={i} className={isActive ? "cp-cosmic-segment-active" : undefined}>
+        {isActive && (
+          <path
+            d={sectorPath}
+            fill={accent}
+            fillOpacity={0.22}
+            filter={`url(#cosmic-seg-glow-${uid})`}
+            pointerEvents="none"
+          />
+        )}
         <path
-          d={donutSectorPath(CX, CY, inner + 0.5, outer - 0.5, start, end)}
+          d={sectorPath}
           fill={vis.fill}
+          fillOpacity={isActive ? 1 : 0.92}
           stroke={isActive ? "var(--gold-lt)" : vis.stroke}
-          strokeWidth={isActive ? 1.1 : 0.45}
-          strokeOpacity={isActive ? 0.95 : 0.65}
+          strokeWidth={isActive ? 1.25 : 0.45}
+          strokeOpacity={isActive ? 1 : 0.6}
         />
         {showLabel && vis.graphicKey && (
           <CosmicGraphicIcon
@@ -177,7 +217,7 @@ function CosmicSegmentRing({
   }
 
   return (
-    <g className="cosmic-segment-ring">
+    <g className="cosmic-segment-ring cp-steampunk-ring" opacity={depth}>
       <g style={spinStyle} clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>
         {segments}
       </g>
@@ -185,18 +225,54 @@ function CosmicSegmentRing({
         <clipPath id={`cosmic-clip-${uid}-${ring.ringId}`}>
           <path d={semicircleAnnulusPath(CX, CY, outer, inner)} />
         </clipPath>
+        <linearGradient id={`cosmic-band-${uid}-${ring.ringId}`} x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="#3d3018" stopOpacity={0.9} />
+          <stop offset="40%" stopColor={accent} stopOpacity={0.35} />
+          <stop offset="100%" stopColor="#1a1510" stopOpacity={0.95} />
+        </linearGradient>
       </defs>
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
+        fill={`url(#cosmic-band-${uid}-${ring.ringId})`}
+        pointerEvents="none"
+      />
+      <path
+        d={gearTeethPath(CX, CY, outer, Math.max(24, Math.floor(band * 1.2)), Math.min(3.5, band * 0.22))}
+        fill="#2a2218"
+        stroke="#8a6b1e"
+        strokeWidth={0.45}
+        opacity={0.85}
+        pointerEvents="none"
+      />
+      <path
+        d={semicircleAnnulusPath(CX, CY, outer, inner)}
         fill="none"
-        stroke={accent}
-        strokeWidth={0.75}
-        strokeOpacity={0.55}
+        stroke="#c9a227"
+        strokeWidth={1}
+        strokeOpacity={0.65}
         pointerEvents="none"
       />
       <PlayheadSlot inner={inner} outer={outer} />
     </g>
   );
+}
+
+function buildStarfield(count: number): { x: number; y: number; r: number; op: number; phase: number }[] {
+  const stars = [];
+  for (let i = 0; i < count; i++) {
+    const seed = i * 7919 + 104729;
+    const x = 40 + (seed % 720);
+    const y = 8 + ((seed * 13) % 360);
+    if (y > CY - 24) continue;
+    stars.push({
+      x,
+      y,
+      r: 0.35 + (seed % 6) * 0.12,
+      op: 0.12 + (seed % 9) * 0.06,
+      phase: (seed % 360) / 360,
+    });
+  }
+  return stars;
 }
 
 export function CosmicClockWheel({ snapshot, className = "", showReadout = false }: CosmicClockWheelProps) {
@@ -206,10 +282,20 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
     return WHEEL_VISIBLE_RING_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
   }, [snapshot.rings]);
 
+  const fractionSprings = useRingFractionSprings(wheelRings);
+  const stars = useMemo(() => buildStarfield(96), []);
   const wheelCount = wheelRings.length;
   const playheadTop = CY - OUTER_R - 12;
   const hubTime = formatHubClockTime(snapshot.date);
   const [mobileFill, setMobileFill] = useState(false);
+  const [tickPulse, setTickPulse] = useState(false);
+  const sec = snapshot.date.getSeconds();
+
+  useEffect(() => {
+    setTickPulse(true);
+    const t = window.setTimeout(() => setTickPulse(false), 120);
+    return () => window.clearTimeout(t);
+  }, [sec]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
@@ -222,9 +308,10 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
   return (
     <div
       className={[
-        "cp-cosmic-clock-wheel relative w-full mx-auto overflow-hidden",
-        "rounded-2xl border border-[var(--gold-dp)]/20 bg-[#0a0a0c]",
-        "shadow-[0_16px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(201,162,39,0.08)]",
+        "cp-cosmic-clock-wheel cp-steampunk-clock-wheel relative w-full mx-auto overflow-hidden",
+        tickPulse ? "cp-steampunk-tick" : "",
+        "rounded-2xl border border-[#8a6b1e]/35 bg-[#0a0806]",
+        "shadow-[0_20px_64px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(232,200,106,0.12)]",
         className,
       ].join(" ")}
     >
@@ -236,11 +323,36 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
         aria-label="Cosmic clock semi-circle wheel"
       >
         <defs>
-          <radialGradient id={`cosmic-bg-${uid}`} cx="50%" cy="100%" r="80%">
-            <stop offset="0%" stopColor="#1a1510" />
-            <stop offset="45%" stopColor="#0D111A" />
+          <radialGradient id={`cosmic-bg-${uid}`} cx="50%" cy="100%" r="85%">
+            <stop offset="0%" stopColor="#1c1610" />
+            <stop offset="40%" stopColor="#0D111A" />
             <stop offset="100%" stopColor="#05070B" />
           </radialGradient>
+          <radialGradient id={`cosmic-hub-${uid}`} cx="50%" cy="30%" r="75%">
+            <stop offset="0%" stopColor="#1a1510" />
+            <stop offset="55%" stopColor="#0a0d14" />
+            <stop offset="100%" stopColor="#05070B" />
+          </radialGradient>
+          <linearGradient id="cp-steam-pawl-fill" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="#8a6b1e" stopOpacity={0.2} />
+            <stop offset="50%" stopColor="#e8c86a" stopOpacity={0.55} />
+            <stop offset="100%" stopColor="#c9a227" stopOpacity={0.25} />
+          </linearGradient>
+          <radialGradient id={`cp-steam-hub-${uid}`} cx="50%" cy="35%" r="70%">
+            <stop offset="0%" stopColor="#3d3018" />
+            <stop offset="55%" stopColor="#1a1510" />
+            <stop offset="100%" stopColor="#0a0806" />
+          </radialGradient>
+          <linearGradient id="cp-playhead-slot-fill" x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="var(--gold-lt)" stopOpacity={0.05} />
+            <stop offset="50%" stopColor="var(--gold-lt)" stopOpacity={0.35} />
+            <stop offset="100%" stopColor="var(--gold-lt)" stopOpacity={0.12} />
+          </linearGradient>
+          <linearGradient id={`cosmic-needle-${uid}`} x1="0%" y1="100%" x2="0%" y2="0%">
+            <stop offset="0%" stopColor="var(--gold-dp)" stopOpacity={0.35} />
+            <stop offset="45%" stopColor="var(--gold-lt)" stopOpacity={0.95} />
+            <stop offset="100%" stopColor="#fff8e7" stopOpacity={1} />
+          </linearGradient>
           <clipPath id={`cosmic-dome-${uid}`}>
             <rect x={0} y={0} width={800} height={CY} />
           </clipPath>
@@ -251,11 +363,51 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
               <feMergeNode in="SourceGraphic" />
             </feMerge>
           </filter>
+          <filter id={`cosmic-seg-glow-${uid}`} x="-50%" y="-50%" width="200%" height="200%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
         </defs>
 
         <rect x={0} y={0} width={800} height={450} fill={`url(#cosmic-bg-${uid})`} />
 
+        <g clipPath={`url(#cosmic-dome-${uid})`} className="cp-cosmic-starfield">
+          {stars.map((s, i) => (
+            <circle
+              key={i}
+              cx={s.x}
+              cy={s.y}
+              r={s.r}
+              fill="#e8eef8"
+              fillOpacity={s.op}
+              className="cp-cosmic-star"
+              style={{ animationDelay: `${s.phase * 4}s` }}
+            />
+          ))}
+        </g>
+
         <g clipPath={`url(#cosmic-dome-${uid})`}>
+          <path
+            d={`M ${CX - OUTER_R - 20} ${CY} A ${OUTER_R + 20} ${OUTER_R + 20} 0 0 1 ${CX + OUTER_R + 20} ${CY}`}
+            fill="none"
+            stroke={OBS.celestial.horizon}
+            strokeWidth={1.5}
+            className="cp-cosmic-horizon-glow"
+          />
+          <line
+            x1={CX}
+            y1={CY}
+            x2={CX}
+            y2={20}
+            stroke={OBS.celestial.meridian}
+            strokeWidth={0.75}
+            strokeDasharray="4 6"
+            strokeOpacity={0.45}
+          />
+
           {wheelRings.map((ring, index) => (
             <CosmicSegmentRing
               key={ring.ringId}
@@ -263,68 +415,92 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
               wheelIndex={index}
               uid={uid}
               wheelCount={wheelCount}
+              cycleFraction={fractionSprings.get(ring.ringId) ?? 0}
             />
           ))}
         </g>
 
-        <g className="cosmic-playhead" filter={`url(#cosmic-glow-${uid})`}>
+        <g className="cp-cosmic-playhead cosmic-playhead" filter={`url(#cosmic-glow-${uid})`}>
+          <line
+            x1={CX}
+            y1={CY}
+            x2={CX}
+            y2={playheadTop}
+            stroke={`url(#cosmic-needle-${uid})`}
+            strokeWidth={3}
+            strokeLinecap="round"
+            className="cp-cosmic-needle"
+          />
           <line
             x1={CX}
             y1={CY}
             x2={CX}
             y2={playheadTop}
             stroke="var(--gold-lt)"
-            strokeWidth={2.5}
+            strokeWidth={8}
             strokeLinecap="round"
+            strokeOpacity={0.08}
           />
           <polygon
-            points={`${CX},${playheadTop - 7} ${CX + 6},${playheadTop + 2} ${CX - 6},${playheadTop + 2}`}
+            points={`${CX},${playheadTop - 8} ${CX + 7},${playheadTop + 3} ${CX - 7},${playheadTop + 3}`}
             fill="var(--gold-lt)"
+            className="cp-cosmic-needle-cap"
           />
           <text
             x={CX}
-            y={playheadTop - 14}
+            y={playheadTop - 16}
             textAnchor="middle"
             fontSize={10}
             fill="var(--gold-lt)"
             fontFamily={OBS.typography.micro}
             fontWeight={700}
             letterSpacing="0.2em"
+            className="cp-cosmic-now-label"
           >
             NOW
           </text>
         </g>
 
-        <path
-          d={`M ${CX - HUB_R - 8} ${CY} A ${HUB_R + 8} ${HUB_R + 8} 0 0 1 ${CX + HUB_R + 8} ${CY} Z`}
-          fill="#05070B"
-          stroke="var(--gold-dp)"
-          strokeWidth={1.25}
-        />
-        <text
-          x={CX}
-          y={CY - 10}
-          textAnchor="middle"
-          fontSize={8}
-          fill="var(--gold-dp)"
-          fontFamily={OBS.typography.micro}
-          fontWeight={600}
-          letterSpacing="0.08em"
-        >
-          NOW
-        </text>
-        <text
-          x={CX}
-          y={CY + 6}
-          textAnchor="middle"
-          fontSize={9}
-          fill="var(--gold-lt)"
-          fontFamily={OBS.typography.micro}
-          fontWeight={700}
-          style={{ fontVariantNumeric: "tabular-nums" }}
-        >
-          {hubTime.replace(/^NOW\s/, "")}
-        </text>
+        <g className="cp-cosmic-hub cp-steampunk-hub">
+          <path
+            d={gearTeethPath(CX, CY, HUB_R + 10, 16, 2.2)}
+            fill="#2a2218"
+            stroke="#c9a227"
+            strokeWidth={0.6}
+            className="cp-steampunk-escapement"
+          />
+          <path
+            d={`M ${CX - HUB_R - 10} ${CY} A ${HUB_R + 10} ${HUB_R + 10} 0 0 1 ${CX + HUB_R + 10} ${CY} Z`}
+            fill={`url(#cp-steam-hub-${uid})`}
+            stroke="#8a6b1e"
+            strokeWidth={1.5}
+          />
+          <text
+            x={CX}
+            y={CY - 10}
+            textAnchor="middle"
+            fontSize={8}
+            fill="var(--gold-dp)"
+            fontFamily={OBS.typography.micro}
+            fontWeight={600}
+            letterSpacing="0.08em"
+          >
+            NOW
+          </text>
+          <text
+            x={CX}
+            y={CY + 6}
+            textAnchor="middle"
+            fontSize={9}
+            fill="var(--gold-lt)"
+            fontFamily={OBS.typography.micro}
+            fontWeight={700}
+            className="cp-cosmic-hub-time"
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {hubTime.replace(/^NOW\s/, "")}
+          </text>
+        </g>
       </svg>
 
       {showReadout && (

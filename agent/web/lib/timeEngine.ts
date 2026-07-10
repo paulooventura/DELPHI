@@ -1,7 +1,9 @@
 /**
  * Pure time-cycle engine — maps a single Date to normalized cosmic clock rings.
- * Zero external dependencies; deterministic 0.0–1.0 progress ratios.
+ * Astronomical rings use Meeus-grade solar/lunar math from cosmic/math.
  */
+
+import { julianDay, lunarPhaseFraction, sunEclipticLongitudeDeg } from "./cosmic/math";
 
 // ─── Output types ───────────────────────────────────────────────────────────
 
@@ -31,6 +33,28 @@ export type CosmicTimeSnapshot = {
 
 export const COSMIC_RING_COUNT = 10;
 
+export type RingProvenanceTier = "measured" | "computed" | "cultural";
+
+/** Data trust tier for each ring — shown in layer readouts. */
+export function ringProvenanceTier(ringId: number): RingProvenanceTier {
+  if (ringId <= 3) return "measured";
+  if (ringId === 4 || ringId === 5 || ringId === 8 || ringId === 10) return "cultural";
+  return "computed";
+}
+
+export function ringProvenanceNote(ringId: number): string {
+  switch (ringId) {
+    case 4: return "100 Kè per civil day (~14.4 min each)";
+    case 5: return "12 dual-hours · branch animals";
+    case 6: return "Synodic month · Meeus mean phase";
+    case 7: return "Tropical year · solar λ seasons";
+    case 8: return "Tzolk'in · Delphi anchor 2024-07-26";
+    case 9: return "Tropical zodiac · solar ecliptic λ";
+    case 10: return "Sexagenary 干支 · civil year index";
+    default: return "";
+  }
+}
+
 // ─── Constants ──────────────────────────────────────────────────────────────
 
 const SYNODIC_MONTH = 29.530588853;
@@ -40,8 +64,7 @@ const SHI_PER_DAY = 12;
 const SEXAGENARY_CYCLE = 60;
 const DEG_PER_DAY = 0.9856;
 
-/** J2000.0 new moon anchor (UTC). */
-const KNOWN_NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14, 0);
+/** J2000.0 new moon anchor retained for documentation; phase uses cosmic/math. */
 
 /** Tzolkin kin 1 anchor (local civil midnight). */
 const TZOLKIN_ANCHOR_MS = new Date(2024, 6, 26).getTime();
@@ -156,17 +179,7 @@ function vernalEquinoxMs(year: number): number {
 }
 
 function solarEclipticLongitudeDeg(date: Date): number {
-  const jd = date.getTime() / 86_400_000 + 2_440_587.5;
-  const d = jd - 2_451_545.0;
-  const L = mod(280.460 + 0.9856474 * d, 360);
-  const g = mod(357.528 + 0.9856003 * d, 360) * (Math.PI / 180);
-  const lambda = L + 1.915 * Math.sin(g) + 0.020 * Math.sin(2 * g);
-  return mod(lambda, 360);
-}
-
-function lunarPhaseFraction(date: Date): number {
-  const elapsedDays = (date.getTime() - KNOWN_NEW_MOON_MS) / 86_400_000;
-  return mod(elapsedDays, SYNODIC_MONTH) / SYNODIC_MONTH;
+  return sunEclipticLongitudeDeg(julianDay(date));
 }
 
 function tzolkinKin(date: Date): number {
@@ -446,8 +459,8 @@ export function formatHubClockTime(date: Date): string {
   return `NOW ${pad2(h12)}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())} ${ampm}`;
 }
 
-/** Rings rendered on the semi-circle wheel (intraday layers live in the hub). */
-export const WHEEL_VISIBLE_RING_IDS = [4, 5, 6, 7, 8, 9, 10] as const;
+/** Rings rendered on the semi-circle wheel (fastest inner → slowest outer). */
+export const WHEEL_VISIBLE_RING_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 /** Primary dashboard layer cards (cosmic layers 1–6 in the reference). */
 export const DASHBOARD_COSMIC_LAYER_IDS = [4, 5, 6, 7, 8, 9] as const;

@@ -1,6 +1,7 @@
 "use client";
 
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
+import { useSmoothHeading } from "../hooks/useSmoothHeading";
 
 const CARDINALS = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SW", "WSW", "W", "WNW", "NW", "NNW"];
 
@@ -34,6 +35,7 @@ export type SkyCompassProps = {
   poseHint?: string;
   emfUt?: number | null;
   warmth?: number;
+  compassReady?: boolean;
   className?: string;
 };
 
@@ -53,9 +55,11 @@ export function SkyCompass({
   poseHint = "",
   emfUt = null,
   warmth = 0.55,
+  compassReady = true,
   className = "",
 }: SkyCompassProps) {
-  const h = ((headingDeg % 360) + 360) % 360;
+  const smoothH = useSmoothHeading(headingDeg, live);
+  const h = ((smoothH % 360) + 360) % 360;
   const elev = formatElevation(pitchDeg);
   const accent = spectrumAccent(warmth);
   const cx = 60;
@@ -136,7 +140,7 @@ export function SkyCompass({
         })}
 
         {/* Rotating rose */}
-        <g transform={`rotate(${dialSpin} ${cx} ${cy})`} style={{ transition: live ? "none" : "transform 0.15s ease-out" }}>
+        <g className="cp-sky-compass-rose" transform={`rotate(${dialSpin} ${cx} ${cy})`}>
           <circle cx={cx} cy={cy} r={r} fill="url(#scp-face)" stroke="rgba(201, 162, 39, 0.28)" strokeWidth={0.8} />
 
           {COMPASS_DIRS.map(({ deg, label, major }) => {
@@ -201,7 +205,7 @@ export function SkyCompass({
           <span className="cp-sky-compass-elev">{elev}</span>
         )}
         <span className={`cp-sky-compass-live${live ? " cp-sky-compass-live-on" : ""}`}>
-          {live ? "● LIVE" : "○ MANUAL"}
+          {live ? (compassReady ? "● TRUE N" : "◐ CAL…") : "○ MANUAL"}
         </span>
         {emfUt != null && (
           <span className="cp-sky-compass-emf">{emfUt.toFixed(1)} µT</span>

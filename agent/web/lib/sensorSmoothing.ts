@@ -134,9 +134,9 @@ export function smoothViewAzAlt(
 
 export function smoothViewAzAltAdaptive(prev: Vec3, target: Vec3): Vec3 {
   const { alt } = enuToAltAz(target);
-  const nearHorizon = Math.abs(alt) < 20;
-  const tAz = nearHorizon ? 0.14 : 0.2;
-  const tAlt = nearHorizon ? 0.08 : 0.18;
+  const nearHorizon = Math.abs(alt) < 18;
+  const tAz = nearHorizon ? 0.22 : 0.34;
+  const tAlt = nearHorizon ? 0.18 : 0.28;
   return smoothViewAzAlt(prev, target, tAz, tAlt);
 }
 

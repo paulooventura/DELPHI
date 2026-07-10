@@ -2,20 +2,49 @@
 
 import { useMemo } from "react";
 import { CosmicClockWheel } from "./CosmicClockWheel";
+import { SpacetimeAnchor } from "./SpacetimeAnchor";
 import { useRealtimeDate } from "../hooks/useRealtimeDate";
+import type { CosmicClockState } from "../lib/cosmic";
 import {
   calculateCosmicTime,
   dashboardLayerNumber,
   DASHBOARD_COSMIC_LAYER_IDS,
   formatHubClockTime,
   formatStandardDigitalTime,
+  ringProvenanceNote,
+  ringProvenanceTier,
   type ClockRingData,
 } from "../lib/timeEngine";
 import { COSMIC_ASSETS, ringAccentColor, segmentGraphicKey } from "../lib/cosmicAssets";
 import { CosmicGraphicBadge } from "../lib/cosmicGraphicIcons";
+import { useSpringScalar } from "../hooks/useSpringMotion";
 
 export type DashboardContainerProps = {
   className?: string;
+  lat: number;
+  lon: number;
+  cosmic?: CosmicClockState | null;
+  liveCoords?: boolean;
+  usingFallback?: boolean;
+  locationDenied?: boolean;
+  locationEnabled?: boolean;
+  accuracyM?: number | null;
+  altM?: number | null;
+  altAccuracyM?: number | null;
+  speedMps?: number | null;
+  gpsHeading?: number | null;
+  locationAtMs?: number | null;
+  compassHeading?: number | null;
+  compassOffsetDeg?: number;
+  declinationDeg?: number;
+  pitchDeg?: number | null;
+  emfUt?: number | null;
+};
+
+const TIER_BADGE: Record<string, string> = {
+  measured: "Measured",
+  computed: "Computed",
+  cultural: "Cultural",
 };
 
 function parseToneFromMetadata(metadata: string): number | null {
@@ -24,12 +53,17 @@ function parseToneFromMetadata(metadata: string): number | null {
 }
 
 function ProgressBar({ value, accent }: { value: number; accent: string }) {
-  const pct = Math.max(0, Math.min(100, value * 100));
+  const smooth = useSpringScalar(value);
+  const pct = Math.max(0, Math.min(100, smooth * 100));
   return (
-    <div className="mt-2 h-1.5 w-full rounded-full bg-white/[0.08] overflow-hidden">
+    <div className="cp-layer-progress mt-2.5 h-2 w-full rounded-full bg-white/[0.06] overflow-hidden">
       <div
-        className="h-full rounded-full transition-[width] duration-150 ease-linear"
-        style={{ width: `${pct}%`, background: `linear-gradient(90deg, ${accent}99, ${accent})` }}
+        className="cp-layer-progress-fill h-full rounded-full"
+        style={{
+          width: `${pct}%`,
+          background: `linear-gradient(90deg, ${accent}55, ${accent}cc 72%, ${accent})`,
+          boxShadow: `0 0 12px ${accent}66, 0 0 4px ${accent}99`,
+        }}
       />
     </div>
   );
@@ -62,18 +96,25 @@ function formatNumericValue(ring: ClockRingData): string {
 function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: string }) {
   const accent = ringAccentColor(ring.ringId);
   const layerNum = dashboardLayerNumber(ring.ringId);
+  const tier = ringProvenanceTier(ring.ringId);
+  const provenance = ringProvenanceNote(ring.ringId);
   const isKe = ring.ringId === 4;
   const isMayan = ring.ringId === 8;
   const tone = isMayan ? parseToneFromMetadata(ring.activeSegment.metadata) : null;
 
   return (
     <article
-      className="group relative min-w-0 rounded-xl border border-white/[0.1] bg-[#0d1118]/90 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]"
-      style={{ borderLeftWidth: 3, borderLeftColor: accent }}
+      className="cp-layer-readout-card group relative min-w-0 rounded-xl border border-white/[0.1] bg-[#0d1118]/88 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] backdrop-blur-sm"
+      style={{ borderLeftWidth: 3, borderLeftColor: accent, ["--layer-accent" as string]: accent }}
     >
-      <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[var(--gold-dp)]">
-        Layer {layerNum}: {ring.name}
-      </p>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[var(--gold-dp)]">
+          Layer {layerNum}: {ring.name}
+        </p>
+        <span className={`cp-layer-tier cp-layer-tier-${tier}`} title={provenance}>
+          {TIER_BADGE[tier]}
+        </span>
+      </div>
 
       {isKe ? (
         <p className="mt-2 text-sm font-semibold text-[var(--ink)] tabular-nums">
@@ -129,11 +170,34 @@ function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: str
       <p className="mt-2.5 text-[0.68rem] leading-relaxed text-[var(--ink-dim)]">
         {ring.activeSegment.metadata}
       </p>
+      {provenance && (
+        <p className="mt-1.5 text-[0.58rem] text-[var(--ink-dim)]/80 italic">{provenance}</p>
+      )}
     </article>
   );
 }
 
-export function DashboardContainer({ className = "" }: DashboardContainerProps) {
+export function DashboardContainer({
+  className = "",
+  lat,
+  lon,
+  cosmic = null,
+  liveCoords = false,
+  usingFallback = false,
+  locationDenied = false,
+  locationEnabled = true,
+  accuracyM = null,
+  altM = null,
+  altAccuracyM = null,
+  speedMps = null,
+  gpsHeading = null,
+  locationAtMs = null,
+  compassHeading = null,
+  compassOffsetDeg = 0,
+  declinationDeg = 0,
+  pitchDeg = null,
+  emfUt = null,
+}: DashboardContainerProps) {
   const currentDate = useRealtimeDate();
   const snapshot = useMemo(() => calculateCosmicTime(currentDate), [currentDate]);
   const hubTime = formatHubClockTime(currentDate);
@@ -147,6 +211,27 @@ export function DashboardContainer({ className = "" }: DashboardContainerProps) 
   return (
     <div className={["cp-dashboard-layout w-full min-h-0", className].join(" ")}>
       <section className="cp-dashboard-wheel-zone min-w-0" aria-label="Visual engine">
+        <SpacetimeAnchor
+          now={currentDate}
+          lat={lat}
+          lon={lon}
+          snapshot={snapshot}
+          cosmic={cosmic}
+          liveCoords={liveCoords}
+          locationEnabled={locationEnabled}
+          locationDenied={locationDenied}
+          accuracyM={accuracyM}
+          altM={altM}
+          altAccuracyM={altAccuracyM}
+          speedMps={speedMps}
+          gpsHeading={gpsHeading}
+          locationAtMs={locationAtMs}
+          compassHeading={compassHeading}
+          compassOffsetDeg={compassOffsetDeg}
+          declinationDeg={declinationDeg}
+          pitchDeg={pitchDeg}
+          emfUt={emfUt}
+        />
         <CosmicClockWheel snapshot={snapshot} showReadout={false} />
         <p className="cp-dashboard-wheel-hint" aria-hidden>
           Scroll for layer readouts
@@ -154,11 +239,21 @@ export function DashboardContainer({ className = "" }: DashboardContainerProps) 
       </section>
 
       <aside className="cp-dashboard-details-zone min-w-0" aria-label="Data readout">
-        <div className="cp-dashboard-time-card rounded-xl border border-[var(--gold-dp)]/40 bg-[#0a0a0c]/98 backdrop-blur-md px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+        {usingFallback && locationEnabled && !locationDenied && (
+          <div className="cp-fix-banner" role="status">
+            Using approximate coordinates — enable location for your true sky and cycles.
+          </div>
+        )}
+        {locationDenied && locationEnabled && (
+          <div className="cp-fix-banner cp-fix-banner-warn" role="status">
+            Location blocked — allow browser access to anchor this moment to your place on Earth.
+          </div>
+        )}
+        <div className="cp-dashboard-time-card rounded-xl border border-[var(--gold-dp)]/40 bg-[#0a0a0c]/92 backdrop-blur-md px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[var(--gold-dp)]">
             Standard Time
           </p>
-          <p className="mt-1.5 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]">
+          <p className="cp-dashboard-digital-time mt-1.5 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]">
             {digitalTime}
           </p>
           <p className="mt-1 text-xs text-[var(--ink-dim)]">{hubTime}</p>
