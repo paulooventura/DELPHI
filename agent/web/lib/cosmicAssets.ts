@@ -372,51 +372,55 @@ export function segmentGraphicKey(ringId: number, index: number, divisions?: num
   return ringSegmentVisual(ringId, index, div).graphicKey;
 }
 
-/** Per-cell fill, stroke, and label for discrete wheel segments. */
+/** Per-cell fill, stroke, and label for discrete wheel segments — every slot is marked. */
 export function ringSegmentVisual(ringId: number, index: number, divisions: number): SegmentVisual {
   const i = Math.floor(((index % divisions) + divisions) % divisions);
   switch (ringId) {
     case 0: {
-      const major = i % 25 === 0;
+      // 100 slots × 10 ms → label 00–99 (centiseconds of the second)
       const half = i % 5 === 0;
+      const major = i % 10 === 0;
       return {
         fill: half ? "#5a4820" : "#2a2214",
         stroke: major ? "#fbbf24" : "#a8842a",
-        label: major ? String(i * 10) : "",
+        label: String(i).padStart(2, "0"),
       };
     }
     case 1: {
-      const major = i % 15 === 0;
-      const half = i % 2 === 0;
+      // Seconds 0–59
+      const major = i % 5 === 0;
       return {
-        fill: half ? "#4a3a1c" : "#241c12",
+        fill: i % 2 === 0 ? "#4a3a1c" : "#241c12",
         stroke: major ? "#e8c86a" : "#8a6b28",
-        label: major ? String(i) : "",
+        label: String(i),
       };
     }
     case 2: {
-      const major = i % 10 === 0;
-      const half = i % 5 === 0;
+      // Minutes 0–59
+      const major = i % 5 === 0;
       return {
-        fill: half ? "#523e1c" : "#261e12",
+        fill: i % 2 === 0 ? "#523e1c" : "#261e12",
         stroke: major ? "#d4af37" : "#7a5c22",
-        label: major ? String(i) : "",
+        label: String(i),
       };
     }
     case 3: {
-      const major = i % 6 === 0;
+      // Hours 0–23
+      const h12 = i % 12 || 12;
+      const ampm = i < 12 ? "a" : "p";
       return {
         fill: i % 2 === 0 ? "#4a3818" : "#221810",
-        stroke: major ? "#e8c86a" : "#6a5420",
-        label: major ? String(i) : "",
+        stroke: i % 3 === 0 ? "#e8c86a" : "#6a5420",
+        label: `${h12}${ampm}`,
       };
     }
     case 4: {
-      const major = i % 10 === 0;
+      // Chinese kè 1–100
+      const major = i % 5 === 0;
       return {
         fill: major ? "#5a4820" : "#2a2214",
         stroke: major ? "#C9A227" : "#7a5c22",
-        label: major ? String(i) : "",
+        label: String(i + 1),
       };
     }
     case 5: {
@@ -445,16 +449,17 @@ export function ringSegmentVisual(ringId: number, index: number, divisions: numb
       };
     }
     case 10: {
-      const alt = i % 2 === 0;
+      // Earthly branches of the sexagenary cycle (12 animals)
+      const a = CHINESE_IMPERIAL.shi.animals[i % 12]!;
       return {
-        fill: alt ? "#3D1515" : "#152A18",
-        stroke: alt ? "#C9A227" : "#4ADE80",
-        label: alt ? "🧧" : "🟢",
-        graphicKey: alt ? "sexagenary:alt" : "sexagenary:yin",
+        fill: `${a.color}28`,
+        stroke: a.color,
+        label: a.glyph,
+        graphicKey: `shi:${a.id}`,
       };
     }
     default:
-      return { fill: "#1A1510", stroke: "#4A3A22", label: "" };
+      return { fill: "#1A1510", stroke: "#4A3A22", label: String(i) };
   }
 }
 

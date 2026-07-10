@@ -27,19 +27,19 @@ export const COSMIC_CLOCK_OUTER_RADIUS = OUTER_R;
 
 const WHEEL_RING_CONFIG: Record<
   number,
-  { divisions: number; labelEvery: number; shortName: string }
+  { divisions: number; shortName: string }
 > = {
-  0: { divisions: 100, labelEvery: 25, shortName: "Ms" },
-  1: { divisions: 60, labelEvery: 15, shortName: "Sec" },
-  2: { divisions: 60, labelEvery: 10, shortName: "Min" },
-  3: { divisions: 24, labelEvery: 6, shortName: "Hr" },
-  4: { divisions: 100, labelEvery: 10, shortName: "Kè" },
-  5: { divisions: 12, labelEvery: 1, shortName: "Shí" },
-  6: { divisions: 8, labelEvery: 1, shortName: "Moon" },
-  7: { divisions: 4, labelEvery: 1, shortName: "Season" },
-  8: { divisions: 20, labelEvery: 1, shortName: "Tzolk'in" },
-  9: { divisions: 12, labelEvery: 1, shortName: "Zodiac" },
-  10: { divisions: 12, labelEvery: 1, shortName: "60-yr" },
+  0: { divisions: 100, shortName: "Ms" },
+  1: { divisions: 60, shortName: "Sec" },
+  2: { divisions: 60, shortName: "Min" },
+  3: { divisions: 24, shortName: "Hr" },
+  4: { divisions: 100, shortName: "Kè" },
+  5: { divisions: 12, shortName: "Shí" },
+  6: { divisions: 8, shortName: "Moon" },
+  7: { divisions: 4, shortName: "Season" },
+  8: { divisions: 20, shortName: "Tzolk'in" },
+  9: { divisions: 12, shortName: "Zodiac" },
+  10: { divisions: 12, shortName: "60-yr" },
 };
 
 function ringRadii(wheelIndex: number, wheelCount: number): { inner: number; outer: number; mid: number } {
@@ -189,9 +189,14 @@ function CosmicSegmentRing({
     const vis = ringSegmentVisual(ring.ringId, i, cfg.divisions);
     const isActive = i === activeIdx;
     const ang = tickAngle(start + (end - start) / 2);
-    const sin = Math.sin(ang);
-    const showLabel = sin < -0.12 && (i % cfg.labelEvery === 0 || vis.label.length <= 2);
-    const iconSize = Math.max(7, Math.min(band * 0.7, ring.ringId === 5 ? 13 : 11));
+    // Label every slot — lower semicircle is clipped by the dome, so spinning dials stay fully marked.
+    const hasMark = Boolean(vis.graphicKey || vis.label);
+    const arcLen = ((outer + inner) / 2) * ((2 * Math.PI) / cfg.divisions);
+    const fontSize = Math.max(
+      3.5,
+      Math.min(band * 0.48, arcLen * 0.55, ring.ringId <= 2 ? 7.5 : ring.ringId <= 4 ? 6.5 : 9),
+    );
+    const iconSize = Math.max(6, Math.min(band * 0.72, arcLen * 0.85, 14));
     const lx = CX + Math.cos(ang) * mid;
     const ly = CY + Math.sin(ang) * mid;
     const sectorPath = donutSectorPath(CX, CY, inner + 0.35, outer - 0.35, start, end);
@@ -215,7 +220,7 @@ function CosmicSegmentRing({
           strokeWidth={isActive ? 1.35 : 0.55}
           strokeOpacity={isActive ? 1 : 0.85}
         />
-        {showLabel && vis.graphicKey && (
+        {hasMark && vis.graphicKey && (
           <CosmicGraphicIcon
             graphicKey={vis.graphicKey}
             x={lx}
@@ -225,13 +230,13 @@ function CosmicSegmentRing({
             active={isActive}
           />
         )}
-        {showLabel && !vis.graphicKey && vis.label && (
+        {hasMark && !vis.graphicKey && vis.label && (
           <text
             x={lx}
             y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={Math.max(5, Math.min(band * 0.4, ring.ringId <= 3 ? 8 : 7))}
+            fontSize={fontSize}
             fill={isActive ? "#fff8e7" : "#e8d9a0"}
             fontFamily={OBS.typography.micro}
             fontWeight={isActive ? 700 : 600}
@@ -296,6 +301,31 @@ function CosmicSegmentRing({
           pointerEvents="none"
         />
       ))}
+      {/* Fixed band name on the left arc — does not spin with the dial */}
+      {(() => {
+        const nameDeg = -58;
+        const nameAng = tickAngle(nameDeg);
+        const nx = CX + Math.cos(nameAng) * mid;
+        const ny = CY + Math.sin(nameAng) * mid;
+        return (
+          <text
+            x={nx}
+            y={ny}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            fontSize={Math.max(5, Math.min(8, band * 0.32))}
+            fill={accent}
+            fillOpacity={0.9}
+            fontFamily={OBS.typography.micro}
+            fontWeight={700}
+            letterSpacing="0.04em"
+            transform={`rotate(${nameDeg + 90}, ${nx}, ${ny})`}
+            pointerEvents="none"
+          >
+            {cfg.shortName}
+          </text>
+        );
+      })()}
       <PlayheadSlot inner={inner} outer={outer} />
     </g>
   );
