@@ -7,6 +7,8 @@ import {
   playMinuteBell,
   playSecondTick,
   resumeClockAudio,
+  startSchumannAtmosphere,
+  stopSchumannAtmosphere,
 } from "../lib/clockSfx";
 
 function syncChimeRefs(refs: {
@@ -24,7 +26,11 @@ export function useClockSfx(enabled: boolean) {
   const lastChimeKey = useRef("");
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      stopSchumannAtmosphere();
+      setActive(false);
+      return;
+    }
 
     const refs = { lastSec, lastChimeKey };
 
@@ -32,12 +38,21 @@ export function useClockSfx(enabled: boolean) {
       void resumeClockAudio().then(ctx => {
         if (!ctx) return;
         syncChimeRefs(refs);
+        startSchumannAtmosphere(ctx);
         setActive(true);
       });
     };
 
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
+
+    // If audio was already unlocked this session, start the bed immediately.
+    const existing = getClockAudio();
+    if (existing && existing.state === "running") {
+      syncChimeRefs(refs);
+      startSchumannAtmosphere(existing);
+      setActive(true);
+    }
 
     const id = window.setInterval(() => {
       const ctx = getClockAudio();
@@ -52,7 +67,6 @@ export function useClockSfx(enabled: boolean) {
         playSecondTick(ctx, sec);
         lastSec.current = sec;
 
-        // One chime per minute, on the second hand hitting 12
         if (sec === 0) {
           const chimeKey = `${hr}:${min}`;
           if (chimeKey !== lastChimeKey.current) {
@@ -71,6 +85,7 @@ export function useClockSfx(enabled: boolean) {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
       window.clearInterval(id);
+      stopSchumannAtmosphere();
     };
   }, [enabled]);
 
@@ -80,6 +95,7 @@ export function useClockSfx(enabled: boolean) {
       void resumeClockAudio().then(ctx => {
         if (!ctx) return;
         syncChimeRefs({ lastSec, lastChimeKey });
+        startSchumannAtmosphere(ctx);
         setActive(true);
       }),
   };

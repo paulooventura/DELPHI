@@ -986,7 +986,7 @@ export default function Home() {
               if (!clockSfxOn) enableSfx();
               setClockSfxOn(v => !v);
             }}
-            title={sfxActive ? "Clock sound on" : "Click to enable clock sound"}
+            title={sfxActive ? "Woody tick + Schumann song on" : "Click to enable clock sound"}
           >
             {clockSfxOn ? "🔊" : "🔇"}
           </button>
