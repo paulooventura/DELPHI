@@ -405,13 +405,11 @@ export function ringSegmentVisual(ringId: number, index: number, divisions: numb
       };
     }
     case 3: {
-      // Hours 0–23
-      const h12 = i % 12 || 12;
-      const ampm = i < 12 ? "a" : "p";
+      // Hours 0–23 (24h labels — no a/p suffix)
       return {
         fill: i % 2 === 0 ? "#4a3818" : "#221810",
         stroke: i % 3 === 0 ? "#e8c86a" : "#6a5420",
-        label: `${h12}${ampm}`,
+        label: String(i),
       };
     }
     case 4: {

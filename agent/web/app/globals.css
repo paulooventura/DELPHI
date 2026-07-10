@@ -58,9 +58,9 @@
 html,body {
   background: var(--void);
   color: var(--ink);
-  font-family: var(--font-geist-sans, "Inter"), system-ui, sans-serif;
+  font-family: var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif);
   -webkit-font-smoothing: antialiased;
-  font-feature-settings: "tnum" 1, "ss01" 1;
+  font-feature-settings: "tnum" 1, "liga" 1;
 }
 
 ::selection { background: rgba(201, 162, 39, 0.32); color: #fff; }

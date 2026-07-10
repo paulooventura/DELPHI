@@ -13,12 +13,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Cinzel — a Roman-inscription serif that mirrors the DELPHI wordmark on the
-// app icon / splash. Used only for oracle headings.
+// Cinzel — Roman-inscription serif for the DELPHI wordmark and primary UI.
 const cinzel = Cinzel({
   variable: "--font-cinzel",
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400", "500", "600", "700"],
 });
 
 export const metadata: Metadata = {

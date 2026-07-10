@@ -34,7 +34,8 @@ export const OBS = {
     subterraneanBottom: "#0a0704",
   },
   typography: {
-    micro: 'var(--font-geist-mono, "JetBrains Mono", "SF Mono", Consolas, monospace)',
+    micro: 'var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif)',
+    display: 'var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif)',
   },
 } as const;
 
