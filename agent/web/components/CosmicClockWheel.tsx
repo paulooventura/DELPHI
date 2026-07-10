@@ -143,10 +143,11 @@ function PlayheadSlot({ inner, outer }: { inner: number; outer: number }) {
   return (
     <g className="cp-steampunk-playhead-slot">
       <path
-        d={donutSectorPath(CX, CY, inner, outer, -10, 10)}
+        d={donutSectorPath(CX, CY, inner, outer, -16, 16)}
         fill="url(#cp-steam-pawl-fill)"
         stroke="#e8c86a"
-        strokeWidth={1.4}
+        strokeWidth={1.6}
+        strokeOpacity={0.85}
         pointerEvents="none"
       />
     </g>
@@ -164,6 +165,7 @@ function slotOffsetFromPlayhead(index: number, cycleFraction: number, divisions:
 /**
  * Lay out every cycle member across the visible semicircle (−90°…+90°),
  * with the current value locked under the NOW playhead at the top (0°).
+ * Marks near the playhead are bright/zoomed; outer marks fade away.
  */
 function CosmicSegmentRing({
   ring,
@@ -188,13 +190,15 @@ function CosmicSegmentRing({
   const toothCount = Math.max(18, Math.min(48, Math.round(outer / 9)));
   const teeth = rimGearTeeth(CX, CY, outer, toothCount, Math.min(4.2, Math.max(1.8, band * 0.28)));
   const arcLen = mid * (Math.PI / divisions);
-  const fontSize = Math.max(
+  const baseFont = Math.max(
     3.2,
-    Math.min(band * 0.42, arcLen * 0.72, divisions > 48 ? 5.5 : divisions > 24 ? 7 : 9),
+    Math.min(band * 0.38, arcLen * 0.65, divisions > 48 ? 5 : divisions > 24 ? 6.5 : 8.5),
   );
-  const iconSize = Math.max(5, Math.min(band * 0.65, arcLen * 0.9, 13));
+  const baseIcon = Math.max(5, Math.min(band * 0.55, arcLen * 0.8, 12));
   const preferIcon = divisions <= 20;
   const meshDir = wheelIndex % 2 === 0 ? "cw" : "ccw";
+  // How many slots stay readable around the playhead
+  const focusSlots = Math.max(1.2, Math.min(3.2, divisions * 0.045));
 
   const segments = [];
   for (let i = 0; i < divisions; i++) {
@@ -206,20 +210,32 @@ function CosmicSegmentRing({
 
     const vis = ringSegmentVisual(ring.ringId, i, divisions);
     const isActive = i === activeIdx;
+    const dist = Math.abs(d);
+    const focusT = Math.max(0, 1 - dist / focusSlots);
+    const edgeFade = Math.max(0.06, 1 - dist / (divisions * 0.42));
+    const markOpacity = isActive ? 1 : 0.1 + focusT * 0.55 + edgeFade * 0.12;
+    const plateOpacity = isActive ? 1 : 0.22 + focusT * 0.55 + edgeFade * 0.15;
+    const zoom = isActive ? 1.85 : 1 + focusT * 0.55;
+    const fontSize = Math.min(band * 0.92, baseFont * zoom * (isActive && ring.ringId === 1 ? 1.25 : 1));
+    const iconSize = Math.min(band * 0.95, baseIcon * zoom);
     const ang = tickAngle(centerDeg);
     const lx = CX + Math.cos(ang) * mid;
     const ly = CY + Math.sin(ang) * mid;
     const sectorPath = donutSectorPath(CX, CY, inner + 0.35, outer - 0.35, start, end);
-    const showIcon = preferIcon && Boolean(vis.graphicKey);
-    const showText = Boolean(vis.label);
+    const showIcon = preferIcon && Boolean(vis.graphicKey) && (isActive || focusT > 0.15);
+    const showText = Boolean(vis.label) && (isActive || focusT > 0.08 || edgeFade > 0.35);
 
     segments.push(
-      <g key={i} className={isActive ? "cp-cosmic-segment-active" : undefined}>
+      <g
+        key={i}
+        className={isActive ? "cp-cosmic-segment-active" : undefined}
+        opacity={plateOpacity}
+      >
         {isActive && (
           <path
             d={sectorPath}
             fill={accent}
-            fillOpacity={0.4}
+            fillOpacity={0.55}
             filter={`url(#cosmic-seg-glow-${uid})`}
             pointerEvents="none"
           />
@@ -227,31 +243,39 @@ function CosmicSegmentRing({
         <path
           d={sectorPath}
           fill={vis.fill}
-          fillOpacity={1}
-          stroke={isActive ? "#f5e6a8" : vis.stroke}
-          strokeWidth={isActive ? 1.35 : 0.5}
-          strokeOpacity={isActive ? 1 : 0.9}
+          fillOpacity={isActive ? 1 : 0.75}
+          stroke={isActive ? "#fff4c8" : vis.stroke}
+          strokeWidth={isActive ? 1.8 : 0.4}
+          strokeOpacity={isActive ? 1 : 0.45}
         />
         {showIcon && (
-          <CosmicGraphicIcon
-            graphicKey={vis.graphicKey!}
-            x={lx}
-            y={showText ? ly - fontSize * 0.35 : ly}
-            size={showText ? iconSize * 0.75 : iconSize}
-            color={isActive ? "var(--gold-lt)" : vis.stroke}
-            active={isActive}
-          />
+          <g opacity={markOpacity}>
+            <CosmicGraphicIcon
+              graphicKey={vis.graphicKey!}
+              x={lx}
+              y={showText && !isActive ? ly - fontSize * 0.3 : ly}
+              size={iconSize}
+              color={isActive ? "#fff8e7" : vis.stroke}
+              active={isActive}
+            />
+          </g>
         )}
         {showText && (
           <text
             x={lx}
-            y={showIcon ? ly + iconSize * 0.28 : ly}
+            y={showIcon && !isActive ? ly + iconSize * 0.28 : ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={showIcon ? Math.max(3.2, fontSize * 0.75) : fontSize}
-            fill={isActive ? "#fff8e7" : "#f0e2b0"}
+            fontSize={fontSize}
+            fill={isActive ? "#fffef5" : `rgba(240, 226, 176, ${0.35 + focusT * 0.65})`}
             fontFamily={OBS.typography.micro}
-            fontWeight={isActive ? 700 : 600}
+            fontWeight={isActive ? 700 : 500}
+            opacity={markOpacity}
+            style={
+              isActive
+                ? { filter: "drop-shadow(0 0 6px rgba(255, 244, 200, 0.85))" }
+                : undefined
+            }
           >
             {vis.label}
           </text>

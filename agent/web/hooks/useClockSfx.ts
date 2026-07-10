@@ -24,6 +24,8 @@ export function useClockSfx(enabled: boolean) {
   const [active, setActive] = useState(false);
   const lastSec = useRef(-1);
   const lastChimeKey = useRef("");
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   useEffect(() => {
     if (!enabled) {
@@ -33,10 +35,12 @@ export function useClockSfx(enabled: boolean) {
     }
 
     const refs = { lastSec, lastChimeKey };
+    let raf = 0;
+    let alive = true;
 
     const unlock = () => {
       void resumeClockAudio().then(ctx => {
-        if (!ctx) return;
+        if (!ctx || !alive) return;
         syncChimeRefs(refs);
         startSchumannAtmosphere(ctx);
         setActive(true);
@@ -45,8 +49,18 @@ export function useClockSfx(enabled: boolean) {
 
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
+    // Keep audio alive when tab becomes visible again
+    const onVis = () => {
+      if (document.visibilityState === "visible" && enabledRef.current) {
+        void resumeClockAudio().then(ctx => {
+          if (!ctx) return;
+          startSchumannAtmosphere(ctx);
+          setActive(true);
+        });
+      }
+    };
+    document.addEventListener("visibilitychange", onVis);
 
-    // If audio was already unlocked this session, start the bed immediately.
     const existing = getClockAudio();
     if (existing && existing.state === "running") {
       syncChimeRefs(refs);
@@ -54,37 +68,43 @@ export function useClockSfx(enabled: boolean) {
       setActive(true);
     }
 
-    const id = window.setInterval(() => {
+    const loop = () => {
+      if (!alive) return;
       const ctx = getClockAudio();
-      if (!ctx || ctx.state !== "running") return;
+      if (ctx) {
+        if (ctx.state === "suspended") {
+          void ctx.resume();
+        } else if (ctx.state === "running") {
+          const d = new Date();
+          const sec = d.getSeconds();
+          const min = d.getMinutes();
+          const hr = d.getHours();
 
-      const d = new Date();
-      const sec = d.getSeconds();
-      const min = d.getMinutes();
-      const hr = d.getHours();
+          if (sec !== lastSec.current) {
+            playSecondTick(ctx, sec);
+            lastSec.current = sec;
 
-      if (sec !== lastSec.current) {
-        playSecondTick(ctx, sec);
-        lastSec.current = sec;
-
-        if (sec === 0) {
-          const chimeKey = `${hr}:${min}`;
-          if (chimeKey !== lastChimeKey.current) {
-            lastChimeKey.current = chimeKey;
-            if (min === 0) {
-              playHourBell(ctx, hr);
-            } else {
-              playMinuteBell(ctx);
+            if (sec === 0) {
+              const chimeKey = `${hr}:${min}`;
+              if (chimeKey !== lastChimeKey.current) {
+                lastChimeKey.current = chimeKey;
+                if (min === 0) playHourBell(ctx, hr);
+                else playMinuteBell(ctx);
+              }
             }
           }
         }
       }
-    }, 50);
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
 
     return () => {
+      alive = false;
+      cancelAnimationFrame(raf);
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
-      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVis);
       stopSchumannAtmosphere();
     };
   }, [enabled]);
