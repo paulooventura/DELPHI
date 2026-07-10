@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useMemo, useEffect, useState, type CSSProperties } from "react";
+import { useId, useMemo, useEffect, useState } from "react";
 import type { ClockRingData, CosmicTimeSnapshot } from "../lib/timeEngine";
 import {
   formatHubClockTime,
@@ -154,6 +154,18 @@ function PlayheadSlot({ inner, outer }: { inner: number; outer: number }) {
   );
 }
 
+/** Slot offset from the playhead, wrapped into (-N/2, N/2]. */
+function slotOffsetFromPlayhead(index: number, cycleFraction: number, divisions: number): number {
+  const raw = index - cycleFraction * divisions;
+  let d = ((raw % divisions) + divisions) % divisions;
+  if (d > divisions / 2) d -= divisions;
+  return d;
+}
+
+/**
+ * Lay out every cycle member across the visible semicircle (−90°…+90°),
+ * with the current value locked under the NOW playhead at the top (0°).
+ */
 function CosmicSegmentRing({
   ring,
   wheelIndex,
@@ -170,36 +182,37 @@ function CosmicSegmentRing({
   const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[0]!;
   const { inner, outer, mid } = ringRadii(wheelIndex, wheelCount);
   const band = outer - inner;
-  const dialSpin = -cycleFraction * 360;
   const accent = ringAccentColor(ring.ringId);
-  const activeIdx = Math.floor(cycleFraction * cfg.divisions) % cfg.divisions;
+  const divisions = cfg.divisions;
+  const slotWidth = 180 / divisions;
+  const activeIdx = Math.floor((((cycleFraction % 1) + 1) % 1) * divisions) % divisions;
   const toothCount = Math.max(18, Math.min(48, Math.round(outer / 9)));
   const teeth = rimGearTeeth(CX, CY, outer, toothCount, Math.min(4.2, Math.max(1.8, band * 0.28)));
-
-  const spinStyle: CSSProperties = {
-    transform: `rotate(${dialSpin}deg)`,
-    transformOrigin: `${CX}px ${CY}px`,
-    willChange: "transform",
-  };
+  const arcLen = mid * (Math.PI / divisions);
+  const fontSize = Math.max(
+    3.2,
+    Math.min(band * 0.42, arcLen * 0.72, divisions > 48 ? 5.5 : divisions > 24 ? 7 : 9),
+  );
+  const iconSize = Math.max(5, Math.min(band * 0.65, arcLen * 0.9, 13));
+  const preferIcon = divisions <= 20;
 
   const segments = [];
-  for (let i = 0; i < cfg.divisions; i++) {
-    const start = (i / cfg.divisions) * 360;
-    const end = ((i + 1) / cfg.divisions) * 360;
-    const vis = ringSegmentVisual(ring.ringId, i, cfg.divisions);
+  for (let i = 0; i < divisions; i++) {
+    const d = slotOffsetFromPlayhead(i, cycleFraction, divisions);
+    const centerDeg = (d / (divisions / 2)) * 90;
+    const start = centerDeg - slotWidth / 2;
+    const end = centerDeg + slotWidth / 2;
+    if (end < -92 || start > 92) continue;
+
+    const vis = ringSegmentVisual(ring.ringId, i, divisions);
     const isActive = i === activeIdx;
-    const ang = tickAngle(start + (end - start) / 2);
-    // Label every slot — lower semicircle is clipped by the dome, so spinning dials stay fully marked.
-    const hasMark = Boolean(vis.graphicKey || vis.label);
-    const arcLen = ((outer + inner) / 2) * ((2 * Math.PI) / cfg.divisions);
-    const fontSize = Math.max(
-      3.5,
-      Math.min(band * 0.48, arcLen * 0.55, ring.ringId <= 2 ? 7.5 : ring.ringId <= 4 ? 6.5 : 9),
-    );
-    const iconSize = Math.max(6, Math.min(band * 0.72, arcLen * 0.85, 14));
+    const ang = tickAngle(centerDeg);
     const lx = CX + Math.cos(ang) * mid;
     const ly = CY + Math.sin(ang) * mid;
     const sectorPath = donutSectorPath(CX, CY, inner + 0.35, outer - 0.35, start, end);
+    const showIcon = preferIcon && Boolean(vis.graphicKey);
+    // Always show the text mark so every slot stays readable (icons alone were vanishing).
+    const showText = Boolean(vis.label);
 
     segments.push(
       <g key={i} className={isActive ? "cp-cosmic-segment-active" : undefined}>
@@ -207,7 +220,7 @@ function CosmicSegmentRing({
           <path
             d={sectorPath}
             fill={accent}
-            fillOpacity={0.35}
+            fillOpacity={0.4}
             filter={`url(#cosmic-seg-glow-${uid})`}
             pointerEvents="none"
           />
@@ -217,30 +230,30 @@ function CosmicSegmentRing({
           fill={vis.fill}
           fillOpacity={1}
           stroke={isActive ? "#f5e6a8" : vis.stroke}
-          strokeWidth={isActive ? 1.35 : 0.55}
-          strokeOpacity={isActive ? 1 : 0.85}
+          strokeWidth={isActive ? 1.35 : 0.5}
+          strokeOpacity={isActive ? 1 : 0.9}
         />
-        {hasMark && vis.graphicKey && (
+        {showIcon && (
           <CosmicGraphicIcon
-            graphicKey={vis.graphicKey}
+            graphicKey={vis.graphicKey!}
             x={lx}
-            y={ly}
-            size={iconSize}
+            y={showText ? ly - fontSize * 0.35 : ly}
+            size={showText ? iconSize * 0.75 : iconSize}
             color={isActive ? "var(--gold-lt)" : vis.stroke}
             active={isActive}
           />
         )}
-        {hasMark && !vis.graphicKey && vis.label && (
+        {showText && (
           <text
             x={lx}
-            y={ly}
+            y={showIcon ? ly + iconSize * 0.28 : ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={fontSize}
-            fill={isActive ? "#fff8e7" : "#e8d9a0"}
+            fontSize={showIcon ? Math.max(3.2, fontSize * 0.75) : fontSize}
+            fill={isActive ? "#fff8e7" : "#f0e2b0"}
             fontFamily={OBS.typography.micro}
             fontWeight={isActive ? 700 : 600}
-            transform={`rotate(${(ang * 180) / Math.PI + 90}, ${lx}, ${ly})`}
+            transform={`rotate(${centerDeg + 90}, ${lx}, ${ly})`}
           >
             {vis.label}
           </text>
@@ -256,7 +269,6 @@ function CosmicSegmentRing({
           <path d={semicircleAnnulusPath(CX, CY, outer, inner)} />
         </clipPath>
       </defs>
-      {/* Underlay plate — behind segments, never covers them */}
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
         fill="#1a1510"
@@ -269,11 +281,7 @@ function CosmicSegmentRing({
         fillOpacity={0.08}
         pointerEvents="none"
       />
-      {/* Spinning gear face */}
-      <g style={spinStyle} clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>
-        {segments}
-      </g>
-      {/* Brass rim + teeth on top of face */}
+      <g clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>{segments}</g>
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
         fill="none"
@@ -301,9 +309,8 @@ function CosmicSegmentRing({
           pointerEvents="none"
         />
       ))}
-      {/* Fixed band name on the left arc — does not spin with the dial */}
       {(() => {
-        const nameDeg = -58;
+        const nameDeg = -78;
         const nameAng = tickAngle(nameDeg);
         const nx = CX + Math.cos(nameAng) * mid;
         const ny = CY + Math.sin(nameAng) * mid;
@@ -315,7 +322,7 @@ function CosmicSegmentRing({
             dominantBaseline="middle"
             fontSize={Math.max(5, Math.min(8, band * 0.32))}
             fill={accent}
-            fillOpacity={0.9}
+            fillOpacity={0.95}
             fontFamily={OBS.typography.micro}
             fontWeight={700}
             letterSpacing="0.04em"
