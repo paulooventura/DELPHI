@@ -15,6 +15,7 @@ function frameDelta(lastRef: React.MutableRefObject<number | null>): number {
 }
 
 const RING_SPRING_BY_ID: Record<number, SpringConfig> = {
+  0: { stiffness: 380, damping: 36 },
   1: { stiffness: 240, damping: 30 },
   2: { stiffness: 180, damping: 28 },
   3: { stiffness: 140, damping: 26 },

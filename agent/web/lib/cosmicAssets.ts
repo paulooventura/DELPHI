@@ -323,6 +323,7 @@ const SEXAGENARY = {
 // ─── Per-ring dashboard accents (ringId 1–10) ─────────────────────────────────
 
 const RING_VISUALS: RingVisualAsset[] = [
+  { ringId: 0, shortName: "Ms", accent: "#FBBF24" },
   { ringId: 1, shortName: "Sec", accent: INTRADAY.seconds.color.hex },
   { ringId: 2, shortName: "Min", accent: INTRADAY.minutes.color.hex },
   { ringId: 3, shortName: "Hr", accent: INTRADAY.hours.color.hex },
@@ -375,6 +376,15 @@ export function segmentGraphicKey(ringId: number, index: number, divisions?: num
 export function ringSegmentVisual(ringId: number, index: number, divisions: number): SegmentVisual {
   const i = Math.floor(((index % divisions) + divisions) % divisions);
   switch (ringId) {
+    case 0: {
+      const major = i % 25 === 0;
+      const half = i % 5 === 0;
+      return {
+        fill: half ? "#3a2e14" : "#1c1610",
+        stroke: major ? "#fbbf24" : "#7a5c18",
+        label: major ? String(i * 10) : "",
+      };
+    }
     case 1: {
       const major = i % 15 === 0;
       const half = i % 2 === 0;

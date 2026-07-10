@@ -29,6 +29,7 @@ const WHEEL_RING_CONFIG: Record<
   number,
   { divisions: number; labelEvery: number; shortName: string }
 > = {
+  0: { divisions: 100, labelEvery: 25, shortName: "Ms" },
   1: { divisions: 60, labelEvery: 15, shortName: "Sec" },
   2: { divisions: 60, labelEvery: 10, shortName: "Min" },
   3: { divisions: 24, labelEvery: 6, shortName: "Hr" },
@@ -140,7 +141,7 @@ function CosmicSegmentRing({
   wheelCount: number;
   cycleFraction: number;
 }) {
-  const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[4]!;
+  const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[0]!;
   const { inner, outer, mid } = ringRadii(wheelIndex, wheelCount);
   const band = outer - inner;
   const dialSpin = -cycleFraction * 360;
@@ -287,7 +288,6 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
   const wheelCount = wheelRings.length;
   const playheadTop = CY - OUTER_R - 12;
   const hubTime = formatHubClockTime(snapshot.date);
-  const [mobileFill, setMobileFill] = useState(false);
   const [tickPulse, setTickPulse] = useState(false);
   const sec = snapshot.date.getSeconds();
 
@@ -296,14 +296,6 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
     const t = window.setTimeout(() => setTickPulse(false), 120);
     return () => window.clearTimeout(t);
   }, [sec]);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 1279px)");
-    const apply = () => setMobileFill(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
 
   return (
     <div
@@ -318,7 +310,7 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
       <svg
         viewBox="0 0 800 450"
         className="cp-cosmic-clock-svg block w-full select-none"
-        preserveAspectRatio={mobileFill ? "xMidYMax slice" : "xMidYMax meet"}
+        preserveAspectRatio="xMidYMax slice"
         role="img"
         aria-label="Cosmic clock semi-circle wheel"
       >

@@ -1889,7 +1889,7 @@ html,body {
   flex-direction: column;
 }
 
-/* Clock dashboard: wheel dominates viewport; layer cards scroll below */
+/* Clock dashboard: full-screen rings from NOW; technical readout scrolls below */
 .cp-app[data-tab="clock"] .cp-dashboard-viewport {
   position: relative;
   z-index: 1;
@@ -1901,11 +1901,12 @@ html,body {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior-y: contain;
   padding:
-    calc(2.35rem + var(--safe-t))
-    max(0.65rem, env(safe-area-inset-left, 0px))
+    calc(0.35rem + var(--safe-t))
+    0
     calc(4.75rem + var(--safe-b))
-    max(0.65rem, env(safe-area-inset-right, 0px));
+    0;
   scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
 }
 
 .cp-dashboard-layout {
@@ -1920,30 +1921,29 @@ html,body {
   flex: 0 0 auto;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: stretch;
   justify-content: flex-end;
   width: 100%;
-  min-height: min(80dvh, calc(100dvh - 4.25rem - var(--safe-b) - var(--safe-t)));
-  padding-bottom: 0;
+  /* Exactly one viewport above the tab bar — rings fill the screen */
+  height: calc(100dvh - 4.75rem - var(--safe-b) - 0.35rem - var(--safe-t));
+  min-height: calc(100dvh - 4.75rem - var(--safe-b) - 0.35rem - var(--safe-t));
+  max-height: calc(100dvh - 4.75rem - var(--safe-b) - 0.35rem - var(--safe-t));
+  padding: 0;
   overflow: hidden;
+  scroll-snap-align: start;
 }
 
 .cp-dashboard-wheel-hint {
   flex: 0 0 auto;
-  margin-top: 0.35rem;
-  padding-bottom: 0.5rem;
-  font-size: 0.58rem;
+  margin: 0;
+  padding: 0.2rem 0 0.35rem;
+  font-size: 0.55rem;
   font-weight: 600;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(201, 162, 39, 0.42);
+  color: rgba(201, 162, 39, 0.38);
   text-align: center;
-}
-
-@media (min-width: 1280px) {
-  .cp-dashboard-wheel-hint {
-    display: none;
-  }
+  pointer-events: none;
 }
 
 .cp-dashboard-details-zone {
@@ -1952,8 +1952,12 @@ html,body {
   flex-direction: column;
   gap: 0.75rem;
   width: 100%;
-  padding-top: 0.35rem;
-  padding-bottom: 1.25rem;
+  padding:
+    1rem
+    max(0.65rem, env(safe-area-inset-left, 0px))
+    1.5rem
+    max(0.65rem, env(safe-area-inset-right, 0px));
+  scroll-snap-align: start;
 }
 
 .cp-dashboard-details-zone .cp-dashboard-time-card {
@@ -1963,9 +1967,14 @@ html,body {
 }
 
 .cp-cosmic-clock-wheel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
   width: 100%;
+  min-height: 0;
   max-width: none;
-  border-radius: 1rem;
+  border-radius: 0;
 }
 
 .cp-app[data-tab="clock"] .cp-cosmic-clock-wheel {
@@ -1976,51 +1985,51 @@ html,body {
 }
 
 .cp-cosmic-clock-svg {
-  height: min(78dvh, calc(100vw * 1.12));
-  max-height: 680px;
+  flex: 1 1 auto;
   width: 100%;
+  height: 100%;
+  min-height: 0;
+  max-height: none;
 }
 
 @media (min-width: 640px) {
-  .cp-app[data-tab="clock"] .cp-dashboard-viewport {
+  .cp-app[data-tab="clock"] .cp-dashboard-details-zone {
     padding-left: 1rem;
     padding-right: 1rem;
   }
-
-  .cp-cosmic-clock-svg {
-    height: min(72dvh, 560px);
-  }
 }
 
+/* Keep single-column scroll on all breakpoints — readout stays below the fold */
 @media (min-width: 1280px) {
   .cp-dashboard-layout {
-    display: grid;
-    grid-template-columns: minmax(0, 1.2fr) minmax(300px, 0.8fr);
-    gap: 1.5rem;
-    align-items: start;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
   }
 
   .cp-dashboard-wheel-zone {
-    min-height: 0;
-    align-items: center;
-    padding-bottom: 0;
+    align-items: stretch;
   }
 
   .cp-dashboard-details-zone {
-    max-height: min(78vh, 760px);
-    overflow-y: auto;
-    padding-top: 0;
-    padding-right: 0.125rem;
+    max-height: none;
+    overflow: visible;
+    padding-top: 1rem;
+    padding-right: max(0.65rem, env(safe-area-inset-right, 0px));
   }
 
   .cp-cosmic-clock-wheel {
-    max-width: 900px;
+    max-width: none;
   }
 
   .cp-cosmic-clock-svg {
-    height: auto;
+    height: 100%;
     max-height: none;
-    aspect-ratio: 800 / 450;
+    aspect-ratio: unset;
+  }
+
+  .cp-dashboard-wheel-hint {
+    display: block;
   }
 }
 

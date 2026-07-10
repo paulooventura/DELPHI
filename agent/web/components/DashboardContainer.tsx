@@ -211,6 +211,13 @@ export function DashboardContainer({
   return (
     <div className={["cp-dashboard-layout w-full min-h-0", className].join(" ")}>
       <section className="cp-dashboard-wheel-zone min-w-0" aria-label="Visual engine">
+        <CosmicClockWheel snapshot={snapshot} showReadout={false} />
+        <p className="cp-dashboard-wheel-hint" aria-hidden>
+          Scroll for technical readout
+        </p>
+      </section>
+
+      <aside className="cp-dashboard-details-zone min-w-0" aria-label="Data readout">
         <SpacetimeAnchor
           now={currentDate}
           lat={lat}
@@ -232,13 +239,7 @@ export function DashboardContainer({
           pitchDeg={pitchDeg}
           emfUt={emfUt}
         />
-        <CosmicClockWheel snapshot={snapshot} showReadout={false} />
-        <p className="cp-dashboard-wheel-hint" aria-hidden>
-          Scroll for layer readouts
-        </p>
-      </section>
 
-      <aside className="cp-dashboard-details-zone min-w-0" aria-label="Data readout">
         {usingFallback && locationEnabled && !locationDenied && (
           <div className="cp-fix-banner" role="status">
             Using approximate coordinates — enable location for your true sky and cycles.

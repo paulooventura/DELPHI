@@ -216,6 +216,24 @@ function astronomicalSeason(solarLambda: number) {
 
 // ─── Layer builders ───────────────────────────────────────────────────────────
 
+function buildMillisecondsRing(date: Date): ClockRingData {
+  const ms = date.getMilliseconds();
+  const progress = clamp01(ms / 1000);
+
+  return {
+    ringId: 0,
+    name: "Milliseconds",
+    normalizedProgress: progress,
+    activeSegment: {
+      id: "milliseconds",
+      name: `${pad3(ms)} ms`,
+      symbol: "⚡",
+      numericalValue: ms,
+      metadata: `0–1000 ms sweep · ${ms} ms in current second`,
+    },
+  };
+}
+
 function buildSecondsRing(date: Date): ClockRingData {
   const sec = date.getSeconds();
   const ms = date.getMilliseconds();
@@ -460,7 +478,7 @@ export function formatHubClockTime(date: Date): string {
 }
 
 /** Rings rendered on the semi-circle wheel (fastest inner → slowest outer). */
-export const WHEEL_VISIBLE_RING_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const WHEEL_VISIBLE_RING_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 /** Primary dashboard layer cards (cosmic layers 1–6 in the reference). */
 export const DASHBOARD_COSMIC_LAYER_IDS = [4, 5, 6, 7, 8, 9] as const;
@@ -471,7 +489,7 @@ export function dashboardLayerNumber(ringId: number): number {
 
 /**
  * Calculate normalized cosmic clock rings for a single instant.
- * Rings are ordered innermost (1) → outermost (10).
+ * Rings are ordered innermost (0 = ms) → outermost (10).
  */
 export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
   const instant = new Date(date.getTime());
@@ -479,6 +497,7 @@ export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
   return {
     date: instant,
     rings: [
+      buildMillisecondsRing(instant),
       buildSecondsRing(instant),
       buildMinutesRing(instant),
       buildHoursRing(instant),
@@ -503,6 +522,8 @@ export function ringCycleFraction(ring: ClockRingData): number {
   const { ringId, normalizedProgress, activeSegment } = ring;
   const v = activeSegment.numericalValue;
   switch (ringId) {
+    case 0:
+      return normalizedProgress;
     case 1:
       return normalizedProgress;
     case 2:
