@@ -2949,10 +2949,16 @@ html,body {
     #0a0806;
 }
 .cp-steampunk-clock-wheel.cp-steampunk-tick .cp-steampunk-playhead-slot {
-  animation: cp-steampunk-click 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: cp-steampunk-click 0.14s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .cp-steampunk-clock-wheel.cp-steampunk-tick .cp-steampunk-escapement {
-  animation: cp-steampunk-escape 0.12s ease-out;
+  animation: cp-steampunk-escape 0.14s ease-out;
+}
+.cp-steampunk-clock-wheel.cp-steampunk-tick .cp-steampunk-balance {
+  animation: cp-steampunk-balance-tick 0.18s cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+.cp-steampunk-clock-wheel.cp-steampunk-tick .cp-steampunk-seconds-face {
+  animation: cp-steampunk-ratchet 0.16s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .cp-steampunk-ring .cp-cosmic-segment-active path {
   filter: drop-shadow(0 0 3px rgba(232, 200, 106, 0.45));
@@ -2960,14 +2966,59 @@ html,body {
 .cp-steampunk-hub {
   filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.5));
 }
+.cp-steampunk-mesh-cw {
+  transform-origin: 400px 430px;
+  animation: cp-steampunk-mesh-cw 28s linear infinite;
+}
+.cp-steampunk-mesh-ccw {
+  transform-origin: 400px 430px;
+  animation: cp-steampunk-mesh-ccw 34s linear infinite;
+}
+.cp-steampunk-fly-spin-cw {
+  transform-origin: 0px 0px;
+  animation: cp-steampunk-spin-cw 6s linear infinite;
+}
+.cp-steampunk-fly-spin-ccw {
+  transform-origin: 0px 0px;
+  animation: cp-steampunk-spin-ccw 6s linear infinite;
+}
+.cp-steampunk-balance {
+  transform-origin: 0px 0px;
+}
 
 @keyframes cp-steampunk-click {
   0% { transform: translateY(0); }
-  40% { transform: translateY(2px); }
+  35% { transform: translateY(2.5px); }
   100% { transform: translateY(0); }
 }
 @keyframes cp-steampunk-escape {
   0% { transform: rotate(0deg); transform-origin: 400px 430px; }
-  50% { transform: rotate(4deg); transform-origin: 400px 430px; }
+  40% { transform: rotate(6deg); transform-origin: 400px 430px; }
   100% { transform: rotate(0deg); transform-origin: 400px 430px; }
+}
+@keyframes cp-steampunk-balance-tick {
+  0% { transform: rotate(-18deg); }
+  55% { transform: rotate(22deg); }
+  100% { transform: rotate(0deg); }
+}
+@keyframes cp-steampunk-ratchet {
+  0% { transform: rotate(0deg); transform-origin: 400px 430px; }
+  40% { transform: rotate(-1.1deg); transform-origin: 400px 430px; }
+  100% { transform: rotate(0deg); transform-origin: 400px 430px; }
+}
+@keyframes cp-steampunk-mesh-cw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes cp-steampunk-mesh-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
+}
+@keyframes cp-steampunk-spin-cw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+@keyframes cp-steampunk-spin-ccw {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(-360deg); }
 }

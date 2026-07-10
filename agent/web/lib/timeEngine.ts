@@ -478,7 +478,7 @@ export function formatHubClockTime(date: Date): string {
 }
 
 /** Rings rendered on the semi-circle wheel (fastest inner → slowest outer). */
-export const WHEEL_VISIBLE_RING_IDS = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const WHEEL_VISIBLE_RING_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
 
 /** Primary dashboard layer cards (cosmic layers 1–6 in the reference). */
 export const DASHBOARD_COSMIC_LAYER_IDS = [4, 5, 6, 7, 8, 9] as const;
@@ -489,7 +489,7 @@ export function dashboardLayerNumber(ringId: number): number {
 
 /**
  * Calculate normalized cosmic clock rings for a single instant.
- * Rings are ordered innermost (0 = ms) → outermost (10).
+ * Rings are ordered innermost (1 = seconds) → outermost (10).
  */
 export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
   const instant = new Date(date.getTime());

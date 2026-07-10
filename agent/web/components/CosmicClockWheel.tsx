@@ -29,7 +29,6 @@ const WHEEL_RING_CONFIG: Record<
   number,
   { divisions: number; shortName: string }
 > = {
-  0: { divisions: 100, shortName: "Ms" },
   1: { divisions: 60, shortName: "Sec" },
   2: { divisions: 60, shortName: "Min" },
   3: { divisions: 24, shortName: "Hr" },
@@ -179,7 +178,7 @@ function CosmicSegmentRing({
   wheelCount: number;
   cycleFraction: number;
 }) {
-  const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[0]!;
+  const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[1]!;
   const { inner, outer, mid } = ringRadii(wheelIndex, wheelCount);
   const band = outer - inner;
   const accent = ringAccentColor(ring.ringId);
@@ -195,6 +194,7 @@ function CosmicSegmentRing({
   );
   const iconSize = Math.max(5, Math.min(band * 0.65, arcLen * 0.9, 13));
   const preferIcon = divisions <= 20;
+  const meshDir = wheelIndex % 2 === 0 ? "cw" : "ccw";
 
   const segments = [];
   for (let i = 0; i < divisions; i++) {
@@ -211,7 +211,6 @@ function CosmicSegmentRing({
     const ly = CY + Math.sin(ang) * mid;
     const sectorPath = donutSectorPath(CX, CY, inner + 0.35, outer - 0.35, start, end);
     const showIcon = preferIcon && Boolean(vis.graphicKey);
-    // Always show the text mark so every slot stays readable (icons alone were vanishing).
     const showText = Boolean(vis.label);
 
     segments.push(
@@ -253,7 +252,6 @@ function CosmicSegmentRing({
             fill={isActive ? "#fff8e7" : "#f0e2b0"}
             fontFamily={OBS.typography.micro}
             fontWeight={isActive ? 700 : 600}
-            transform={`rotate(${centerDeg + 90}, ${lx}, ${ly})`}
           >
             {vis.label}
           </text>
@@ -263,7 +261,10 @@ function CosmicSegmentRing({
   }
 
   return (
-    <g className="cosmic-segment-ring cp-steampunk-ring">
+    <g
+      className={`cosmic-segment-ring cp-steampunk-ring cp-steampunk-ring-${meshDir}`}
+      style={{ ["--ring-mid" as string]: `${mid}` }}
+    >
       <defs>
         <clipPath id={`cosmic-clip-${uid}-${ring.ringId}`}>
           <path d={semicircleAnnulusPath(CX, CY, outer, inner)} />
@@ -281,7 +282,12 @@ function CosmicSegmentRing({
         fillOpacity={0.08}
         pointerEvents="none"
       />
-      <g clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>{segments}</g>
+      <g
+        className={ring.ringId === 1 ? "cp-steampunk-seconds-face" : undefined}
+        clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}
+      >
+        {segments}
+      </g>
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
         fill="none"
@@ -298,17 +304,19 @@ function CosmicSegmentRing({
         strokeOpacity={0.55}
         pointerEvents="none"
       />
-      {teeth.map(t => (
-        <path
-          key={t.key}
-          d={t.d}
-          fill="#3d3018"
-          stroke="#c9a227"
-          strokeWidth={0.45}
-          opacity={0.95}
-          pointerEvents="none"
-        />
-      ))}
+      <g className={`cp-steampunk-rim-teeth cp-steampunk-mesh-${meshDir}`}>
+        {teeth.map(t => (
+          <path
+            key={t.key}
+            d={t.d}
+            fill="#3d3018"
+            stroke="#c9a227"
+            strokeWidth={0.45}
+            opacity={0.95}
+            pointerEvents="none"
+          />
+        ))}
+      </g>
       {(() => {
         const nameDeg = -78;
         const nameAng = tickAngle(nameDeg);
@@ -326,7 +334,6 @@ function CosmicSegmentRing({
             fontFamily={OBS.typography.micro}
             fontWeight={700}
             letterSpacing="0.04em"
-            transform={`rotate(${nameDeg + 90}, ${nx}, ${ny})`}
             pointerEvents="none"
           >
             {cfg.shortName}
@@ -534,6 +541,30 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
         </g>
 
         <g className="cp-cosmic-hub cp-steampunk-hub">
+          {/* Balance wheel — rocks each second for a mechanical tick */}
+          <g transform={`translate(${CX}, ${CY - HUB_R - 22})`}>
+            <g className="cp-steampunk-balance">
+              <circle r={9} fill="#1a1510" stroke="#c9a227" strokeWidth={1} />
+              <circle r={3.2} fill="#3d3018" stroke="#e8c86a" strokeWidth={0.6} />
+              <line x1={-8} y1={0} x2={8} y2={0} stroke="#8a6b1e" strokeWidth={1.2} />
+              <line x1={0} y1={-8} x2={0} y2={8} stroke="#8a6b1e" strokeWidth={1.2} />
+            </g>
+          </g>
+          {/* Side flywheels — slow counter-mesh */}
+          <g transform={`translate(${CX - 52}, ${CY - 6})`}>
+            <g className="cp-steampunk-fly-spin-cw">
+              <circle r={11} fill="#15120e" stroke="#8a6b1e" strokeWidth={0.8} />
+              <path d={gearTeethPath(0, 0, 11, 10, 1.6)} fill="none" stroke="#c9a227" strokeWidth={0.55} />
+              <circle r={2.5} fill="#c9a227" />
+            </g>
+          </g>
+          <g transform={`translate(${CX + 52}, ${CY - 6})`}>
+            <g className="cp-steampunk-fly-spin-ccw">
+              <circle r={11} fill="#15120e" stroke="#8a6b1e" strokeWidth={0.8} />
+              <path d={gearTeethPath(0, 0, 11, 10, 1.6)} fill="none" stroke="#c9a227" strokeWidth={0.55} />
+              <circle r={2.5} fill="#c9a227" />
+            </g>
+          </g>
           <path
             d={gearTeethPath(CX, CY, HUB_R + 10, 16, 2.2)}
             fill="#2a2218"
