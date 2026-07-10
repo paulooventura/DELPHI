@@ -108,21 +108,47 @@ function gearTeethPath(cx: number, cy: number, radius: number, count: number, de
   return parts.join(" ") + " Z";
 }
 
+/** Rim teeth only — closed tooth polygons, never a filled disk that covers inner rings. */
+function rimGearTeeth(
+  cx: number,
+  cy: number,
+  radius: number,
+  count: number,
+  depth: number,
+): { d: string; key: number }[] {
+  const teeth: { d: string; key: number }[] = [];
+  for (let i = 0; i < count; i++) {
+    const mid = (i / count) * 360;
+    // Upper semicircle only (matches the dome clip)
+    const ang = ((mid % 360) + 360) % 360;
+    if (ang > 95 && ang < 265) continue;
+    const a0 = tickAngle(mid - 180 / count);
+    const a1 = tickAngle(mid);
+    const a2 = tickAngle(mid + 180 / count);
+    const rIn = radius - 0.4;
+    const rOut = radius + depth;
+    const d = [
+      `M ${cx + Math.cos(a0) * rIn} ${cy + Math.sin(a0) * rIn}`,
+      `L ${cx + Math.cos(a0) * rOut} ${cy + Math.sin(a0) * rOut}`,
+      `L ${cx + Math.cos(a1) * (rOut + depth * 0.15)} ${cy + Math.sin(a1) * (rOut + depth * 0.15)}`,
+      `L ${cx + Math.cos(a2) * rOut} ${cy + Math.sin(a2) * rOut}`,
+      `L ${cx + Math.cos(a2) * rIn} ${cy + Math.sin(a2) * rIn}`,
+      "Z",
+    ].join(" ");
+    teeth.push({ d, key: i });
+  }
+  return teeth;
+}
+
 function PlayheadSlot({ inner, outer }: { inner: number; outer: number }) {
   return (
     <g className="cp-steampunk-playhead-slot">
       <path
-        d={donutSectorPath(CX, CY, inner, outer, -14, 14)}
+        d={donutSectorPath(CX, CY, inner, outer, -10, 10)}
         fill="url(#cp-steam-pawl-fill)"
         stroke="#e8c86a"
-        strokeWidth={1.6}
+        strokeWidth={1.4}
         pointerEvents="none"
-      />
-      <path
-        d={`M ${CX - 4} ${CY - outer + 2} L ${CX} ${CY - outer - 6} L ${CX + 4} ${CY - outer + 2} Z`}
-        fill="#c9a227"
-        stroke="#8a6b1e"
-        strokeWidth={0.6}
       />
     </g>
   );
@@ -147,7 +173,8 @@ function CosmicSegmentRing({
   const dialSpin = -cycleFraction * 360;
   const accent = ringAccentColor(ring.ringId);
   const activeIdx = Math.floor(cycleFraction * cfg.divisions) % cfg.divisions;
-  const depth = 0.72 + (wheelIndex / Math.max(1, wheelCount - 1)) * 0.28;
+  const toothCount = Math.max(18, Math.min(48, Math.round(outer / 9)));
+  const teeth = rimGearTeeth(CX, CY, outer, toothCount, Math.min(4.2, Math.max(1.8, band * 0.28)));
 
   const spinStyle: CSSProperties = {
     transform: `rotate(${dialSpin}deg)`,
@@ -164,10 +191,10 @@ function CosmicSegmentRing({
     const ang = tickAngle(start + (end - start) / 2);
     const sin = Math.sin(ang);
     const showLabel = sin < -0.12 && (i % cfg.labelEvery === 0 || vis.label.length <= 2);
-    const iconSize = Math.max(8, Math.min(band * 0.75, ring.ringId === 5 ? 14 : 12));
+    const iconSize = Math.max(7, Math.min(band * 0.7, ring.ringId === 5 ? 13 : 11));
     const lx = CX + Math.cos(ang) * mid;
     const ly = CY + Math.sin(ang) * mid;
-    const sectorPath = donutSectorPath(CX, CY, inner + 0.5, outer - 0.5, start, end);
+    const sectorPath = donutSectorPath(CX, CY, inner + 0.35, outer - 0.35, start, end);
 
     segments.push(
       <g key={i} className={isActive ? "cp-cosmic-segment-active" : undefined}>
@@ -175,7 +202,7 @@ function CosmicSegmentRing({
           <path
             d={sectorPath}
             fill={accent}
-            fillOpacity={0.22}
+            fillOpacity={0.35}
             filter={`url(#cosmic-seg-glow-${uid})`}
             pointerEvents="none"
           />
@@ -183,10 +210,10 @@ function CosmicSegmentRing({
         <path
           d={sectorPath}
           fill={vis.fill}
-          fillOpacity={isActive ? 1 : 0.92}
-          stroke={isActive ? "var(--gold-lt)" : vis.stroke}
-          strokeWidth={isActive ? 1.25 : 0.45}
-          strokeOpacity={isActive ? 1 : 0.6}
+          fillOpacity={1}
+          stroke={isActive ? "#f5e6a8" : vis.stroke}
+          strokeWidth={isActive ? 1.35 : 0.55}
+          strokeOpacity={isActive ? 1 : 0.85}
         />
         {showLabel && vis.graphicKey && (
           <CosmicGraphicIcon
@@ -204,10 +231,10 @@ function CosmicSegmentRing({
             y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
-            fontSize={Math.max(5, Math.min(band * 0.42, ring.ringId === 5 ? 9 : 7))}
-            fill={isActive ? "var(--gold-lt)" : OBS.day.ink}
+            fontSize={Math.max(5, Math.min(band * 0.4, ring.ringId <= 3 ? 8 : 7))}
+            fill={isActive ? "#fff8e7" : "#e8d9a0"}
             fontFamily={OBS.typography.micro}
-            fontWeight={isActive ? 700 : 500}
+            fontWeight={isActive ? 700 : 600}
             transform={`rotate(${(ang * 180) / Math.PI + 90}, ${lx}, ${ly})`}
           >
             {vis.label}
@@ -218,41 +245,57 @@ function CosmicSegmentRing({
   }
 
   return (
-    <g className="cosmic-segment-ring cp-steampunk-ring" opacity={depth}>
-      <g style={spinStyle} clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>
-        {segments}
-      </g>
+    <g className="cosmic-segment-ring cp-steampunk-ring">
       <defs>
         <clipPath id={`cosmic-clip-${uid}-${ring.ringId}`}>
           <path d={semicircleAnnulusPath(CX, CY, outer, inner)} />
         </clipPath>
-        <linearGradient id={`cosmic-band-${uid}-${ring.ringId}`} x1="0%" y1="100%" x2="0%" y2="0%">
-          <stop offset="0%" stopColor="#3d3018" stopOpacity={0.9} />
-          <stop offset="40%" stopColor={accent} stopOpacity={0.35} />
-          <stop offset="100%" stopColor="#1a1510" stopOpacity={0.95} />
-        </linearGradient>
       </defs>
+      {/* Underlay plate — behind segments, never covers them */}
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
-        fill={`url(#cosmic-band-${uid}-${ring.ringId})`}
+        fill="#1a1510"
+        fillOpacity={0.55}
         pointerEvents="none"
       />
       <path
-        d={gearTeethPath(CX, CY, outer, Math.max(24, Math.floor(band * 1.2)), Math.min(3.5, band * 0.22))}
-        fill="#2a2218"
-        stroke="#8a6b1e"
-        strokeWidth={0.45}
-        opacity={0.85}
+        d={semicircleAnnulusPath(CX, CY, outer, inner)}
+        fill={accent}
+        fillOpacity={0.08}
         pointerEvents="none"
       />
+      {/* Spinning gear face */}
+      <g style={spinStyle} clipPath={`url(#cosmic-clip-${uid}-${ring.ringId})`}>
+        {segments}
+      </g>
+      {/* Brass rim + teeth on top of face */}
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
         fill="none"
         stroke="#c9a227"
-        strokeWidth={1}
-        strokeOpacity={0.65}
+        strokeWidth={1.15}
+        strokeOpacity={0.75}
         pointerEvents="none"
       />
+      <path
+        d={`M ${CX - inner} ${CY} A ${inner} ${inner} 0 0 1 ${CX + inner} ${CY}`}
+        fill="none"
+        stroke="#8a6b1e"
+        strokeWidth={0.7}
+        strokeOpacity={0.55}
+        pointerEvents="none"
+      />
+      {teeth.map(t => (
+        <path
+          key={t.key}
+          d={t.d}
+          fill="#3d3018"
+          stroke="#c9a227"
+          strokeWidth={0.45}
+          opacity={0.95}
+          pointerEvents="none"
+        />
+      ))}
       <PlayheadSlot inner={inner} outer={outer} />
     </g>
   );

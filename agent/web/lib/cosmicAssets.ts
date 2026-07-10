@@ -380,8 +380,8 @@ export function ringSegmentVisual(ringId: number, index: number, divisions: numb
       const major = i % 25 === 0;
       const half = i % 5 === 0;
       return {
-        fill: half ? "#3a2e14" : "#1c1610",
-        stroke: major ? "#fbbf24" : "#7a5c18",
+        fill: half ? "#5a4820" : "#2a2214",
+        stroke: major ? "#fbbf24" : "#a8842a",
         label: major ? String(i * 10) : "",
       };
     }
@@ -389,8 +389,8 @@ export function ringSegmentVisual(ringId: number, index: number, divisions: numb
       const major = i % 15 === 0;
       const half = i % 2 === 0;
       return {
-        fill: half ? "#2a2218" : "#1a1510",
-        stroke: major ? "#e8c86a" : "#6a5420",
+        fill: half ? "#4a3a1c" : "#241c12",
+        stroke: major ? "#e8c86a" : "#8a6b28",
         label: major ? String(i) : "",
       };
     }
@@ -398,24 +398,24 @@ export function ringSegmentVisual(ringId: number, index: number, divisions: numb
       const major = i % 10 === 0;
       const half = i % 5 === 0;
       return {
-        fill: half ? "#322818" : "#1c1610",
-        stroke: major ? "#c9a227" : "#5c4a1f",
+        fill: half ? "#523e1c" : "#261e12",
+        stroke: major ? "#d4af37" : "#7a5c22",
         label: major ? String(i) : "",
       };
     }
     case 3: {
       const major = i % 6 === 0;
       return {
-        fill: i % 2 === 0 ? "#2e2418" : "#181410",
-        stroke: major ? "#d4af37" : "#4a3a22",
+        fill: i % 2 === 0 ? "#4a3818" : "#221810",
+        stroke: major ? "#e8c86a" : "#6a5420",
         label: major ? String(i) : "",
       };
     }
     case 4: {
       const major = i % 10 === 0;
       return {
-        fill: major ? "#3D3018" : "#1A1510",
-        stroke: major ? "#C9A227" : "#5C4A1F",
+        fill: major ? "#5a4820" : "#2a2214",
+        stroke: major ? "#C9A227" : "#7a5c22",
         label: major ? String(i) : "",
       };
     }
