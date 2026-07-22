@@ -3,9 +3,17 @@
 import { useId, useRef, useState, type ReactElement, type PointerEvent as ReactPointerEvent } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { daysInMonth } from "../lib/cycleSystems";
+import { CREATION_TONES, TRIBES_OF_TIME } from "../lib/galacticFrequency";
+import { emfHubColor } from "../lib/emfField";
 import { OBS, spectrumAccent, spectrumBlend } from "../lib/design/observatoryTokens";
 import { labelForDistanceRank } from "../lib/starmap";
 
+const TRIBE_RING_COLORS: Record<string, string> = {
+  Red: "#ef4444",
+  White: "#e2e8f0",
+  Blue: "#3b82f6",
+  Yellow: "#eab308",
+};
 export type CalendarWheel = CycleSnapshot["wheelLayers"][number];
 export type GregorianInfo = CycleSnapshot["gregorian"];
 
@@ -93,10 +101,6 @@ function dayProgress(now: Date): number {
   return (now.getHours() + now.getMinutes() / 60 + now.getSeconds() / 3600 + now.getMilliseconds() / 86400000) / 24;
 }
 
-const TZOLKIN_SIGNS = [
-  "Imix", "Ik", "Akbal", "Kan", "Chikchan", "Kimi", "Manik", "Lamat", "Muluk", "Ok",
-  "Chuen", "Eb", "Ben", "Ix", "Men", "Kib", "Kaban", "Etznab", "Kawak", "Ajaw",
-];
 const CHINESE_SYMBOLS = ["🐀", "🐂", "🐅", "🐇", "🐉", "🐍", "🐴", "🐑", "🐒", "🐓", "🐕", "🐖"];
 const CHINESE_ANIMALS = ["Rat", "Ox", "Tiger", "Rabbit", "Dragon", "Snake", "Horse", "Goat", "Monkey", "Rooster", "Dog", "Pig"];
 const MOON_PHASE_EMOJI = ["🌑", "🌒", "🌓", "🌔", "🌕", "🌖", "🌗", "🌘"];
@@ -179,15 +183,37 @@ function buildRingSpecs(now: Date, cycles: CycleSnapshot | null): Omit<RingSpec,
     customLabel: i => `${CHINESE_SYMBOLS[i] ?? "·"}${CHINESE_ANIMALS[i]?.slice(0, 3) ?? ""}`,
   });
 
-  // Mayan tzolkin day sign
-  const tzIdx = TZOLKIN_SIGNS.indexOf(cycles.tzolkin.sign);
+  // Mayan zodiac — 20 Tribes of Time (13:20)
+  const tribeIdx = ((cycles.tzolkin.kin - 1) % 20 + 20) % 20;
+  const activeTribe = TRIBES_OF_TIME[tribeIdx] ?? TRIBES_OF_TIME[0]!;
   specs.push({
     id: "tzolkin",
-    color: "#7c3aed",
-    nowAngle: ((cycles.tzolkin.kin - 1) / 260) * 360,
+    color: TRIBE_RING_COLORS[activeTribe.color] ?? "#7c3aed",
+    nowAngle: (tribeIdx / 20) * 360,
     divisions: 20,
     labelEvery: 1,
-    customLabel: i => (i === tzIdx ? `🧭${cycles.tzolkin.sign.slice(0, 4)}` : TZOLKIN_SIGNS[i]?.slice(0, 3) ?? null),
+    customLabel: i => {
+      const tribe = TRIBES_OF_TIME[i];
+      if (!tribe) return null;
+      const short = tribe.name === "Worldbridger" ? "Bridge" : tribe.name.slice(0, 4);
+      return i === tribeIdx ? `◆${short}` : short;
+    },
+  });
+
+  // 13 Tones of Creation
+  const toneIdx = cycles.tzolkin.tone - 1;
+  specs.push({
+    id: "wavespell",
+    color: "#a78bfa",
+    nowAngle: (toneIdx / 13) * 360,
+    divisions: 13,
+    labelEvery: 1,
+    customLabel: i => {
+      const tone = CREATION_TONES[i];
+      if (!tone) return null;
+      const short = tone.name === "Self-Existing" ? "Self" : tone.name.slice(0, 4);
+      return i === toneIdx ? `✦${short}` : short;
+    },
   });
 
   // Moon phase
@@ -201,8 +227,8 @@ function buildRingSpecs(now: Date, cycles: CycleSnapshot | null): Omit<RingSpec,
     customLabel: i => (i === phaseIdx ? `${cycles.lunar.emoji}${cycles.lunar.phase.slice(0, 3)}` : MOON_PHASE_EMOJI[i] ?? null),
   });
 
-  // Remaining calendar layers (kin, wavespell, castle, months, zodiac, season, years…)
-  const SKIP = new Set(["day", "chinese-sign", "moon"]);
+  // Outer calendar layers — skip Mayan duplicates already drawn as dedicated rings
+  const SKIP = new Set(["day", "chinese-sign", "moon", "kin", "wavespell", "tzolkin"]);
   for (const w of cycles.wheelLayers) {
     if (SKIP.has(w.id)) continue;
     specs.push(wheelToRing(w, now));
@@ -218,7 +244,11 @@ export function clockOuterRadius(cycles: CycleSnapshot | null, now = new Date())
   let ri = 0;
   let last = hubR + 12;
   for (const spec of buildRingSpecs(now, cycles)) {
-    const step = TIME_IDS.has(spec.id) ? 10 : spec.id === "weather" ? 9 : 7;
+    const step =
+      TIME_IDS.has(spec.id) ? 10
+      : spec.id === "weather" ? 9
+      : spec.id === "tzolkin" || spec.id === "wavespell" ? 8.5
+      : 7;
     last = hubR + 12 + ri * step;
     ri += 1;
   }
@@ -243,20 +273,6 @@ const COMPASS_DIRS: Array<{ deg: number; label: string; major: boolean }> = [
   { deg: 315, label: "NW", major: true },
   { deg: 337.5, label: "NNW", major: false },
 ];
-
-const DREAMSPELL_SIGN_NAMES = [
-  "Dragon", "Wind", "Night", "Seed", "Serpent", "Worldbridger", "Hand", "Star", "Moon", "Dog",
-  "Monkey", "Human", "Skywalker", "Wizard", "Eagle", "Warrior", "Earth", "Mirror", "Storm", "Sun",
-];
-const DREAMSPELL_COLORS = ["Red", "White", "Blue", "Yellow"];
-
-function dreamspellWaveLabel(wavespell: number): string {
-  const startKin = (wavespell - 1) * 13 + 1;
-  const signIdx = (startKin - 1) % 20;
-  const color = DREAMSPELL_COLORS[signIdx % 4];
-  const name = DREAMSPELL_SIGN_NAMES[signIdx] ?? "Sun";
-  return `${wavespell} - ${color} ${name}`;
-}
 
 type PlumbRow = { title: string; value: string };
 
@@ -288,8 +304,10 @@ function plumbRowForRing(spec: RingSpec, now: Date, cycles: CycleSnapshot | null
       };
     case "tzolkin":
       return {
-        title: "Tzolkin Sign",
-        value: cycles ? `${cycles.tzolkin.sign} (Tone ${cycles.tzolkin.tone})` : "—",
+        title: "20 Tribes of Time",
+        value: cycles
+          ? `${cycles.galactic.tribe.color} ${cycles.galactic.tribe.name} (${cycles.tzolkin.sign})`
+          : "—",
       };
     case "moon":
       return {
@@ -320,8 +338,10 @@ function plumbRowForRing(spec: RingSpec, now: Date, cycles: CycleSnapshot | null
       };
     case "wavespell":
       return {
-        title: "Dreamspell Wave",
-        value: cycles ? dreamspellWaveLabel(cycles.mayan.wavespell) : "—",
+        title: "13 Tones of Creation",
+        value: cycles
+          ? `${cycles.galactic.tone.tone} ${cycles.galactic.tone.name} — ${cycles.galactic.tone.code.power}`
+          : "—",
       };
     case "castle":
       return {
@@ -330,8 +350,8 @@ function plumbRowForRing(spec: RingSpec, now: Date, cycles: CycleSnapshot | null
       };
     case "kin":
       return {
-        title: "Tzolkin Kin",
-        value: cycles ? `Kin ${cycles.tzolkin.kin} — ${cycles.tzolkin.sign}` : "—",
+        title: "13:20 Kin",
+        value: cycles ? cycles.galactic.label : "—",
       };
     case "chinese-month": {
       const monthNum = (Math.floor((cycles?.lunar.fraction ?? 0) * 12) % 12) + 1;
@@ -505,11 +525,12 @@ function HubCompass({
           y={cy + r + 11}
           textAnchor="middle"
           fontSize={6.5}
-          fill={labelInk}
+          fill={emfHubColor(emfUt)}
           fontFamily={OBS.typography.micro}
+          fontWeight={600}
           style={{ fontVariantNumeric: "tabular-nums" }}
         >
-          {emfUt.toFixed(1)} µT
+          {emfUt.toFixed(0)} µT
         </text>
       )}
     </g>
@@ -825,7 +846,11 @@ export function WatchMovement({
   let ri = 0;
 
   const rings: RingSpec[] = buildRingSpecs(now, cycles).map(spec => {
-    const step = TIME_IDS.has(spec.id) ? 10 : spec.id === "weather" ? 9 : 7;
+    const step =
+      TIME_IDS.has(spec.id) ? 10
+      : spec.id === "weather" ? 9
+      : spec.id === "tzolkin" || spec.id === "wavespell" ? 8.5
+      : 7;
     const ring = { ...spec, radius: hubR + 12 + ri * step };
     ri++;
     return ring;

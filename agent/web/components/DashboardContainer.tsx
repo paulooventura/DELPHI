@@ -18,12 +18,15 @@ import {
 import { COSMIC_ASSETS, ringAccentColor, segmentGraphicKey } from "../lib/cosmicAssets";
 import { CosmicGraphicBadge } from "../lib/cosmicGraphicIcons";
 import { useSpringScalar } from "../hooks/useSpringMotion";
+import type { CycleReading } from "../lib/worldCycles";
 
 export type DashboardContainerProps = {
   className?: string;
   lat: number;
   lon: number;
   cosmic?: CosmicClockState | null;
+  /** Enabled Atlas calendar readings → outer clock rings + layer cards. */
+  atlasReadings?: CycleReading[];
   liveCoords?: boolean;
   usingFallback?: boolean;
   locationDenied?: boolean;
@@ -182,6 +185,7 @@ export function DashboardContainer({
   lat,
   lon,
   cosmic = null,
+  atlasReadings = [],
   liveCoords = false,
   usingFallback = false,
   locationDenied = false,
@@ -199,13 +203,18 @@ export function DashboardContainer({
   emfUt = null,
 }: DashboardContainerProps) {
   const currentDate = useRealtimeDate();
-  const snapshot = useMemo(() => calculateCosmicTime(currentDate), [currentDate]);
+  const snapshot = useMemo(
+    () => calculateCosmicTime(currentDate, { atlasReadings }),
+    [currentDate, atlasReadings],
+  );
   const hubTime = formatHubClockTime(currentDate);
   const digitalTime = formatStandardDigitalTime(currentDate);
 
   const cosmicLayers = useMemo(() => {
     const byId = new Map(snapshot.rings.map(r => [r.ringId, r]));
-    return DASHBOARD_COSMIC_LAYER_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+    const core = DASHBOARD_COSMIC_LAYER_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+    const atlas = snapshot.rings.filter(r => r.ringId >= 11);
+    return [...core, ...atlas];
   }, [snapshot.rings]);
 
   return (

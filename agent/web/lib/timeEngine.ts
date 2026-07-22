@@ -4,6 +4,8 @@
  */
 
 import { julianDay, lunarPhaseFraction, sunEclipticLongitudeDeg } from "./cosmic/math";
+import { formatCodeWords, galacticDayFromKin } from "./galacticFrequency";
+import type { CycleReading } from "./worldCycles/types";
 
 // ─── Output types ───────────────────────────────────────────────────────────
 
@@ -38,7 +40,7 @@ export type RingProvenanceTier = "measured" | "computed" | "cultural";
 /** Data trust tier for each ring — shown in layer readouts. */
 export function ringProvenanceTier(ringId: number): RingProvenanceTier {
   if (ringId <= 3) return "measured";
-  if (ringId === 4 || ringId === 5 || ringId === 8 || ringId === 10) return "cultural";
+  if (ringId === 4 || ringId === 5 || ringId === 8 || ringId === 10 || ringId >= 11) return "cultural";
   return "computed";
 }
 
@@ -51,7 +53,8 @@ export function ringProvenanceNote(ringId: number): string {
     case 8: return "Tzolk'in · Delphi anchor 2024-07-26";
     case 9: return "Tropical zodiac · solar ecliptic λ";
     case 10: return "Sexagenary 干支 · civil year index";
-    default: return "";
+    default:
+      return ringId >= 11 ? "World Cycle Atlas · registry plugin" : "";
   }
 }
 
@@ -396,19 +399,19 @@ function buildTzolkinRing(date: Date): ClockRingData {
   const kin = tzolkinKin(date);
   const signIndex = mod(kin - 1, 20);
   const signName = TZOLKIN_SIGNS[signIndex]!;
-  const tone = mod(kin - 1, 13) + 1;
   const dayFrac = localDayFraction(date);
+  const galactic = galacticDayFromKin(kin);
 
   return {
     ringId: 8,
-    name: "Tzolk'in Day Sign",
+    name: "13:20 Kin · Tribe of Time",
     normalizedProgress: clamp01(dayFrac),
     activeSegment: {
       id: `tzolkin-${signName.toLowerCase()}`,
-      name: signName,
+      name: `${galactic.tribe.color} ${galactic.tribe.name}`,
       symbol: "🧭",
       numericalValue: signIndex,
-      metadata: `Kin ${kin} · Tone ${tone} · sign index ${signIndex}/19`,
+      metadata: `Kin ${kin} · Tone ${galactic.tone.tone} ${galactic.tone.name} · ${formatCodeWords(galactic.tone.code)} · Tribe ${formatCodeWords(galactic.tribe.code)}`,
     },
   };
 }
@@ -487,28 +490,54 @@ export function dashboardLayerNumber(ringId: number): number {
   return Math.max(1, ringId - 3);
 }
 
+/** Map World Cycle plugin readings → outer clock rings (ids 11+). */
+export function atlasReadingsToClockRings(readings: CycleReading[]): ClockRingData[] {
+  return readings.map((r, i) => {
+    const angle = ((r.angleDeg % 360) + 360) % 360;
+    return {
+      ringId: 11 + i,
+      name: r.title,
+      normalizedProgress: clamp01(angle / 360),
+      activeSegment: {
+        id: r.systemId,
+        name: r.primary.length > 42 ? `${r.primary.slice(0, 40)}…` : r.primary,
+        symbol: r.icon,
+        numericalValue: Math.floor(angle / 30),
+        metadata: [r.secondary, r.accuracy].filter(Boolean).join(" · "),
+      },
+    };
+  });
+}
+
 /**
  * Calculate normalized cosmic clock rings for a single instant.
- * Rings are ordered innermost (1 = seconds) → outermost (10).
+ * Rings are ordered innermost (1 = seconds) → outermost (10), then optional Atlas rings.
  */
-export function calculateCosmicTime(date: Date): CosmicTimeSnapshot {
+export function calculateCosmicTime(
+  date: Date,
+  opts?: { atlasReadings?: CycleReading[] },
+): CosmicTimeSnapshot {
   const instant = new Date(date.getTime());
+  const rings: ClockRingData[] = [
+    buildMillisecondsRing(instant),
+    buildSecondsRing(instant),
+    buildMinutesRing(instant),
+    buildHoursRing(instant),
+    buildKeRing(instant),
+    buildShiRing(instant),
+    buildLunarRing(instant),
+    buildSolarYearRing(instant),
+    buildTzolkinRing(instant),
+    buildZodiacRing(instant),
+    buildSexagenaryRing(instant),
+  ];
+  if (opts?.atlasReadings?.length) {
+    rings.push(...atlasReadingsToClockRings(opts.atlasReadings));
+  }
 
   return {
     date: instant,
-    rings: [
-      buildMillisecondsRing(instant),
-      buildSecondsRing(instant),
-      buildMinutesRing(instant),
-      buildHoursRing(instant),
-      buildKeRing(instant),
-      buildShiRing(instant),
-      buildLunarRing(instant),
-      buildSolarYearRing(instant),
-      buildTzolkinRing(instant),
-      buildZodiacRing(instant),
-      buildSexagenaryRing(instant),
-    ],
+    rings,
   };
 }
 
@@ -545,6 +574,7 @@ export function ringCycleFraction(ring: ClockRingData): number {
     case 10:
       return normalizedProgress;
     default:
+      // Atlas plugin rings (11+) — angle already encoded in normalizedProgress
       return normalizedProgress;
   }
 }

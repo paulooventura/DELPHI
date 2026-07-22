@@ -6,6 +6,7 @@ import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
+import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
 import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
@@ -29,8 +30,19 @@ import { EmfReader } from "../components/EmfReader";
 import { SensorArray } from "../components/SensorArray";
 import { CosmicNow } from "../components/CosmicNow";
 import { MomentReading } from "../components/MomentReading";
+import { AtlasPanel } from "../components/AtlasPanel";
+import { NowStrip } from "../components/NowStrip";
 import { BottomNav, type AppTab } from "../components/BottomNav";
 import { PauloVenturaHub } from "../components/PauloVenturaHub";
+import {
+  defaultEnabledIds,
+  loadPreferences,
+  nowStripReadings,
+  resolveWorldCycles,
+  savePreferences,
+  synthesizeMultiVoice,
+  type WorldCyclePreferences,
+} from "../lib/worldCycles";
 import { WIX_HOME } from "../lib/site";
 import { SkyCompass } from "../components/SkyCompass";
 import { SkyCatalog } from "../components/SkyCatalog";
@@ -120,6 +132,7 @@ type Signals = {
   pitch: number | null;
   network: string | null;
   emfUt: number | null;
+  emfMethod: string | null;
 };
 
 function emptySignals(partial: Partial<Signals> = {}): Signals {
@@ -136,6 +149,7 @@ function emptySignals(partial: Partial<Signals> = {}): Signals {
     pitch: null,
     network: null,
     emfUt: null,
+    emfMethod: null,
     ...partial,
   };
 }
@@ -154,6 +168,7 @@ function applyGeoFix(prev: Signals | null, fix: GeoFix): Signals {
     pitch: prev?.pitch ?? null,
     network: prev?.network ?? null,
     emfUt: prev?.emfUt ?? null,
+    emfMethod: prev?.emfMethod ?? null,
   };
 }
 
@@ -249,6 +264,7 @@ export default function Home() {
   const pinchZoomRef = useRef(1);
   const headingCleanupRef = useRef<(() => void) | null>(null);
   const locationCleanupRef = useRef<(() => void) | null>(null);
+  const emfCleanupRef = useRef<(() => void) | null>(null);
   const liveAttitudeRef = useRef({ view: altAzToEnu(180, 0), roll: 0 });
   const attitudeHudMs = useRef(0);
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
@@ -257,30 +273,41 @@ export default function Home() {
   const [showLaunch, completeLaunch] = useShowLaunch();
   useScreenWakeLock(true);
 
-  // ── Tabbed app shell (Clock · Sky · Moment · Senses · Oracle)
+  // ── Tabbed app shell (Clock · Sky · Moment · Atlas · Senses · Oracle)
+  const isAppTab = (v: string | null): v is AppTab =>
+    v === "clock" || v === "sky" || v === "moment" || v === "atlas" || v === "senses" || v === "oracle";
+
   const [tab, setTab] = useState<AppTab>(() => {
     try {
       const raw = localStorage.getItem("cp-active-tab");
-      return raw === "clock" || raw === "sky" || raw === "moment" || raw === "senses" || raw === "oracle" ? raw : "clock";
+      return isAppTab(raw) ? raw : "clock";
     } catch {
       return "clock";
     }
   });
 
+  const [cyclePrefs, setCyclePrefs] = useState<WorldCyclePreferences>(() =>
+    loadPreferences(defaultEnabledIds()),
+  );
+
   useEffect(() => {
     const q = new URLSearchParams(window.location.search).get("tab");
-    if (q === "clock" || q === "sky" || q === "moment" || q === "senses" || q === "oracle") {
-      setTab(q);
-    }
+    if (isAppTab(q)) setTab(q);
   }, []);
   useEffect(() => {
     try { localStorage.setItem("cp-active-tab", tab); } catch {}
   }, [tab]);
 
+  const updateCyclePrefs = useCallback((next: WorldCyclePreferences) => {
+    setCyclePrefs(next);
+    savePreferences(next);
+  }, []);
+
   const TAB_SUBTITLE: Record<AppTab, string> = {
     clock: "COSMIC CLOCK",
     sky: "ASTRONOMICAL GUIDANCE",
     moment: "THE MOMENT",
+    atlas: "WORLD CYCLES",
     senses: "ORACLE SENSES",
     oracle: "UNVEILING THE ORACLE",
   };
@@ -374,6 +401,18 @@ export default function Home() {
     try { localStorage.setItem(RESEARCH_TIER_KEY, tier); } catch {}
   }, [tier]);
 
+  const snapshotOpts = useMemo(
+    () => ({
+      enabledIds: cyclePrefs.enabledIds,
+      mayaCorrelation: cyclePrefs.mayaCorrelation,
+      ayanamsa: cyclePrefs.ayanamsa,
+      lat: signals?.lat ?? undefined,
+      lon: signals?.lon ?? undefined,
+      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }),
+    [cyclePrefs, signals?.lat, signals?.lon],
+  );
+
   // ── Fetch cycles
   const loadCycles = useCallback(async (lat?: number, lon?: number) => {
     const tz = encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone);
@@ -385,8 +424,12 @@ export default function Home() {
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null);
     const weather = data?.weather as CycleSnapshot["weather"] | undefined;
-    setCycles(getCycleSnapshot(new Date(), weather));
-  }, []);
+    setCycles(getCycleSnapshot(new Date(), weather, {
+      ...snapshotOpts,
+      lat: lat ?? snapshotOpts.lat,
+      lon: lon ?? snapshotOpts.lon,
+    }));
+  }, [snapshotOpts]);
 
   useEffect(() => { loadCyclesRef.current = loadCycles; }, [loadCycles]);
 
@@ -394,8 +437,30 @@ export default function Home() {
 
   // Recompute calendar layers every minute (preserve latest weather).
   useEffect(() => {
-    setCycles(prev => getCycleSnapshot(new Date(), prev?.weather));
-  }, [minuteKey]);
+    setCycles(prev => getCycleSnapshot(new Date(), prev?.weather, snapshotOpts));
+  }, [minuteKey, snapshotOpts]);
+
+  const worldNow = useMemo(() => {
+    const date = cosmic?.now ?? animNow;
+    return resolveWorldCycles({
+      date,
+      timeZone: snapshotOpts.timeZone,
+      lat: snapshotOpts.lat,
+      lon: snapshotOpts.lon,
+      mayaCorrelation: snapshotOpts.mayaCorrelation,
+      ayanamsa: snapshotOpts.ayanamsa,
+    });
+  }, [minuteKey, cosmic?.now, animNow, snapshotOpts]);
+
+  const stripReadings = useMemo(
+    () => nowStripReadings(worldNow, cyclePrefs.enabledIds),
+    [worldNow, cyclePrefs.enabledIds],
+  );
+
+  const multiVoice = useMemo(
+    () => synthesizeMultiVoice(worldNow, cyclePrefs.enabledIds),
+    [worldNow, cyclePrefs.enabledIds],
+  );
 
   // ── Refresh cadence: keep sky/cycles current every minute. Heading is a
   // continuous live stream (see startHeadingWatch), not a periodic sample.
@@ -411,6 +476,42 @@ export default function Home() {
     }, 60000);
     return () => clearInterval(id);
   }, [signals?.lat, signals?.lon, signals?.network, signals?.emfUt, toggles, loadCycles]);
+
+  // Live EMF stream — keeps the gauge and clock hub honest while the toggle is on.
+  useEffect(() => {
+    emfCleanupRef.current?.();
+    emfCleanupRef.current = null;
+    if (!toggles.emf) return;
+
+    if (!magnetometerSupported()) {
+      setSignals(prev => ({
+        ...(prev ?? emptySignals()),
+        emfMethod: "magnetometer-api-unavailable",
+      }));
+      return;
+    }
+
+    const sub = watchMagnetometer(
+      (ut) => {
+        setSignals(prev => ({
+          ...(prev ?? emptySignals()),
+          emfUt: Number(ut.toFixed(1)),
+          emfMethod: "magnetometer",
+        }));
+      },
+      (reason) => {
+        setSignals(prev => ({
+          ...(prev ?? emptySignals()),
+          emfMethod: reason === "NotAllowedError" ? "magnetometer-denied" : "magnetometer-api-unavailable",
+        }));
+      },
+    );
+    emfCleanupRef.current = () => sub.stop();
+    return () => {
+      emfCleanupRef.current?.();
+      emfCleanupRef.current = null;
+    };
+  }, [toggles.emf]);
 
   // ── Capture one-shot signals: each piece is requested only when its toggle is on.
   // Heading is excluded here — it's a continuous stream, see startHeadingWatch.
@@ -468,6 +569,7 @@ export default function Home() {
           ...next,
           network: t.network ? network.effectiveType : next.network,
           emfUt: t.emf ? emf.magneticFieldUt : next.emfUt,
+          emfMethod: t.emf ? emf.method : next.emfMethod,
         };
       });
       if (t.location && location?.latitude != null && location.longitude != null) {
@@ -601,7 +703,7 @@ export default function Home() {
       setSignals(prev => {
         if (!prev) return prev;
         if (key === "network") return { ...prev, network: null };
-        if (key === "emf") return { ...prev, emfUt: null };
+        if (key === "emf") return { ...prev, emfUt: null, emfMethod: null };
         return prev;
       });
     } else {
@@ -1030,6 +1132,9 @@ export default function Home() {
                   lat={mapLat}
                   lon={mapLon}
                   cosmic={cosmic}
+                  atlasReadings={stripReadings.filter((r) =>
+                    ["hijri", "hebrew", "persian", "ethiopian"].includes(r.systemId),
+                  )}
                   liveCoords={hasLiveLocation && toggles.location}
                   usingFallback={!hasLiveLocation && toggles.location}
                   locationDenied={locDenied}
@@ -1046,6 +1151,11 @@ export default function Home() {
                   pitchDeg={signals?.pitch ?? null}
                   emfUt={signals?.emfUt ?? null}
                 />
+                {stripReadings.length > 0 && (
+                  <div className="cp-clock-nowstrip">
+                    <NowStrip readings={stripReadings} />
+                  </div>
+                )}
               </div>
             )}
             {tab === "sky" && (
@@ -1288,6 +1398,8 @@ export default function Home() {
             snapshot={cycles}
             now={cosmic?.now ?? animNow}
             hasLocation={hasLiveLocation}
+            multiVoice={multiVoice}
+            nowReadings={stripReadings}
             onRequestLocation={() => {
               if (toggles.heading || toggles.location) void startOrientationWatch();
               void captureSensors();
@@ -1295,10 +1407,19 @@ export default function Home() {
           />
         )}
 
+        {/* ── ATLAS (World Cycle registry + presets) ──────────────────────── */}
+        {tab === "atlas" && (
+          <div className="cp-atlas-wrap">
+            <NowStrip readings={stripReadings} />
+            <AtlasPanel prefs={cyclePrefs} onChange={updateCyclePrefs} />
+          </div>
+        )}
+
         {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}
         {tab === "senses" && (
         <>
           <div className="cp-senses-cosmic">
+          <NowStrip readings={stripReadings} />
           <CosmicNow
             now={animNow}
             lat={mapLat}
@@ -1316,6 +1437,8 @@ export default function Home() {
             className="cp-card"
             emfUt={toggles.emf ? signals?.emfUt ?? null : null}
             live={toggles.emf && signals?.emfUt != null}
+            method={toggles.emf ? signals?.emfMethod ?? null : null}
+            latDeg={signals?.lat ?? null}
           />
           <SensorArray
             className="cp-card"

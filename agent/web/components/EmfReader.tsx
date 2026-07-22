@@ -1,27 +1,36 @@
 "use client";
 
 import { useMemo } from "react";
+import { interpretEmf } from "../lib/emfField";
 
 export type EmfReaderProps = {
   emfUt: number | null;
   live?: boolean;
-  method?: string;
+  method?: string | null;
+  latDeg?: number | null;
   className?: string;
 };
 
-/** Earth's field ~25–65 µT; typical phone magnetometer range. */
-function emfLevel(ut: number): { label: string; pct: number; color: string } {
-  if (ut < 25) return { label: "Quiet", pct: (ut / 25) * 35, color: "#60a5fa" };
-  if (ut < 45) return { label: "Earth-normal", pct: 35 + ((ut - 25) / 20) * 35, color: "#34d399" };
-  if (ut < 70) return { label: "Elevated", pct: 70 + ((ut - 45) / 25) * 20, color: "#fbbf24" };
-  return { label: "Strong", pct: Math.min(100, 90 + (ut - 70) / 2), color: "#f87171" };
-}
-
-export function EmfReader({ emfUt, live = false, method, className = "" }: EmfReaderProps) {
+export function EmfReader({
+  emfUt,
+  live = false,
+  method,
+  latDeg = null,
+  className = "",
+}: EmfReaderProps) {
   const reading = useMemo(() => {
     if (emfUt == null || !Number.isFinite(emfUt)) return null;
-    return { ut: emfUt, ...emfLevel(emfUt) };
-  }, [emfUt]);
+    return interpretEmf(emfUt, latDeg);
+  }, [emfUt, latDeg]);
+
+  const methodHint =
+    method === "magnetometer-api-unavailable"
+      ? "This browser has no magnetometer API — try Chrome on Android."
+      : method === "magnetometer-denied"
+        ? "Permission denied — allow motion / magnetic sensors for live EMF."
+        : method === "magnetometer-timeout"
+          ? "Sensor timed out — wake sensors again with the phone still."
+          : method?.replace(/-/g, " ") ?? null;
 
   return (
     <section className={["cp-emf-reader", className].filter(Boolean).join(" ")} aria-label="EMF field reader">
@@ -78,7 +87,7 @@ export function EmfReader({ emfUt, live = false, method, className = "" }: EmfRe
       <p className="cp-emf-value">
         {reading ? (
           <>
-            <span className="cp-emf-number">{reading.ut.toFixed(2)}</span>
+            <span className="cp-emf-number" style={{ color: reading.color }}>{reading.ut.toFixed(1)}</span>
             <span className="cp-emf-unit">µT</span>
           </>
         ) : (
@@ -87,11 +96,28 @@ export function EmfReader({ emfUt, live = false, method, className = "" }: EmfRe
       </p>
 
       <p className="cp-emf-label">
-        {reading ? reading.label : "Enable EMF sensor to read ambient magnetic field"}
+        {reading ? reading.label : "Turn on EMF to taste the ambient magnetic field"}
       </p>
 
-      {method && (
-        <p className="cp-emf-method">via {method.replace(/-/g, " ")}</p>
+      {reading && reading.expectedUt != null && reading.anomalyPct != null && (
+        <p className="cp-emf-baseline">
+          Earth ~{reading.expectedUt.toFixed(0)} µT here
+          <span className="cp-emf-anomaly">
+            {" · "}
+            {reading.anomalyPct >= 0 ? "+" : ""}
+            {reading.anomalyPct.toFixed(0)}% vs calm Earth
+          </span>
+        </p>
+      )}
+
+      <p className="cp-emf-guidance">
+        {reading
+          ? reading.guidance
+          : "When live, this keeps compass honest and warns when metal is bending your sky heading."}
+      </p>
+
+      {methodHint && (
+        <p className="cp-emf-method">{methodHint}</p>
       )}
     </section>
   );

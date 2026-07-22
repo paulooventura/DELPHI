@@ -1,11 +1,12 @@
 "use client";
 
-export type AppTab = "clock" | "sky" | "moment" | "senses" | "oracle";
+export type AppTab = "clock" | "sky" | "moment" | "atlas" | "senses" | "oracle";
 
 const TABS: { id: AppTab; label: string; glyph: string; hint: string }[] = [
   { id: "clock",  label: "Clock",  glyph: "◴", hint: "Cosmic clock wheels" },
   { id: "sky",    label: "Sky",    glyph: "✦", hint: "Live sky map & compass" },
   { id: "moment", label: "Moment", glyph: "◎", hint: "Essence of the moment" },
+  { id: "atlas",  label: "Atlas",  glyph: "🌐", hint: "World cycle registries" },
   { id: "senses", label: "Senses", glyph: "◉", hint: "Device sensor array" },
   { id: "oracle", label: "Oracle", glyph: "❖", hint: "Research console" },
 ];
@@ -18,7 +19,7 @@ export function BottomNav({
   onChange: (tab: AppTab) => void;
 }) {
   return (
-    <nav className="cp-tabbar" role="tablist" aria-label="DELPHI sections">
+    <nav className="cp-tabbar cp-tabbar-6" role="tablist" aria-label="DELPHI sections">
       {TABS.map(t => {
         const active = t.id === tab;
         return (

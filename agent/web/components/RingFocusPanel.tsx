@@ -12,10 +12,10 @@ const RING_NAMES: Record<string, string> = {
   day: "Day of Month",
   weekday: "Weekday",
   "chinese-sign": "Chinese Zodiac",
-  tzolkin: "Tzolkin",
+  tzolkin: "Mayan Tribe",
   moon: "Moon Phase",
   kin: "Mayan Kin",
-  wavespell: "Wavespell",
+  wavespell: "Creation Tone",
   castle: "Mayan Castle",
   "greg-month": "Gregorian Month",
   zodiac: "Western Zodiac",
@@ -65,7 +65,19 @@ function ringDetail(
       rows.push({ label: "Sign", value: `${cycles.chineseZodiac.symbol} ${cycles.chineseZodiac.animal}` });
       break;
     case "tzolkin":
-      rows.push({ label: "Kin", value: `${cycles.tzolkin.kin} · ${cycles.tzolkin.sign}` }, { label: "Tone", value: String(cycles.tzolkin.tone) });
+      rows.push(
+        { label: "Tribe", value: `${cycles.galactic.tribe.color} ${cycles.galactic.tribe.name}` },
+        { label: "Maya sign", value: cycles.tzolkin.sign },
+        { label: "Kin", value: String(cycles.tzolkin.kin) },
+        { label: "Tribe codes", value: `${cycles.galactic.tribe.code.power} · ${cycles.galactic.tribe.code.action} · ${cycles.galactic.tribe.code.essence}` },
+      );
+      break;
+    case "wavespell":
+      rows.push(
+        { label: "Tone", value: `${cycles.galactic.tone.tone} ${cycles.galactic.tone.name}` },
+        { label: "Tone codes", value: `${cycles.galactic.tone.code.power} · ${cycles.galactic.tone.code.action} · ${cycles.galactic.tone.code.essence}` },
+        { label: "Wavespell", value: String(cycles.mayan.wavespell) },
+      );
       break;
     case "moon":
       rows.push({ label: "Phase", value: `${cycles.lunar.emoji} ${cycles.lunar.phase}` }, { label: "Illumination", value: `${(cycles.lunar.fraction * 100).toFixed(1)}%` });

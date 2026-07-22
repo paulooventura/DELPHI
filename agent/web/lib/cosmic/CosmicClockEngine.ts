@@ -133,7 +133,13 @@ export class CosmicClockEngine {
         angleDeg: normalizeDeg(((cycles.tzolkin.kin - 1) / 260) * 360),
         phase: cycles.tzolkin.kin / 260,
         color: "#7c3aed",
-        meta: { kin: cycles.tzolkin.kin, sign: cycles.tzolkin.sign },
+        meta: {
+          kin: cycles.tzolkin.kin,
+          sign: cycles.tzolkin.sign,
+          tone: cycles.galactic.tone.name,
+          tribe: `${cycles.galactic.tribe.color} ${cycles.galactic.tribe.name}`,
+          affirmation: cycles.galactic.affirmation,
+        },
       },
       {
         id: "chinese-zodiac",

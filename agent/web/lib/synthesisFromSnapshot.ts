@@ -1,6 +1,7 @@
 // Deterministic zeitgeist from the main DELPHI cycle engine — one phrase blending all cultural layers.
 
 import type { CycleSnapshot, WeatherInfo } from "./cycleSystems";
+import { formatCodeWords } from "./galacticFrequency";
 import type { MomentReading } from "../types/cosmos";
 
 const SIGN_QUALITY: Record<string, { element: string; quality: string; verb: string; shadow: string }> = {
@@ -46,29 +47,6 @@ const CHINESE_MOOD: Record<string, string> = {
   Pig: "generous completion",
 };
 
-const TZOLKIN_ESSENCE: Record<string, string> = {
-  Imix: "primordial nurture",
-  Ik: "windborne spirit",
-  Akbal: "night temple",
-  Kan: "serpent life-force",
-  Chikchan: "serpent wisdom",
-  Kimi: "ancestral death and renewal",
-  Manik: "healing hand",
-  Lamat: "star harvest",
-  Muluk: "offering waters",
-  Ok: "dog loyalty",
-  Chuen: "monkey artistry",
-  Eb: "human road",
-  Ben: "reed pillar",
-  Ix: "jaguar magic",
-  Men: "eagle mind",
-  Kib: "owl vigil",
-  Kaban: "earthquake shift",
-  Etznab: "flint mirror",
-  Kawak: "storm catharsis",
-  Ajaw: "lordly completion",
-};
-
 const ELEMENT_MOOD: Record<string, string> = {
   Wood: "growing",
   Fire: "flaring",
@@ -99,18 +77,19 @@ export function synthesizeZeitgeist(snapshot: CycleSnapshot, date: Date): string
   const moon = MOON_MOOD[snapshot.lunar.phase] ?? MOON_MOOD[snapshot.lunar.phase.replace(" Moon", "")] ?? "lunar drift";
   const chinese = CHINESE_MOOD[snapshot.chineseZodiac.animal] ?? snapshot.chineseZodiac.animal.toLowerCase();
   const element = ELEMENT_MOOD[snapshot.chineseZodiac.element] ?? snapshot.chineseZodiac.element.toLowerCase();
-  const tz = TZOLKIN_ESSENCE[snapshot.tzolkin.sign] ?? snapshot.tzolkin.sign;
-  const tone = snapshot.tzolkin.tone;
+  const galactic = snapshot.galactic;
+  const tone = galactic.tone;
+  const tribe = galactic.tribe;
   const season = snapshot.season.name.toLowerCase();
   const castle = snapshot.mayan.castleName;
   const weather = weatherMood(snapshot.weather);
   const seed = Math.floor(date.getTime() / 60000);
 
   const phrases = [
-    `${sq.quality} meets ${moon}: ${element} ${snapshot.chineseZodiac.animal} energy (${chinese}) and Kin ${snapshot.tzolkin.kin} ${tz} (tone ${tone}) pull you to ${sq.verb} — ${season} in the ${castle},${weather ? ` ${weather},` : ""} a ${sq.element} zeitgeist.`,
-    `The hour wears ${sign} like a ${sq.element} cloak — ${moon}, while the ${snapshot.chineseZodiac.symbol} ${snapshot.chineseZodiac.animal} whispers ${chinese}; Tzolk'in ${snapshot.tzolkin.sign} says ${tz}; ${sq.verb} before the moment turns.`,
-    `Zeitgeist: ${sq.verb} with ${sq.quality} — Moon ${snapshot.lunar.phase.toLowerCase()}, ${element} ${chinese}, Mayan ${castle}, Chinese ${snapshot.chineseZodiac.yinYang} ${snapshot.chineseZodiac.animal}, tone-${tone} ${tz}.`,
-    `Between ${season} and ${castle}, ${sign}'s ${sq.quality} collides with ${moon}; the ${snapshot.chineseZodiac.animal} year-spirit offers ${chinese}; Kin ${snapshot.tzolkin.kin} (${tz}) marks the pulse — ${sq.verb}.`,
+    `${sq.quality} meets ${moon}: ${element} ${snapshot.chineseZodiac.animal} energy (${chinese}) and Kin ${galactic.kin} ${tribe.color} ${tribe.name} (${tone.name} tone — ${tone.code.power}) pull you to ${sq.verb} — ${season} in the ${castle},${weather ? ` ${weather},` : ""} a ${sq.element} zeitgeist.`,
+    `The hour wears ${sign} like a ${sq.element} cloak — ${moon}, while the ${snapshot.chineseZodiac.symbol} ${snapshot.chineseZodiac.animal} whispers ${chinese}; 13:20 says ${tone.code.action} through ${tribe.code.action}; ${sq.verb} before the moment turns.`,
+    `Zeitgeist: ${sq.verb} with ${sq.quality} — Moon ${snapshot.lunar.phase.toLowerCase()}, ${element} ${chinese}, Mayan ${castle}, Tone ${tone.tone} ${tone.name} (${formatCodeWords(tone.code)}), ${tribe.color} ${tribe.name} (${formatCodeWords(tribe.code)}).`,
+    `Between ${season} and ${castle}, ${sign}'s ${sq.quality} collides with ${moon}; Kin ${galactic.kin} marks the 13:20 pulse — ${galactic.affirmation}`,
   ];
 
   return pick(phrases, seed);
@@ -129,7 +108,7 @@ export function synthesizeFromSnapshot(snapshot: CycleSnapshot, date: Date): Mom
     tags: [
       signName,
       snapshot.lunar.phase,
-      snapshot.tzolkin.sign,
+      snapshot.galactic.label,
       `${snapshot.chineseZodiac.element} ${snapshot.chineseZodiac.animal}`,
     ].filter(Boolean),
   };

@@ -391,7 +391,10 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
   const uid = useId().replace(/:/g, "");
   const wheelRings = useMemo(() => {
     const byId = new Map(snapshot.rings.map(r => [r.ringId, r]));
-    return WHEEL_VISIBLE_RING_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+    const core = WHEEL_VISIBLE_RING_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+    // Up to 4 Atlas cultural rings (ids 11+) from World Cycle registry
+    const atlas = snapshot.rings.filter(r => r.ringId >= 11).slice(0, 4);
+    return [...core, ...atlas];
   }, [snapshot.rings]);
 
   const fractionSprings = useRingFractionSprings(wheelRings);
