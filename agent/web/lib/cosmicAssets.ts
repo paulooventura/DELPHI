@@ -387,29 +387,29 @@ export function ringSegmentVisual(ringId: number, index: number, divisions: numb
       };
     }
     case 1: {
-      // Seconds 0–59
+      // Seconds 00–59 (padded so digits stay aligned in-slot)
       const major = i % 5 === 0;
       return {
         fill: i % 2 === 0 ? "#4a3a1c" : "#241c12",
         stroke: major ? "#e8c86a" : "#8a6b28",
-        label: String(i),
+        label: String(i).padStart(2, "0"),
       };
     }
     case 2: {
-      // Minutes 0–59
+      // Minutes 00–59
       const major = i % 5 === 0;
       return {
         fill: i % 2 === 0 ? "#523e1c" : "#261e12",
         stroke: major ? "#d4af37" : "#7a5c22",
-        label: String(i),
+        label: String(i).padStart(2, "0"),
       };
     }
     case 3: {
-      // Hours 0–23 (24h labels — no a/p suffix)
+      // Hours 00–23 (24h labels — no a/p suffix)
       return {
         fill: i % 2 === 0 ? "#4a3818" : "#221810",
         stroke: i % 3 === 0 ? "#e8c86a" : "#6a5420",
-        label: String(i),
+        label: String(i).padStart(2, "0"),
       };
     }
     case 4: {

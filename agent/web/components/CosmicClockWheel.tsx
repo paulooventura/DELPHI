@@ -243,15 +243,22 @@ function CosmicSegmentRing({
   const toothCount = Math.max(18, Math.min(48, Math.round(outer / 9)));
   const teeth = rimGearTeeth(CX, CY, outer, toothCount, Math.min(4.2, Math.max(1.8, band * 0.28)));
   const arcLen = mid * (Math.PI / divisions);
+  const isDense = divisions >= 24;
   const baseFont = Math.max(
     3.2,
-    Math.min(band * 0.38, arcLen * 0.65, divisions > 48 ? 5 : divisions > 24 ? 6.5 : 8.5),
+    Math.min(
+      band * (isDense ? 0.42 : 0.38),
+      arcLen * (isDense ? 0.55 : 0.65),
+      divisions > 48 ? 5 : divisions > 24 ? 6.5 : 8.5,
+    ),
   );
   const baseIcon = Math.max(5, Math.min(band * 0.55, arcLen * 0.8, 12));
-  const preferIcon = divisions <= 20;
+  const preferIcon = divisions <= 20 && ring.ringId >= 5;
   const meshDir = wheelIndex % 2 === 0 ? "cw" : "ccw";
-  // How many slots stay readable around the playhead
-  const focusSlots = Math.max(1.2, Math.min(3.2, divisions * 0.045));
+  // Dense rings (sec/min/hr): keep focus tight so labels stay inside their slot
+  const focusSlots = isDense
+    ? 0.85
+    : Math.max(1.2, Math.min(3.2, divisions * 0.045));
 
   const segments = [];
   for (let i = 0; i < divisions; i++) {
@@ -268,15 +275,34 @@ function CosmicSegmentRing({
     const edgeFade = Math.max(0.06, 1 - dist / (divisions * 0.42));
     const markOpacity = isActive ? 1 : 0.1 + focusT * 0.55 + edgeFade * 0.12;
     const plateOpacity = isActive ? 1 : 0.22 + focusT * 0.55 + edgeFade * 0.15;
-    const zoom = isActive ? 1.85 : 1 + focusT * 0.55;
-    const fontSize = Math.min(band * 0.92, baseFont * zoom * (isActive && ring.ringId === 1 ? 1.25 : 1));
+    // Cap zoom on dense rings so digits never spill into neighbors
+    const zoom = isActive
+      ? isDense
+        ? 1.08
+        : 1.85
+      : isDense
+        ? 1
+        : 1 + focusT * 0.55;
+    const slotArcPx = mid * ((slotWidth * Math.PI) / 180);
+    const fontSize = Math.min(
+      band * (isDense ? 0.5 : 0.92),
+      slotArcPx * (isDense ? 0.78 : 0.9),
+      baseFont * zoom * (isActive && ring.ringId === 1 && !isDense ? 1.25 : 1),
+    );
     const iconSize = Math.min(band * 0.95, baseIcon * zoom);
     const ang = tickAngle(centerDeg);
     const lx = CX + Math.cos(ang) * mid;
     const ly = CY + Math.sin(ang) * mid;
     const sectorPath = donutSectorPath(CX, CY, inner + 0.35, outer - 0.35, start, end);
+    const majorTick =
+      divisions >= 60 ? i % 5 === 0 : divisions === 24 ? true : i % Math.max(1, Math.floor(divisions / 12)) === 0;
     const showIcon = preferIcon && Boolean(vis.graphicKey) && (isActive || focusT > 0.15);
-    const showText = Boolean(vis.label) && (isActive || focusT > 0.08 || edgeFade > 0.35);
+    // Dense rings: only active + majors — keeps numbers crisp and in-slot
+    const showText = Boolean(vis.label) && (
+      isDense
+        ? isActive || majorTick
+        : isActive || focusT > 0.08 || edgeFade > 0.35
+    );
 
     segments.push(
       <g
@@ -316,7 +342,7 @@ function CosmicSegmentRing({
         {showText && (
           <text
             x={lx}
-            y={showIcon && !isActive ? ly + iconSize * 0.28 : ly}
+            y={ly}
             textAnchor="middle"
             dominantBaseline="middle"
             fontSize={fontSize}
@@ -326,8 +352,11 @@ function CosmicSegmentRing({
             opacity={markOpacity}
             style={
               isActive
-                ? { filter: "drop-shadow(0 0 6px rgba(255, 244, 200, 0.85))" }
-                : undefined
+                ? {
+                    filter: "drop-shadow(0 0 6px rgba(255, 244, 200, 0.85))",
+                    fontVariantNumeric: "tabular-nums",
+                  }
+                : { fontVariantNumeric: "tabular-nums" }
             }
           >
             {vis.label}
@@ -394,7 +423,8 @@ function CosmicSegmentRing({
           />
         ))}
       </g>
-      {(() => {
+      {/* Dense sec/min/hr rings skip face captions — numbers stay in-slot; hub shows civil time */}
+      {!isDense && (() => {
         const nameDeg = -78;
         const nameAng = tickAngle(nameDeg);
         const nx = CX + Math.cos(nameAng) * mid;
@@ -425,6 +455,7 @@ function CosmicSegmentRing({
               fill="rgba(240, 226, 176, 0.78)"
               fontFamily={OBS.typography.micro}
               fontWeight={600}
+              style={{ fontVariantNumeric: "tabular-nums" }}
             >
               {nowHint}
             </text>
