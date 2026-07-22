@@ -1132,9 +1132,20 @@ export default function Home() {
                   lat={mapLat}
                   lon={mapLon}
                   cosmic={cosmic}
+                  weather={
+                    cycles?.weather
+                      ? {
+                          emoji: cycles.weather.emoji,
+                          condition: cycles.weather.condition,
+                          tempC: cycles.weather.tempC ?? null,
+                        }
+                      : null
+                  }
+                  /* Atlas calendars stay in NowStrip / Atlas / culture readout — not on the wheel by default */
                   atlasReadings={stripReadings.filter((r) =>
-                    ["hijri", "hebrew", "persian", "ethiopian"].includes(r.systemId),
+                    ["hijri", "hebrew", "persian", "ethiopian", "chinese_lunisolar"].includes(r.systemId),
                   )}
+                  showAtlasOnWheel={false}
                   liveCoords={hasLiveLocation && toggles.location}
                   usingFallback={!hasLiveLocation && toggles.location}
                   locationDenied={locDenied}

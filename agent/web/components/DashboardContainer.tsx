@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CosmicClockWheel } from "./CosmicClockWheel";
+import { CosmicClockWheel, type ClockWeatherTell } from "./CosmicClockWheel";
 import { SpacetimeAnchor } from "./SpacetimeAnchor";
 import { useRealtimeDate } from "../hooks/useRealtimeDate";
 import type { CosmicClockState } from "../lib/cosmic";
@@ -9,6 +9,8 @@ import {
   calculateCosmicTime,
   dashboardLayerNumber,
   DASHBOARD_COSMIC_LAYER_IDS,
+  DASHBOARD_CULTURE_LAYER_IDS,
+  formatHubCivilDate,
   formatHubClockTime,
   formatStandardDigitalTime,
   ringProvenanceNote,
@@ -25,8 +27,11 @@ export type DashboardContainerProps = {
   lat: number;
   lon: number;
   cosmic?: CosmicClockState | null;
-  /** Enabled Atlas calendar readings → outer clock rings + layer cards. */
+  /** Enabled Atlas calendar readings → detail cards (+ optional outer wheel rings). */
   atlasReadings?: CycleReading[];
+  /** Draw Atlas calendars on the visual wheel (capped). Default off — NowStrip / Atlas keep them. */
+  showAtlasOnWheel?: boolean;
+  weather?: ClockWeatherTell | null;
   liveCoords?: boolean;
   usingFallback?: boolean;
   locationDenied?: boolean;
@@ -166,9 +171,7 @@ function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: str
         </div>
       )}
 
-      {!isKe && <ProgressBar value={ring.normalizedProgress} accent={accent} />}
-
-      {isKe && <ProgressBar value={ring.normalizedProgress} accent={accent} />}
+      <ProgressBar value={ring.normalizedProgress} accent={accent} />
 
       <p className="mt-2.5 text-[0.68rem] leading-relaxed text-[var(--ink-dim)]">
         {ring.activeSegment.metadata}
@@ -186,6 +189,8 @@ export function DashboardContainer({
   lon,
   cosmic = null,
   atlasReadings = [],
+  showAtlasOnWheel = false,
+  weather = null,
   liveCoords = false,
   usingFallback = false,
   locationDenied = false,
@@ -209,20 +214,33 @@ export function DashboardContainer({
   );
   const hubTime = formatHubClockTime(currentDate);
   const digitalTime = formatStandardDigitalTime(currentDate);
+  const civilDate = formatHubCivilDate(currentDate);
+  const moonRing = snapshot.rings.find(r => r.ringId === 6);
+  const weatherTell = weather ?? null;
 
-  const cosmicLayers = useMemo(() => {
+  const primaryLayers = useMemo(() => {
     const byId = new Map(snapshot.rings.map(r => [r.ringId, r]));
-    const core = DASHBOARD_COSMIC_LAYER_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+    return DASHBOARD_COSMIC_LAYER_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
+  }, [snapshot.rings]);
+
+  const cultureLayers = useMemo(() => {
+    const byId = new Map(snapshot.rings.map(r => [r.ringId, r]));
+    const culture = DASHBOARD_CULTURE_LAYER_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
     const atlas = snapshot.rings.filter(r => r.ringId >= 11);
-    return [...core, ...atlas];
+    return [...culture, ...atlas];
   }, [snapshot.rings]);
 
   return (
     <div className={["cp-dashboard-layout w-full min-h-0", className].join(" ")}>
-      <section className="cp-dashboard-wheel-zone min-w-0" aria-label="Visual engine">
-        <CosmicClockWheel snapshot={snapshot} showReadout={false} />
+      <section className="cp-dashboard-wheel-zone min-w-0" aria-label="Cosmic clock">
+        <CosmicClockWheel
+          snapshot={snapshot}
+          showReadout={false}
+          weather={weatherTell}
+          showAtlasRings={showAtlasOnWheel}
+        />
         <p className="cp-dashboard-wheel-hint" aria-hidden>
-          Scroll for technical readout
+          Scroll for culture &amp; technical readout
         </p>
       </section>
 
@@ -259,19 +277,45 @@ export function DashboardContainer({
             Location blocked — allow browser access to anchor this moment to your place on Earth.
           </div>
         )}
+
         <div className="cp-dashboard-time-card rounded-xl border border-[var(--gold-dp)]/40 bg-[#0a0a0c]/92 backdrop-blur-md px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
           <p className="text-[0.58rem] font-bold uppercase tracking-[0.22em] text-[var(--gold-dp)]">
-            Standard Time
+            At a glance
           </p>
           <p className="cp-dashboard-digital-time mt-1.5 text-3xl sm:text-4xl font-bold tabular-nums tracking-tight text-[var(--gold-lt)]">
             {digitalTime}
           </p>
-          <p className="mt-1 text-xs text-[var(--ink-dim)]">{hubTime}</p>
+          <p className="mt-1 text-xs text-[var(--ink-dim)]">{civilDate} · {hubTime}</p>
+          <div className="cp-dashboard-civil-row">
+            <span>
+              {moonRing?.activeSegment.symbol ?? "☽"} {moonRing?.activeSegment.name ?? "Moon"}
+            </span>
+            <span>
+              {weatherTell?.emoji && weatherTell.emoji !== "·" ? weatherTell.emoji : "·"}{" "}
+              {weatherTell?.tempC != null ? `${Math.round(weatherTell.tempC)}° ` : ""}
+              {weatherTell?.condition ?? "Weather —"}
+            </span>
+            <span>Day {currentDate.getDate()}</span>
+          </div>
         </div>
 
-        {cosmicLayers.map(ring => (
+        {primaryLayers.map(ring => (
           <LayerReadoutCard key={ring.ringId} ring={ring} hubTime={hubTime} />
         ))}
+
+        {cultureLayers.length > 0 && (
+          <details className="cp-dashboard-culture">
+            <summary className="cp-dashboard-culture-summary">
+              Culture &amp; world calendars
+              <span className="cp-dashboard-culture-count">{cultureLayers.length}</span>
+            </summary>
+            <div className="cp-dashboard-culture-body">
+              {cultureLayers.map(ring => (
+                <LayerReadoutCard key={ring.ringId} ring={ring} hubTime={hubTime} />
+              ))}
+            </div>
+          </details>
+        )}
       </aside>
     </div>
   );

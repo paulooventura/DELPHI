@@ -3,7 +3,9 @@
 import { useId, useMemo, useEffect, useState } from "react";
 import type { ClockRingData, CosmicTimeSnapshot } from "../lib/timeEngine";
 import {
-  formatHubClockTime,
+  formatHubCivilDate,
+  formatHubTime24,
+  WHEEL_ATLAS_RING_CAP,
   WHEEL_VISIBLE_RING_IDS,
 } from "../lib/timeEngine";
 import { OBS } from "../lib/design/observatoryTokens";
@@ -11,16 +13,26 @@ import { ringAccentColor, ringSegmentVisual } from "../lib/cosmicAssets";
 import { CosmicGraphicIcon } from "../lib/cosmicGraphicIcons";
 import { useRingFractionSprings } from "../hooks/useSpringMotion";
 
+export type ClockWeatherTell = {
+  emoji?: string;
+  condition?: string;
+  tempC?: number | null;
+};
+
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
   className?: string;
   showReadout?: boolean;
+  /** Current weather telltale for the hub (optional). */
+  weather?: ClockWeatherTell | null;
+  /** Overlay enabled Atlas calendars on the outer wheel (capped). */
+  showAtlasRings?: boolean;
 };
 
 const CX = 400;
 const CY = 430;
-const HUB_R = 28;
-const INNER_R = 52;
+const HUB_R = 54;
+const INNER_R = 78;
 const OUTER_R = 400;
 
 export const COSMIC_CLOCK_OUTER_RADIUS = OUTER_R;
@@ -29,17 +41,55 @@ const WHEEL_RING_CONFIG: Record<
   number,
   { divisions: number; shortName: string }
 > = {
-  1: { divisions: 60, shortName: "Sec" },
-  2: { divisions: 60, shortName: "Min" },
-  3: { divisions: 24, shortName: "Hr" },
+  1: { divisions: 60, shortName: "Seconds" },
+  2: { divisions: 60, shortName: "Minutes" },
+  3: { divisions: 24, shortName: "Hours" },
   4: { divisions: 100, shortName: "Kè" },
-  5: { divisions: 12, shortName: "Shí" },
+  5: { divisions: 12, shortName: "Dual-hr" },
   6: { divisions: 8, shortName: "Moon" },
   7: { divisions: 4, shortName: "Season" },
-  8: { divisions: 20, shortName: "Tzolk'in" },
+  8: { divisions: 20, shortName: "Kin" },
   9: { divisions: 12, shortName: "Zodiac" },
   10: { divisions: 12, shortName: "60-yr" },
 };
+
+function atlasShortName(name: string): string {
+  const clean = name.replace(/^[^\p{L}\p{N}]+/u, "").trim();
+  const first = clean.split(/[\s·—–-]+/)[0] ?? "Atlas";
+  return first.slice(0, 9);
+}
+
+function ringShortName(ring: ClockRingData): string {
+  if (ring.ringId >= 11) return atlasShortName(ring.name);
+  return WHEEL_RING_CONFIG[ring.ringId]?.shortName ?? ring.name.slice(0, 8);
+}
+
+/** Compact value a stranger can read next to the ring label. */
+function ringNowHint(ring: ClockRingData, date: Date): string {
+  switch (ring.ringId) {
+    case 1:
+      return String(date.getSeconds()).padStart(2, "0");
+    case 2:
+      return String(date.getMinutes()).padStart(2, "0");
+    case 3:
+      return String(date.getHours()).padStart(2, "0");
+    case 6: {
+      const parts = ring.activeSegment.name.split(/\s+/);
+      return parts[0] ?? ring.activeSegment.symbol;
+    }
+    case 7:
+      return `Day ${date.getDate()}`;
+    case 8:
+      return ring.activeSegment.name.split(/\s+/)[0] ?? "Kin";
+    case 9:
+      return ring.activeSegment.name.split(/[·(]/)[0]?.trim().slice(0, 6) ?? ring.activeSegment.symbol;
+    default:
+      if (ring.ringId >= 11) {
+        return ring.activeSegment.name.split(/[·,]/)[0]?.trim().slice(0, 10) ?? ring.activeSegment.symbol;
+      }
+      return ring.activeSegment.symbol;
+  }
+}
 
 function ringRadii(wheelIndex: number, wheelCount: number): { inner: number; outer: number; mid: number } {
   const band = (OUTER_R - INNER_R) / wheelCount;
@@ -173,14 +223,17 @@ function CosmicSegmentRing({
   uid,
   wheelCount,
   cycleFraction,
+  nowHint,
 }: {
   ring: ClockRingData;
   wheelIndex: number;
   uid: string;
   wheelCount: number;
   cycleFraction: number;
+  nowHint: string;
 }) {
-  const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? WHEEL_RING_CONFIG[1]!;
+  const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? { divisions: 12, shortName: ringShortName(ring) };
+  const shortName = ringShortName(ring);
   const { inner, outer, mid } = ringRadii(wheelIndex, wheelCount);
   const band = outer - inner;
   const accent = ringAccentColor(ring.ringId);
@@ -346,22 +399,36 @@ function CosmicSegmentRing({
         const nameAng = tickAngle(nameDeg);
         const nx = CX + Math.cos(nameAng) * mid;
         const ny = CY + Math.sin(nameAng) * mid;
+        const labelSize = Math.max(5.5, Math.min(9, band * 0.36));
         return (
-          <text
-            x={nx}
-            y={ny}
-            textAnchor="middle"
-            dominantBaseline="middle"
-            fontSize={Math.max(5, Math.min(8, band * 0.32))}
-            fill={accent}
-            fillOpacity={0.95}
-            fontFamily={OBS.typography.micro}
-            fontWeight={700}
-            letterSpacing="0.04em"
-            pointerEvents="none"
-          >
-            {cfg.shortName}
-          </text>
+          <g pointerEvents="none">
+            <text
+              x={nx}
+              y={ny - labelSize * 0.45}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={labelSize}
+              fill={accent}
+              fillOpacity={0.98}
+              fontFamily={OBS.typography.micro}
+              fontWeight={700}
+              letterSpacing="0.03em"
+            >
+              {shortName}
+            </text>
+            <text
+              x={nx}
+              y={ny + labelSize * 0.55}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fontSize={Math.max(4.5, labelSize * 0.78)}
+              fill="rgba(240, 226, 176, 0.78)"
+              fontFamily={OBS.typography.micro}
+              fontWeight={600}
+            >
+              {nowHint}
+            </text>
+          </g>
         );
       })()}
       <PlayheadSlot inner={inner} outer={outer} />
@@ -387,22 +454,40 @@ function buildStarfield(count: number): { x: number; y: number; r: number; op: n
   return stars;
 }
 
-export function CosmicClockWheel({ snapshot, className = "", showReadout = false }: CosmicClockWheelProps) {
+export function CosmicClockWheel({
+  snapshot,
+  className = "",
+  showReadout = false,
+  weather = null,
+  showAtlasRings = false,
+}: CosmicClockWheelProps) {
   const uid = useId().replace(/:/g, "");
   const wheelRings = useMemo(() => {
     const byId = new Map(snapshot.rings.map(r => [r.ringId, r]));
     const core = WHEEL_VISIBLE_RING_IDS.map(id => byId.get(id)).filter((r): r is ClockRingData => r != null);
-    // Up to 4 Atlas cultural rings (ids 11+) from World Cycle registry
-    const atlas = snapshot.rings.filter(r => r.ringId >= 11).slice(0, 4);
+    const atlas = showAtlasRings
+      ? snapshot.rings.filter(r => r.ringId >= 11).slice(0, WHEEL_ATLAS_RING_CAP)
+      : [];
     return [...core, ...atlas];
-  }, [snapshot.rings]);
+  }, [snapshot.rings, showAtlasRings]);
 
   const fractionSprings = useRingFractionSprings(wheelRings);
   const stars = useMemo(() => buildStarfield(96), []);
   const wheelCount = wheelRings.length;
   const playheadTop = CY - OUTER_R - 12;
-  const hubTime = formatHubClockTime(snapshot.date);
+  const hubTime = formatHubTime24(snapshot.date);
+  const hubDate = formatHubCivilDate(snapshot.date);
+  const moonRing = snapshot.rings.find(r => r.ringId === 6);
+  const moonGlyph = moonRing?.activeSegment.symbol ?? "☽";
+  const moonLabel = moonRing?.activeSegment.name ?? "Moon";
+  const weatherGlyph = weather?.emoji && weather.emoji !== "·" ? weather.emoji : "·";
+  const weatherLabel = weather?.condition ?? "—";
+  const weatherTemp =
+    weather?.tempC != null && Number.isFinite(weather.tempC)
+      ? `${Math.round(weather.tempC)}°`
+      : null;
   const [tickPulse, setTickPulse] = useState(false);
+  const [howtoOpen, setHowtoOpen] = useState(false);
   const sec = snapshot.date.getSeconds();
 
   useEffect(() => {
@@ -522,6 +607,7 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
               uid={uid}
               wheelCount={wheelCount}
               cycleFraction={fractionSprings.get(ring.ringId) ?? 0}
+              nowHint={ringNowHint(ring, snapshot.date)}
             />
           ))}
         </g>
@@ -568,70 +654,116 @@ export function CosmicClockWheel({ snapshot, className = "", showReadout = false
         </g>
 
         <g className="cp-cosmic-hub cp-steampunk-hub">
-          {/* Balance wheel — rocks each second for a mechanical tick */}
-          <g transform={`translate(${CX}, ${CY - HUB_R - 22})`}>
-            <g className="cp-steampunk-balance">
-              <circle r={9} fill="#1a1510" stroke="#c9a227" strokeWidth={1} />
-              <circle r={3.2} fill="#3d3018" stroke="#e8c86a" strokeWidth={0.6} />
-              <line x1={-8} y1={0} x2={8} y2={0} stroke="#8a6b1e" strokeWidth={1.2} />
-              <line x1={0} y1={-8} x2={0} y2={8} stroke="#8a6b1e" strokeWidth={1.2} />
-            </g>
-          </g>
-          {/* Side flywheels — slow counter-mesh */}
-          <g transform={`translate(${CX - 52}, ${CY - 6})`}>
-            <g className="cp-steampunk-fly-spin-cw">
-              <circle r={11} fill="#15120e" stroke="#8a6b1e" strokeWidth={0.8} />
-              <path d={gearTeethPath(0, 0, 11, 10, 1.6)} fill="none" stroke="#c9a227" strokeWidth={0.55} />
-              <circle r={2.5} fill="#c9a227" />
-            </g>
-          </g>
-          <g transform={`translate(${CX + 52}, ${CY - 6})`}>
-            <g className="cp-steampunk-fly-spin-ccw">
-              <circle r={11} fill="#15120e" stroke="#8a6b1e" strokeWidth={0.8} />
-              <path d={gearTeethPath(0, 0, 11, 10, 1.6)} fill="none" stroke="#c9a227" strokeWidth={0.55} />
-              <circle r={2.5} fill="#c9a227" />
-            </g>
-          </g>
           <path
-            d={gearTeethPath(CX, CY, HUB_R + 10, 16, 2.2)}
+            d={gearTeethPath(CX, CY, HUB_R + 8, 18, 2.4)}
             fill="#2a2218"
             stroke="#c9a227"
-            strokeWidth={0.6}
+            strokeWidth={0.55}
             className="cp-steampunk-escapement"
           />
           <path
-            d={`M ${CX - HUB_R - 10} ${CY} A ${HUB_R + 10} ${HUB_R + 10} 0 0 1 ${CX + HUB_R + 10} ${CY} Z`}
+            d={`M ${CX - HUB_R - 8} ${CY} A ${HUB_R + 8} ${HUB_R + 8} 0 0 1 ${CX + HUB_R + 8} ${CY} Z`}
             fill={`url(#cp-steam-hub-${uid})`}
             stroke="#8a6b1e"
-            strokeWidth={1.5}
+            strokeWidth={1.6}
           />
-          <text
-            x={CX}
-            y={CY - 10}
-            textAnchor="middle"
-            fontSize={8}
-            fill="var(--gold-dp)"
-            fontFamily={OBS.typography.micro}
-            fontWeight={600}
-            letterSpacing="0.08em"
-          >
-            NOW
+          <path
+            d={`M ${CX - HUB_R + 2} ${CY} A ${HUB_R - 2} ${HUB_R - 2} 0 0 1 ${CX + HUB_R - 2} ${CY} Z`}
+            fill="#0c0a08"
+            fillOpacity={0.72}
+            stroke="#c9a227"
+            strokeWidth={0.7}
+            strokeOpacity={0.55}
+          />
+
+          {/* Civil tells — moon + weather flanking the time */}
+          <text x={CX - 28} y={CY - 36} textAnchor="middle" fontSize={14} className="cp-cosmic-hub-tell">
+            {moonGlyph}
+          </text>
+          <text x={CX + 28} y={CY - 36} textAnchor="middle" fontSize={14} className="cp-cosmic-hub-tell">
+            {weatherGlyph}
           </text>
           <text
             x={CX}
-            y={CY + 6}
+            y={CY - 38}
             textAnchor="middle"
-            fontSize={9}
+            fontSize={6}
+            fill="var(--gold-dp)"
+            fontFamily={OBS.typography.micro}
+            fontWeight={600}
+            letterSpacing="0.16em"
+          >
+            LOCAL
+          </text>
+          <text
+            x={CX}
+            y={CY - 14}
+            textAnchor="middle"
+            fontSize={17}
             fill="var(--gold-lt)"
             fontFamily={OBS.typography.micro}
             fontWeight={700}
             className="cp-cosmic-hub-time"
             style={{ fontVariantNumeric: "tabular-nums" }}
           >
-            {hubTime.replace(/^NOW\s/, "")}
+            {hubTime}
+          </text>
+          <text
+            x={CX}
+            y={CY + 2}
+            textAnchor="middle"
+            fontSize={8}
+            fill="rgba(240, 226, 176, 0.9)"
+            fontFamily={OBS.typography.micro}
+            fontWeight={600}
+            className="cp-cosmic-hub-date"
+            style={{ fontVariantNumeric: "tabular-nums" }}
+          >
+            {hubDate}
           </text>
         </g>
       </svg>
+
+      <div className="cp-clock-chrome">
+        <div className="cp-clock-hub-tells" aria-label="Moon and weather">
+          <span className="cp-clock-hub-tell">
+            <span aria-hidden>{moonGlyph}</span> {moonLabel}
+          </span>
+          <span className="cp-clock-hub-tell">
+            <span aria-hidden>{weatherGlyph}</span>{" "}
+            {weatherTemp ? `${weatherTemp} ` : ""}
+            {weatherLabel}
+          </span>
+        </div>
+        <div className="cp-clock-legend" aria-label="Clock rings">
+          {wheelRings.map(ring => (
+            <span key={ring.ringId} className="cp-clock-legend-item">
+              <span
+                className="cp-clock-legend-dot"
+                style={{ background: ringAccentColor(ring.ringId) }}
+                aria-hidden
+              />
+              <span className="cp-clock-legend-name">{ringShortName(ring)}</span>
+              <span className="cp-clock-legend-value">{ringNowHint(ring, snapshot.date)}</span>
+            </span>
+          ))}
+        </div>
+        <button
+          type="button"
+          className={`cp-clock-howto-btn${howtoOpen ? " cp-clock-howto-btn-open" : ""}`}
+          aria-expanded={howtoOpen}
+          onClick={() => setHowtoOpen(v => !v)}
+        >
+          How to read
+        </button>
+        {howtoOpen && (
+          <p className="cp-clock-howto-body">
+            The gold marker at the top is now. Each ring is a cycle — the mark under the marker is the
+            current value. Hub shows local time and date; moon and weather sit just below. Culture
+            calendars live in Atlas and in the readout under the clock.
+          </p>
+        )}
+      </div>
 
       {showReadout && (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 px-3 pb-3 pt-1 border-t border-white/5">

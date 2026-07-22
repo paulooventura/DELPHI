@@ -1943,7 +1943,7 @@ html,body {
 .cp-dashboard-wheel-hint {
   flex: 0 0 auto;
   margin: 0;
-  padding: 0.2rem 0 0.35rem;
+  padding: 0.15rem 0 0.3rem;
   font-size: 0.55rem;
   font-weight: 600;
   letter-spacing: 0.16em;
@@ -1951,6 +1951,148 @@ html,body {
   color: rgba(201, 162, 39, 0.38);
   text-align: center;
   pointer-events: none;
+}
+
+/* Clock chrome — legend + how-to under the mechanical face */
+.cp-clock-chrome {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.28rem;
+  padding: 0.2rem 0.55rem 0.15rem;
+  background: linear-gradient(180deg, rgba(8, 6, 4, 0) 0%, rgba(8, 6, 4, 0.82) 35%, rgba(8, 6, 4, 0.95) 100%);
+}
+.cp-clock-hub-tells {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.35rem 0.85rem;
+  font-size: 0.68rem;
+  color: rgba(232, 220, 180, 0.88);
+}
+.cp-clock-hub-tell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.28rem;
+  max-width: 14rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cp-clock-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.2rem 0.45rem;
+  max-width: 36rem;
+}
+.cp-clock-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.22rem;
+  padding: 0.12rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid rgba(138, 107, 30, 0.35);
+  background: rgba(18, 14, 10, 0.72);
+  font-size: 0.58rem;
+  line-height: 1.2;
+  color: rgba(226, 214, 170, 0.9);
+}
+.cp-clock-legend-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+}
+.cp-clock-legend-name {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: rgba(245, 230, 180, 0.95);
+}
+.cp-clock-legend-value {
+  font-variant-numeric: tabular-nums;
+  color: rgba(200, 188, 150, 0.78);
+}
+.cp-clock-howto-btn {
+  appearance: none;
+  border: 1px solid rgba(138, 107, 30, 0.4);
+  background: rgba(20, 16, 10, 0.65);
+  color: rgba(201, 162, 39, 0.85);
+  font-size: 0.55rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  padding: 0.22rem 0.55rem;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.cp-clock-howto-btn-open,
+.cp-clock-howto-btn:hover {
+  border-color: rgba(201, 162, 39, 0.65);
+  color: rgba(245, 220, 140, 0.95);
+}
+.cp-clock-howto-body {
+  margin: 0;
+  max-width: 28rem;
+  text-align: center;
+  font-size: 0.68rem;
+  line-height: 1.4;
+  color: rgba(200, 188, 150, 0.78);
+  padding: 0 0.35rem 0.15rem;
+}
+.cp-dashboard-civil-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.75rem;
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px solid rgba(201, 162, 39, 0.18);
+  font-size: 0.72rem;
+  color: rgba(226, 214, 170, 0.88);
+}
+.cp-dashboard-culture {
+  border: 1px solid rgba(138, 107, 30, 0.28);
+  border-radius: 12px;
+  background: rgba(10, 10, 14, 0.72);
+  padding: 0.15rem 0.65rem 0.55rem;
+}
+.cp-dashboard-culture-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: pointer;
+  list-style: none;
+  padding: 0.55rem 0.1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(201, 162, 39, 0.88);
+}
+.cp-dashboard-culture-summary::-webkit-details-marker { display: none; }
+.cp-dashboard-culture-count {
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: rgba(200, 188, 150, 0.65);
+  border: 1px solid rgba(138, 107, 30, 0.35);
+  border-radius: 999px;
+  padding: 0.1rem 0.4rem;
+}
+.cp-dashboard-culture-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 0.25rem;
+}
+.cp-cosmic-hub-tell {
+  filter: drop-shadow(0 0 4px rgba(0, 0, 0, 0.55));
+}
+.cp-cosmic-hub-date {
+  letter-spacing: 0.04em;
 }
 
 .cp-dashboard-details-zone {

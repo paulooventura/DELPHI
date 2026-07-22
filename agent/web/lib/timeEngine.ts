@@ -480,11 +480,35 @@ export function formatHubClockTime(date: Date): string {
   return `NOW ${pad2(h12)}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())} ${ampm}`;
 }
 
-/** Rings rendered on the semi-circle wheel (fastest inner → slowest outer). */
-export const WHEEL_VISIBLE_RING_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+/** Compact hub clock `12:34:56` (24h local). */
+export function formatHubTime24(date: Date): string {
+  return `${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
+}
 
-/** Primary dashboard layer cards (cosmic layers 1–6 in the reference). */
-export const DASHBOARD_COSMIC_LAYER_IDS = [4, 5, 6, 7, 8, 9] as const;
+/** Civil date for hub / legend: `Wed · Jul 22`. */
+export function formatHubCivilDate(date: Date): string {
+  const weekday = date.toLocaleDateString("en-US", { weekday: "short" });
+  const month = date.toLocaleDateString("en-US", { month: "short" });
+  return `${weekday} · ${month} ${date.getDate()}`;
+}
+
+/**
+ * Rings rendered on the semi-circle wheel by default (fastest inner → slowest outer).
+ * Civil time + moon + season + zodiac — culture/Atlas stay in detail panels unless enabled.
+ */
+export const WHEEL_VISIBLE_RING_IDS = [1, 2, 3, 6, 7, 9] as const;
+
+/** Tertiary culture rings kept off the default wheel (still in the data snapshot). */
+export const WHEEL_CULTURE_RING_IDS = [4, 5, 8, 10] as const;
+
+/** Max Atlas calendar rings drawn on the visual wheel (rest stay in NowStrip / Atlas). */
+export const WHEEL_ATLAS_RING_CAP = 2;
+
+/** Primary dashboard layer cards — high-signal civil/cosmic first. */
+export const DASHBOARD_COSMIC_LAYER_IDS = [6, 7, 9] as const;
+
+/** Culture layer cards shown under progressive disclosure. */
+export const DASHBOARD_CULTURE_LAYER_IDS = [4, 5, 8, 10] as const;
 
 export function dashboardLayerNumber(ringId: number): number {
   return Math.max(1, ringId - 3);
