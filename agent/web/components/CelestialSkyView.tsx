@@ -1035,6 +1035,11 @@ export function CelestialSkyView({
       const hits: HitTarget[] = [];
       const trackables: Trackable[] = [];
 
+      // Recompute ephemeris every frame — wall clock + GPS fix, not stale React memo.
+      const skyTime = new Date();
+      const liveBodies = computeCelestialBodies(skyTime, lat, lon, observerAltM);
+      const liveMinorBodies = computeMinorBodies(skyTime, lat, lon, observerAltM);
+
       for (const dso of DEEP_SKY_OBJECTS) {
         const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
         if (!pt || pt.alt < 8) continue;
@@ -1047,7 +1052,7 @@ export function CelestialSkyView({
         });
       }
 
-      for (const body of bodies) {
+      for (const body of liveBodies) {
         trackables.push({
           id: body.id,
           kind: "planet" as const,
@@ -1057,7 +1062,7 @@ export function CelestialSkyView({
         });
       }
 
-      for (const mb of minorBodies) {
+      for (const mb of liveMinorBodies) {
         trackables.push({
           id: mb.id,
           kind: mb.kind,
@@ -1261,7 +1266,7 @@ export function CelestialSkyView({
         }
       }
 
-      for (const body of bodies) {
+      for (const body of liveBodies) {
         const [x, y] = project.toXY(body.az, body.alt);
         if (!project.inView(x, y, w, h, 24)) continue;
         drawBody(ctx, body, x, y, body.alt < 0, locked?.id === body.id, texBlend);
@@ -1274,7 +1279,7 @@ export function CelestialSkyView({
         });
       }
 
-      for (const mb of minorBodies) {
+      for (const mb of liveMinorBodies) {
         const [x, y] = project.toXY(mb.az, mb.alt);
         if (!project.inView(x, y, w, h, 16)) continue;
         drawMinorBody(ctx, mb, x, y, mb.alt < 0, locked?.id === mb.id, scale);

@@ -15,7 +15,7 @@ import {
 import { computeCelestialBodies } from "../lib/cosmic/celestialBodies";
 import { fetchDeclinationDeg } from "../lib/magneticDeclination";
 import { geoDistanceM } from "../lib/sensorSmoothing";
-import { altAzToEnu } from "../lib/sphericalView";
+import { altAzToEnu, enuToAltAz } from "../lib/sphericalView";
 import { DashboardContainer } from "../components/DashboardContainer";
 import { COSMIC_CLOCK_OUTER_RADIUS } from "../components/CosmicClockWheel";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
@@ -814,31 +814,43 @@ export default function Home() {
     try { localStorage.setItem(SKY_AZ_OFFSET_KEY, String(v)); } catch { /* ignore */ }
   }
 
+  /** Camera look azimuth for sun/moon alignment — matches live AR sky view, not throttled HUD heading. */
+  function viewAzForCalibration(): number | null {
+    if (hasLiveHeading || hasLivePitch) {
+      return enuToAltAz(liveAttitudeRef.current.view).az;
+    }
+    return manualHeading;
+  }
+
   function calibrateCompassToSun() {
+    const skyNow = cosmic?.now ?? animNow;
     const bodies = computeCelestialBodies(
-      cosmic?.now ?? animNow,
+      skyNow,
       mapLat,
       mapLon,
       signals?.altM ?? 0,
     );
     const sun = bodies.find(b => b.id === "sun");
     if (!sun || sun.alt < 3) return;
-    const heading = hasLiveHeading ? signals!.heading! : manualHeading;
-    const delta = ((sun.az - heading + 540) % 360) - 180;
+    const viewAz = viewAzForCalibration();
+    if (viewAz == null) return;
+    const delta = ((sun.az - viewAz + 540) % 360) - 180;
     applySkyAzOffset(skyAzOffset + delta);
   }
 
   function calibrateCompassToMoon() {
+    const skyNow = cosmic?.now ?? animNow;
     const bodies = computeCelestialBodies(
-      cosmic?.now ?? animNow,
+      skyNow,
       mapLat,
       mapLon,
       signals?.altM ?? 0,
     );
     const moon = bodies.find(b => b.id === "moon");
     if (!moon || moon.alt < 8) return;
-    const heading = hasLiveHeading ? signals!.heading! : manualHeading;
-    const delta = ((moon.az - heading + 540) % 360) - 180;
+    const viewAz = viewAzForCalibration();
+    if (viewAz == null) return;
+    const delta = ((moon.az - viewAz + 540) % 360) - 180;
     applySkyAzOffset(skyAzOffset + delta);
   }
 
