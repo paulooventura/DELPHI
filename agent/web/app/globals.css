@@ -1912,8 +1912,8 @@ html,body {
     0
     calc(4.75rem + var(--safe-b))
     0;
-  scroll-behavior: smooth;
-  scroll-snap-type: y proximity;
+  /* No scroll-snap — it fought live clock updates and yanked the view to the top */
+  scroll-behavior: auto;
 }
 
 .cp-dashboard-layout {
@@ -1937,7 +1937,6 @@ html,body {
   max-height: calc(100dvh - 4.75rem - var(--safe-b) - 0.35rem - var(--safe-t));
   padding: 0;
   overflow: hidden;
-  scroll-snap-align: start;
 }
 
 .cp-dashboard-wheel-hint {
@@ -2106,13 +2105,11 @@ html,body {
     max(0.65rem, env(safe-area-inset-left, 0px))
     1.5rem
     max(0.65rem, env(safe-area-inset-right, 0px));
-  scroll-snap-align: start;
 }
 
 .cp-dashboard-details-zone .cp-dashboard-time-card {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+  position: relative;
+  z-index: 1;
 }
 
 .cp-cosmic-clock-wheel {
