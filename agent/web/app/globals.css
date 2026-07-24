@@ -3210,6 +3210,15 @@ html,body {
   background:
     linear-gradient(160deg, color-mix(in srgb, var(--chip-accent, var(--gold)) 18%, transparent), rgba(8, 10, 16, 0.92));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* Chips are buttons — reset native chrome so they keep looking like chips. */
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cp-now-chip-tappable:active {
+  transform: scale(0.97);
 }
 .cp-now-chip-icon {
   display: block;

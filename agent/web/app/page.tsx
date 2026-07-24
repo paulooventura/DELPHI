@@ -29,7 +29,6 @@ import { OracleLogo } from "../components/oracle/OracleLogo";
 import { ClockAmbience } from "../components/ClockAmbience";
 import { EmfReader } from "../components/EmfReader";
 import { SensorArray } from "../components/SensorArray";
-import { CosmicNow } from "../components/CosmicNow";
 import { MomentReading } from "../components/MomentReading";
 import { AtlasPanel } from "../components/AtlasPanel";
 import { NowStrip } from "../components/NowStrip";
@@ -1444,23 +1443,10 @@ export default function Home() {
         )}
 
         {/* ── ORACLE SENSES (Senses tab) ──────────────────────────────────── */}
+        {/* Intentionally lean: no calendar chip rail or CosmicNow grid here —
+            those live on Clock / Moment / Atlas. This tab is the instrument bank. */}
         {tab === "senses" && (
         <>
-          <div className="cp-senses-cosmic">
-          <NowStrip readings={stripReadings} />
-          <CosmicNow
-            now={animNow}
-            lat={mapLat}
-            lon={mapLon}
-            liveCoords={hasLiveLocation && toggles.location}
-            usingFallback={!hasLiveLocation && toggles.location}
-            altM={signals?.altM ?? null}
-            heading={toggles.compass ? activeHeading : null}
-            liveHeading={hasLiveHeading}
-            cosmic={cosmic}
-            cycles={cycles}
-          />
-          </div>
           <EmfReader
             className="cp-card"
             emfUt={toggles.emf ? signals?.emfUt ?? null : null}

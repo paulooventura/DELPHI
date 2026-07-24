@@ -373,3 +373,6 @@ FodyWeavers.xsd
 
 # DELPHI Unreal Engine export bundle (regenerable via scripts/pack-unreal-export.ps1)
 exports/DELPHI-UE-Export.zip
+
+# Local UI screenshot scratch
+agent/web/.tmp-ui/
