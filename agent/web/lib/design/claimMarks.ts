@@ -40,10 +40,12 @@ export type ClaimMarkStyle = {
   markOpacity: number;
 };
 
-// Gold = the instrument. Violet = authored overlay. Kept as named constants so the
-// "interpretation is a different plane" intent survives a careless edit.
-const INSTRUMENT_GOLD = "#c9a227";
-const AUTHORED_VIOLET = "#c4b5fd";
+// Onyx claim marks — ONE material (cold violet light), three kinds of cut.
+// measurement = lit solid; convention = deeper light + dividers; interpretation =
+// detached dashed edge (unlit membrane). Never a gold→violet "worse" ranking.
+const LIGHT = "#8a7bff";
+const LIGHT_DEEP = "#6c5cff";
+const EDGE = "rgba(140, 124, 255, 0.40)";
 
 export const CLAIM_MARKS: Record<ClaimKind, ClaimMarkStyle> = {
   measurement: {
@@ -51,7 +53,7 @@ export const CLAIM_MARKS: Record<ClaimKind, ClaimMarkStyle> = {
     hasDividers: false,
     boundaryDash: "",
     inset: 0,
-    boundaryColor: INSTRUMENT_GOLD,
+    boundaryColor: LIGHT,
     markOpacity: 1,
   },
   convention: {
@@ -59,18 +61,16 @@ export const CLAIM_MARKS: Record<ClaimKind, ClaimMarkStyle> = {
     hasDividers: true,
     boundaryDash: "",
     inset: 0,
-    boundaryColor: INSTRUMENT_GOLD,
+    boundaryColor: LIGHT_DEEP,
     markOpacity: 1,
   },
-  // Detached plane: wide inset (unmistakable gap), coarse dash (survives aliasing at
-  // ~390px), violet boundary. Three independent signals so measurement / convention /
-  // interpretation never collapse to two at small scale.
+  // Detached plane: wide inset, coarse dash, edge membrane — same material, different cut.
   interpretation: {
     hasTicks: false,
     hasDividers: false,
     boundaryDash: "6 5",
     inset: 7,
-    boundaryColor: AUTHORED_VIOLET,
+    boundaryColor: EDGE,
     markOpacity: 1,
   },
 };

@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Delphi — sky</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --void:#020203;--base:#060608;--lit:#15141d;
+    --core:#a99cff;--light:#8a7bff;--deep:#6c5cff;
+    --edge-bright:rgba(140,124,255,0.40);--edge:rgba(140,124,255,0.18);--edge-faint:rgba(140,124,255,0.12);
+    --ink-bright:#eeecfb;--ink:#d3d0e2;--ink-soft:#8f8ca3;--ink-quiet:#605d72;--ink-faint:#413f4e;
+    --lift:280ms cubic-bezier(0.20,0,0.10,1);--settle:640ms cubic-bezier(0.16,1,0.30,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;overflow:hidden;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);background:#000;
+    display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;}
+  @media (prefers-reduced-motion:reduce){*{animation:none !important;}}
+
+  .device{width:min(100vw,402px);height:min(100vh,872px);position:relative;overflow:hidden;
+    background:radial-gradient(150% 110% at 50% 30%,var(--lit)0%,var(--base)55%,var(--void)100%);}
+
+  .sky{position:absolute;inset:0;z-index:1;animation:drift 64s ease-in-out infinite;}
+  @keyframes drift{0%,100%{transform:translate(0,0)}50%{transform:translate(-6px,4px)}}
+
+  .dust{position:absolute;border-radius:50%;background:#fff;z-index:1;
+    animation:tw var(--tw,4s) ease-in-out infinite;animation-delay:var(--d,0s);}
+  @keyframes tw{0%,100%{opacity:var(--o,0.3);transform:scale(1)}50%{opacity:calc(var(--o,0.3)*0.35);transform:scale(0.82)}}
+
+  .obj{position:absolute;transform:translate(-50%,-50%);z-index:3;cursor:pointer;
+    width:36px;height:36px;display:flex;align-items:center;justify-content:center;}
+  .obj .hit{position:absolute;inset:0;border-radius:50%;}
+  .obj .dot{border-radius:50%;background:#fff;display:block;position:relative;z-index:2;
+    animation:breathe var(--br,5s) ease-in-out infinite;animation-delay:var(--bd,0s);}
+  @keyframes breathe{0%,100%{opacity:var(--do,0.6);box-shadow:0 0 4px rgba(255,255,255,0.4)}
+    50%{opacity:1;box-shadow:0 0 9px rgba(200,192,255,0.7)}}
+  .obj.planet .dot{background:var(--core);--do:0.7;}
+  .obj.moving .dot{background:var(--light);--do:0.65;}
+
+  .obj .halo{position:absolute;left:50%;top:50%;width:24px;height:24px;transform:translate(-50%,-50%);
+    border-radius:50%;z-index:1;background:radial-gradient(circle,rgba(180,166,255,0.26)0%,transparent 68%);
+    animation:halo var(--br,5s) ease-in-out infinite;animation-delay:var(--bd,0s);opacity:0;}
+  .obj.bright .halo{opacity:1;}
+  @keyframes halo{0%,100%{transform:translate(-50%,-50%) scale(0.7);opacity:0.35}
+    50%{transform:translate(-50%,-50%) scale(1.15);opacity:0.8}}
+
+  .obj.moving{animation:glide var(--gl,40s) linear infinite alternate;}
+  @keyframes glide{from{transform:translate(-50%,-50%)}to{transform:translate(calc(-50% + var(--gx,60px)),calc(-50% + var(--gy,-40px)))}}
+  .obj.moving .trail{position:absolute;right:9px;top:50%;width:26px;height:1px;z-index:0;
+    background:linear-gradient(90deg,transparent,var(--light));opacity:0.45;transform:translateY(-50%);}
+
+  .obj.lit{z-index:6;}
+  .obj.lit .dot{animation:none;opacity:1;box-shadow:0 0 13px rgba(216,210,255,0.9);}
+  .obj .ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(0.4);
+    opacity:0;transition:transform var(--settle),opacity var(--settle);pointer-events:none;}
+  .obj.lit .ring{opacity:1;transform:translate(-50%,-50%) scale(1);}
+  .obj .ring polygon{animation:spin 46s linear infinite;transform-origin:26px 26px;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .obj .label{position:absolute;left:50%;top:31px;transform:translateX(-50%);white-space:nowrap;
+    text-align:center;opacity:0;transition:opacity var(--settle);pointer-events:none;}
+  .obj.lit .label{opacity:1;}
+  .label .nm{font-family:'Fraunces',serif;font-size:16px;font-weight:500;color:var(--ink-bright);letter-spacing:0.01em;}
+  .label .dt{font-size:10px;color:var(--ink-soft);margin-top:3px;letter-spacing:0.03em;}
+
+  .conline{position:absolute;height:0.5px;background:var(--edge);transform-origin:left center;
+    opacity:0;transition:opacity var(--settle);z-index:2;}
+  .conline.on{opacity:1;}
+
+  .reticle{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:5;pointer-events:none;}
+  .reticle svg{display:block;animation:ret 6s ease-in-out infinite;}
+  @keyframes ret{0%,100%{opacity:0.34}50%{opacity:0.6}}
+
+  .top{position:absolute;top:22px;left:0;right:0;z-index:8;text-align:center;}
+  .wordmark{font-size:11px;letter-spacing:0.4em;color:var(--ink-quiet);font-weight:300;}
+  .coords{position:absolute;top:52px;left:26px;right:26px;z-index:8;display:flex;justify-content:space-between;
+    font-size:10px;letter-spacing:0.16em;color:var(--ink-faint);}
+
+  .heading{position:absolute;bottom:120px;left:0;right:0;z-index:7;height:34px;overflow:hidden;
+    -webkit-mask:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);
+    mask:linear-gradient(90deg,transparent,#000 22%,#000 78%,transparent);}
+  .ribbon{position:absolute;top:0;left:0;height:100%;display:flex;align-items:center;transition:transform var(--lift);}
+  .tick{width:44px;text-align:center;flex-shrink:0;font-size:11px;letter-spacing:0.1em;color:var(--ink-soft);}
+  .tick.card{color:var(--core);font-weight:500;}
+  .heading-mark{position:absolute;left:50%;top:117px;transform:translateX(-50%);z-index:8;}
+
+  .filters{position:absolute;bottom:66px;left:0;right:0;z-index:8;display:flex;gap:8px;justify-content:center;}
+  .filt{background:none;border:0.5px solid var(--edge);border-radius:20px;padding:7px 14px;
+    color:var(--ink-soft);font-family:inherit;font-size:11px;letter-spacing:0.04em;cursor:pointer;transition:all var(--lift);}
+  .filt.on{border-color:var(--edge-bright);color:var(--ink-bright);background:rgba(120,108,200,0.08);}
+
+  .sheet{position:absolute;left:0;right:0;bottom:0;z-index:9;
+    background:linear-gradient(180deg,transparent,rgba(6,6,10,0.55)12%,rgba(4,4,7,0.95)38%);
+    padding:64px 28px 36px;transform:translateY(100%);transition:transform var(--settle);
+    display:flex;flex-direction:column;gap:6px;}
+  .sheet.up{transform:translateY(0);}
+  .sheet .stag{font-size:10px;letter-spacing:0.24em;color:var(--ink-quiet);margin-bottom:8px;}
+  .sheet .sname{font-family:'Fraunces',serif;font-size:28px;font-weight:500;color:var(--ink-bright);margin-bottom:12px;}
+  .sheet .srow{display:flex;justify-content:space-between;font-size:13px;padding:10px 0;border-bottom:0.5px solid var(--edge-faint);}
+  .sheet .sk{color:var(--ink-quiet);}
+  .sheet .sv{color:var(--ink);}
+  .sheet .prov{font-size:10px;color:var(--ink-quiet);line-height:1.6;margin-top:12px;}
+  .sheet .prov b{color:var(--light);font-weight:400;}
+  .sheet .close{position:absolute;top:22px;right:24px;background:none;border:none;color:var(--ink-soft);font-size:19px;cursor:pointer;}
+  .sheet .more{margin-top:16px;align-self:flex-start;background:none;border:0.5px solid var(--edge-bright);
+    border-radius:20px;padding:9px 18px;color:var(--ink-bright);font-family:inherit;font-size:12px;letter-spacing:0.04em;cursor:pointer;transition:all var(--lift);}
+  .sheet .more:active{background:rgba(120,108,200,0.12);}
+
+  .hint{position:absolute;bottom:24px;left:0;right:0;z-index:8;text-align:center;
+    font-size:10px;letter-spacing:0.12em;color:var(--ink-faint);animation:ret 6s ease-in-out infinite;}
+</style>
+</head>
+<body>
+<div class="device" id="dev" role="application" aria-label="Delphi sky view">
+  <div class="sky" id="sky"></div>
+
+  <div class="reticle">
+    <svg width="46" height="46" viewBox="0 0 46 46">
+      <circle cx="23" cy="23" r="20" fill="none" stroke="var(--edge)" stroke-width="0.5"/>
+      <line x1="23" y1="4" x2="23" y2="12" stroke="var(--edge-bright)" stroke-width="0.75"/>
+      <line x1="23" y1="34" x2="23" y2="42" stroke="var(--edge-bright)" stroke-width="0.75"/>
+      <line x1="4" y1="23" x2="12" y2="23" stroke="var(--edge-bright)" stroke-width="0.75"/>
+      <line x1="34" y1="23" x2="42" y2="23" stroke="var(--edge-bright)" stroke-width="0.75"/>
+    </svg>
+  </div>
+
+  <div class="top"><span class="wordmark">DELPHI</span></div>
+  <div class="coords"><span>36.16°N · looking SE</span><span>9:47 PM</span></div>
+
+  <div class="heading-mark"><svg width="12" height="8"><path d="M6 8 L0 0 L12 0 Z" fill="var(--core)"/></svg></div>
+  <div class="heading"><div class="ribbon" id="ribbon"></div></div>
+
+  <div class="filters">
+    <button class="filt on" data-f="all">everything</button>
+    <button class="filt" data-f="planet">planets</button>
+    <button class="filt" data-f="moving">craft</button>
+  </div>
+
+  <p class="hint">tap any object · aim to resolve</p>
+
+  <div class="sheet" id="sheet">
+    <button class="close" id="close" aria-label="Close">✕</button>
+    <p class="stag" id="sheetTag">FIXED STAR</p>
+    <p class="sname" id="sheetName">Vega</p>
+    <div id="sheetRows"></div>
+    <p class="prov" id="sheetProv"></p>
+    <button class="more" id="moreBtn">tell me more ↗</button>
+  </div>
+</div>
+
+<script>
+  const dev=document.getElementById('dev'),sky=document.getElementById('sky');
+  const W=dev.clientWidth,H=dev.clientHeight,cx=W/2,cy=H*0.42;
+
+  let dust='';
+  for(let i=0;i<150;i++){
+    const top=Math.pow(Math.random(),1.4)*100,left=Math.random()*100;
+    const s=(Math.random()<0.1?Math.random()*1.4+1:Math.random()*0.9+0.3).toFixed(1);
+    const o=(Math.random()*0.5+0.22).toFixed(2),tw=(Math.random()*5+3).toFixed(1),d=(Math.random()*5).toFixed(1);
+    dust+=`<span class="dust" style="top:${top}%;left:${left}%;width:${s}px;height:${s}px;--o:${o};--tw:${tw}s;--d:${d}s"></span>`;
+  }
+
+  const CATALOG=[
+    {name:'Vega',kind:'star',x:0.5,y:0.30,mag:'mag 0.03',where:'Lyra · 25 ly',bright:true},
+    {name:'Deneb',kind:'star',x:0.66,y:0.20,mag:'mag 1.25',where:'Cygnus · 2,600 ly'},
+    {name:'Altair',kind:'star',x:0.4,y:0.52,mag:'mag 0.77',where:'Aquila · 17 ly'},
+    {name:'Arcturus',kind:'star',x:0.22,y:0.36,mag:'mag −0.05',where:'Boötes · 37 ly',bright:true},
+    {name:'Antares',kind:'star',x:0.5,y:0.66,mag:'mag 1.0',where:'Scorpius · 550 ly'},
+    {name:'Saturn',kind:'planet',x:0.58,y:0.46,mag:'mag 0.6',where:'rising · 22° up',bright:true},
+    {name:'Jupiter',kind:'planet',x:0.32,y:0.24,mag:'mag −2.1',where:'34° above horizon',bright:true},
+    {name:'Moon',kind:'planet',x:0.5,y:0.14,mag:'waxing gibbous',where:'38° · 96% lit',bright:true},
+    {name:'ISS',kind:'moving',x:0.7,y:0.4,mag:'−3.1 pass',where:'408 km · SW→NE',gx:'70px',gy:'-46px',gl:'34s'},
+    {name:'UA 2412',kind:'moving',x:0.28,y:0.58,mag:'SFO → DEN',where:'34,000 ft',gx:'54px',gy:'26px',gl:'50s'},
+    {name:'Starlink 4-7',kind:'moving',x:0.62,y:0.62,mag:'faint train',where:'550 km',gx:'80px',gy:'-30px',gl:'40s'},
+  ];
+  const LINES=[[0,1],[1,2],[2,0]];
+  const TAG={star:'FIXED STAR',planet:'IN THE SOLAR SYSTEM',moving:'IN MOTION'};
+  const PROV={
+    star:n=>`<b>Position measured to the arcminute.</b> A fixed star — the light you see left it ${(n.where.split('· ')[1]||'ages')} ago.`,
+    planet:n=>`<b>Position measured to the arcminute.</b> Ephemeris-computed — where it truly is in the sky right now.`,
+    moving:n=>`<b>Live track, updated each second.</b> Not a star — it's moving. Position from a real-time feed.`,
+  };
+
+  let html=dust;
+  CATALOG.forEach((c,i)=>{
+    const size=c.kind==='star'?(c.bright?3:2):4;
+    const br=(Math.random()*3+4).toFixed(1),bd=(Math.random()*4).toFixed(1);
+    html+=`<div class="obj ${c.kind}${c.bright?' bright':''}" data-i="${i}"
+      style="left:${c.x*W}px;top:${c.y*H}px;--br:${br}s;--bd:${bd}s;${c.gx?`--gx:${c.gx};--gy:${c.gy};--gl:${c.gl};`:''}">
+      <span class="hit"></span><span class="halo"></span>
+      ${c.kind==='moving'?'<span class="trail"></span>':''}
+      <span class="dot" style="width:${size}px;height:${size}px"></span>
+      <svg class="ring" width="52" height="52" viewBox="0 0 52 52">
+        <polygon points="26,4 44,15 44,37 26,48 8,37 8,15" fill="none" stroke="var(--edge-bright)" stroke-width="0.75"/>
+        <circle cx="26" cy="26" r="11" fill="none" stroke="var(--light)" stroke-width="0.4" stroke-opacity="0.6"/>
+      </svg>
+      <div class="label"><div class="nm">${c.name}</div><div class="dt">${c.mag}</div></div></div>`;
+  });
+  sky.innerHTML=html;
+
+  const objEls=[...sky.querySelectorAll('.obj')];
+  const lineEls=LINES.map(()=>{const l=document.createElement('div');l.className='conline';sky.appendChild(l);return l;});
+  function drawLines(show){LINES.forEach(([a,b],k)=>{
+    const A=CATALOG[a],B=CATALOG[b],ax=A.x*W,ay=A.y*H,bx=B.x*W,by=B.y*H;
+    const len=Math.hypot(bx-ax,by-ay),ang=Math.atan2(by-ay,bx-ax)*180/Math.PI,el=lineEls[k];
+    el.style.left=ax+'px';el.style.top=ay+'px';el.style.width=len+'px';
+    el.style.transform=`rotate(${ang}deg)`;el.classList.toggle('on',show);});}
+
+  let filter='all';
+  function applyFilter(){objEls.forEach(el=>{const c=CATALOG[+el.dataset.i];
+    el.style.display=(filter==='all'||c.kind===filter)?'':'none';});}
+
+  let aim={x:cx,y:cy};
+  function resolve(){let best=null,bd=1e9;
+    objEls.forEach(el=>{if(el.style.display==='none')return;const c=CATALOG[+el.dataset.i];
+      const d=Math.hypot(c.x*W-aim.x,c.y*H-aim.y);if(d<bd){bd=d;best=el;}});
+    objEls.forEach(el=>el.classList.toggle('lit',el===best&&bd<130));
+    const c=best&&CATALOG[+best.dataset.i];drawLines(!!(c&&c.kind==='star'&&bd<130));}
+
+  dev.addEventListener('mousemove',e=>{const r=dev.getBoundingClientRect();
+    aim={x:e.clientX-r.left,y:e.clientY-r.top};updateRibbon(aim.x);resolve();});
+  dev.addEventListener('touchmove',e=>{const r=dev.getBoundingClientRect(),t=e.touches[0];
+    aim={x:t.clientX-r.left,y:t.clientY-r.top};updateRibbon(aim.x);resolve();},{passive:true});
+
+  objEls.forEach(el=>el.addEventListener('click',ev=>{ev.stopPropagation();openSheet(CATALOG[+el.dataset.i]);}));
+
+  const dirs=['N','·','NE','·','E','·','SE','·','S','·','SW','·','W','·','NW','·','N','·','NE','·','E'];
+  const ribbon=document.getElementById('ribbon');
+  ribbon.innerHTML=dirs.map(d=>`<span class="tick ${['N','E','S','W','NE','SE','SW','NW'].includes(d)?'card':''}">${d}</span>`).join('');
+  function updateRibbon(x){ribbon.style.transform=`translateX(${-(x/W)*440-90}px)`;}
+  updateRibbon(cx);
+
+  document.querySelectorAll('.filt').forEach(b=>b.addEventListener('click',()=>{
+    document.querySelectorAll('.filt').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');filter=b.dataset.f;applyFilter();resolve();}));
+
+  const sheet=document.getElementById('sheet');
+  function openSheet(c){
+    document.getElementById('sheetTag').textContent=TAG[c.kind];
+    document.getElementById('sheetName').textContent=c.name;
+    document.getElementById('sheetRows').innerHTML=`
+      <div class="srow"><span class="sk">brightness</span><span class="sv">${c.mag}</span></div>
+      <div class="srow"><span class="sk">where</span><span class="sv">${c.where}</span></div>
+      <div class="srow"><span class="sk">kind</span><span class="sv">${c.kind==='moving'?'in motion':c.kind}</span></div>`;
+    document.getElementById('sheetProv').innerHTML=PROV[c.kind](c);
+    document.getElementById('moreBtn').onclick=()=>{if(window.sendPrompt)sendPrompt(`Tell me about ${c.name}.`);};
+    sheet.classList.add('up');
+  }
+  document.getElementById('close').addEventListener('click',()=>sheet.classList.remove('up'));
+  applyFilter();resolve();
+</script>
+</body>
+</html>

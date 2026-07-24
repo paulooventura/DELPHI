@@ -1,41 +1,40 @@
 @import "tailwindcss";
+@import "./onyx-tokens.css";
 
-/* ─── Design tokens (DELPHI · Lunar crystal night) ─────────────────────────
-   Reference: black-dominant city + moon + sparkle field. Hierarchy comes from
-   silhouette contrast and negative space — not from gold borders on every box.
-   Gold stays as a rare brand accent; moon-silver carries everyday chrome. */
+/* ─── Design tokens (DELPHI · Onyx) ─────────────────────────────────────────
+   One stone, one light. App chrome aliases the onyx material so existing
+   var(--gold) / var(--ink) call sites pick up violet light without a mass rewrite.
+   Brand "gold" names now resolve to the cold light — the old yellow is gone. */
 :root {
-  --void:        #000000;
-  --void-core:   #0a0a0c;
-  --panel:       rgba(255, 255, 255, 0.035);
-  --panel2:      rgba(255, 255, 255, 0.055);
-  --border:      rgba(255, 255, 255, 0.09);
-  --ink:         #F4F4F5;
-  --ink-dim:     rgba(244, 244, 245, 0.52);
-  --ink-faint:   rgba(255, 255, 255, 0.18);
-  --accent:      #A1A1AA;
-  --accent2:     #D4D4D8;
-  --ok:          #A1A1AA;
+  --void:        var(--onyx-void);
+  --void-core:   var(--onyx-base);
+  --panel:       var(--onyx-glass-mid);
+  --panel2:      var(--onyx-glass-deep);
+  --border:      var(--edge);
+  /* --ink / --ink-faint already defined in onyx-tokens.css */
+  --ink-dim:     var(--ink-soft);
+  --accent:      var(--light);
+  --accent2:     var(--light-core);
+  --ok:          var(--light-core);
   --warn:        #e05050;
 
-  /* Moon silver (primary chrome) — gold reserved for brand wordmark */
-  --moon:        #E8E8EC;
-  --moon-dim:    #A1A1AA;
-  --moon-glow:   rgba(255, 255, 255, 0.22);
-  --mist:        rgba(255, 255, 255, 0.06);
+  --moon:        var(--ink-bright);
+  --moon-dim:    var(--ink-soft);
+  --moon-glow:   rgba(169, 156, 255, 0.28);
+  --mist:        rgba(140, 124, 255, 0.06);
 
-  /* Oracle gold (brand only — titles, active tab, primary CTA) */
-  --gold:        #e8c872;
-  --gold-lt:     #f5d78e;
-  --gold-dp:     #c9a227;
-  --gold-glow:   rgba(201, 162, 39, 0.22);
-  --amber:       #D97706;
+  /* Legacy --gold* names → onyx light (so CosmicClockWheel / buttons re-skin) */
+  --gold:        var(--light);
+  --gold-lt:     var(--light-core);
+  --gold-dp:     var(--light-deep);
+  --gold-glow:   rgba(140, 124, 255, 0.28);
+  --amber:       var(--light-deep);
 
-  /* Cosmic clock layer themes (cosmicAssets.ts) */
-  --cosmic-imperial-gold: #C9A227;
-  --cosmic-imperial-gold-lt: #E8C872;
-  --cosmic-imperial-red: #991B1B;
-  --cosmic-imperial-crimson: #B91C1C;
+  /* Cosmic clock layer themes (cosmicAssets.ts) — imperial metal → onyx light */
+  --cosmic-imperial-gold: #8a7bff;
+  --cosmic-imperial-gold-lt: #a99cff;
+  --cosmic-imperial-red: #6c5cff;
+  --cosmic-imperial-crimson: #8a7bff;
   --cosmic-season-spring: #22C55E;
   --cosmic-season-summer: #D97706;
   --cosmic-season-autumn: #EA580C;
@@ -65,25 +64,25 @@
 
 *,*::before,*::after { box-sizing: border-box; margin: 0; padding: 0; }
 html,body {
-  background: var(--void);
+  background: var(--surface-ground);
   color: var(--ink);
   font-family: var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif);
   -webkit-font-smoothing: antialiased;
   font-feature-settings: "tnum" 1, "liga" 1;
 }
 
-::selection { background: rgba(255, 255, 255, 0.22); color: #fff; }
+::selection { background: rgba(140, 124, 255, 0.28); color: #fff; }
 
-/* Quiet scrollbar — no gold bar stealing attention */
-* { scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.22) transparent; }
+/* Quiet scrollbar — light membrane, not a bright bar */
+* { scrollbar-width: thin; scrollbar-color: rgba(140, 124, 255, 0.28) transparent; }
 *::-webkit-scrollbar { width: 7px; height: 7px; }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.18);
+  background: rgba(140, 124, 255, 0.22);
   border-radius: 999px;
   border: 2px solid transparent;
   background-clip: padding-box;
 }
-*::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.32); background-clip: padding-box; }
+*::-webkit-scrollbar-thumb:hover { background: rgba(140, 124, 255, 0.38); background-clip: padding-box; }
 
 /* Oracle gold gradient text utility */
 .cp-gold-text {
@@ -116,11 +115,7 @@ html,body {
 .cp-shell {
   position: relative;
   min-height: 100vh;
-  background:
-    radial-gradient(ellipse 55% 45% at 72% 18%, rgba(255, 255, 255, 0.09) 0%, transparent 58%),
-    radial-gradient(ellipse 80% 50% at 50% 100%, rgba(255, 255, 255, 0.04) 0%, transparent 55%),
-    radial-gradient(ellipse 100% 70% at 50% 40%, #0a0a0c 0%, transparent 70%),
-    var(--void);
+  background: var(--surface-ground);
 }
 
 /* Dense uniform sparkle — texture, not decoration dots of many colors. */
@@ -156,21 +151,22 @@ html,body {
   animation: cp-starfield-drift 36s ease-in-out infinite alternate;
 }
 
-/* Soft lunar bloom — the large moon of the reference, reduced to atmosphere. */
+/* Soft violet pool — the single light living in the stone, not a white moon. */
 .cp-shell::after {
   content: "";
   position: fixed;
-  top: -8%;
-  right: -6%;
-  width: min(52vw, 28rem);
-  height: min(52vw, 28rem);
+  top: -12%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(90vw, 40rem);
+  height: min(60vw, 28rem);
   border-radius: 50%;
   pointer-events: none;
   z-index: 0;
   background:
-    radial-gradient(circle at 42% 40%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.05) 35%, transparent 68%);
-  filter: blur(2px);
-  opacity: 0.85;
+    radial-gradient(circle at 50% 40%, rgba(140, 124, 255, 0.14) 0%, rgba(108, 92, 255, 0.05) 42%, transparent 70%);
+  filter: blur(3px);
+  opacity: 0.9;
 }
 
 @keyframes cp-starfield-drift {
@@ -657,19 +653,19 @@ html,body {
 
 .cp-col-left, .cp-col-right { display: flex; flex-direction: column; gap: 0.9rem; }
 
-/* ─── Cards — crystal planes, not gold-framed boxes ───────────────────────── */
+/* ─── Cards — onyx glass (catch-light top, pool to black) ─────────────────── */
 .cp-card {
   position: relative;
-  background: linear-gradient(165deg, rgba(255, 255, 255, 0.06) 0%, rgba(255, 255, 255, 0.02) 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 18px;
+  background: var(--surface-glass);
+  border: 0.5px solid var(--edge);
+  border-radius: var(--cut-tight);
   padding: 1.05rem 1.1rem;
-  backdrop-filter: blur(18px) saturate(1.05);
-  -webkit-backdrop-filter: blur(18px) saturate(1.05);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
-  animation: rise-in 420ms cubic-bezier(0.22, 1, 0.28, 1);
+  backdrop-filter: blur(18px) saturate(1.08);
+  -webkit-backdrop-filter: blur(18px) saturate(1.08);
+  box-shadow: var(--surface-glass-inset), 0 12px 40px rgba(0, 0, 0, 0.45);
+  animation: rise-in var(--settle);
 }
-/* Soft white facet edge — crystal, not gold hairline. */
+/* Catch-light on the polished top edge — the single most important glass detail. */
 .cp-card::before {
   content: "";
   position: absolute;
@@ -677,7 +673,7 @@ html,body {
   left: 18px;
   right: 18px;
   height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  background: linear-gradient(90deg, transparent, rgba(160, 146, 255, 0.35), transparent);
   pointer-events: none;
 }
 .cp-card-head { display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.75rem; }
@@ -694,16 +690,16 @@ html,body {
 /* ─── Buttons ─────────────────────────────────────────────────────────────── */
 .cp-btn { border: 1px solid var(--border); border-radius: 8px; padding: 0.5rem 0.8rem; font-size: 0.82rem; font-weight: 600; cursor: pointer; background: transparent; color: var(--ink); transition: border-color 0.15s, color 0.15s, box-shadow 0.15s; }
 .cp-btn:disabled { opacity: 0.42; cursor: not-allowed; }
-.cp-btn:hover:not(:disabled) { border-color: var(--gold-dp); color: var(--gold-lt); box-shadow: 0 0 0 1px rgba(201, 162, 39, 0.18), 0 0 14px rgba(201, 162, 39, 0.12); }
+.cp-btn:hover:not(:disabled) { border-color: var(--edge-bright); color: var(--light-core); box-shadow: 0 0 0 1px rgba(140, 124, 255, 0.18), 0 0 14px rgba(140, 124, 255, 0.12); }
 .cp-btn-primary {
-  background: linear-gradient(135deg, var(--gold-lt) 0%, var(--gold) 45%, var(--gold-dp) 100%);
+  background: linear-gradient(135deg, var(--light-core) 0%, var(--light) 45%, var(--light-deep) 100%);
   border: 0;
-  color: #0b1220;
+  color: #070709;
   font-weight: 700;
   letter-spacing: 0.02em;
-  box-shadow: 0 4px 18px rgba(201, 162, 39, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 18px rgba(140, 124, 255, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
-.cp-btn-primary:hover:not(:disabled) { color: #0b1220; box-shadow: 0 6px 24px rgba(201, 162, 39, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
+.cp-btn-primary:hover:not(:disabled) { color: #070709; box-shadow: 0 6px 24px rgba(140, 124, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4); }
 .cp-btn-ghost { border-color: #2a3048; color: var(--ink-dim); }
 .cp-btn-sm { padding: 0.27rem 0.6rem; font-size: 0.76rem; }
 .cp-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.6rem; }
@@ -904,7 +900,7 @@ html,body {
 .cp-sky-object-panel-backdrop {
   position: absolute;
   inset: 0;
-  background: rgba(2, 6, 23, 0.45);
+  background: rgba(3, 3, 4, 0.55);
   backdrop-filter: blur(4px);
   pointer-events: auto;
 }
@@ -913,12 +909,13 @@ html,body {
   position: relative;
   z-index: 1;
   width: min(100%, 22rem);
-  border-radius: 1rem;
-  border: 1px solid rgba(148, 163, 184, 0.22);
-  background: linear-gradient(165deg, rgba(15, 23, 42, 0.96), rgba(8, 12, 22, 0.98));
+  border-radius: var(--cut-tight);
+  border: 0.5px solid var(--edge);
+  background: var(--surface-glass);
+  box-shadow: var(--surface-glass-inset), 0 20px 60px rgba(0, 0, 0, 0.55);
   padding: 1rem 1.05rem 1.1rem;
   pointer-events: auto;
-  animation: cp-sky-panel-in 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  animation: cp-sky-panel-in var(--settle);
 }
 
 @keyframes cp-sky-panel-in {
@@ -946,21 +943,21 @@ html,body {
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: rgba(148, 163, 184, 0.85);
+  color: var(--ink-quiet);
 }
 
 .cp-sky-object-panel-name {
   margin: 0.15rem 0 0;
   font-size: 1.05rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: var(--ink-bright);
   line-height: 1.25;
 }
 
 .cp-sky-object-panel-close {
   border: none;
-  background: rgba(148, 163, 184, 0.12);
-  color: #cbd5e1;
+  background: rgba(140, 124, 255, 0.1);
+  color: var(--ink-soft);
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 999px;
@@ -974,7 +971,7 @@ html,body {
   gap: 0.75rem;
   margin-top: 0.7rem;
   font-size: 0.72rem;
-  color: rgba(186, 230, 253, 0.82);
+  color: var(--light-core);
 }
 
 .cp-sky-object-panel-facts {
@@ -989,16 +986,16 @@ html,body {
   gap: 0.75rem;
   font-size: 0.72rem;
   padding-top: 0.35rem;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
+  border-top: 0.5px solid var(--edge-faint);
 }
 
 .cp-sky-object-panel-fact dt {
-  color: rgba(148, 163, 184, 0.9);
+  color: var(--ink-quiet);
 }
 
 .cp-sky-object-panel-fact dd {
   margin: 0;
-  color: #e2e8f0;
+  color: var(--ink);
   font-weight: 600;
   text-align: right;
 }
@@ -3046,7 +3043,7 @@ html,body {
   font-size: 0.68rem;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: var(--moon-dim);
+  color: var(--ink-quiet);
   margin: 0 0 1.35rem;
 }
 .cp-moment-time {

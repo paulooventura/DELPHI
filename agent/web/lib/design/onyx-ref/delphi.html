@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Delphi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  /* ============================================================
+     DELPHI — onyx, consolidated. Pitch black is the ground.
+     One light sits on it. Time is felt as much as seen.
+     ============================================================ */
+  :root{
+    --black:#000000;         /* the ground. true pitch black.        */
+    --near:#050506;          /* the faintest lift, for panels        */
+    --core:#a99cff;          /* the light, nearest                   */
+    --light:#8a7bff;         /* the light                            */
+    --deep:#6c5cff;          /* the light through more dark          */
+    --edge-bright:rgba(140,124,255,0.42);
+    --edge:rgba(140,124,255,0.16);
+    --edge-faint:rgba(140,124,255,0.10);
+    --ink-bright:#f2f0fb;--ink:#d3d0e2;--ink-soft:#8f8ca3;--ink-quiet:#5a5770;--ink-faint:#37343f;
+    --lift:280ms cubic-bezier(0.20,0,0.10,1);
+    --settle:660ms cubic-bezier(0.16,1,0.30,1);
+    --deep-settle:980ms cubic-bezier(0.22,1,0.28,1);
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;overflow:hidden;background:#000;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);
+    display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:1ms !important;transition-duration:1ms !important;}}
+
+  .device{width:min(100vw,402px);height:min(100vh,872px);position:relative;overflow:hidden;
+    background:var(--black);--depth:0;}
+
+  /* On pitch black the pool of light is subtle — a breath near the top only. */
+  .field{position:absolute;inset:0;z-index:0;transition:transform var(--deep-settle);}
+  .aura{position:absolute;inset:0;transition:opacity var(--deep-settle);
+    background:radial-gradient(120% 80% at 50% 8%,rgba(30,26,54,0.5)0%,rgba(8,7,16,0.4)38%,#000 70%);}
+  .vignette{position:absolute;inset:0;pointer-events:none;z-index:3;
+    background:radial-gradient(115% 88% at 50% 42%,transparent 40%,rgba(0,0,0,0.7)80%,#000 100%);
+    opacity:0.5;transition:opacity var(--deep-settle),background var(--deep-settle);}
+
+  .stars{position:absolute;inset:0;z-index:1;transition:opacity var(--deep-settle);}
+  .dust{position:absolute;border-radius:50%;background:#fff;
+    animation:tw var(--tw,4s) ease-in-out infinite;animation-delay:var(--d,0s);}
+  @keyframes tw{0%,100%{opacity:var(--o,0.3);transform:scale(1)}50%{opacity:calc(var(--o,0.3)*0.35);transform:scale(0.82)}}
+
+  .moon{position:absolute;z-index:2;left:50%;top:20%;transform:translate(-50%,-50%);transition:all var(--deep-settle);}
+  .moon svg{display:block;filter:drop-shadow(0 0 26px rgba(140,124,255,0.16));}
+
+  /* depth states */
+  .device[data-depth="0"] .moon{top:15%;width:92px;height:92px;opacity:0.78;}
+  .device[data-depth="1"] .moon{top:25%;width:150px;height:150px;opacity:1;}
+  .device[data-depth="2"] .moon{top:-4%;width:118px;height:118px;opacity:0.3;}
+  .device[data-depth="3"] .moon{top:-14%;width:94px;height:94px;opacity:0.1;}
+  .device[data-depth="0"] .vignette{opacity:0.46;}
+  .device[data-depth="1"] .vignette{opacity:0.52;}
+  .device[data-depth="2"] .vignette{opacity:0.8;background:radial-gradient(100% 78% at 50% 46%,transparent 30%,rgba(0,0,0,0.85)70%,#000 100%);}
+  .device[data-depth="3"] .vignette{opacity:0.96;background:radial-gradient(80% 62% at 50% 48%,transparent 20%,rgba(0,0,0,0.92)60%,#000 100%);}
+  .device[data-depth="2"] .stars{opacity:0.35;}
+  .device[data-depth="3"] .stars{opacity:0.1;}
+  .device[data-depth="2"] .aura{opacity:0.6;}
+  .device[data-depth="3"] .aura{opacity:0.3;}
+
+  /* ---- the pulse: a hairline ring at the top that beats with the second - */
+  .pulse-ring{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:7;
+    width:6px;height:6px;border-radius:50%;background:var(--light);opacity:0.25;}
+  .pulse-ring.beat{animation:beat 1s ease-out;}
+  @keyframes beat{0%{box-shadow:0 0 0 0 rgba(140,124,255,0.5);opacity:0.9}
+    100%{box-shadow:0 0 0 9px rgba(140,124,255,0);opacity:0.25}}
+  /* the minute is a fuller bloom */
+  .pulse-ring.chime{animation:chime 2.4s ease-out;}
+  @keyframes chime{0%{box-shadow:0 0 0 0 rgba(169,156,255,0.7);opacity:1;transform:translateX(-50%) scale(1.6)}
+    100%{box-shadow:0 0 0 40px rgba(169,156,255,0);opacity:0.25;transform:translateX(-50%) scale(1)}}
+
+  /* chrome */
+  .wordmark{position:absolute;top:26px;left:0;right:0;text-align:center;z-index:8;
+    font-size:11px;letter-spacing:0.42em;color:var(--ink-quiet);font-weight:300;transition:opacity var(--settle);}
+  .device[data-depth="3"] .wordmark{opacity:0.35;}
+  .clock{position:absolute;top:52px;left:0;right:0;text-align:center;z-index:8;
+    font-size:11px;letter-spacing:0.14em;color:var(--ink-faint);font-variant-numeric:tabular-nums;
+    transition:opacity var(--settle);}
+  .device[data-depth="2"] .clock,.device[data-depth="3"] .clock{opacity:0;}
+  .clock .sec{color:var(--light);transition:opacity 0.5s;}
+
+  .ladder{position:absolute;right:18px;top:50%;transform:translateY(-50%);z-index:8;
+    display:flex;flex-direction:column;gap:13px;align-items:center;}
+  .rung{width:5px;height:5px;border-radius:50%;background:var(--ink-faint);transition:all var(--lift);}
+  .rung.on{background:var(--core);box-shadow:0 0 8px rgba(169,156,255,0.6);height:15px;border-radius:3px;}
+
+  .panel{position:absolute;inset:0;z-index:5;display:flex;flex-direction:column;align-items:center;
+    opacity:0;pointer-events:none;transition:opacity var(--settle);}
+  .panel.show{opacity:1;pointer-events:auto;}
+  .center{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);
+    display:flex;flex-direction:column;align-items:center;padding:0 34px;text-align:center;}
+  .voice{font-family:'Fraunces',serif;font-optical-sizing:auto;}
+  .eyebrow{font-size:10px;letter-spacing:0.28em;color:var(--ink-quiet);font-weight:300;margin-bottom:20px;}
+
+  /* 0 street */
+  .p0 .big{font-family:'Fraunces',serif;font-size:26px;font-weight:300;color:var(--ink);line-height:1.5;}
+  .p0 .big em{font-style:italic;color:var(--ink-bright);font-weight:400;}
+  .p0 .sub{font-size:12px;color:var(--ink-soft);margin-top:18px;letter-spacing:0.03em;}
+  /* 1 sky */
+  .p1 .name{font-family:'Fraunces',serif;font-size:32px;font-weight:500;color:var(--ink-bright);margin-top:26px;}
+  .p1 .det{font-size:12px;color:var(--ink-soft);margin-top:8px;}
+  .p1 .tap{font-size:10px;color:var(--ink-faint);margin-top:22px;letter-spacing:0.08em;}
+  /* 2 moment */
+  .p2{padding:110px 30px 40px;justify-content:flex-start;gap:20px;}
+  .p2 .now{font-family:'Fraunces',serif;font-size:22px;font-weight:400;line-height:1.42;color:var(--ink-bright);text-align:left;}
+  .seam{width:100%;height:0.5px;background:var(--edge-faint);border:none;}
+  .rows{width:100%;display:flex;flex-direction:column;}
+  .row{display:flex;justify-content:space-between;align-items:center;width:100%;padding:16px 0;
+    background:none;border:none;border-bottom:0.5px solid var(--edge-faint);color:var(--ink);
+    font-family:inherit;font-size:14px;text-align:left;cursor:pointer;transition:padding-left var(--lift),color var(--lift);}
+  .row:active{padding-left:7px;color:var(--ink-bright);}
+  .row-r{font-size:11px;color:var(--ink-quiet);}
+  .rx{max-height:0;overflow:hidden;transition:max-height var(--settle);width:100%;}
+  .rx.open{max-height:220px;}
+  .rx-in{padding:2px 0 16px;display:flex;flex-direction:column;gap:10px;}
+  .cl{display:flex;justify-content:space-between;font-size:13px;align-items:center;}
+  .cl .sys{color:var(--ink-quiet);font-size:11px;}
+  .mk{display:inline-block;width:20px;height:0;vertical-align:middle;margin-right:9px;}
+  .mk-measure{border-top:1px solid var(--light);}
+  .mk-conv{border-top:1px dashed var(--deep);}
+  .mk-interp{border-top:1px dotted var(--edge);}
+  /* 3 self */
+  .p3 .glyph{margin-bottom:28px;}
+  .p3 .glyph svg{animation:turn 60s linear infinite;}
+  @keyframes turn{to{transform:rotate(360deg)}}
+  .p3 .te{font-size:10px;letter-spacing:0.3em;color:var(--ink-quiet);margin-bottom:22px;font-weight:300;}
+  .p3 .tone{font-family:'Fraunces',serif;font-size:29px;font-weight:400;font-style:italic;color:var(--ink-bright);line-height:1.4;}
+  .p3 .ret{font-size:13px;color:var(--ink-soft);margin-top:26px;line-height:1.95;letter-spacing:0.02em;}
+  .p3 .ret b{color:var(--core);font-weight:400;}
+
+  /* compass */
+  .compass-wrap{position:absolute;bottom:50px;left:0;right:0;z-index:8;display:flex;flex-direction:column;
+    align-items:center;gap:13px;transition:opacity var(--settle);}
+  .device[data-depth="3"] .compass-wrap{opacity:0;pointer-events:none;}
+  .chint{font-size:10px;letter-spacing:0.08em;color:var(--ink-faint);transition:opacity var(--lift);}
+  .compass{background:none;border:none;cursor:pointer;padding:6px;transition:transform var(--lift);}
+  .compass:active{transform:scale(0.93);}
+  .compass .needle{transform-origin:31px 31px;transition:transform var(--settle);}
+
+  .descend{position:absolute;bottom:22px;left:0;right:0;z-index:8;text-align:center;
+    font-size:10px;letter-spacing:0.14em;color:var(--ink-faint);transition:opacity var(--settle);}
+  .device[data-depth="3"] .descend{opacity:0;}
+
+  /* ---- the stone: slide it to quiet the pulse --------------------------
+     A small onyx worry-stone in a cut groove. Rest = pulse on (stone at the
+     lit end). Slide it across to the dark end and the pulse falls silent. */
+  .stone-track{position:absolute;top:22px;right:20px;z-index:9;
+    width:58px;height:24px;border-radius:14px;
+    border:0.5px solid var(--edge);background:rgba(120,108,200,0.04);
+    display:flex;align-items:center;padding:0 3px;cursor:grab;
+    transition:border-color var(--lift),background var(--lift);
+    -webkit-user-select:none;user-select:none;touch-action:none;}
+  .stone-track:active{cursor:grabbing;}
+  .stone-track.quiet{border-color:var(--ink-faint);background:rgba(0,0,0,0.3);}
+  /* the groove marks: a lit node at rest-end, faint at quiet-end */
+  .groove-on{position:absolute;left:9px;top:50%;transform:translateY(-50%);
+    width:4px;height:4px;border-radius:50%;background:var(--light);opacity:0.7;
+    transition:opacity var(--lift);}
+  .groove-off{position:absolute;right:10px;top:50%;transform:translateY(-50%);
+    width:5px;height:0.5px;background:var(--ink-faint);}
+  .stone-track.quiet .groove-on{opacity:0.15;}
+  /* the stone itself — a faceted onyx bead */
+  .stone{position:absolute;left:3px;width:18px;height:18px;z-index:2;
+    transition:left var(--settle);will-change:left;}
+  .stone svg{display:block;filter:drop-shadow(0 0 5px rgba(140,124,255,0.35));
+    transition:filter var(--lift);}
+  .stone-track.quiet .stone svg{filter:drop-shadow(0 0 2px rgba(0,0,0,0.6));}
+</style>
+</head>
+<body>
+<div class="device" data-depth="0" id="dev" role="application" aria-label="Delphi">
+
+  <div class="field">
+    <div class="aura"></div>
+    <div class="stars" id="stars"></div>
+    <div class="moon">
+      <svg viewBox="0 0 150 150" fill="none" role="img" aria-label="Moon">
+        <defs>
+          <radialGradient id="mn" cx="50%" cy="42%" r="62%">
+            <stop offset="0%" stop-color="#c9c0ff" stop-opacity="0.95"/>
+            <stop offset="55%" stop-color="#8a7bff" stop-opacity="0.8"/>
+            <stop offset="100%" stop-color="#3a2f8f" stop-opacity="0.6"/>
+          </radialGradient>
+          <linearGradient id="fc" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#b3a6ff" stop-opacity="0.7"/>
+            <stop offset="50%" stop-color="#4b4570" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="#8a7bff" stop-opacity="0.52"/>
+          </linearGradient>
+        </defs>
+        <polygon points="75,12 123,41 123,109 75,138 27,109 27,41" fill="rgba(120,108,200,0.035)" stroke="url(#fc)" stroke-width="1"/>
+        <circle cx="75" cy="75" r="25" fill="none" stroke="#8a7bff" stroke-width="0.5" stroke-opacity="0.5"/>
+        <path d="M75 52 a23 23 0 0 1 0 46 a17 26 0 0 0 0 -46" fill="url(#mn)"/>
+        <circle cx="66" cy="64" r="5" fill="#d8d2ff" fill-opacity="0.4"/>
+      </svg>
+    </div>
+  </div>
+
+  <div class="vignette"></div>
+  <div class="pulse-ring" id="pulse"></div>
+
+  <p class="wordmark">DELPHI</p>
+  <p class="clock" id="clock">FRI 24 JUL · 9:47:<span class="sec">00</span></p>
+
+  <div class="stone-track" id="stoneTrack" role="switch" aria-checked="true" aria-label="Slide the stone to quiet the pulse" tabindex="0">
+    <span class="groove-on"></span>
+    <span class="groove-off"></span>
+    <span class="stone" id="stone">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+        <polygon points="9,1 15,4.5 15,13.5 9,17 3,13.5 3,4.5" fill="#0b0a12" stroke="var(--edge-bright)" stroke-width="0.6"/>
+        <polygon points="9,4 12.5,6 12.5,12 9,14 5.5,12 5.5,6" fill="none" stroke="rgba(140,124,255,0.3)" stroke-width="0.4"/>
+        <circle cx="9" cy="9" r="1.6" fill="var(--core)" fill-opacity="0.75"/>
+      </svg>
+    </span>
+  </div>
+
+  <div class="ladder" aria-hidden="true">
+    <span class="rung" data-r="0"></span><span class="rung" data-r="1"></span>
+    <span class="rung" data-r="2"></span><span class="rung" data-r="3"></span>
+  </div>
+
+  <!-- 0 STREET -->
+  <div class="panel p0 show" data-panel="0"><div class="center">
+    <p class="eyebrow">FRIDAY · 24 JULY · 9:47 PM</p>
+    <p class="big">The moon is <em>waxing</em>,<br>three days from full.</p>
+    <p class="sub">Lift your phone to the sky.</p>
+  </div></div>
+
+  <!-- 1 SKY -->
+  <div class="panel p1" data-panel="1"><div class="center">
+    <p class="name">Moon</p>
+    <p class="det">waxing gibbous · 38° above the horizon</p>
+    <p class="tap">tap to look closer</p>
+  </div></div>
+
+  <!-- 2 MOMENT -->
+  <div class="panel p2" data-panel="2">
+    <p class="eyebrow" style="align-self:flex-start;margin-bottom:0;">NOW</p>
+    <p class="now">Waxing gibbous in Leo. A day for finishing what's begun.</p>
+    <hr class="seam" />
+    <div class="rows">
+      <button class="row" id="dateRow" aria-expanded="false"><span>Today, according to whom</span><span class="row-r">four counts ▾</span></button>
+      <div class="rx" id="dateRx"><div class="rx-in">
+        <div class="cl"><span><span class="mk mk-measure"></span>24 July 2026</span><span class="sys">Gregorian</span></div>
+        <div class="cl"><span><span class="mk mk-conv"></span>1 Ak'b'al · Kin 121</span><span class="sys">Tzolk'in · GMT 584283</span></div>
+        <div class="cl"><span><span class="mk mk-interp"></span>Blue Rhythmic Hand</span><span class="sys">Dreamspell 13:20</span></div>
+        <div class="cl"><span><span class="mk mk-conv"></span>17 Hamle 2018</span><span class="sys">Ethiopian</span></div>
+      </div></div>
+      <button class="row"><span>The rings</span><span class="row-r">open wheel ▾</span></button>
+      <button class="row"><span>A card for today</span><span class="row-r">✦</span></button>
+    </div>
+    <p style="width:100%;font-size:10px;color:var(--ink-quiet);line-height:1.6;margin-top:6px;">
+      <span style="color:var(--light);">Position measured to the arcminute.</span> The sign is a Hellenistic reading — one of several a sky can be given.</p>
+  </div>
+
+  <!-- 3 SELF -->
+  <div class="panel p3" data-panel="3"><div class="center">
+    <div class="glyph">
+      <svg width="64" height="64" viewBox="0 0 64 64" fill="none" role="img" aria-label="Your tone">
+        <polygon points="32,4 56,18 56,46 32,60 8,46 8,18" fill="none" stroke="var(--edge-bright)" stroke-width="0.75"/>
+        <circle cx="32" cy="32" r="13" fill="none" stroke="var(--light)" stroke-width="0.5" stroke-opacity="0.7"/>
+        <circle cx="32" cy="32" r="4" fill="var(--core)" fill-opacity="0.85"/>
+      </svg>
+    </div>
+    <p class="te">YOUR TONE, THIS MOMENT</p>
+    <p class="tone">You are near the close<br>of a long orbit.</p>
+    <p class="ret"><b>476</b> lunations since you began.<br>Saturn returns to you in <b>14 months</b>.<br>The moon tonight sits where it sat at your first breath.</p>
+  </div></div>
+
+  <div class="compass-wrap">
+    <span class="chint" id="chint">tap to tune in</span>
+    <button class="compass" id="compass" aria-label="Descend">
+      <svg width="62" height="62" viewBox="0 0 62 62" role="img" aria-label="Compass">
+        <polygon points="31,3 47,11 55,31 47,51 31,59 15,51 7,31 15,11" fill="rgba(120,108,200,0.05)" stroke="var(--edge-bright)" stroke-width="0.75"/>
+        <circle cx="31" cy="31" r="18" fill="none" stroke="#2c2942" stroke-width="0.5"/>
+        <g class="needle" id="needle"><path d="M31 15 L35 33 L31 29 L27 33 Z" fill="var(--core)"/></g>
+        <circle cx="31" cy="31" r="1.7" fill="#d8d2ff"/>
+      </svg>
+    </button>
+  </div>
+
+  <p class="descend" id="descendHint">swipe down to go deeper ↓</p>
+</div>
+
+<script>
+  const dev=document.getElementById('dev');
+  const panels=[...document.querySelectorAll('.panel')];
+  const rungs=[...document.querySelectorAll('.rung')];
+  const chint=document.getElementById('chint');
+  const descendHint=document.getElementById('descendHint');
+  const needle=document.getElementById('needle');
+  const MAX=3; let depth=0;
+
+  const hints=[{c:'tap to tune in',d:'swipe down to go deeper ↓'},
+    {c:'tap to look closer',d:'swipe down to go deeper ↓'},
+    {c:'',d:'swipe down to go deeper ↓'},{c:'',d:''}];
+
+  function render(){
+    dev.dataset.depth=depth;
+    panels.forEach(p=>p.classList.toggle('show',+p.dataset.panel===depth));
+    rungs.forEach(r=>r.classList.toggle('on',+r.dataset.r===depth));
+    chint.textContent=hints[depth].c; chint.style.opacity=hints[depth].c?'1':'0';
+    descendHint.textContent=hints[depth].d;
+    needle.style.transform=`rotate(${depth*22}deg)`;
+  }
+  function go(d){const nd=Math.max(0,Math.min(MAX,d));
+    if(nd!==depth){depth=nd; buzz(depth===3?'deep':'step'); render();}}
+
+  document.getElementById('compass').addEventListener('click',()=>go(depth+1));
+
+  const dateRow=document.getElementById('dateRow'),dateRx=document.getElementById('dateRx');
+  dateRow.addEventListener('click',e=>{e.stopPropagation();
+    const open=dateRx.classList.toggle('open'); dateRow.setAttribute('aria-expanded',String(open)); buzz('tick');});
+
+  let y0=null;
+  dev.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;},{passive:true});
+  dev.addEventListener('touchend',e=>{if(y0===null)return;
+    const dy=e.changedTouches[0].clientY-y0;
+    if(dy>55)go(depth+1); if(dy<-55)go(depth-1); y0=null;},{passive:true});
+  let wl=false;
+  dev.addEventListener('wheel',e=>{if(wl)return;wl=true;setTimeout(()=>wl=false,700);
+    go(depth+(e.deltaY>0?1:-1));},{passive:true});
+  window.addEventListener('keydown',e=>{if(e.key==='ArrowDown')go(depth+1);if(e.key==='ArrowUp')go(depth-1);});
+
+  /* ---- Ambient haptic + visual pulse ------------------------------------
+     Each second: a soft single tick + a small ring beat.
+     Each minute: a gentle three-part bloom — a chime you feel.
+     Vibration is best-effort (guarded); the visual pulse always plays. */
+  let hapticOn=true;
+  const track=document.getElementById('stoneTrack');
+  const stone=document.getElementById('stone');
+  const REST=3, QUIET=37;               // stone x-positions (px) in the groove
+  let dragging=false, startX=0, stoneX=REST;
+
+  function setStone(x,animate){
+    stoneX=Math.max(REST,Math.min(QUIET,x));
+    stone.style.transition=animate?'':'none';
+    stone.style.left=stoneX+'px';
+    const nowQuiet=stoneX>(REST+QUIET)/2;
+    if(nowQuiet===hapticOn){        // state flipped
+      hapticOn=!nowQuiet;
+      track.classList.toggle('quiet',nowQuiet);
+      track.setAttribute('aria-checked',String(hapticOn));
+      if(hapticOn)buzz('tick');     // a small confirmation when re-enabled
+    }
+  }
+  function settle(){ setStone(hapticOn?REST:QUIET,true); }
+
+  let moved=false;
+  function down(e){dragging=true;moved=false;
+    startX=(e.touches?e.touches[0].clientX:e.clientX)-stoneX;
+    stone.style.transition='none';}
+  function move(e){if(!dragging)return;moved=true;
+    const cx=e.touches?e.touches[0].clientX:e.clientX;
+    setStone(cx-startX,false);
+    if(e.cancelable)e.preventDefault();}
+  function up(){if(!dragging)return;dragging=false;
+    if(!moved){setStone(hapticOn?QUIET:REST,true);}  // a tap flips it
+    else{settle();}}
+
+  track.addEventListener('mousedown',down);
+  window.addEventListener('mousemove',move);
+  window.addEventListener('mouseup',up);
+  track.addEventListener('touchstart',down,{passive:true});
+  track.addEventListener('touchmove',move,{passive:false});
+  track.addEventListener('touchend',up);
+  // keyboard
+  track.addEventListener('keydown',e=>{
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();setStone(hapticOn?QUIET:REST,true);}});
+  setStone(REST,false);
+
+  function vibrate(pattern){
+    if(!hapticOn)return;
+    if(navigator.vibrate){try{navigator.vibrate(pattern);}catch(_){}}
+  }
+  const pulse=document.getElementById('pulse');
+  function beat(kind){
+    pulse.classList.remove('beat','chime'); void pulse.offsetWidth;
+    pulse.classList.add(kind==='chime'?'chime':'beat');
+  }
+  function buzz(kind){
+    if(kind==='step'){vibrate(14);beat('beat');}
+    else if(kind==='deep'){vibrate([20,40,30]);beat('chime');}
+    else if(kind==='tick'){vibrate(8);}
+    else if(kind==='second'){vibrate(6);beat('beat');}
+    else if(kind==='minute'){vibrate([12,50,12,50,24]);beat('chime');}
+  }
+
+  // clock + the pulse of time
+  const clockEl=document.getElementById('clock');
+  const secEl=clockEl.querySelector('.sec');
+  let lastSec=-1;
+  function tickTime(){
+    const now=new Date();
+    const s=now.getSeconds();
+    if(s!==lastSec){
+      lastSec=s;
+      secEl.textContent=String(s).padStart(2,'0');
+      if(s===0) buzz('minute');       // the minute — a felt chime
+      else       buzz('second');      // the second — a soft beat
+    }
+    requestAnimationFrame(tickTime);
+  }
+  requestAnimationFrame(tickTime);
+
+  // starfield
+  const stars=document.getElementById('stars');
+  let html='';
+  for(let i=0;i<130;i++){
+    const top=Math.pow(Math.random(),1.5)*100,left=Math.random()*100;
+    const s=(Math.random()<0.12?Math.random()*1.6+1.2:Math.random()*0.9+0.4).toFixed(1);
+    const o=(Math.random()*0.55+0.22).toFixed(2),tw=(Math.random()*5+3).toFixed(1),d=(Math.random()*5).toFixed(1);
+    html+=`<span class="dust" style="top:${top}%;left:${left}%;width:${s}px;height:${s}px;--o:${o};--tw:${tw}s;--d:${d}s"></span>`;
+  }
+  stars.innerHTML=html;
+
+  render();
+</script>
+</body>
+</html>

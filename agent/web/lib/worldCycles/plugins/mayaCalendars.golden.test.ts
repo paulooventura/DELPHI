@@ -95,6 +95,31 @@ describe("Dreamspell 13:20 — independent count", () => {
     expect(dreamspellKinFromDate(2016, 7, 26)).toBe(219);
   });
 
+  it("holds across Feb 28 / 29 / Mar 1 2024 while traditional Tzolk'in advances", () => {
+    // Dreamspell: day-out-of-time on Feb 29 — same kin on the 28th and 29th, then advance Mar 1.
+    const ds28 = dreamspellKinFromDate(2024, 2, 28);
+    const ds29 = dreamspellKinFromDate(2024, 2, 29);
+    const ds01 = dreamspellKinFromDate(2024, 3, 1);
+    expect(ds29).toBe(ds28);
+    expect(ds01).toBe((((ds28 - 1 + 1) % 260) + 260) % 260 + 1);
+
+    // Traditional GMT Tzolk'in advances one kin per civil day, including Feb 29.
+    const tz28 = Number(tzolkinPlugin.resolve(ctxFor(2024, 2, 28)).meta.kin);
+    const tz29 = Number(tzolkinPlugin.resolve(ctxFor(2024, 2, 29)).meta.kin);
+    const tz01 = Number(tzolkinPlugin.resolve(ctxFor(2024, 3, 1)).meta.kin);
+    expect(tz29).toBe((((tz28 - 1 + 1) % 260) + 260) % 260 + 1);
+    expect(tz01).toBe((((tz29 - 1 + 1) % 260) + 260) % 260 + 1);
+  });
+
+  it("reads only from ctx civil date — never from the Tzolk'in plugin", () => {
+    // Same civil date → same Dreamspell kin whether or not Tzolk'in peers disagree.
+    const a = galactic1320Plugin.resolve(ctxFor(2026, 7, 24)).meta.kin;
+    const b = dreamspellKinFromDate(2026, 7, 24);
+    expect(a).toBe(b);
+    expect(a).not.toBe(tzolkinPlugin.resolve(ctxFor(2026, 7, 24)).meta.kin);
+    expect(a).not.toBe(tzolkinDelphiPlugin.resolve(ctxFor(2026, 7, 24)).meta.kin);
+  });
+
   it("is not canonical and does not tie to the Long Count", () => {
     const ds = galactic1320Plugin.resolve(ctxFor(2026, 7, 24));
     expect(ds.canonical).toBeFalsy();

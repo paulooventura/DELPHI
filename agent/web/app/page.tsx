@@ -26,6 +26,7 @@ import { useSpringValue } from "../hooks/useSpringValue";
 import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
 import { LaunchScreen, useShowLaunch } from "../components/LaunchScreen";
 import { OracleLogo } from "../components/oracle/OracleLogo";
+import { AmbientPulse } from "../components/AmbientPulse";
 import { ClockAmbience } from "../components/ClockAmbience";
 import { EmfReader } from "../components/EmfReader";
 import { SensorArray } from "../components/SensorArray";
@@ -1061,6 +1062,7 @@ export default function Home() {
       data-tab={tab}
       style={cosmic ? { ["--cosmic-hue" as string]: String(Math.round(cosmic.ui.hue)) } : undefined}
     >
+      <AmbientPulse />
       <header className={`cp-appbar${tab === "clock" || tab === "sky" ? " cp-appbar-overlay" : ""}`}>
         <div className="cp-hero-brand">
           <OracleLogo size={34} className="cp-hero-mark" />

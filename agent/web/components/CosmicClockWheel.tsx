@@ -220,7 +220,7 @@ function PlayheadSlot({ inner, outer }: { inner: number; outer: number }) {
       <path
         d={donutSectorPath(CX, CY, inner, outer, -16, 16)}
         fill="url(#cp-steam-pawl-fill)"
-        stroke="#e8c86a"
+        stroke={OBS.light.core}
         strokeWidth={1.6}
         strokeOpacity={0.85}
         pointerEvents="none"
@@ -471,7 +471,7 @@ function CosmicSegmentRing({
               y1={dl.y1}
               x2={dl.x2}
               y2={dl.y2}
-              stroke="#c9a227"
+              stroke={OBS.light.accent}
               strokeWidth={0.7}
               strokeOpacity={mark.markOpacity * 0.85}
             />
@@ -487,7 +487,7 @@ function CosmicSegmentRing({
               y1={tk.y1}
               x2={tk.x2}
               y2={tk.y2}
-              stroke="#e8c86a"
+              stroke={OBS.light.core}
               strokeWidth={tk.major ? 1.1 : 0.6}
               strokeOpacity={mark.markOpacity}
             />
@@ -506,7 +506,7 @@ function CosmicSegmentRing({
       <path
         d={`M ${CX - inner} ${CY} A ${inner} ${inner} 0 0 1 ${CX + inner} ${CY}`}
         fill="none"
-        stroke="#8a6b1e"
+        stroke={OBS.light.deep}
         strokeWidth={0.7}
         strokeOpacity={0.55}
         pointerEvents="none"
@@ -516,8 +516,8 @@ function CosmicSegmentRing({
           <path
             key={t.key}
             d={t.d}
-            fill="#3d3018"
-            stroke="#c9a227"
+            fill={OBS.space.lit}
+            stroke={OBS.light.accent}
             strokeWidth={0.45}
             opacity={0.95}
             pointerEvents="none"
@@ -654,7 +654,7 @@ export function CosmicClockWheel({
       className={[
         "cp-cosmic-clock-wheel cp-steampunk-clock-wheel relative w-full mx-auto overflow-hidden",
         tickPulse ? "cp-steampunk-tick" : "",
-        "rounded-2xl border border-[#8a6b1e]/35 bg-[#0a0806]",
+        "rounded-2xl border border-[color:var(--edge)] bg-[color:var(--onyx-base)]",
         "shadow-[0_20px_64px_rgba(0,0,0,0.65),inset_0_1px_0_rgba(232,200,106,0.12)]",
         className,
       ].join(" ")}
@@ -668,24 +668,24 @@ export function CosmicClockWheel({
       >
         <defs>
           <radialGradient id={`cosmic-bg-${uid}`} cx="50%" cy="100%" r="85%">
-            <stop offset="0%" stopColor="#1c1610" />
-            <stop offset="40%" stopColor="#0D111A" />
-            <stop offset="100%" stopColor="#05070B" />
+            <stop offset="0%" stopColor={OBS.space.lit} />
+            <stop offset="40%" stopColor={OBS.space.core} />
+            <stop offset="100%" stopColor={OBS.space.outer} />
           </radialGradient>
           <radialGradient id={`cosmic-hub-${uid}`} cx="50%" cy="30%" r="75%">
-            <stop offset="0%" stopColor="#1a1510" />
-            <stop offset="55%" stopColor="#0a0d14" />
-            <stop offset="100%" stopColor="#05070B" />
+            <stop offset="0%" stopColor={OBS.space.raised} />
+            <stop offset="55%" stopColor={OBS.space.core} />
+            <stop offset="100%" stopColor={OBS.space.outer} />
           </radialGradient>
           <linearGradient id="cp-steam-pawl-fill" x1="0%" y1="100%" x2="0%" y2="0%">
-            <stop offset="0%" stopColor="#8a6b1e" stopOpacity={0.2} />
-            <stop offset="50%" stopColor="#e8c86a" stopOpacity={0.55} />
-            <stop offset="100%" stopColor="#c9a227" stopOpacity={0.25} />
+            <stop offset="0%" stopColor={OBS.light.deep} stopOpacity={0.2} />
+            <stop offset="50%" stopColor={OBS.light.core} stopOpacity={0.55} />
+            <stop offset="100%" stopColor={OBS.light.accent} stopOpacity={0.25} />
           </linearGradient>
           <radialGradient id={`cp-steam-hub-${uid}`} cx="50%" cy="35%" r="70%">
-            <stop offset="0%" stopColor="#3d3018" />
-            <stop offset="55%" stopColor="#1a1510" />
-            <stop offset="100%" stopColor="#0a0806" />
+            <stop offset="0%" stopColor={OBS.space.lit} />
+            <stop offset="55%" stopColor={OBS.space.raised} />
+            <stop offset="100%" stopColor={OBS.space.outer} />
           </radialGradient>
           <linearGradient id="cp-playhead-slot-fill" x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%" stopColor="var(--gold-lt)" stopOpacity={0.05} />
@@ -695,7 +695,7 @@ export function CosmicClockWheel({
           <linearGradient id={`cosmic-needle-${uid}`} x1="0%" y1="100%" x2="0%" y2="0%">
             <stop offset="0%" stopColor="var(--gold-dp)" stopOpacity={0.35} />
             <stop offset="45%" stopColor="var(--gold-lt)" stopOpacity={0.95} />
-            <stop offset="100%" stopColor="#fff8e7" stopOpacity={1} />
+            <stop offset="100%" stopColor={OBS.ink.bright} stopOpacity={1} />
           </linearGradient>
           <clipPath id={`cosmic-dome-${uid}`}>
             <rect x={0} y={0} width={800} height={CY} />
@@ -818,22 +818,22 @@ export function CosmicClockWheel({
         <g className="cp-cosmic-hub cp-steampunk-hub">
           <path
             d={gearTeethPath(CX, CY, HUB_R + 8, 18, 2.4)}
-            fill="#2a2218"
-            stroke="#c9a227"
+            fill={OBS.space.raised}
+            stroke={OBS.light.accent}
             strokeWidth={0.55}
             className="cp-steampunk-escapement"
           />
           <path
             d={`M ${CX - HUB_R - 8} ${CY} A ${HUB_R + 8} ${HUB_R + 8} 0 0 1 ${CX + HUB_R + 8} ${CY} Z`}
             fill={`url(#cp-steam-hub-${uid})`}
-            stroke="#8a6b1e"
+            stroke={OBS.light.deep}
             strokeWidth={1.6}
           />
           <path
             d={`M ${CX - HUB_R + 2} ${CY} A ${HUB_R - 2} ${HUB_R - 2} 0 0 1 ${CX + HUB_R - 2} ${CY} Z`}
-            fill="#0c0a08"
+            fill={OBS.space.core}
             fillOpacity={0.72}
-            stroke="#c9a227"
+            stroke={OBS.light.accent}
             strokeWidth={0.7}
             strokeOpacity={0.55}
           />
@@ -875,7 +875,7 @@ export function CosmicClockWheel({
             y={CY + 2}
             textAnchor="middle"
             fontSize={8}
-            fill="rgba(240, 226, 176, 0.9)"
+            fill={OBS.ink.soft}
             fontFamily={OBS.typography.micro}
             fontWeight={600}
             className="cp-cosmic-hub-date"
@@ -920,7 +920,7 @@ export function CosmicClockWheel({
         </button>
         {howtoOpen && (
           <p className="cp-clock-howto-body">
-            The gold marker at the top is now. Each ring is a cycle — the mark under the marker is the
+            The light marker at the top is now. Each ring is a cycle — the mark under the marker is the
             current value. Hub shows local time and date; moon and weather sit just below. Culture
             calendars live in Atlas and in the readout under the clock.
           </p>

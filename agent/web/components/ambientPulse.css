@@ -1,0 +1,136 @@
+/* Ambient pulse + slide-stone (onyx). Ported from lib/design/onyx-ref/delphi.html */
+
+.cp-ambient-pulse {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.cp-pulse-ring {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--light);
+  opacity: 0.25;
+  pointer-events: none;
+}
+
+.cp-pulse-ring.beat {
+  animation: cp-pulse-beat 1s ease-out;
+}
+
+.cp-pulse-ring.chime {
+  animation: cp-pulse-chime 2.4s ease-out;
+}
+
+@keyframes cp-pulse-beat {
+  0% {
+    box-shadow: 0 0 0 0 rgba(140, 124, 255, 0.5);
+    opacity: 0.9;
+  }
+  100% {
+    box-shadow: 0 0 0 9px rgba(140, 124, 255, 0);
+    opacity: 0.25;
+  }
+}
+
+@keyframes cp-pulse-chime {
+  0% {
+    box-shadow: 0 0 0 0 rgba(169, 156, 255, 0.7);
+    opacity: 1;
+    transform: translateX(-50%) scale(1.6);
+  }
+  100% {
+    box-shadow: 0 0 0 40px rgba(169, 156, 255, 0);
+    opacity: 0.25;
+    transform: translateX(-50%) scale(1);
+  }
+}
+
+.cp-stone-track {
+  position: absolute;
+  top: 12px;
+  right: max(10px, var(--safe-r));
+  z-index: 9;
+  width: 58px;
+  height: 24px;
+  border-radius: 14px;
+  border: 0.5px solid var(--edge);
+  background: rgba(120, 108, 200, 0.04);
+  display: flex;
+  align-items: center;
+  padding: 0 3px;
+  cursor: grab;
+  pointer-events: auto;
+  transition: border-color var(--lift), background var(--lift);
+  -webkit-user-select: none;
+  user-select: none;
+  touch-action: none;
+}
+
+.cp-stone-track:active {
+  cursor: grabbing;
+}
+
+.cp-stone-track.quiet {
+  border-color: var(--ink-faint);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.cp-groove-on {
+  position: absolute;
+  left: 9px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--light);
+  opacity: 0.7;
+  transition: opacity var(--lift);
+}
+
+.cp-groove-off {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 5px;
+  height: 0.5px;
+  background: var(--ink-faint);
+}
+
+.cp-stone-track.quiet .cp-groove-on {
+  opacity: 0.15;
+}
+
+.cp-stone {
+  position: absolute;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  z-index: 2;
+  will-change: left;
+}
+
+.cp-stone svg {
+  display: block;
+  filter: drop-shadow(0 0 5px rgba(140, 124, 255, 0.35));
+  transition: filter var(--lift);
+}
+
+.cp-stone-track.quiet .cp-stone svg {
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-pulse-ring.beat,
+  .cp-pulse-ring.chime {
+    animation: none;
+  }
+}

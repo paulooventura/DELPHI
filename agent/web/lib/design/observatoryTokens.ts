@@ -1,37 +1,77 @@
-/** Modern Observatory palette — shared across canvas, SVG, and CSS. */
+/**
+ * DELPHI — Onyx material tokens (TypeScript mirror of app/onyx-tokens.css).
+ *
+ * One stone, one light. Polished black glass with a single cold violet living
+ * inside it. Light ENTERS at the top edge and pools to black at the bottom.
+ * Nothing emits; the accent is caught, never broadcast.
+ *
+ * CSS owns the surface gradients; this module is for canvas / SVG / inline styles.
+ */
+
 export const OBS = {
   space: {
-    outer: "#05070B",
-    core: "#0D111A",
+    outer: "#030304", // --onyx-void
+    core: "#070709", // --onyx-base
+    raised: "#0c0c11", // --onyx-raised
+    lit: "#15141d", // --onyx-lit
   },
+  light: {
+    core: "#a99cff",
+    accent: "#8a7bff",
+    deep: "#6c5cff",
+    far: "#3a2f8f",
+  },
+  edge: {
+    bright: "rgba(140, 124, 255, 0.40)",
+    default: "rgba(140, 124, 255, 0.20)",
+    faint: "rgba(140, 124, 255, 0.14)",
+  },
+  ink: {
+    bright: "#eeecfb",
+    body: "#d3d0e2",
+    soft: "#8f8ca3",
+    quiet: "#605d72",
+    faint: "#4a4756",
+  },
+  /** @deprecated Prefer OBS.light — kept so older call sites still compile. */
   vector: {
-    structural: "rgba(255, 255, 255, 0.15)",
-    structuralStrong: "rgba(255, 255, 255, 0.28)",
-    strokeMin: 0.75,
-    strokeMax: 1.5,
+    structural: "rgba(140, 124, 255, 0.20)",
+    structuralStrong: "rgba(140, 124, 255, 0.40)",
+    strokeMin: 0.5,
+    strokeMax: 1.25,
   },
   day: {
-    ink: "#E2E8F0",
-    accent: "#60A5FA",
-    glow: "rgba(96, 165, 250, 0.35)",
+    ink: "#d3d0e2",
+    accent: "#8a7bff",
+    glow: "rgba(140, 124, 255, 0.28)",
   },
   night: {
-    amber: "#D97706",
-    gold: "#F59E0B",
-    glow: "rgba(217, 119, 6, 0.28)",
+    amber: "#6c5cff",
+    gold: "#a99cff",
+    glow: "rgba(169, 156, 255, 0.22)",
   },
   celestial: {
-    targetLock: "#10B981",
-    targetGlow: "rgba(16, 185, 129, 0.45)",
-    crosshair: "rgba(96, 165, 250, 0.82)",
-    horizon: "rgba(255, 255, 255, 0.22)",
-    ecliptic: "rgba(245, 158, 11, 0.42)",
-    meridian: "rgba(255, 255, 255, 0.18)",
-    starAbove: "#E2E8F0",
-    starBelow: "rgba(106, 140, 176, 0.55)",
-    subterraneanTop: "#1a1208",
-    subterraneanMid: "#120c06",
-    subterraneanBottom: "#0a0704",
+    targetLock: "#a99cff",
+    targetGlow: "rgba(169, 156, 255, 0.4)",
+    crosshair: "rgba(140, 124, 255, 0.75)",
+    horizon: "rgba(140, 124, 255, 0.22)",
+    ecliptic: "rgba(140, 124, 255, 0.35)",
+    meridian: "rgba(140, 124, 255, 0.16)",
+    starAbove: "#eeecfb",
+    starBelow: "rgba(108, 92, 255, 0.45)",
+    subterraneanTop: "#0c0c11",
+    subterraneanMid: "#070709",
+    subterraneanBottom: "#030304",
+  },
+  claim: {
+    measurement: "#8a7bff",
+    convention: "#6c5cff",
+    interpretation: "rgba(140, 124, 255, 0.20)",
+  },
+  motion: {
+    settle: "620ms cubic-bezier(0.16, 1, 0.30, 1)",
+    breathe: "1400ms cubic-bezier(0.40, 0, 0.20, 1)",
+    lift: "280ms cubic-bezier(0.20, 0, 0.10, 1)",
   },
   typography: {
     micro: 'var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif)',

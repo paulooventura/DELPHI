@@ -1,0 +1,100 @@
+/* ============================================================================
+   DELPHI — Onyx material tokens
+   ----------------------------------------------------------------------------
+   One stone, one light. Every surface, ring, and readout inherits from these.
+   Import once at the root; observatoryTokens.ts references the var() names.
+
+   The material is polished black glass with a single cold violet light living
+   inside it. Light ENTERS at the top edge and pools to black at the bottom.
+   Nothing emits; the accent is caught, never broadcast.
+   ============================================================================ */
+
+:root {
+  /* ---- The stone -------------------------------------------------------- */
+  /* Near-black with a faint violet cast so ground and light share a family.
+     Never pure #000 — pure black reads as "screen off", not "polished stone". */
+  --onyx-void:        #030304;   /* deepest — screen edges, true shadow      */
+  --onyx-base:        #070709;   /* page ground                              */
+  --onyx-raised:      #0c0c11;   /* a surface lifted toward the light        */
+  --onyx-lit:         #15141d;   /* the top edge of glass, where light lands */
+
+  /* Translucent surface fills — panels you can almost see into.
+     Layered as gradients in --surface-glass below; these are the stops. */
+  --onyx-glass-top:    rgba(60, 54, 96, 0.20);   /* light entering the edge  */
+  --onyx-glass-mid:    rgba(20, 18, 32, 0.50);
+  --onyx-glass-deep:   rgba(8, 8, 13, 0.72);     /* pooling to black         */
+
+  /* ---- The light -------------------------------------------------------- */
+  /* A single cold violet. This is the ONLY hue in the entire app.
+     Three intensities — the light near, mid, and far from its source. */
+  --light-core:       #a99cff;   /* highlight — catch-light, nearest source  */
+  --light:            #8a7bff;   /* the accent proper                        */
+  --light-deep:       #6c5cff;   /* the light seen through more stone        */
+  --light-far:        #3a2f8f;   /* light almost lost in the dark            */
+
+  /* Light as a membrane — hairlines, facet edges, seams in the glass.
+     Low-opacity violet, never a solid gray border. */
+  --edge-bright:      rgba(140, 124, 255, 0.40);  /* a lit facet edge        */
+  --edge:             rgba(140, 124, 255, 0.20);  /* default rim             */
+  --edge-faint:       rgba(140, 124, 255, 0.14);  /* a seam in glass         */
+
+  /* ---- Text — engraved, not printed ------------------------------------ */
+  --ink-bright:       #eeecfb;   /* the one thing being said — headlines     */
+  --ink:              #d3d0e2;   /* body                                     */
+  --ink-soft:         #8f8ca3;   /* supporting                               */
+  --ink-quiet:        #605d72;   /* labels, coordinates, provenance          */
+  --ink-faint:        #4a4756;   /* the quietest mark that's still legible   */
+
+  /* ---- Composed surfaces (use these directly) --------------------------- */
+
+  /* A panel of black glass. Light enters top-left, pools bottom-right.
+     The inset top line is the catch-light on a polished edge — the single
+     most important detail. Without it, this is just a dark card. */
+  --surface-glass:
+    linear-gradient(158deg,
+      var(--onyx-glass-top) 0%,
+      var(--onyx-glass-mid) 36%,
+      var(--onyx-glass-deep) 100%);
+  --surface-glass-inset:
+    inset 0 1px 1px rgba(160, 146, 255, 0.26),   /* catch-light on top edge  */
+    inset 0 -14px 30px rgba(0, 0, 0, 0.55);      /* depth pooling at bottom  */
+
+  /* The page itself — an organic pool of light in a dark field, not flat. */
+  --surface-ground:
+    radial-gradient(140% 100% at 50% -10%,
+      var(--onyx-lit) 0%,
+      var(--onyx-base) 55%,
+      var(--onyx-void) 100%);
+
+  /* ---- Facet edge (for SVG rings + bezels) ------------------------------ */
+  /* A beveled glass rim reads as a gradient stroke — bright where light hits
+     the cut, dim in shadow. Reference in SVG via url(#facet-edge). Provided
+     as a template; the <defs> block lives in onyx-defs.svg. */
+
+  /* ---- Motion — the weight of stone ------------------------------------- */
+  /* Glass and stone are heavy and still. Nothing bounces, nothing is quick.
+     Slow, exact, weighted. Restraint in motion separates refined from flashy. */
+  --settle:           620ms cubic-bezier(0.16, 1, 0.30, 1);  /* the bezel turning */
+  --breathe:          1400ms cubic-bezier(0.40, 0, 0.20, 1); /* ambient       */
+  --lift:             280ms cubic-bezier(0.20, 0, 0.10, 1);  /* a tap response */
+
+  /* ---- Geometry — machined tolerance ------------------------------------ */
+  --cut:              22px;   /* panel corner — a cut edge, consistent        */
+  --cut-tight:        14px;   /* inner elements                               */
+  --hair:             0.5px;  /* every rule is a hairline. never thicker.     */
+
+  /* Provenance-claim rendering. Three kinds of mark, ONE material.
+     Claim, not precision — a Tzolkin ring is not a worse Moon ring. */
+  --claim-measurement: var(--light);        /* graduated, lit                 */
+  --claim-convention:  var(--light-deep);   /* discrete facets                */
+  --claim-interpretation: var(--edge);      /* detached, dashed, unlit        */
+}
+
+/* ---- Reduced motion: the stone simply is, without settling ------------- */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --settle: 1ms linear;
+    --breathe: 1ms linear;
+    --lift: 1ms linear;
+  }
+}

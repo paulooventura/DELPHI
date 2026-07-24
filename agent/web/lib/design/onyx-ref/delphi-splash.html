@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+<title>Delphi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,400&family=Space+Grotesk:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root{
+    --void:#020203;--base:#060608;--lit:#15141d;
+    --core:#a99cff;--light:#8a7bff;
+    --edge-bright:rgba(140,124,255,0.40);--edge:rgba(140,124,255,0.18);
+    --ink-bright:#eeecfb;--ink:#d3d0e2;--ink-soft:#8f8ca3;--ink-quiet:#605d72;--ink-faint:#413f4e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html,body{height:100%;overflow:hidden;}
+  body{font-family:'Space Grotesk',system-ui,sans-serif;color:var(--ink);background:#000;
+    display:flex;align-items:center;justify-content:center;-webkit-font-smoothing:antialiased;}
+  @media (prefers-reduced-motion:reduce){*{animation-duration:1ms !important;transition-duration:1ms !important;}}
+
+  .device{width:min(100vw,402px);height:min(100vh,872px);position:relative;overflow:hidden;background:#000;}
+
+  /* ---- the film, full-bleed ---------------------------------------------- */
+  .film{position:absolute;inset:0;z-index:1;overflow:hidden;}
+  .film video{position:absolute;top:50%;left:50%;min-width:100%;min-height:100%;
+    width:auto;height:auto;transform:translate(-50%,-50%) scale(1.08);
+    object-fit:cover;
+    /* grade the grey film toward onyx: cool it, deepen it, tint violet */
+    filter:grayscale(0.4) contrast(1.12) brightness(0.82) saturate(1.1);
+    animation:slowpush 12s ease-out forwards;}
+  @keyframes slowpush{to{transform:translate(-50%,-50%) scale(1.16);}}
+
+  /* violet wash that marries the film to the onyx palette */
+  .grade{position:absolute;inset:0;z-index:2;pointer-events:none;
+    background:
+      radial-gradient(120% 90% at 50% 34%,transparent 0%,transparent 42%,rgba(6,5,13,0.5)78%,rgba(2,2,3,0.9)100%),
+      linear-gradient(180deg,rgba(20,18,40,0.28)0%,rgba(8,7,20,0.34)55%,rgba(2,2,4,0.7)100%);
+    mix-blend-mode:multiply;}
+  .tint{position:absolute;inset:0;z-index:3;pointer-events:none;
+    background:radial-gradient(90% 70% at 50% 30%,rgba(120,108,220,0.10)0%,transparent 60%);
+    mix-blend-mode:screen;}
+
+  /* the film gently dims as the wordmark resolves */
+  .dimmer{position:absolute;inset:0;z-index:4;pointer-events:none;background:var(--void);
+    opacity:0;animation:settle 12s ease-in-out forwards;}
+  @keyframes settle{0%,55%{opacity:0}100%{opacity:0.42}}
+
+  /* ---- resolving chrome -------------------------------------------------- */
+  .wordmark{position:absolute;top:46%;left:0;right:0;z-index:6;text-align:center;
+    opacity:0;animation:reveal 2.4s ease-out 1.4s forwards;}
+  .wordmark .name{font-family:'Fraunces',serif;font-optical-sizing:auto;
+    font-size:34px;font-weight:300;letter-spacing:0.42em;color:var(--ink-bright);
+    padding-left:0.42em;}
+  .wordmark .tag{font-size:10px;letter-spacing:0.36em;color:var(--ink-quiet);margin-top:16px;font-weight:300;
+    opacity:0;animation:reveal 2s ease-out 2.6s forwards;}
+  @keyframes reveal{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* a single hairline that draws itself under the name — a horizon */
+  .horizon{position:absolute;top:calc(46% + 58px);left:50%;transform:translateX(-50%);z-index:6;
+    height:0.5px;width:0;background:linear-gradient(90deg,transparent,var(--edge-bright),transparent);
+    animation:draw 2.6s ease-out 2.2s forwards;}
+  @keyframes draw{to{width:180px}}
+
+  /* coordinates resolve at the corners, like an instrument acquiring a fix */
+  .fix{position:absolute;z-index:6;font-size:10px;letter-spacing:0.18em;color:var(--ink-faint);
+    opacity:0;animation:reveal 1.8s ease-out 3.2s forwards;}
+  .fix.tl{top:52px;left:26px;}
+  .fix.tr{top:52px;right:26px;}
+  .fix.bl{bottom:120px;left:26px;}
+  .fix.br{bottom:120px;right:26px;}
+
+  /* enter affordance */
+  .enter{position:absolute;bottom:56px;left:0;right:0;z-index:7;text-align:center;
+    opacity:0;animation:reveal 2s ease-out 4s forwards;}
+  .enter button{background:none;border:0.5px solid var(--edge-bright);border-radius:26px;
+    padding:13px 30px;color:var(--ink-bright);font-family:inherit;font-size:12px;
+    letter-spacing:0.14em;cursor:pointer;transition:all 280ms cubic-bezier(0.2,0,0.1,1);
+    -webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px);}
+  .enter button:hover{background:rgba(120,108,200,0.12);border-color:var(--core);}
+  .enter button:active{transform:scale(0.97);}
+  .enter .pulse{display:block;margin-top:16px;font-size:10px;letter-spacing:0.1em;color:var(--ink-faint);
+    animation:pulse 3.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:0.4}50%{opacity:0.85}}
+
+  /* a few live stars settle over the film to bridge into the sky view */
+  .seed{position:absolute;border-radius:50%;background:#fff;z-index:5;opacity:0;
+    animation:star-in 3s ease-out forwards,tw var(--tw,4s) ease-in-out infinite;
+    animation-delay:var(--sd,2s),var(--sd,2s);}
+  @keyframes star-in{to{opacity:var(--o,0.5)}}
+  @keyframes tw{0%,100%{opacity:var(--o,0.5)}50%{opacity:calc(var(--o,0.5)*0.4)}}
+</style>
+</head>
+<body>
+<div class="device" id="dev" role="application" aria-label="Delphi">
+
+  <div class="film">
+    <video autoplay muted loop playsinline>
+      <source src="delphi-intro.mp4" type="video/mp4" />
+    </video>
+  </div>
+  <div class="grade"></div>
+  <div class="tint"></div>
+  <div class="dimmer"></div>
+
+  <div id="seeds"></div>
+
+  <div class="wordmark">
+    <div class="name">DELPHI</div>
+    <div class="tag">WORLD CYCLES · PRECISE TO THE ARCMINUTE</div>
+  </div>
+  <div class="horizon"></div>
+
+  <span class="fix tl">36.16°N</span>
+  <span class="fix tr">86.78°W</span>
+  <span class="fix bl">ALT 182M</span>
+  <span class="fix br">9:47 PM CDT</span>
+
+  <div class="enter">
+    <button id="enterBtn">tune in ↗</button>
+    <span class="pulse">or hold still, and look up</span>
+  </div>
+
+</div>
+
+<script>
+  // seed a handful of twinkling stars over the film — the bridge into sky view
+  const seeds=document.getElementById('seeds');
+  let html='';
+  for(let i=0;i<28;i++){
+    const top=Math.pow(Math.random(),1.5)*70,left=Math.random()*100;
+    const s=(Math.random()<0.2?Math.random()*1.3+1:Math.random()*0.8+0.4).toFixed(1);
+    const o=(Math.random()*0.45+0.3).toFixed(2),sd=(Math.random()*2.5+2).toFixed(1),tw=(Math.random()*4+3).toFixed(1);
+    html+=`<span class="seed" style="top:${top}%;left:${left}%;width:${s}px;height:${s}px;--o:${o};--sd:${sd}s;--tw:${tw}s"></span>`;
+  }
+  seeds.innerHTML=html;
+
+  document.getElementById('enterBtn').addEventListener('click',()=>{
+    if(window.sendPrompt) sendPrompt('Enter the sky view.');
+  });
+</script>
+</body>
+</html>
