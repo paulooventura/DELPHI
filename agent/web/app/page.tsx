@@ -17,7 +17,8 @@ import { fetchDeclinationDeg } from "../lib/magneticDeclination";
 import { geoDistanceM } from "../lib/sensorSmoothing";
 import { altAzToEnu, enuToAltAz } from "../lib/sphericalView";
 import { DashboardContainer } from "../components/DashboardContainer";
-import { COSMIC_CLOCK_OUTER_RADIUS } from "../components/CosmicClockWheel";
+import { COSMIC_CLOCK_OUTER_RADIUS, type RingSelectMeta } from "../components/CosmicClockWheel";
+import type { ClockRingData } from "../lib/timeEngine";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
@@ -240,6 +241,7 @@ export default function Home() {
   const [compassCalibrated, setCompassCalibrated] = useState(() => getIosAlphaOffset() != null);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
+  const [focusRingData, setFocusRingData] = useState<ClockRingData | null>(null);
   const [clockSfxOn, setClockSfxOn] = useState(true);
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
 
@@ -404,7 +406,6 @@ export default function Home() {
   const snapshotOpts = useMemo(
     () => ({
       enabledIds: cyclePrefs.enabledIds,
-      mayaCorrelation: cyclePrefs.mayaCorrelation,
       ayanamsa: cyclePrefs.ayanamsa,
       lat: signals?.lat ?? undefined,
       lon: signals?.lon ?? undefined,
@@ -447,7 +448,6 @@ export default function Home() {
       timeZone: snapshotOpts.timeZone,
       lat: snapshotOpts.lat,
       lon: snapshotOpts.lon,
-      mayaCorrelation: snapshotOpts.mayaCorrelation,
       ayanamsa: snapshotOpts.ayanamsa,
     });
   }, [minuteKey, cosmic?.now, animNow, snapshotOpts]);
@@ -954,13 +954,15 @@ export default function Home() {
     finishWheelPan(e);
   }
 
-  function handleRingSelect(id: string, meta: { radius: number }) {
+  function handleRingSelect(id: string, meta: RingSelectMeta) {
     if (suppressRingClickRef.current) return;
     setFocusRing(prev => {
       if (prev === id) {
+        setFocusRingData(null);
         setWheelZoom(1);
         return null;
       }
+      setFocusRingData(meta.ring);
       setWheelZoom(clampZoom(zoomForRingRadius(meta.radius, true)));
       setHoverRing(id);
       return id;
@@ -969,6 +971,7 @@ export default function Home() {
 
   function clearRingFocus() {
     setFocusRing(null);
+    setFocusRingData(null);
     setWheelPan({ x: 0, y: 0 });
     setWheelZoom(heroZoomDefault);
   }
@@ -1115,6 +1118,7 @@ export default function Home() {
           {focusRing && (
             <RingFocusPanel
               ringId={focusRing}
+              ring={focusRingData}
               cycles={cycles}
               cosmic={cosmic}
               now={animNow}
@@ -1144,6 +1148,7 @@ export default function Home() {
                   lat={mapLat}
                   lon={mapLon}
                   cosmic={cosmic}
+                  onRingSelect={handleRingSelect}
                   weather={
                     cycles?.weather
                       ? {

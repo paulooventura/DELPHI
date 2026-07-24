@@ -40,6 +40,7 @@ export const ethiopianPlugin: CyclePlugin = {
         copticMonthName: copMonth,
       },
       accuracy: "arithmetical",
+      claim: "convention",
       sources: ["Ethiopian civil calendar + Coptic companion"],
       family: "calendar",
       tier: "A",

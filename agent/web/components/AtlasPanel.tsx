@@ -62,21 +62,9 @@ export function AtlasPanel({
       </div>
 
       <div className="cp-atlas-options">
-        <label className="cp-atlas-option">
-          <span>Maya correlation</span>
-          <select
-            value={prefs.mayaCorrelation}
-            onChange={(e) =>
-              onChange({
-                ...prefs,
-                mayaCorrelation: e.target.value === "gmt_584283" ? "gmt_584283" : "delphi_kin1",
-              })
-            }
-          >
-            <option value="delphi_kin1">DELPHI Kin-1 (2024-07-26)</option>
-            <option value="gmt_584283">GMT 584283</option>
-          </select>
-        </label>
+        {/* Maya correlation is no longer a single-select: the canonical Tzolk'in is always
+            GMT 584283 (true to the Long Count), and the DELPHI-anchor count is its own
+            toggleable reading in the list below. Enable both to compare. */}
         <label className="cp-atlas-option">
           <span>Ayanamsa</span>
           <select

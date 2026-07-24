@@ -2,6 +2,8 @@
 
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import type { CosmicClockState } from "../lib/cosmic";
+import type { ClockRingData } from "../lib/timeEngine";
+import { claimSentence } from "../lib/design/claimMarks";
 
 const RING_NAMES: Record<string, string> = {
   ms: "Milliseconds",
@@ -30,6 +32,7 @@ function ringDetail(
   cycles: CycleSnapshot | null,
   cosmic: CosmicClockState | null,
   now: Date,
+  skipClaim = false,
 ): Array<{ label: string; value: string }> {
   const rows: Array<{ label: string; value: string }> = [];
   if (!cycles) return rows;
@@ -91,6 +94,11 @@ function ringDetail(
   const layer = cosmic?.layers.find(l => l.id === id || (id === "h" && l.id === "solar-day"));
   if (layer) {
     rows.push({ label: "Engine angle", value: `${layer.angleDeg.toFixed(3)}°` });
+    // Provenance as a sentence, not a badge — precision and kind-of-claim are
+    // different things, and the disagreement surface (Task 9) will grow from here.
+    // Skipped when the tapped ring already supplies its own claim (avoids a second,
+    // possibly conflicting sentence — e.g. Hours-the-convention vs solar-day-the-measurement).
+    if (layer.claim && !skipClaim) rows.push({ label: "Claim", value: claimSentence(layer.claim, layer.accuracy, layer.sources) });
     for (const [k, v] of Object.entries(layer.meta)) {
       if (v != null) rows.push({ label: k, value: String(v) });
     }
@@ -109,19 +117,32 @@ function ringDetail(
 
 export function RingFocusPanel({
   ringId,
+  ring = null,
   cycles,
   cosmic,
   now,
   onClose,
 }: {
   ringId: string;
+  /** The tapped wheel ring — carries the claim taxonomy so the sentence reaches visible rings. */
+  ring?: ClockRingData | null;
   cycles: CycleSnapshot | null;
   cosmic: CosmicClockState | null;
   now: Date;
   onClose: () => void;
 }) {
-  const name = RING_NAMES[ringId] ?? ringId;
-  const rows = ringDetail(ringId, cycles, cosmic, now);
+  const name = RING_NAMES[ringId] ?? ring?.name ?? ringId;
+  const detail = ringDetail(ringId, cycles, cosmic, now, Boolean(ring?.claim));
+  // Lead with the ring's own claim sentence (Task 7 payload). A bare value row is added only
+  // when ringDetail found nothing else, so covered civil/cosmic rings don't get a duplicate.
+  const lead: Array<{ label: string; value: string }> = [];
+  if (ring && detail.length === 0) {
+    lead.push({ label: "Now", value: `${ring.activeSegment.symbol} ${ring.activeSegment.name}`.trim() });
+  }
+  if (ring?.claim) {
+    lead.push({ label: "Claim", value: claimSentence(ring.claim, ring.accuracy, ring.sources) });
+  }
+  const rows = [...lead, ...detail];
 
   return (
     <div className="cp-ring-focus cp-tabular" role="dialog" aria-label={`${name} details`}>

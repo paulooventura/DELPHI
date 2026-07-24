@@ -9,7 +9,7 @@ import { hijriPlugin } from "./plugins/hijri";
 import { lunarPlugin } from "./plugins/lunar";
 import { persianPlugin } from "./plugins/persian";
 import { tropicalPlugin } from "./plugins/tropical";
-import { tzolkinPlugin } from "./plugins/tzolkin";
+import { tzolkinDelphiPlugin, tzolkinPlugin } from "./plugins/tzolkin";
 
 /** Canonical plugin registry — single source for Atlas / Clock / Moment. */
 export const WORLD_CYCLE_PLUGINS: CyclePlugin[] = [
@@ -23,6 +23,7 @@ export const WORLD_CYCLE_PLUGINS: CyclePlugin[] = [
   persianPlugin,
   ethiopianPlugin,
   tzolkinPlugin,
+  tzolkinDelphiPlugin,
   galactic1320Plugin,
 ];
 

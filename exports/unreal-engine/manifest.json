@@ -1,0 +1,69 @@
+﻿{
+    "modules":  [
+                    {
+                        "sources":  [
+                                        "skyPositions.ts",
+                                        "cosmic/celestialBodies.ts",
+                                        "cosmic/minorBodies.ts"
+                                    ],
+                        "id":  "ephemeris",
+                        "ueTarget":  "UDelphiEphemeris"
+                    },
+                    {
+                        "sources":  [
+                                        "sphericalView.ts"
+                                    ],
+                        "id":  "spherical",
+                        "ueTarget":  "FDelphiSphericalView"
+                    },
+                    {
+                        "sources":  [
+                                        "deviceAttitude.ts",
+                                        "orientationCalibration.ts"
+                                    ],
+                        "id":  "attitude",
+                        "ueTarget":  "FDelphiDeviceAttitude"
+                    },
+                    {
+                        "sources":  [
+                                        "hooks/useCosmicClock.ts",
+                                        "cosmic/CosmicClockEngine.ts",
+                                        "galacticFrequency.ts"
+                                    ],
+                        "id":  "clock",
+                        "ueTarget":  "UDelphiCosmicClockSubsystem"
+                    },
+                    {
+                        "sources":  [
+                                        "worldCycles/"
+                                    ],
+                        "id":  "calendars",
+                        "ueTarget":  "DataTables"
+                    },
+                    {
+                        "sources":  [
+                                        "cosmicAssets.ts",
+                                        "design-tokens.json"
+                                    ],
+                        "id":  "visual",
+                        "ueTarget":  "MPC_DelphiObservatory"
+                    }
+                ],
+    "assets":  [
+                   "assets/delphi-brand-reference.png",
+                   "assets/13-tones-20-tribes.png",
+                   "assets/icon.svg"
+               ],
+    "startHere":  "README-START-HERE.md",
+    "liveSite":  "https://delphi.pauloventura.org",
+    "version":  "1.0.0",
+    "gitCommit":  "55eae03",
+    "name":  "DELPHI-UE-Export",
+    "ueRecommendedVersion":  "5.4+",
+    "packedAtUtc":  "2026-07-22T21:56:57.3037844Z",
+    "skymapFixes":  [
+                        "Sun/moon calibration uses liveAttitudeRef view azimuth (not throttled HUD heading)",
+                        "CelestialSkyView recomputes ephemeris every paint frame"
+                    ],
+    "migrationGuide":  "MIGRATION-GUIDE.md"
+}

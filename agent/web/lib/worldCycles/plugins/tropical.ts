@@ -45,7 +45,10 @@ export const tropicalPlugin: CyclePlugin = {
         longitude: Number(lambda.toFixed(4)),
         degreeInSign: Number(degInSign.toFixed(4)),
       },
+      // Position is measured to arcminutes; the sign attribution is an authored
+      // Hellenistic convention (~2nd c. BCE). Precise number, interpretive claim.
       accuracy: "astronomical",
+      claim: "interpretation",
       sources: ["VSOP-style mean solar λ (DELPHI math.ts)"],
       family: "zodiac",
       tier: "A",

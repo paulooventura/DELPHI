@@ -2,6 +2,7 @@ export type {
   AccuracyTier,
   AtlasPreset,
   AtlasPresetId,
+  ClaimKind,
   CycleContext,
   CyclePlugin,
   CycleReading,

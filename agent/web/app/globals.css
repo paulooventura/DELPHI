@@ -529,22 +529,27 @@ html,body {
   border: 1px solid transparent;
 }
 
-.cp-layer-tier-measured {
-  color: #34d399;
-  border-color: rgba(52, 211, 153, 0.3);
-  background: rgba(52, 211, 153, 0.08);
+/* Claim registers — different KINDS of mark, not a strong→weak ranking. Interpretation
+   carries a dashed border to echo the detached/authored register on the wheel. */
+.cp-claim-badge-measurement {
+  color: #7dd3fc;
+  border-color: rgba(125, 211, 252, 0.35);
+  background: rgba(125, 211, 252, 0.08);
+  border-style: solid;
 }
 
-.cp-layer-tier-computed {
-  color: #60a5fa;
-  border-color: rgba(96, 165, 250, 0.3);
-  background: rgba(96, 165, 250, 0.08);
-}
-
-.cp-layer-tier-cultural {
+.cp-claim-badge-convention {
   color: #c9a227;
-  border-color: rgba(201, 162, 39, 0.3);
+  border-color: rgba(201, 162, 39, 0.35);
   background: rgba(201, 162, 39, 0.08);
+  border-style: solid;
+}
+
+.cp-claim-badge-interpretation {
+  color: #c4b5fd;
+  border-color: rgba(196, 181, 253, 0.55);
+  background: rgba(196, 181, 253, 0.08);
+  border-style: dashed;
 }
 
 .cp-zoom-label {

@@ -121,18 +121,10 @@ export function solarDayAngleDeg(now: Date, solarNoon: Date): number {
 
 export const PRECESSION_PERIOD_YEARS = 25772;
 
-export function precessionAngleDeg(date: Date): number {
-  const yearsSinceJ2000 = (julianDay(date) - 2451545.0) / 365.25;
-  return normalizeDeg((yearsSinceJ2000 / PRECESSION_PERIOD_YEARS) * 360);
-}
-
 export const SYNODIC_MONTH_DAYS = 29.530588853;
-const KNOWN_NEW_MOON = new Date("2000-01-06T18:14:00Z").getTime();
 
-export function lunarPhaseFraction(date: Date): number {
-  const elapsed = (date.getTime() - KNOWN_NEW_MOON) / 86400000;
-  return (((elapsed % SYNODIC_MONTH_DAYS) + SYNODIC_MONTH_DAYS) % SYNODIC_MONTH_DAYS) / SYNODIC_MONTH_DAYS;
-}
+// lunarPhaseFraction / precessionAngleDeg removed in the PHASE migration.
+// Use computePhases(jd, { only: [...] }) — see lib/phase/engine.
 
 /**
  * Meeus Ch.47 — low-precision geocentric lunar ecliptic coordinates (degrees).

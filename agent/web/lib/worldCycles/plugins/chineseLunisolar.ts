@@ -33,6 +33,7 @@ export const chineseLunisolarPlugin: CyclePlugin = {
         element: c.element,
       },
       accuracy: "arithmetical",
+      claim: "convention",
       sources: ["CNY table + synodic month index; leap-month map 1980–2050"],
       family: "calendar",
       tier: "A",

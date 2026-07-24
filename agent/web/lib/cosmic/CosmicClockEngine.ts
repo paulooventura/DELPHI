@@ -1,10 +1,10 @@
 import { getCycleSnapshot } from "../cycleSystems";
-import { computeSolarDayEvents, sunTropicalLongitude } from "./astronomy";
+import { computePhases } from "../phase/engine";
+import { jdFromDate } from "../phase/timeResolution";
+import { computeSolarDayEvents } from "./astronomy";
 import {
-  lunarPhaseFraction,
   muhurtaPhase,
   normalizeDeg,
-  precessionAngleDeg,
   PRECESSION_PERIOD_YEARS,
   solarDayAngleDeg,
   tideCycle,
@@ -44,13 +44,35 @@ export class CosmicClockEngine {
     const { lat, lon } = this.input;
     const dayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const solar = computeSolarDayEvents(dayLocal, lat, lon);
-    const lunarPhase = lunarPhaseFraction(now);
+
+    // Ephemeris spine: one pure PHASE call replaces the mean-period arithmetic.
+    // Drift vs the old math ran up to ~19h for the Moon and days for Mercury.
+    // tick() runs at ~60 Hz — scope to the four cycles the clock actually consumes
+    // so we don't compute planet-synodic/retrograde every frame.
+    const phases = computePhases(jdFromDate(now), {
+      lat,
+      lon,
+      only: ["lunar-synodic", "solar-day", "tropical-year", "precession"],
+    });
+    const lunarReading = phases.byId["lunar-synodic"];
+    const solarDayReading = phases.byId["solar-day"];
+    const tropReading = phases.byId["tropical-year"];
+    const precReading = phases.byId["precession"];
+
+    const lunarPhase = lunarReading?.phase ?? 0;
     const lunarAngleDeg = normalizeDeg(lunarPhase * 360);
     const tide = tideCycle(now, lunarPhase);
     const muhurta = muhurtaPhase(now, solar.sunrise);
-    const sunLon = sunTropicalLongitude(now);
-    const precession = precessionAngleDeg(now);
-    const solarDayAngle = solarDayAngleDeg(now, solar.solarNoon);
+    const sunLon = tropReading
+      ? normalizeDeg(Number(tropReading.meta?.solarLongitudeDeg ?? tropReading.angleDeg))
+      : 0;
+    const precession = precReading?.angleDeg ?? 0;
+    // PHASE convention: phase 0 = local midnight, 0.5 = solar noon. The clock's
+    // existing convention puts solar noon at 0°, so shift by half a cycle to keep
+    // the ring visually unchanged. Fall back to the old solver if PHASE skipped it.
+    const solarDayAngle = solarDayReading
+      ? normalizeDeg((solarDayReading.phase - 0.5) * 360)
+      : solarDayAngleDeg(now, solar.solarNoon);
 
     const sensors = buildSensorSnapshot({
       lat,
@@ -93,6 +115,9 @@ export class CosmicClockEngine {
         angleDeg: solarDayAngle,
         phase: solarDayAngle / 360,
         color: "#f59e0b",
+        accuracy: solarDayReading?.accuracy ?? "astronomical",
+        claim: "measurement",
+        sources: solarDayReading?.sources ?? ["equation of time + observer longitude"],
         meta: {
           solarNoonMs: solar.solarNoon.getTime(),
           sunriseMs: solar.sunrise.getTime(),
@@ -106,7 +131,12 @@ export class CosmicClockEngine {
         angleDeg: lunarAngleDeg,
         phase: lunarPhase,
         color: "#94a3b8",
-        meta: { illumination: Math.round(lunarPhase * 1000) / 10 },
+        accuracy: lunarReading?.accuracy ?? "astronomical",
+        claim: "measurement",
+        sources: lunarReading?.sources ?? ["astronomy-engine MoonPhase"],
+        meta: {
+          illumination: Math.round(Number(lunarReading?.meta?.illuminatedFraction ?? lunarPhase) * 1000) / 10,
+        },
       },
       {
         id: "tidal",
@@ -157,6 +187,9 @@ export class CosmicClockEngine {
         angleDeg: sunLon,
         phase: sunLon / 360,
         color: "#f97316",
+        accuracy: tropReading?.accuracy ?? "astronomical",
+        claim: "measurement",
+        sources: tropReading?.sources ?? ["astronomy-engine SunPosition"],
         meta: { longitude: sunLon, sign: cycles.westernZodiac.sign },
       },
       {
@@ -166,6 +199,9 @@ export class CosmicClockEngine {
         angleDeg: precession,
         phase: precession / 360,
         color: "#6366f1",
+        accuracy: precReading?.accuracy ?? "mean-orbit",
+        claim: "measurement",
+        sources: precReading?.sources ?? ["IAU 2006 precession rate, linear approximation"],
         meta: { periodYears: PRECESSION_PERIOD_YEARS },
       },
     ];

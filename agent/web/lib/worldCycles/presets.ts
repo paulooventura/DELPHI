@@ -4,13 +4,14 @@ export const ATLAS_PRESETS: AtlasPreset[] = [
   {
     id: "delphi_classic",
     label: "DELPHI Classic",
-    blurb: "Gregorian, tropical, lunar, Chinese year, Tzolk’in, and 13:20.",
+    blurb: "Gregorian, tropical, lunar, Chinese year, Tzolk’in (GMT + DELPHI anchor), and 13:20.",
     systemIds: [
       "gregorian",
       "tropical_zodiac",
       "lunar_phase",
       "chinese_year",
       "maya_tzolkin",
+      "maya_tzolkin_delphi",
       "galactic_1320",
     ],
   },

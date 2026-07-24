@@ -1,3 +1,5 @@
+import type { AccuracyTier, ClaimKind } from "../worldCycles/types";
+
 /** Tier 1 = innermost sensor pulse → Tier 6 = precession rim */
 export type CycleTier = 1 | 2 | 3 | 4 | 5 | 6;
 
@@ -11,6 +13,12 @@ export type CycleLayer = {
   phase: number;
   color: string;
   meta: Record<string, string | number | boolean | null>;
+  /** Precision of the number — present on ephemeris-backed layers. */
+  accuracy?: AccuracyTier;
+  /** What kind of claim the layer makes. Drives Task 7 visual styling (not accuracy). */
+  claim?: ClaimKind;
+  /** How the value was derived (data sources). */
+  sources?: string[];
 };
 
 export type SensorSnapshot = {

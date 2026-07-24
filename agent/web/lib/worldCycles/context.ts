@@ -5,7 +5,6 @@ export type CycleContextOptions = {
   timeZone?: string;
   lat?: number;
   lon?: number;
-  mayaCorrelation?: CycleContext["mayaCorrelation"];
   ayanamsa?: CycleContext["ayanamsa"];
 };
 
@@ -74,7 +73,6 @@ export function buildCycleContext(date: Date = new Date(), opts: CycleContextOpt
     localMinute: p.minute,
     localSecond: p.second,
     dayOfYear: dayOfYearFromYmd(p.year, p.month, p.day),
-    mayaCorrelation: opts.mayaCorrelation ?? "delphi_kin1",
     ayanamsa: opts.ayanamsa ?? "lahiri",
   };
 }

@@ -3,9 +3,12 @@
  * Astronomical rings use Meeus-grade solar/lunar math from cosmic/math.
  */
 
-import { julianDay, lunarPhaseFraction, sunEclipticLongitudeDeg } from "./cosmic/math";
-import { formatCodeWords, galacticDayFromKin } from "./galacticFrequency";
-import type { CycleReading } from "./worldCycles/types";
+import { julianDay, sunEclipticLongitudeDeg } from "./cosmic/math";
+import { computePhases } from "./phase/engine";
+import { jdFromDate } from "./phase/timeResolution";
+import type { PhaseSnapshot } from "./phase/types";
+import { dreamspellKinFromDate, formatCodeWords, galacticDayFromKin } from "./galacticFrequency";
+import type { AccuracyTier, ClaimKind, CycleReading } from "./worldCycles/types";
 
 // ─── Output types ───────────────────────────────────────────────────────────
 
@@ -24,6 +27,18 @@ export type ClockRingData = {
   /** Progress through the active segment, 0.0 (start) → 1.0 (end). */
   normalizedProgress: number;
   activeSegment: CycleSegment;
+  /** Precision of the number. Orthogonal to `claim` — a ring can be exact AND authored. */
+  accuracy?: AccuracyTier;
+  /** What kind of claim the ring makes. Drives Task 7 visual styling (not accuracy). */
+  claim?: ClaimKind;
+  /** How the value was produced (data sources). Replaces freeform provenance notes. */
+  sources?: string[];
+  /**
+   * Per-ring zero-point shift in cycles [0,1), applied at render (not baked into
+   * normalizedProgress). Traditions declare their own zero point here rather than
+   * accumulating one shim per tradition in the engine.
+   */
+  displayOffset?: number;
 };
 
 export type CosmicTimeSnapshot = {
@@ -35,28 +50,10 @@ export type CosmicTimeSnapshot = {
 
 export const COSMIC_RING_COUNT = 10;
 
-export type RingProvenanceTier = "measured" | "computed" | "cultural";
-
-/** Data trust tier for each ring — shown in layer readouts. */
-export function ringProvenanceTier(ringId: number): RingProvenanceTier {
-  if (ringId <= 3) return "measured";
-  if (ringId === 4 || ringId === 5 || ringId === 8 || ringId === 10 || ringId >= 11) return "cultural";
-  return "computed";
-}
-
-export function ringProvenanceNote(ringId: number): string {
-  switch (ringId) {
-    case 4: return "100 Kè per civil day (~14.4 min each)";
-    case 5: return "12 dual-hours · branch animals";
-    case 6: return "Synodic month · Meeus mean phase";
-    case 7: return "Tropical year · solar λ seasons";
-    case 8: return "Tzolk'in · Delphi anchor 2024-07-26";
-    case 9: return "Tropical zodiac · solar ecliptic λ";
-    case 10: return "Sexagenary 干支 · civil year index";
-    default:
-      return ringId >= 11 ? "World Cycle Atlas · registry plugin" : "";
-  }
-}
+// Provenance now lives on each ring as `accuracy` + `claim` + `sources` (see ClockRingData),
+// derived from the same taxonomy the plugins declare. The old hardcoded ringId→tier map
+// (ringProvenanceTier/Note, "measured/computed/cultural") was a parallel vocabulary and
+// has been removed — use ring.claim / claimSentence() instead.
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -68,9 +65,6 @@ const SEXAGENARY_CYCLE = 60;
 const DEG_PER_DAY = 0.9856;
 
 /** J2000.0 new moon anchor retained for documentation; phase uses cosmic/math. */
-
-/** Tzolkin kin 1 anchor (local civil midnight). */
-const TZOLKIN_ANCHOR_MS = new Date(2024, 6, 26).getTime();
 
 const TZOLKIN_SIGNS = [
   "Imix", "Ik", "Akbal", "Kan", "Chikchan", "Kimi", "Manik", "Lamat", "Muluk", "Ok",
@@ -160,10 +154,6 @@ function localDayFraction(date: Date): number {
   return ms / 86_400_000;
 }
 
-function localMidnightMs(date: Date): number {
-  return new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
-}
-
 function dayOfYear(date: Date): number {
   const start = new Date(date.getFullYear(), 0, 0);
   const today = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -183,12 +173,6 @@ function vernalEquinoxMs(year: number): number {
 
 function solarEclipticLongitudeDeg(date: Date): number {
   return sunEclipticLongitudeDeg(julianDay(date));
-}
-
-function tzolkinKin(date: Date): number {
-  const civilMidnight = localMidnightMs(date);
-  const diffDays = Math.floor((civilMidnight - TZOLKIN_ANCHOR_MS) / 86_400_000);
-  return mod(diffDays, 260) + 1;
 }
 
 function sexagenaryYearIndex(year: number): number {
@@ -227,6 +211,8 @@ function buildMillisecondsRing(date: Date): ClockRingData {
     ringId: 0,
     name: "Milliseconds",
     normalizedProgress: progress,
+    accuracy: "civil",
+    claim: "convention",
     activeSegment: {
       id: "milliseconds",
       name: `${pad3(ms)} ms`,
@@ -247,6 +233,8 @@ function buildSecondsRing(date: Date): ClockRingData {
     ringId: 1,
     name: "Seconds",
     normalizedProgress: progress,
+    accuracy: "civil",
+    claim: "convention",
     activeSegment: {
       id: "seconds",
       name: `${sec}.${pad3(ms)} s`,
@@ -266,6 +254,8 @@ function buildMinutesRing(date: Date): ClockRingData {
     ringId: 2,
     name: "Minutes",
     normalizedProgress: progress,
+    accuracy: "civil",
+    claim: "convention",
     activeSegment: {
       id: "minutes",
       name: `${pad2(min)} min`,
@@ -286,6 +276,8 @@ function buildHoursRing(date: Date): ClockRingData {
     ringId: 3,
     name: "Hours",
     normalizedProgress: progress,
+    accuracy: "civil",
+    claim: "convention",
     activeSegment: {
       id: "hours",
       name: `${pad2(hr)} h (${h12} · ${hr >= 12 ? "PM" : "AM"})`,
@@ -307,6 +299,8 @@ function buildKeRing(date: Date): ClockRingData {
     ringId: 4,
     name: "Chinese Kè",
     normalizedProgress: progress,
+    accuracy: "arithmetical",
+    claim: "convention",
     activeSegment: {
       id: `ke-${keIndex}`,
       name: `Kè ${keNumber}`,
@@ -330,6 +324,8 @@ function buildShiRing(date: Date): ClockRingData {
     ringId: 5,
     name: "Chinese Shí",
     normalizedProgress: progress,
+    accuracy: "arithmetical",
+    claim: "convention",
     activeSegment: {
       id: `shi-${animal.id}`,
       name: `${animal.han} ${animal.name}`,
@@ -340,8 +336,10 @@ function buildShiRing(date: Date): ClockRingData {
   };
 }
 
-function buildLunarRing(date: Date): ClockRingData {
-  const phase = lunarPhaseFraction(date);
+function buildLunarRing(date: Date, phases: PhaseSnapshot): ClockRingData {
+  const reading = phases.byId["lunar-synodic"];
+  const phase = reading?.phase ?? 0;
+  const illum = Number(reading?.meta?.illuminatedFraction ?? 0);
   const phaseInfo = LUNAR_PHASES.find(p => phase <= p.max) ?? LUNAR_PHASES[LUNAR_PHASES.length - 1]!;
   const ageDays = phase * SYNODIC_MONTH;
 
@@ -349,20 +347,24 @@ function buildLunarRing(date: Date): ClockRingData {
     ringId: 6,
     name: "Lunar Phase",
     normalizedProgress: clamp01(phase),
+    accuracy: reading?.accuracy ?? "astronomical",
+    claim: "measurement",
+    sources: reading?.sources,
     activeSegment: {
       id: `lunar-${phaseInfo.name.toLowerCase().replace(/\s+/g, "-")}`,
       name: phaseInfo.name,
       symbol: phaseInfo.symbol,
       numericalValue: Math.round(phase * 1000) / 1000,
-      metadata: `Age ${ageDays.toFixed(2)} d · synodic ${SYNODIC_MONTH.toFixed(5)} d`,
+      metadata: `${(illum * 100).toFixed(0)}% illuminated · age ${ageDays.toFixed(2)} d · synodic ${SYNODIC_MONTH.toFixed(5)} d`,
     },
   };
 }
 
-function buildSolarYearRing(date: Date): ClockRingData {
+function buildSolarYearRing(date: Date, phases: PhaseSnapshot): ClockRingData {
   const year = date.getFullYear();
   const t = date.getTime();
-  const solarLambda = solarEclipticLongitudeDeg(date);
+  const tropical = phases.byId["tropical-year"];
+  const solarLambda = Number(tropical?.meta?.solarLongitudeDeg ?? solarEclipticLongitudeDeg(date));
   const season = astronomicalSeason(solarLambda);
 
   let startMs = vernalEquinoxMs(year);
@@ -380,6 +382,9 @@ function buildSolarYearRing(date: Date): ClockRingData {
     ringId: 7,
     name: "Solar Year & Seasons",
     normalizedProgress: progress,
+    accuracy: tropical?.accuracy ?? "astronomical",
+    claim: "measurement",
+    sources: tropical?.sources,
     activeSegment: {
       id: `solar-year-${year}`,
       name: `${season.emoji} ${season.name} · ${year}`,
@@ -396,7 +401,9 @@ function buildSolarYearRing(date: Date): ClockRingData {
 }
 
 function buildTzolkinRing(date: Date): ClockRingData {
-  const kin = tzolkinKin(date);
+  // This is the 13:20 ring — use the independent Dreamspell count (own anchor + Feb-29
+  // skip), NOT the Tzolk'in kin. They're different systems and should read differently.
+  const kin = dreamspellKinFromDate(date.getFullYear(), date.getMonth() + 1, date.getDate());
   const signIndex = mod(kin - 1, 20);
   const signName = TZOLKIN_SIGNS[signIndex]!;
   const dayFrac = localDayFraction(date);
@@ -406,6 +413,8 @@ function buildTzolkinRing(date: Date): ClockRingData {
     ringId: 8,
     name: "13:20 Kin · Tribe of Time",
     normalizedProgress: clamp01(dayFrac),
+    accuracy: "arithmetical",
+    claim: "interpretation",
     activeSegment: {
       id: `tzolkin-${signName.toLowerCase()}`,
       name: `${galactic.tribe.color} ${galactic.tribe.name}`,
@@ -416,8 +425,9 @@ function buildTzolkinRing(date: Date): ClockRingData {
   };
 }
 
-function buildZodiacRing(date: Date): ClockRingData {
-  const lambda = solarEclipticLongitudeDeg(date);
+function buildZodiacRing(date: Date, phases: PhaseSnapshot): ClockRingData {
+  const tropical = phases.byId["tropical-year"];
+  const lambda = Number(tropical?.meta?.solarLongitudeDeg ?? solarEclipticLongitudeDeg(date));
   const signIndex = Math.floor(lambda / 30) % 12;
   const progressInSign = mod(lambda, 30) / 30;
   const sign = ZODIAC_SIGNS[signIndex]!;
@@ -426,6 +436,11 @@ function buildZodiacRing(date: Date): ClockRingData {
     ringId: 9,
     name: "Western Tropical Zodiac",
     normalizedProgress: clamp01(progressInSign),
+    // Precise ecliptic longitude, authored sign attribution — the canonical
+    // astronomical-number / interpretive-claim split.
+    accuracy: tropical?.accuracy ?? "astronomical",
+    claim: "interpretation",
+    sources: tropical?.sources,
     activeSegment: {
       id: `zodiac-${sign.name.toLowerCase()}`,
       name: sign.name,
@@ -455,6 +470,8 @@ function buildSexagenaryRing(date: Date): ClockRingData {
     ringId: 10,
     name: "Chinese Sexagenary Cycle",
     normalizedProgress: cycleProgress,
+    accuracy: "arithmetical",
+    claim: "convention",
     activeSegment: {
       id: `sexagenary-${stemHan}${branchHan}`,
       name: `${stemHan}${branchHan} (${stem}-${branch})`,
@@ -522,6 +539,9 @@ export function atlasReadingsToClockRings(readings: CycleReading[]): ClockRingDa
       ringId: 11 + i,
       name: r.title,
       normalizedProgress: clamp01(angle / 360),
+      accuracy: r.accuracy,
+      claim: r.claim,
+      sources: r.sources,
       activeSegment: {
         id: r.systemId,
         name: r.primary.length > 42 ? `${r.primary.slice(0, 40)}…` : r.primary,
@@ -542,6 +562,10 @@ export function calculateCosmicTime(
   opts?: { atlasReadings?: CycleReading[] },
 ): CosmicTimeSnapshot {
   const instant = new Date(date.getTime());
+  // One ephemeris call feeds every astronomical ring — location-independent cycles only.
+  const phases = computePhases(jdFromDate(instant), {
+    only: ["lunar-synodic", "tropical-year"],
+  });
   const rings: ClockRingData[] = [
     buildMillisecondsRing(instant),
     buildSecondsRing(instant),
@@ -549,10 +573,10 @@ export function calculateCosmicTime(
     buildHoursRing(instant),
     buildKeRing(instant),
     buildShiRing(instant),
-    buildLunarRing(instant),
-    buildSolarYearRing(instant),
+    buildLunarRing(instant, phases),
+    buildSolarYearRing(instant, phases),
     buildTzolkinRing(instant),
-    buildZodiacRing(instant),
+    buildZodiacRing(instant, phases),
     buildSexagenaryRing(instant),
   ];
   if (opts?.atlasReadings?.length) {

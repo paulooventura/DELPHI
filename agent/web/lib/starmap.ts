@@ -2,7 +2,9 @@ import { NEAREST_STARS, MOON_DISTANCE_LY, magLimitForRank, distanceLyForRank, ty
 import { ZODIAC_ART, type ZodiacArtDef } from "./zodiacArt";
 import { Body } from "astronomy-engine";
 import { bodyEquatorHorizon, raDecToAltAz } from "./skyPositions";
-import { julianDay, lunarPhaseFraction, normalizeDeg, eclipticToEquatorial } from "./cosmic/math";
+import { julianDay, normalizeDeg, eclipticToEquatorial } from "./cosmic/math";
+import { computePhases } from "./phase/engine";
+import { jdFromDate } from "./phase/timeResolution";
 
 export type StarData = {
   name: string;
@@ -130,18 +132,22 @@ const MOON_PHASES: Array<[number, string]> = [
   [0.78, "Last quarter"], [0.97, "Waning crescent"],
 ];
 
-function moonPhaseLabel(fraction: number): string {
-  const illum = Math.abs(fraction * 2 - 1);
-  for (let i = MOON_PHASES.length - 1; i >= 0; i--) {
-    if (illum >= MOON_PHASES[i]![0]) return MOON_PHASES[i]![1]!;
+/** Label by synodic phase (0 = new, 0.5 = full) so waxing/waning is distinguished. */
+function moonPhaseLabel(phase: number): string {
+  const p = ((phase % 1) + 1) % 1;
+  for (const [max, name] of MOON_PHASES) {
+    if (p <= max) return name;
   }
-  return "New";
+  return "New"; // p just below 1 wraps back to new
 }
 
 export function moonPosition(latDeg: number, lonDeg: number, date: Date, altM = 0): MoonObject | null {
   const pos = bodyEquatorHorizon(Body.Moon, date, latDeg, lonDeg, altM);
-  const phase = lunarPhaseFraction(date);
-  const illumination = (1 - Math.cos(2 * Math.PI * phase)) / 2;
+  // Ephemeris phase + real illuminated fraction — this is the one cycle users can
+  // check against the actual sky, so it must match what they see.
+  const reading = computePhases(jdFromDate(date), { only: ["lunar-synodic"] }).byId["lunar-synodic"];
+  const phase = reading?.phase ?? 0;
+  const illumination = Number(reading?.meta?.illuminatedFraction ?? 0);
 
   return {
     name: "Moon",
@@ -154,7 +160,7 @@ export function moonPosition(latDeg: number, lonDeg: number, date: Date, altM = 
     distanceLy: MOON_DISTANCE_LY,
     kind: "moon",
     illumination,
-    phaseName: moonPhaseLabel(illumination),
+    phaseName: moonPhaseLabel(phase),
   };
 }
 

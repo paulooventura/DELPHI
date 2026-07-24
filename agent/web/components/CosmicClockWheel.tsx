@@ -9,6 +9,7 @@ import {
   WHEEL_VISIBLE_RING_IDS,
 } from "../lib/timeEngine";
 import { OBS } from "../lib/design/observatoryTokens";
+import { claimMarkStyle } from "../lib/design/claimMarks";
 import { ringAccentColor, ringSegmentVisual } from "../lib/cosmicAssets";
 import { CosmicGraphicIcon } from "../lib/cosmicGraphicIcons";
 import { useRingFractionSprings } from "../hooks/useSpringMotion";
@@ -19,6 +20,10 @@ export type ClockWeatherTell = {
   tempC?: number | null;
 };
 
+/** Tap payload: the focus-panel string id, the ring's mid radius (for zoom), and the ring itself. */
+export type RingSelectMeta = { radius: number; ring: ClockRingData };
+export type RingSelectHandler = (id: string, meta: RingSelectMeta) => void;
+
 export type CosmicClockWheelProps = {
   snapshot: CosmicTimeSnapshot;
   className?: string;
@@ -27,7 +32,27 @@ export type CosmicClockWheelProps = {
   weather?: ClockWeatherTell | null;
   /** Overlay enabled Atlas calendars on the outer wheel (capped). */
   showAtlasRings?: boolean;
+  /** Tap-to-focus: fired when a ring's radial band is tapped (drag-suppressed upstream). */
+  onRingSelect?: RingSelectHandler;
 };
+
+// Bridge the wheel's numeric ringId to RingFocusPanel's string id contract. Unmapped rings
+// (Kè, Shí, atlas) fall through to a synthetic id — the panel still renders their value and
+// claim sentence from the tapped ring itself, so nothing is a dead tap.
+const RING_FOCUS_ID: Record<number, string> = {
+  1: "s",
+  2: "min",
+  3: "h",
+  6: "moon",
+  7: "season",
+  8: "kin",
+  9: "zodiac",
+  10: "chinese-year",
+};
+
+function ringFocusId(ring: ClockRingData): string {
+  return RING_FOCUS_ID[ring.ringId] ?? `ring-${ring.ringId}`;
+}
 
 const CX = 400;
 const CY = 430;
@@ -224,6 +249,7 @@ function CosmicSegmentRing({
   wheelCount,
   cycleFraction,
   nowHint,
+  onSelect,
 }: {
   ring: ClockRingData;
   wheelIndex: number;
@@ -231,10 +257,17 @@ function CosmicSegmentRing({
   wheelCount: number;
   cycleFraction: number;
   nowHint: string;
+  onSelect?: () => void;
 }) {
   const cfg = WHEEL_RING_CONFIG[ring.ringId] ?? { divisions: 12, shortName: ringShortName(ring) };
   const shortName = ringShortName(ring);
-  const { inner, outer, mid } = ringRadii(wheelIndex, wheelCount);
+  // Register = kind of claim, NOT precision. measurement graduates, convention divides,
+  // interpretation detaches. Full opacity on all three — a different claim, not a lesser one.
+  const mark = claimMarkStyle(ring.claim);
+  const { inner: innerBase, outer: outerBase, mid } = ringRadii(wheelIndex, wheelCount);
+  // interpretation sits proud in its own band: inset both edges so a visible gap opens.
+  const inner = innerBase + mark.inset;
+  const outer = outerBase - mark.inset;
   const band = outer - inner;
   const accent = ringAccentColor(ring.ringId);
   const divisions = cfg.divisions;
@@ -261,12 +294,27 @@ function CosmicSegmentRing({
     : Math.max(1.2, Math.min(3.2, divisions * 0.045));
 
   const segments = [];
+  // convention rings get crisp radial dividers on the (moving) unit boundaries —
+  // "there is no position between kin 47 and 48". Capped so dense civil rings stay legible.
+  const dividers: { key: number; x1: number; y1: number; x2: number; y2: number }[] = [];
+  const dividerStep = Math.max(1, Math.ceil(divisions / 36));
   for (let i = 0; i < divisions; i++) {
     const d = slotOffsetFromPlayhead(i, cycleFraction, divisions);
     const centerDeg = (d / (divisions / 2)) * 90;
     const start = centerDeg - slotWidth / 2;
     const end = centerDeg + slotWidth / 2;
     if (end < -92 || start > 92) continue;
+
+    if (mark.hasDividers && i % dividerStep === 0) {
+      const da = tickAngle(start);
+      dividers.push({
+        key: i,
+        x1: CX + Math.cos(da) * inner,
+        y1: CY + Math.sin(da) * inner,
+        x2: CX + Math.cos(da) * outer,
+        y2: CY + Math.sin(da) * outer,
+      });
+    }
 
     const vis = ringSegmentVisual(ring.ringId, i, divisions);
     const isActive = i === activeIdx;
@@ -366,9 +414,29 @@ function CosmicSegmentRing({
     );
   }
 
+  // measurement rings carry a graduated instrument scale (screen-fixed ruler): fine
+  // minor ticks with longer majors, asserting that intermediate positions are meaningful.
+  const ticks: { key: number; x1: number; y1: number; x2: number; y2: number; major: boolean }[] = [];
+  if (mark.hasTicks) {
+    for (let deg = -90; deg <= 90; deg += 3) {
+      const major = Math.round(deg) % 15 === 0;
+      const ta = tickAngle(deg);
+      const rOut = outer - 0.5;
+      const rIn = outer - band * (major ? 0.34 : 0.18);
+      ticks.push({
+        key: deg,
+        x1: CX + Math.cos(ta) * rIn,
+        y1: CY + Math.sin(ta) * rIn,
+        x2: CX + Math.cos(ta) * rOut,
+        y2: CY + Math.sin(ta) * rOut,
+        major,
+      });
+    }
+  }
+
   return (
     <g
-      className={`cosmic-segment-ring cp-steampunk-ring cp-steampunk-ring-${meshDir}`}
+      className={`cosmic-segment-ring cp-steampunk-ring cp-steampunk-ring-${meshDir} cp-claim-${ring.claim ?? "convention"}`}
       style={{ ["--ring-mid" as string]: `${mid}` }}
     >
       <defs>
@@ -394,12 +462,45 @@ function CosmicSegmentRing({
       >
         {segments}
       </g>
+      {dividers.length > 0 && (
+        <g className="cp-claim-dividers" pointerEvents="none">
+          {dividers.map(dl => (
+            <line
+              key={dl.key}
+              x1={dl.x1}
+              y1={dl.y1}
+              x2={dl.x2}
+              y2={dl.y2}
+              stroke="#c9a227"
+              strokeWidth={0.7}
+              strokeOpacity={mark.markOpacity * 0.85}
+            />
+          ))}
+        </g>
+      )}
+      {ticks.length > 0 && (
+        <g className="cp-claim-ticks" pointerEvents="none">
+          {ticks.map(tk => (
+            <line
+              key={tk.key}
+              x1={tk.x1}
+              y1={tk.y1}
+              x2={tk.x2}
+              y2={tk.y2}
+              stroke="#e8c86a"
+              strokeWidth={tk.major ? 1.1 : 0.6}
+              strokeOpacity={mark.markOpacity}
+            />
+          ))}
+        </g>
+      )}
       <path
         d={semicircleAnnulusPath(CX, CY, outer, inner)}
         fill="none"
-        stroke="#c9a227"
-        strokeWidth={1.15}
-        strokeOpacity={0.75}
+        stroke={mark.boundaryColor}
+        strokeWidth={mark.boundaryDash ? 1.6 : 1.15}
+        strokeOpacity={mark.boundaryDash ? 0.95 : 0.75}
+        strokeDasharray={mark.boundaryDash || undefined}
         pointerEvents="none"
       />
       <path
@@ -463,6 +564,26 @@ function CosmicSegmentRing({
         );
       })()}
       <PlayheadSlot inner={inner} outer={outer} />
+      {onSelect && (
+        // Radial-band hit target: a transparent annulus over the FULL band (base radii,
+        // so the interpretation inset gap is still tappable). SVG maps the pointer through
+        // the container's zoom/pan transforms for free — no manual coordinate math — and a
+        // tap anywhere in the band registers, no precision on the arc stroke required.
+        // TODO(a11y): keyboard focus/activation is intentionally omitted — SVG focus
+        // management is finicky and ring bands are a secondary interaction (the clock is
+        // fully readable without them). role+aria-label only, by decision. Revisit if needed.
+        <path
+          d={semicircleAnnulusPath(CX, CY, outerBase, innerBase)}
+          fill="#000"
+          fillOpacity={0}
+          pointerEvents="all"
+          className="cp-ring-hit"
+          style={{ cursor: "pointer" }}
+          onClick={onSelect}
+          role="button"
+          aria-label={`${shortName} details`}
+        />
+      )}
     </g>
   );
 }
@@ -491,6 +612,7 @@ export function CosmicClockWheel({
   showReadout = false,
   weather = null,
   showAtlasRings = false,
+  onRingSelect,
 }: CosmicClockWheelProps) {
   const uid = useId().replace(/:/g, "");
   const wheelRings = useMemo(() => {
@@ -639,11 +761,20 @@ export function CosmicClockWheel({
               wheelCount={wheelCount}
               cycleFraction={fractionSprings.get(ring.ringId) ?? 0}
               nowHint={ringNowHint(ring, snapshot.date)}
+              onSelect={
+                onRingSelect
+                  ? () =>
+                      onRingSelect(ringFocusId(ring), {
+                        radius: ringRadii(index, wheelCount).mid,
+                        ring,
+                      })
+                  : undefined
+              }
             />
           ))}
         </g>
 
-        <g className="cp-cosmic-playhead cosmic-playhead" filter={`url(#cosmic-glow-${uid})`}>
+        <g className="cp-cosmic-playhead cosmic-playhead" filter={`url(#cosmic-glow-${uid})`} pointerEvents="none">
           <line
             x1={CX}
             y1={CY}

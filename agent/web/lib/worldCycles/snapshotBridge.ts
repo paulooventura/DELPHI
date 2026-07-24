@@ -1,7 +1,26 @@
 import { galacticDayFromKin, formatCodeWords, type GalacticDayReading } from "../galacticFrequency";
 import type { CycleSnapshot, WeatherInfo, WheelLayer } from "../cycleSystems";
 import { clockRingsFromReadings } from "./clockAdapter";
-import type { CycleReading, WorldCycleSnapshot } from "./types";
+import type { AccuracyTier, ClaimKind, CycleReading, WorldCycleSnapshot } from "./types";
+
+// Score is precision only — derived from a reading's own accuracy tier, never
+// hardcoded per-plugin. Kept for legacy spectrum rendering; the axis (below) is
+// what actually groups the display.
+const ACCURACY_SCORE: Record<AccuracyTier, number> = {
+  civil: 0.99,
+  astronomical: 0.95,
+  arithmetical: 0.8,
+  "mean-orbit": 0.65,
+};
+
+// Axis = what kind of claim, derived from ClaimKind (not precision). This is the
+// correction to the old sort: grouping says "measured / agreed / authored", three
+// kinds of grounding — not a leaderboard where symbolic reads as inferior astronomy.
+const CLAIM_AXIS: Record<ClaimKind, "evidence" | "cultural" | "philosophical"> = {
+  measurement: "evidence",
+  convention: "cultural",
+  interpretation: "philosophical",
+};
 
 function daysInMonth(year: number, monthNum: number): number {
   return new Date(year, monthNum, 0).getDate();
@@ -63,7 +82,9 @@ export function worldCyclesToCycleSnapshot(
   const kin = Number(tz?.meta.kin ?? 1);
   const tone = Number(tz?.meta.tone ?? 1);
   const sign = String(tz?.meta.sign ?? "Imix");
-  const galactic: GalacticDayReading = galacticDayFromKin(kin);
+  // 13:20 is an independent system — read the galactic_1320 plugin's own (Dreamspell) kin,
+  // never the Tzolk'in kin, or the two collapse into one relabelled count again.
+  const galactic: GalacticDayReading = galacticDayFromKin(Number(gal?.meta.kin ?? kin));
   const castle = Number(tz?.meta.castle ?? Math.ceil(kin / 52));
   const castleName = CASTLE_NAMES[castle - 1] ?? "Green Centre";
   const castleColor = CASTLE_COLORS[castle - 1] ?? "#48bb78";
@@ -90,15 +111,25 @@ export function worldCyclesToCycleSnapshot(
   const weekdayLong = String(g?.meta.weekday ?? ctx.instant.toLocaleDateString("en", { weekday: "long" }));
   const monthLong = String(g?.meta.monthName ?? ctx.instant.toLocaleDateString("en", { month: "long" }));
 
-  const spectrum: CycleSnapshot["spectrum"] = [
-    { name: "Gregorian", axis: "evidence", score: 0.97, note: "Astronomical/civil standard, internationally verified." },
-    { name: "Moon Phase", axis: "evidence", score: 0.94, note: "Computed from Synodic period — precise to within hours." },
-    { name: "Hijri / Hebrew / Persian", axis: "cultural", score: 0.82, note: "Tier A living calendars via World Cycle registry." },
-    { name: "Chinese Lunisolar", axis: "cultural", score: 0.74, note: "CNY-aware year + synodic month index." },
-    { name: "Tzolkin (Mayan)", axis: "cultural", score: 0.64, note: "260-day ceremonial cycle with correlation choice." },
-    { name: "13:20 Frequency", axis: "philosophical", score: 0.58, note: "13 Tones × 20 Tribes synchronization." },
-    { name: "Tropical Zodiac", axis: "philosophical", score: 0.5, note: "Solar λ tropical signs — no date-cutoff drift." },
+  // Derived from each reading's own accuracy tier + sources, never literals.
+  // Grouped by axis (three kinds of claim), registry order within each — NOT sorted
+  // by score. Descending-by-score reads as a leaderboard and implies symbolic systems
+  // are inferior astronomy; grouping says "these are different kinds of grounding".
+  const spectrumEnabled = (r: CycleReading) => !enabledIds || enabledIds.includes(r.systemId);
+  const AXIS_ORDER: Array<"evidence" | "cultural" | "philosophical"> = [
+    "evidence",
+    "cultural",
+    "philosophical",
   ];
+  const spectrumRows = world.readings.filter(spectrumEnabled).map((r) => ({
+    name: r.title,
+    axis: CLAIM_AXIS[r.claim],
+    score: ACCURACY_SCORE[r.accuracy],
+    note: r.sources.length > 0 ? r.sources.join("; ") : r.accuracy,
+  }));
+  const spectrum: CycleSnapshot["spectrum"] = AXIS_ORDER.flatMap((axis) =>
+    spectrumRows.filter((row) => row.axis === axis),
+  );
 
   const wheelLayers = buildWheelLayersFromWorld(world, {
     year, month, day, dayOfYear, dim, kin, tone, sign, galactic, wavespell,

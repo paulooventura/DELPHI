@@ -23,6 +23,7 @@ export const hebrewPlugin: CyclePlugin = {
       periodDays: 365.2468,
       meta: { year: h.year, month: h.month, day: h.day, monthName },
       accuracy: "arithmetical",
+      claim: "convention",
       sources: ["Dershowitz/Reingold-style Hebrew arithmetic"],
       family: "calendar",
       tier: "A",

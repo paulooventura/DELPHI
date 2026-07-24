@@ -5,6 +5,16 @@ import { julianDay, sunEclipticLongitudeDeg } from "./cosmic/math";
 import { lstDeg } from "./starmap";
 import { buildSpacetimeSnapshot, formatLat, formatLon } from "./spacetime";
 
+/**
+ * Navigation-data trust for the Spacetime Anchor chips. This is a MEASUREMENT-
+ * RELIABILITY axis (how much to trust a GPS fix / ephemeris value / calendar count for
+ * *navigation*), NOT the clock rings' ClaimKind (what kind of claim a ring makes).
+ *
+ * Do NOT fold this into ClaimKind. Collapsing the two was considered and rejected: it
+ * would recreate exactly the field-overloading the AccuracyTier/ClaimKind split unwound.
+ * "measured/computed/cultural" here answers "can I rely on this coordinate?"; ClaimKind
+ * answers "is this measured, agreed, or authored?". Different questions, different fields.
+ */
 export type ProvenanceTier = "measured" | "computed" | "cultural";
 
 export type FixQuality = "live" | "fallback" | "denied" | "off";

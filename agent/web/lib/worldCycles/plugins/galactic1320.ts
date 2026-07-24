@@ -1,6 +1,5 @@
-import { galacticDayFromKin } from "../../galacticFrequency";
+import { dreamspellKinFromDate, galacticDayFromKin } from "../../galacticFrequency";
 import type { CyclePlugin } from "../types";
-import { tzolkinPlugin } from "./tzolkin";
 
 export const galactic1320Plugin: CyclePlugin = {
   id: "galactic_1320",
@@ -13,8 +12,10 @@ export const galactic1320Plugin: CyclePlugin = {
   category: "mayan",
   defaultEnabled: true,
   resolve(ctx) {
-    const tz = tzolkinPlugin.resolve(ctx);
-    const kin = Number(tz.meta.kin) || 1;
+    // Independent Dreamspell count — its own anchor + Feb-29 skip, read straight from the
+    // civil date in ctx. Deliberately does NOT read the Tzolk'in plugin, so the Maya
+    // correlation dropdown cannot move this card.
+    const kin = dreamspellKinFromDate(ctx.localYear, ctx.localMonth, ctx.localDay);
     const g = galacticDayFromKin(kin);
     return {
       systemId: "galactic_1320",
@@ -34,8 +35,18 @@ export const galactic1320Plugin: CyclePlugin = {
         label: g.label,
         frequencyNote: g.frequencyNote,
       },
-      accuracy: "symbolic",
-      sources: ["13 Tones × 20 Tribes (DELPHI galacticFrequency)"],
+      // Kin-derived (arithmetical) number, but the meaning is interpretation, NOT
+      // convention — and that split from Tzolkin is deliberate, don't "fix" it:
+      // Tzolkin is a pre-Columbian day-count with documented continuity (its labels
+      // are conventional like "Tuesday"); the 13:20 tone/tribe affirmations are the
+      // Dreamspell system authored by José Argüelles (1987), a different correlation
+      // plus an authored affirmation layer. Flattening both to convention would erase
+      // exactly the distinction this taxonomy exists to preserve.
+      accuracy: "arithmetical",
+      claim: "interpretation",
+      sources: [
+        "Dreamspell 13:20 (J. Argüelles, 1987) — own anchor 1987 New Year, Kin 164 = 2013-07-26, Feb-29 skipped. Independent of the GMT Long Count.",
+      ],
       family: "meta",
       tier: "A",
       region: ["mesoamerica", "dreamspell"],

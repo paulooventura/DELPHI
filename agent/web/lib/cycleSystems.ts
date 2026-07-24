@@ -131,7 +131,6 @@ export type GetCycleSnapshotOptions = {
   timeZone?: string;
   lat?: number;
   lon?: number;
-  mayaCorrelation?: "delphi_kin1" | "gmt_584283";
   ayanamsa?: "lahiri" | "fagan_bradley";
 };
 
@@ -152,7 +151,6 @@ export function getCycleSnapshot(
     timeZone: opts?.timeZone,
     lat: opts?.lat,
     lon: opts?.lon,
-    mayaCorrelation: opts?.mayaCorrelation,
     ayanamsa: opts?.ayanamsa,
   });
   const snap = worldCyclesToCycleSnapshot(world, weather, opts?.enabledIds);

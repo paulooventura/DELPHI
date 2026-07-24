@@ -36,6 +36,7 @@ export const chineseYearPlugin: CyclePlugin = {
         animalYear: c.year,
       },
       accuracy: "arithmetical",
+      claim: "convention",
       sources: ["Civil Chinese New Year table 1980–2050"],
       family: "calendar",
       tier: "A",

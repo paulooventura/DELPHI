@@ -23,6 +23,7 @@ export const persianPlugin: CyclePlugin = {
       periodDays: 365.2422,
       meta: { year: p.year, month: p.month, day: p.day, monthName },
       accuracy: "arithmetical",
+      claim: "convention",
       sources: ["Jalali solar Hijri conversion"],
       family: "calendar",
       tier: "A",

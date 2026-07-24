@@ -23,6 +23,7 @@ export const hijriPlugin: CyclePlugin = {
       periodDays: 354.36667,
       meta: { year: h.year, month: h.month, day: h.day, monthName: month },
       accuracy: "arithmetical",
+      claim: "convention",
       sources: ["Tabular Islamic / Kuwaiti algorithm"],
       family: "calendar",
       tier: "A",

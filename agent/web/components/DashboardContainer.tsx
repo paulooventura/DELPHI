@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { CosmicClockWheel, type ClockWeatherTell } from "./CosmicClockWheel";
+import { CosmicClockWheel, type ClockWeatherTell, type RingSelectHandler } from "./CosmicClockWheel";
 import { SpacetimeAnchor } from "./SpacetimeAnchor";
 import { useRealtimeDate } from "../hooks/useRealtimeDate";
 import type { CosmicClockState } from "../lib/cosmic";
@@ -13,10 +13,9 @@ import {
   formatHubCivilDate,
   formatHubClockTime,
   formatStandardDigitalTime,
-  ringProvenanceNote,
-  ringProvenanceTier,
   type ClockRingData,
 } from "../lib/timeEngine";
+import { CLAIM_LABEL, claimSentence } from "../lib/design/claimMarks";
 import { COSMIC_ASSETS, ringAccentColor, segmentGraphicKey } from "../lib/cosmicAssets";
 import { CosmicGraphicBadge } from "../lib/cosmicGraphicIcons";
 import { useSpringScalar } from "../hooks/useSpringMotion";
@@ -32,6 +31,8 @@ export type DashboardContainerProps = {
   /** Draw Atlas calendars on the visual wheel (capped). Default off — NowStrip / Atlas keep them. */
   showAtlasOnWheel?: boolean;
   weather?: ClockWeatherTell | null;
+  /** Tap-to-focus on a wheel ring band. */
+  onRingSelect?: RingSelectHandler;
   liveCoords?: boolean;
   usingFallback?: boolean;
   locationDenied?: boolean;
@@ -49,11 +50,6 @@ export type DashboardContainerProps = {
   emfUt?: number | null;
 };
 
-const TIER_BADGE: Record<string, string> = {
-  measured: "Measured",
-  computed: "Computed",
-  cultural: "Cultural",
-};
 
 function parseToneFromMetadata(metadata: string): number | null {
   const m = metadata.match(/Tone (\d+)/);
@@ -104,8 +100,9 @@ function formatNumericValue(ring: ClockRingData): string {
 function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: string }) {
   const accent = ringAccentColor(ring.ringId);
   const layerNum = dashboardLayerNumber(ring.ringId);
-  const tier = ringProvenanceTier(ring.ringId);
-  const provenance = ringProvenanceNote(ring.ringId);
+  // Badge = kind of claim (from the ring's own taxonomy), not a hardcoded ringId map.
+  const claim = ring.claim ?? "convention";
+  const provenance = claimSentence(claim, ring.accuracy, ring.sources);
   const isKe = ring.ringId === 4;
   const isMayan = ring.ringId === 8;
   const tone = isMayan ? parseToneFromMetadata(ring.activeSegment.metadata) : null;
@@ -119,8 +116,8 @@ function LayerReadoutCard({ ring, hubTime }: { ring: ClockRingData; hubTime: str
         <p className="text-[0.62rem] font-bold uppercase tracking-[0.14em] text-[var(--gold-dp)]">
           Layer {layerNum}: {ring.name}
         </p>
-        <span className={`cp-layer-tier cp-layer-tier-${tier}`} title={provenance}>
-          {TIER_BADGE[tier]}
+        <span className={`cp-layer-tier cp-claim-badge cp-claim-badge-${claim}`} title={provenance}>
+          {CLAIM_LABEL[claim]}
         </span>
       </div>
 
@@ -191,6 +188,7 @@ export function DashboardContainer({
   atlasReadings = [],
   showAtlasOnWheel = false,
   weather = null,
+  onRingSelect,
   liveCoords = false,
   usingFallback = false,
   locationDenied = false,
@@ -238,6 +236,7 @@ export function DashboardContainer({
           showReadout={false}
           weather={weatherTell}
           showAtlasRings={showAtlasOnWheel}
+          onRingSelect={onRingSelect}
         />
         <p className="cp-dashboard-wheel-hint" aria-hidden>
           Scroll for culture &amp; technical readout

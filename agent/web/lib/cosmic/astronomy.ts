@@ -37,10 +37,8 @@ export function solarEventAngleDeg(eventTime: Date, solarNoon: Date): number {
   return solarDayAngleDeg(eventTime, solarNoon);
 }
 
-export function sunTropicalLongitude(date: Date): number {
-  return sunEclipticLongitudeDeg(julianDay(date));
-}
-
+// sunTropicalLongitude removed in the PHASE migration — use
+// computePhases(jd, { only: ["tropical-year"] }).byId["tropical-year"].meta.solarLongitudeDeg
 export function sunConstellationDegree(date: Date): number {
-  return normalizeDeg(sunTropicalLongitude(date));
+  return normalizeDeg(sunEclipticLongitudeDeg(julianDay(date)));
 }

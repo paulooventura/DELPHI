@@ -5,7 +5,6 @@ const STORAGE_KEY = "delphi.worldCycles.v1";
 export type WorldCyclePreferences = {
   enabledIds: string[];
   presetId: string | null;
-  mayaCorrelation: "delphi_kin1" | "gmt_584283";
   ayanamsa: "lahiri" | "fagan_bradley";
 };
 
@@ -14,7 +13,6 @@ export function defaultPreferences(defaultEnabledIds: string[]): WorldCyclePrefe
   return {
     enabledIds: planet ? [...planet.systemIds] : [...defaultEnabledIds],
     presetId: "planet",
-    mayaCorrelation: "delphi_kin1",
     ayanamsa: "lahiri",
   };
 }
@@ -29,7 +27,6 @@ export function loadPreferences(defaultEnabledIds: string[]): WorldCyclePreferen
     return {
       enabledIds: Array.isArray(parsed.enabledIds) ? parsed.enabledIds.map(String) : fallback.enabledIds,
       presetId: typeof parsed.presetId === "string" || parsed.presetId === null ? parsed.presetId : fallback.presetId,
-      mayaCorrelation: parsed.mayaCorrelation === "gmt_584283" ? "gmt_584283" : "delphi_kin1",
       ayanamsa: parsed.ayanamsa === "fagan_bradley" ? "fagan_bradley" : "lahiri",
     };
   } catch {

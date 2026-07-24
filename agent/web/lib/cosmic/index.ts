@@ -41,17 +41,15 @@ export type { AircraftReport, AircraftTrack, AirLabsResponse, AviationstackRespo
 export { createSkyHapticController } from "./skyHaptics";
 export type { SkyHapticKind } from "./skyHaptics";
 export { CosmicClockEngine, createCosmicClockEngine } from "./CosmicClockEngine";
-export { computeSolarDayEvents, solarEventAngleDeg, sunConstellationDegree, sunTropicalLongitude } from "./astronomy";
+export { computeSolarDayEvents, solarEventAngleDeg, sunConstellationDegree } from "./astronomy";
 export {
   equationOfTimeMinutes,
   findSunTimeForAltitude,
   julianDay,
-  lunarPhaseFraction,
   muhurtaPhase,
   MUHURTA_COUNT,
   MUHURTA_MINUTES,
   normalizeDeg,
-  precessionAngleDeg,
   PRECESSION_PERIOD_YEARS,
   solarDayAngleDeg,
   sunDeclinationDeg,
