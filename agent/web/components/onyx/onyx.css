@@ -1,0 +1,540 @@
+/* DELPHI onyx shell — ported from delphi.html / delphi-sky.html / delphi-splash.html */
+
+.onyx-root {
+  --onyx-black: #000000;
+  --onyx-near: #050506;
+  --onyx-void: #020203;
+  --onyx-base: #060608;
+  --onyx-lit: #15141d;
+  --onyx-core: #a99cff;
+  --onyx-light: #8a7bff;
+  --onyx-deep: #6c5cff;
+  --onyx-edge-bright: rgba(140, 124, 255, 0.42);
+  --onyx-edge: rgba(140, 124, 255, 0.16);
+  --onyx-edge-faint: rgba(140, 124, 255, 0.1);
+  --onyx-ink-bright: #f2f0fb;
+  --onyx-ink: #d3d0e2;
+  --onyx-ink-soft: #8f8ca3;
+  --onyx-ink-quiet: #5a5770;
+  --onyx-ink-faint: #37343f;
+  --onyx-lift: 280ms cubic-bezier(0.2, 0, 0.1, 1);
+  --onyx-settle: 660ms cubic-bezier(0.16, 1, 0.3, 1);
+  --onyx-deep-settle: 980ms cubic-bezier(0.22, 1, 0.28, 1);
+  --font-voice: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-ui: var(--font-space-grotesk), system-ui, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+  color: var(--onyx-ink);
+  font-family: var(--font-ui);
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+.onyx-device {
+  width: min(100vw, 402px);
+  height: min(100dvh, 872px);
+  position: relative;
+  overflow: hidden;
+  background: var(--onyx-black);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .onyx-root *,
+  .onyx-root *::before,
+  .onyx-root *::after {
+    animation-duration: 1ms !important;
+    transition-duration: 1ms !important;
+  }
+}
+
+/* ── Splash ──────────────────────────────────────────────────────────────── */
+.onyx-film { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+.onyx-film video {
+  position: absolute; top: 50%; left: 50%;
+  min-width: 100%; min-height: 100%;
+  width: auto; height: auto;
+  transform: translate(-50%, -50%) scale(1.08);
+  object-fit: cover;
+  filter: grayscale(0.4) contrast(1.12) brightness(0.82) saturate(1.1);
+  animation: onyx-slowpush 12s ease-out forwards;
+}
+@keyframes onyx-slowpush { to { transform: translate(-50%, -50%) scale(1.16); } }
+
+.onyx-grade {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 34%, transparent 0%, transparent 42%, rgba(6, 5, 13, 0.5) 78%, rgba(2, 2, 3, 0.9) 100%),
+    linear-gradient(180deg, rgba(20, 18, 40, 0.28) 0%, rgba(8, 7, 20, 0.34) 55%, rgba(2, 2, 4, 0.7) 100%);
+  mix-blend-mode: multiply;
+}
+.onyx-tint {
+  position: absolute; inset: 0; z-index: 3; pointer-events: none;
+  background: radial-gradient(90% 70% at 50% 30%, rgba(120, 108, 220, 0.1) 0%, transparent 60%);
+  mix-blend-mode: screen;
+}
+.onyx-dimmer {
+  position: absolute; inset: 0; z-index: 4; pointer-events: none;
+  background: var(--onyx-void); opacity: 0;
+  animation: onyx-dimsettle 12s ease-in-out forwards;
+}
+@keyframes onyx-dimsettle { 0%, 55% { opacity: 0; } 100% { opacity: 0.42; } }
+
+.onyx-splash-wordmark {
+  position: absolute; top: 46%; left: 0; right: 0; z-index: 6; text-align: center;
+  opacity: 0; animation: onyx-reveal 2.4s ease-out 1.4s forwards;
+}
+.onyx-splash-wordmark .name {
+  font-family: var(--font-voice); font-optical-sizing: auto;
+  font-size: 34px; font-weight: 300; letter-spacing: 0.42em;
+  color: var(--onyx-ink-bright); padding-left: 0.42em;
+}
+.onyx-splash-wordmark .tag {
+  font-size: 10px; letter-spacing: 0.36em; color: var(--onyx-ink-quiet);
+  margin-top: 16px; font-weight: 300; opacity: 0;
+  animation: onyx-reveal 2s ease-out 2.6s forwards;
+}
+@keyframes onyx-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.onyx-horizon {
+  position: absolute; top: calc(46% + 58px); left: 50%; transform: translateX(-50%);
+  z-index: 6; height: 0.5px; width: 0;
+  background: linear-gradient(90deg, transparent, var(--onyx-edge-bright), transparent);
+  animation: onyx-draw 2.6s ease-out 2.2s forwards;
+}
+@keyframes onyx-draw { to { width: 180px; } }
+
+.onyx-fix {
+  position: absolute; z-index: 6; font-size: 10px; letter-spacing: 0.18em;
+  color: var(--onyx-ink-faint); opacity: 0;
+  animation: onyx-reveal 1.8s ease-out 3.2s forwards;
+}
+.onyx-fix.tl { top: 52px; left: 26px; }
+.onyx-fix.tr { top: 52px; right: 26px; }
+.onyx-fix.bl { bottom: 120px; left: 26px; }
+.onyx-fix.br { bottom: 120px; right: 26px; }
+
+.onyx-enter {
+  position: absolute; bottom: 56px; left: 0; right: 0; z-index: 7; text-align: center;
+  opacity: 0; animation: onyx-reveal 2s ease-out 4s forwards;
+}
+.onyx-enter button {
+  background: none; border: 0.5px solid var(--onyx-edge-bright); border-radius: 26px;
+  padding: 13px 30px; color: var(--onyx-ink-bright); font-family: inherit;
+  font-size: 12px; letter-spacing: 0.14em; cursor: pointer;
+  transition: all 280ms cubic-bezier(0.2, 0, 0.1, 1);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.onyx-enter button:hover { background: rgba(120, 108, 200, 0.12); border-color: var(--onyx-core); }
+.onyx-enter button:active { transform: scale(0.97); }
+.onyx-enter .pulse {
+  display: block; margin-top: 16px; font-size: 10px; letter-spacing: 0.1em;
+  color: var(--onyx-ink-faint); animation: onyx-pulsehint 3.4s ease-in-out infinite;
+}
+@keyframes onyx-pulsehint { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
+
+.onyx-seed {
+  position: absolute; border-radius: 50%; background: #fff; z-index: 5; opacity: 0;
+  animation: onyx-star-in 3s ease-out forwards, onyx-tw var(--tw, 4s) ease-in-out infinite;
+  animation-delay: var(--sd, 2s), var(--sd, 2s);
+}
+@keyframes onyx-star-in { to { opacity: var(--o, 0.5); } }
+@keyframes onyx-tw {
+  0%, 100% { opacity: var(--o, 0.5); transform: scale(1); }
+  50% { opacity: calc(var(--o, 0.5) * 0.4); transform: scale(0.82); }
+}
+
+/* ── Home field ──────────────────────────────────────────────────────────── */
+.onyx-field { position: absolute; inset: 0; z-index: 0; transition: transform var(--onyx-deep-settle); }
+.onyx-aura {
+  position: absolute; inset: 0; transition: opacity var(--onyx-deep-settle);
+  background: radial-gradient(120% 80% at 50% 8%, rgba(30, 26, 54, 0.5) 0%, rgba(8, 7, 16, 0.4) 38%, #000 70%);
+}
+.onyx-vignette {
+  position: absolute; inset: 0; pointer-events: none; z-index: 3;
+  background: radial-gradient(115% 88% at 50% 42%, transparent 40%, rgba(0, 0, 0, 0.7) 80%, #000 100%);
+  opacity: 0.5; transition: opacity var(--onyx-deep-settle), background var(--onyx-deep-settle);
+}
+.onyx-stars { position: absolute; inset: 0; z-index: 1; transition: opacity var(--onyx-deep-settle); }
+.onyx-dust {
+  position: absolute; border-radius: 50%; background: #fff;
+  animation: onyx-tw var(--tw, 4s) ease-in-out infinite; animation-delay: var(--d, 0s);
+}
+
+.onyx-moon {
+  position: absolute; z-index: 2; left: 50%; top: 20%;
+  transform: translate(-50%, -50%); transition: all var(--onyx-deep-settle);
+}
+.onyx-moon svg { display: block; filter: drop-shadow(0 0 26px rgba(140, 124, 255, 0.16)); }
+
+.onyx-device[data-depth="0"] .onyx-moon { top: 15%; width: 92px; height: 92px; opacity: 0.78; }
+.onyx-device[data-depth="1"] .onyx-moon { top: 25%; width: 150px; height: 150px; opacity: 1; }
+.onyx-device[data-depth="2"] .onyx-moon { top: -4%; width: 118px; height: 118px; opacity: 0.3; }
+.onyx-device[data-depth="3"] .onyx-moon { top: -14%; width: 94px; height: 94px; opacity: 0.1; }
+.onyx-device[data-depth="0"] .onyx-vignette { opacity: 0.46; }
+.onyx-device[data-depth="1"] .onyx-vignette { opacity: 0.52; }
+.onyx-device[data-depth="2"] .onyx-vignette {
+  opacity: 0.8;
+  background: radial-gradient(100% 78% at 50% 46%, transparent 30%, rgba(0, 0, 0, 0.85) 70%, #000 100%);
+}
+.onyx-device[data-depth="3"] .onyx-vignette {
+  opacity: 0.96;
+  background: radial-gradient(80% 62% at 50% 48%, transparent 20%, rgba(0, 0, 0, 0.92) 60%, #000 100%);
+}
+.onyx-device[data-depth="2"] .onyx-stars { opacity: 0.35; }
+.onyx-device[data-depth="3"] .onyx-stars { opacity: 0.1; }
+.onyx-device[data-depth="2"] .onyx-aura { opacity: 0.6; }
+.onyx-device[data-depth="3"] .onyx-aura { opacity: 0.3; }
+
+.onyx-pulse-ring {
+  position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 7;
+  width: 6px; height: 6px; border-radius: 50%; background: var(--onyx-light); opacity: 0.25;
+}
+.onyx-pulse-ring.beat { animation: onyx-beat 1s ease-out; }
+.onyx-pulse-ring.chime { animation: onyx-chime 2.4s ease-out; }
+@keyframes onyx-beat {
+  0% { box-shadow: 0 0 0 0 rgba(140, 124, 255, 0.5); opacity: 0.9; }
+  100% { box-shadow: 0 0 0 9px rgba(140, 124, 255, 0); opacity: 0.25; }
+}
+@keyframes onyx-chime {
+  0% { box-shadow: 0 0 0 0 rgba(169, 156, 255, 0.7); opacity: 1; transform: translateX(-50%) scale(1.6); }
+  100% { box-shadow: 0 0 0 40px rgba(169, 156, 255, 0); opacity: 0.25; transform: translateX(-50%) scale(1); }
+}
+
+.onyx-wordmark {
+  position: absolute; top: 26px; left: 0; right: 0; text-align: center; z-index: 8;
+  font-size: 11px; letter-spacing: 0.42em; color: var(--onyx-ink-quiet); font-weight: 300;
+  transition: opacity var(--onyx-settle);
+}
+.onyx-device[data-depth="3"] .onyx-wordmark { opacity: 0.35; }
+.onyx-clock {
+  position: absolute; top: 52px; left: 0; right: 0; text-align: center; z-index: 8;
+  font-size: 11px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
+  font-variant-numeric: tabular-nums; transition: opacity var(--onyx-settle);
+}
+.onyx-device[data-depth="2"] .onyx-clock,
+.onyx-device[data-depth="3"] .onyx-clock { opacity: 0; }
+.onyx-clock .sec { color: var(--onyx-light); }
+
+.onyx-ladder {
+  position: absolute; right: 18px; top: 50%; transform: translateY(-50%); z-index: 8;
+  display: flex; flex-direction: column; gap: 13px; align-items: center;
+}
+.onyx-rung {
+  width: 5px; height: 5px; border-radius: 50%; background: var(--onyx-ink-faint);
+  transition: all var(--onyx-lift); border: none; padding: 0; cursor: pointer;
+}
+.onyx-rung.on {
+  background: var(--onyx-core); box-shadow: 0 0 8px rgba(169, 156, 255, 0.6);
+  height: 15px; border-radius: 3px;
+}
+
+.onyx-panel {
+  position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center;
+  opacity: 0; pointer-events: none; transition: opacity var(--onyx-settle);
+}
+.onyx-panel.show { opacity: 1; pointer-events: auto; }
+.onyx-center {
+  position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
+  display: flex; flex-direction: column; align-items: center; padding: 0 34px; text-align: center;
+}
+.onyx-eyebrow {
+  font-size: 10px; letter-spacing: 0.28em; color: var(--onyx-ink-quiet);
+  font-weight: 300; margin-bottom: 20px;
+}
+.onyx-p0 .big {
+  font-family: var(--font-voice); font-size: 26px; font-weight: 300;
+  color: var(--onyx-ink); line-height: 1.5;
+}
+.onyx-p0 .big em { font-style: italic; color: var(--onyx-ink-bright); font-weight: 400; }
+.onyx-p0 .sub { font-size: 12px; color: var(--onyx-ink-soft); margin-top: 18px; letter-spacing: 0.03em; }
+.onyx-p1 .name {
+  font-family: var(--font-voice); font-size: 32px; font-weight: 500;
+  color: var(--onyx-ink-bright); margin-top: 26px;
+}
+.onyx-p1 .det { font-size: 12px; color: var(--onyx-ink-soft); margin-top: 8px; }
+.onyx-p1 .tap {
+  margin-top: 22px; font-size: 10px; color: var(--onyx-ink-faint); letter-spacing: 0.08em;
+  background: none; border: none; cursor: pointer; font-family: inherit;
+}
+.onyx-p2 {
+  padding: 110px 30px 40px; justify-content: flex-start; gap: 20px; overflow-y: auto;
+}
+.onyx-p2 .now {
+  font-family: var(--font-voice); font-size: 22px; font-weight: 400; line-height: 1.42;
+  color: var(--onyx-ink-bright); text-align: left; width: 100%;
+}
+.onyx-seam { width: 100%; height: 0.5px; background: var(--onyx-edge-faint); border: none; }
+.onyx-rows { width: 100%; display: flex; flex-direction: column; }
+.onyx-row {
+  display: flex; justify-content: space-between; align-items: center; width: 100%;
+  padding: 16px 0; background: none; border: none; border-bottom: 0.5px solid var(--onyx-edge-faint);
+  color: var(--onyx-ink); font-family: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  transition: padding-left var(--onyx-lift), color var(--onyx-lift);
+}
+.onyx-row:active { padding-left: 7px; color: var(--onyx-ink-bright); }
+.onyx-row-r { font-size: 11px; color: var(--onyx-ink-quiet); }
+.onyx-rx { max-height: 0; overflow: hidden; transition: max-height var(--onyx-settle); width: 100%; }
+.onyx-rx.open { max-height: 280px; }
+.onyx-rx-in { padding: 2px 0 16px; display: flex; flex-direction: column; gap: 10px; }
+.onyx-cl { display: flex; justify-content: space-between; font-size: 13px; align-items: center; gap: 10px; }
+.onyx-cl .sys { color: var(--onyx-ink-quiet); font-size: 11px; flex-shrink: 0; }
+.onyx-mk {
+  display: inline-block; width: 20px; height: 0; vertical-align: middle; margin-right: 9px;
+}
+.onyx-mk-measure { border-top: 1px solid var(--onyx-light); }
+.onyx-mk-conv { border-top: 1px dashed var(--onyx-deep); }
+.onyx-mk-interp { border-top: 1px dotted var(--onyx-edge); }
+.onyx-prov {
+  width: 100%; font-size: 10px; color: var(--onyx-ink-quiet); line-height: 1.6; margin-top: 6px;
+}
+.onyx-prov b { color: var(--onyx-light); font-weight: 400; }
+
+.onyx-p3 .glyph { margin-bottom: 28px; }
+.onyx-p3 .glyph svg { animation: onyx-turn 60s linear infinite; }
+@keyframes onyx-turn { to { transform: rotate(360deg); } }
+.onyx-p3 .te {
+  font-size: 10px; letter-spacing: 0.3em; color: var(--onyx-ink-quiet);
+  margin-bottom: 22px; font-weight: 300;
+}
+.onyx-p3 .tone {
+  font-family: var(--font-voice); font-size: 29px; font-weight: 400; font-style: italic;
+  color: var(--onyx-ink-bright); line-height: 1.4;
+}
+.onyx-p3 .ret {
+  font-size: 13px; color: var(--onyx-ink-soft); margin-top: 26px;
+  line-height: 1.95; letter-spacing: 0.02em;
+}
+.onyx-p3 .ret b { color: var(--onyx-core); font-weight: 400; }
+
+.onyx-compass-wrap {
+  position: absolute; bottom: 50px; left: 0; right: 0; z-index: 8;
+  display: flex; flex-direction: column; align-items: center; gap: 13px;
+  transition: opacity var(--onyx-settle);
+}
+.onyx-device[data-depth="3"] .onyx-compass-wrap { opacity: 0; pointer-events: none; }
+.onyx-chint {
+  font-size: 10px; letter-spacing: 0.08em; color: var(--onyx-ink-faint);
+  transition: opacity var(--onyx-lift); min-height: 1em;
+}
+.onyx-compass {
+  background: none; border: none; cursor: pointer; padding: 6px;
+  transition: transform var(--onyx-lift);
+}
+.onyx-compass:active { transform: scale(0.93); }
+.onyx-compass .needle { transform-origin: 31px 31px; transition: transform var(--onyx-settle); }
+.onyx-descend {
+  position: absolute; bottom: 22px; left: 0; right: 0; z-index: 8; text-align: center;
+  font-size: 10px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
+  transition: opacity var(--onyx-settle); min-height: 1em;
+}
+.onyx-device[data-depth="3"] .onyx-descend { opacity: 0; }
+
+.onyx-stone-track {
+  position: absolute; top: 22px; right: 20px; z-index: 9;
+  width: 58px; height: 24px; border-radius: 14px;
+  border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.04);
+  display: flex; align-items: center; padding: 0 3px; cursor: grab;
+  transition: border-color var(--onyx-lift), background var(--onyx-lift);
+  -webkit-user-select: none; user-select: none; touch-action: none;
+}
+.onyx-stone-track:active { cursor: grabbing; }
+.onyx-stone-track.quiet { border-color: var(--onyx-ink-faint); background: rgba(0, 0, 0, 0.3); }
+.onyx-groove-on {
+  position: absolute; left: 9px; top: 50%; transform: translateY(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--onyx-light); opacity: 0.7;
+  transition: opacity var(--onyx-lift);
+}
+.onyx-groove-off {
+  position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+  width: 5px; height: 0.5px; background: var(--onyx-ink-faint);
+}
+.onyx-stone-track.quiet .onyx-groove-on { opacity: 0.15; }
+.onyx-stone {
+  position: absolute; left: 3px; width: 18px; height: 18px; z-index: 2;
+  transition: left var(--onyx-settle); will-change: left;
+}
+.onyx-stone svg {
+  display: block; filter: drop-shadow(0 0 5px rgba(140, 124, 255, 0.35));
+  transition: filter var(--onyx-lift);
+}
+.onyx-stone-track.quiet .onyx-stone svg { filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); }
+
+/* ── Sky ─────────────────────────────────────────────────────────────────── */
+.onyx-sky-device {
+  background: radial-gradient(150% 110% at 50% 30%, var(--onyx-lit) 0%, var(--onyx-base) 55%, var(--onyx-void) 100%);
+}
+.onyx-sky {
+  position: absolute; inset: 0; z-index: 1;
+  animation: onyx-drift 64s ease-in-out infinite;
+}
+@keyframes onyx-drift {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-6px, 4px); }
+}
+.onyx-obj {
+  position: absolute; transform: translate(-50%, -50%); z-index: 3; cursor: pointer;
+  width: 36px; height: 36px; display: flex; align-items: center; justify-content: center;
+  background: none; border: none; padding: 0; color: inherit;
+}
+.onyx-obj .dot {
+  border-radius: 50%; background: #fff; display: block; position: relative; z-index: 2;
+  animation: onyx-breathe var(--br, 5s) ease-in-out infinite; animation-delay: var(--bd, 0s);
+}
+@keyframes onyx-breathe {
+  0%, 100% { opacity: var(--do, 0.6); box-shadow: 0 0 4px rgba(255, 255, 255, 0.4); }
+  50% { opacity: 1; box-shadow: 0 0 9px rgba(200, 192, 255, 0.7); }
+}
+.onyx-obj.planet .dot { background: var(--onyx-core); --do: 0.7; }
+.onyx-obj.moving .dot { background: var(--onyx-light); --do: 0.65; }
+.onyx-obj .halo {
+  position: absolute; left: 50%; top: 50%; width: 24px; height: 24px;
+  transform: translate(-50%, -50%); border-radius: 50%; z-index: 1;
+  background: radial-gradient(circle, rgba(180, 166, 255, 0.26) 0%, transparent 68%);
+  animation: onyx-halo var(--br, 5s) ease-in-out infinite; animation-delay: var(--bd, 0s);
+  opacity: 0;
+}
+.onyx-obj.bright .halo { opacity: 1; }
+@keyframes onyx-halo {
+  0%, 100% { transform: translate(-50%, -50%) scale(0.7); opacity: 0.35; }
+  50% { transform: translate(-50%, -50%) scale(1.15); opacity: 0.8; }
+}
+.onyx-obj.moving .trail {
+  position: absolute; right: 9px; top: 50%; width: 26px; height: 1px; z-index: 0;
+  background: linear-gradient(90deg, transparent, var(--onyx-light)); opacity: 0.45;
+  transform: translateY(-50%);
+}
+.onyx-obj.lit { z-index: 6; }
+.onyx-obj.lit .dot { animation: none; opacity: 1; box-shadow: 0 0 13px rgba(216, 210, 255, 0.9); }
+.onyx-obj .ring {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(0.4);
+  opacity: 0; transition: transform var(--onyx-settle), opacity var(--onyx-settle); pointer-events: none;
+}
+.onyx-obj.lit .ring { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.onyx-obj .ring polygon { animation: onyx-spin 46s linear infinite; transform-origin: 26px 26px; }
+@keyframes onyx-spin { to { transform: rotate(360deg); } }
+.onyx-obj .label {
+  position: absolute; left: 50%; top: 31px; transform: translateX(-50%); white-space: nowrap;
+  text-align: center; opacity: 0; transition: opacity var(--onyx-settle); pointer-events: none;
+}
+.onyx-obj.lit .label { opacity: 1; }
+.onyx-obj .label .nm {
+  font-family: var(--font-voice); font-size: 16px; font-weight: 500;
+  color: var(--onyx-ink-bright); letter-spacing: 0.01em;
+}
+.onyx-obj .label .dt { font-size: 10px; color: var(--onyx-ink-soft); margin-top: 3px; letter-spacing: 0.03em; }
+
+.onyx-reticle {
+  position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
+  z-index: 5; pointer-events: none;
+}
+.onyx-reticle svg { display: block; animation: onyx-ret 6s ease-in-out infinite; }
+@keyframes onyx-ret { 0%, 100% { opacity: 0.34; } 50% { opacity: 0.6; } }
+
+.onyx-sky-top { position: absolute; top: 22px; left: 0; right: 0; z-index: 8; text-align: center; }
+.onyx-sky-coords {
+  position: absolute; top: 52px; left: 26px; right: 26px; z-index: 8;
+  display: flex; justify-content: space-between; font-size: 10px;
+  letter-spacing: 0.16em; color: var(--onyx-ink-faint);
+}
+.onyx-heading {
+  position: absolute; bottom: 120px; left: 0; right: 0; z-index: 7; height: 34px; overflow: hidden;
+  -webkit-mask: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+  mask: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+.onyx-ribbon {
+  position: absolute; top: 0; left: 0; height: 100%; display: flex; align-items: center;
+  transition: transform var(--onyx-lift);
+}
+.onyx-tick {
+  width: 44px; text-align: center; flex-shrink: 0; font-size: 11px;
+  letter-spacing: 0.1em; color: var(--onyx-ink-soft);
+}
+.onyx-tick.card { color: var(--onyx-core); font-weight: 500; }
+.onyx-heading-mark {
+  position: absolute; left: 50%; top: 117px; transform: translateX(-50%); z-index: 8;
+}
+.onyx-filters {
+  position: absolute; bottom: 66px; left: 0; right: 0; z-index: 8;
+  display: flex; gap: 8px; justify-content: center;
+}
+.onyx-filt {
+  background: none; border: 0.5px solid var(--onyx-edge); border-radius: 20px;
+  padding: 7px 14px; color: var(--onyx-ink-soft); font-family: inherit;
+  font-size: 11px; letter-spacing: 0.04em; cursor: pointer; transition: all var(--onyx-lift);
+}
+.onyx-filt.on {
+  border-color: var(--onyx-edge-bright); color: var(--onyx-ink-bright);
+  background: rgba(120, 108, 200, 0.08);
+}
+.onyx-sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 9;
+  background: linear-gradient(180deg, transparent, rgba(6, 6, 10, 0.55) 12%, rgba(4, 4, 7, 0.95) 38%);
+  padding: 64px 28px 36px; transform: translateY(100%);
+  transition: transform var(--onyx-settle); display: flex; flex-direction: column; gap: 6px;
+}
+.onyx-sheet.up { transform: translateY(0); }
+.onyx-sheet .stag { font-size: 10px; letter-spacing: 0.24em; color: var(--onyx-ink-quiet); margin-bottom: 8px; }
+.onyx-sheet .sname {
+  font-family: var(--font-voice); font-size: 28px; font-weight: 500;
+  color: var(--onyx-ink-bright); margin-bottom: 12px;
+}
+.onyx-sheet .srow {
+  display: flex; justify-content: space-between; font-size: 13px;
+  padding: 10px 0; border-bottom: 0.5px solid var(--onyx-edge-faint);
+}
+.onyx-sheet .sk { color: var(--onyx-ink-quiet); }
+.onyx-sheet .sv { color: var(--onyx-ink); }
+.onyx-sheet .prov { font-size: 10px; color: var(--onyx-ink-quiet); line-height: 1.6; margin-top: 12px; }
+.onyx-sheet .prov b { color: var(--onyx-light); font-weight: 400; }
+.onyx-sheet .close {
+  position: absolute; top: 22px; right: 24px; background: none; border: none;
+  color: var(--onyx-ink-soft); font-size: 19px; cursor: pointer;
+}
+.onyx-sheet .more {
+  margin-top: 16px; align-self: flex-start; background: none;
+  border: 0.5px solid var(--onyx-edge-bright); border-radius: 20px;
+  padding: 9px 18px; color: var(--onyx-ink-bright); font-family: inherit;
+  font-size: 12px; letter-spacing: 0.04em; cursor: pointer; transition: all var(--onyx-lift);
+}
+.onyx-sheet .more:active { background: rgba(120, 108, 200, 0.12); }
+.onyx-sky-hint {
+  position: absolute; bottom: 24px; left: 0; right: 0; z-index: 8; text-align: center;
+  font-size: 10px; letter-spacing: 0.12em; color: var(--onyx-ink-faint);
+  animation: onyx-ret 6s ease-in-out infinite;
+}
+.onyx-sky-back {
+  position: absolute; top: 18px; left: 18px; z-index: 10;
+  background: none; border: 0.5px solid var(--onyx-edge); border-radius: 16px;
+  padding: 6px 12px; color: var(--onyx-ink-soft); font-family: inherit;
+  font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+}
+
+/* ── Overlay tools (rings / atlas / senses / oracle) ─────────────────────── */
+.onyx-overlay {
+  position: absolute; inset: 0; z-index: 20;
+  background: rgba(0, 0, 0, 0.92); overflow: auto;
+  padding: 56px 12px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.onyx-overlay-close {
+  position: absolute; top: 18px; right: 18px; z-index: 21;
+  background: none; border: 0.5px solid var(--onyx-edge-bright); border-radius: 16px;
+  padding: 6px 12px; color: var(--onyx-ink-bright); font-family: inherit;
+  font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+}
+.onyx-tools-grid {
+  display: grid; gap: 10px; margin-top: 12px;
+}
+.onyx-tool-btn {
+  background: rgba(120, 108, 200, 0.06); border: 0.5px solid var(--onyx-edge);
+  border-radius: 14px; padding: 16px 18px; color: var(--onyx-ink-bright);
+  font-family: inherit; font-size: 14px; text-align: left; cursor: pointer;
+}
+.onyx-tool-btn span { display: block; font-size: 11px; color: var(--onyx-ink-quiet); margin-top: 4px; }

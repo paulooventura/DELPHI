@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Cinzel } from "next/font/google";
+import { Fraunces, Space_Grotesk, Geist_Mono } from "next/font/google";
 import { SITE_URL } from "../lib/site";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
+  axes: ["opsz"],
+});
+
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  weight: ["300", "400", "500"],
 });
 
 const geistMono = Geist_Mono({
@@ -13,23 +20,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-// Cinzel — Roman-inscription serif for the DELPHI wordmark and primary UI.
-const cinzel = Cinzel({
-  variable: "--font-cinzel",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-});
-
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "DELPHI | Cosmic Clock",
-  description: "Cosmic Clock | Astronomical Guidance — an oracle that reads the sky and your device's senses.",
+  title: "DELPHI",
+  description: "World cycles · precise to the arcminute.",
   applicationName: "DELPHI",
   manifest: "/manifest.webmanifest",
   alternates: { canonical: "/" },
   openGraph: {
-    title: "DELPHI | Cosmic Clock",
-    description: "Astronomical guidance under pauloventura.org",
+    title: "DELPHI",
+    description: "World cycles · precise to the arcminute.",
     url: SITE_URL,
     siteName: "Paulo Ventura · DELPHI",
   },
@@ -47,10 +47,11 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#05070B",
+  themeColor: "#000000",
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
+  maximumScale: 1,
   viewportFit: "cover",
 };
 
@@ -62,9 +63,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${cinzel.variable} h-full antialiased`}
+      className={`${fraunces.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col font-sans">{children}</body>
+      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-space-grotesk), system-ui, sans-serif" }}>
+        {children}
+      </body>
     </html>
   );
 }
