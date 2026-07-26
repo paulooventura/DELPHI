@@ -3,12 +3,13 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import {
   getClockAudio,
+  muteClockAudio,
   playHourBell,
   playMinuteBell,
   playSecondTick,
   resumeClockAudio,
   startSchumannAtmosphere,
-  stopSchumannAtmosphere,
+  unmuteClockAudio,
 } from "../lib/clockSfx";
 
 function syncChimeRefs(refs: {
@@ -29,7 +30,7 @@ export function useClockSfx(enabled: boolean) {
 
   useEffect(() => {
     if (!enabled) {
-      stopSchumannAtmosphere();
+      muteClockAudio();
       setActive(false);
       return;
     }
@@ -40,8 +41,9 @@ export function useClockSfx(enabled: boolean) {
 
     const unlock = () => {
       void resumeClockAudio().then(ctx => {
-        if (!ctx || !alive) return;
+        if (!ctx || !alive || !enabledRef.current) return;
         syncChimeRefs(refs);
+        unmuteClockAudio();
         startSchumannAtmosphere(ctx);
         setActive(true);
       });
@@ -49,27 +51,44 @@ export function useClockSfx(enabled: boolean) {
 
     window.addEventListener("pointerdown", unlock, { once: true });
     window.addEventListener("keydown", unlock, { once: true });
-    // Keep audio alive when tab becomes visible again
+
+    const silence = () => {
+      muteClockAudio();
+      setActive(false);
+    };
+
+    // Tab/app background or close — cut audio instantly (no close buzz).
     const onVis = () => {
-      if (document.visibilityState === "visible" && enabledRef.current) {
+      if (document.visibilityState === "hidden") {
+        silence();
+        return;
+      }
+      if (enabledRef.current) {
         void resumeClockAudio().then(ctx => {
-          if (!ctx) return;
+          if (!ctx || !enabledRef.current) return;
+          unmuteClockAudio();
           startSchumannAtmosphere(ctx);
           setActive(true);
         });
       }
     };
     document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", silence);
 
     const existing = getClockAudio();
     if (existing && existing.state === "running") {
       syncChimeRefs(refs);
+      unmuteClockAudio();
       startSchumannAtmosphere(existing);
       setActive(true);
     }
 
     const loop = () => {
       if (!alive) return;
+      if (!enabledRef.current) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       const ctx = getClockAudio();
       if (ctx) {
         if (ctx.state === "suspended") {
@@ -105,7 +124,8 @@ export function useClockSfx(enabled: boolean) {
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
       document.removeEventListener("visibilitychange", onVis);
-      stopSchumannAtmosphere();
+      window.removeEventListener("pagehide", silence);
+      muteClockAudio();
     };
   }, [enabled]);
 

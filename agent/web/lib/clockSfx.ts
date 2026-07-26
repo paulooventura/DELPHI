@@ -301,19 +301,25 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   schumannBed = { master, sources, nodes };
 }
 
-export function stopSchumannAtmosphere(): void {
+export function stopSchumannAtmosphere(opts?: { immediate?: boolean }): void {
   if (!schumannBed) return;
   const { master, sources } = schumannBed;
   const ctx = master.context;
   const t = ctx.currentTime;
+  const immediate = opts?.immediate === true;
   try {
     master.gain.cancelScheduledValues(t);
     master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
-    master.gain.exponentialRampToValueAtTime(0.0001, t + 1.4);
+    // Immediate mute on tab/app close — a long ramp was audible as a buzz/pop.
+    master.gain.exponentialRampToValueAtTime(0.0001, t + (immediate ? 0.04 : 0.35));
   } catch {
-    /* ignore */
+    try {
+      master.gain.value = 0.0001;
+    } catch {
+      /* ignore */
+    }
   }
-  window.setTimeout(() => {
+  const tearDown = () => {
     for (const s of sources) {
       try {
         s.stop();
@@ -332,7 +338,51 @@ export function stopSchumannAtmosphere(): void {
       /* ignore */
     }
     schumannBed = null;
-  }, 1500);
+  };
+  if (immediate) tearDown();
+  else window.setTimeout(tearDown, 400);
+}
+
+/** Hard-silence the clock bus (close / background). No buzz, no leftover ticks. */
+export function muteClockAudio(): void {
+  stopSchumannAtmosphere({ immediate: true });
+  if (sharedMaster) {
+    try {
+      const t = sharedMaster.context.currentTime;
+      sharedMaster.gain.cancelScheduledValues(t);
+      sharedMaster.gain.setValueAtTime(0.0001, t);
+    } catch {
+      try {
+        sharedMaster.gain.value = 0.0001;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    try {
+      navigator.vibrate(0);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/** Restore master bus level after an intentional mute (stone back on). */
+export function unmuteClockAudio(): void {
+  if (!sharedMaster) return;
+  try {
+    const t = sharedMaster.context.currentTime;
+    sharedMaster.gain.cancelScheduledValues(t);
+    sharedMaster.gain.setValueAtTime(0.0001, t);
+    sharedMaster.gain.exponentialRampToValueAtTime(1, t + 0.2);
+  } catch {
+    try {
+      sharedMaster.gain.value = 1;
+    } catch {
+      /* ignore */
+    }
+  }
 }
 
 export function isSchumannAtmosphereRunning(): boolean {

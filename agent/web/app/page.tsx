@@ -1071,6 +1071,11 @@ export default function Home() {
       emfUt={toggles.emf ? signals?.emfUt ?? null : null}
       emfLive={Boolean(toggles.emf && signals?.emfUt != null)}
       emfMethod={toggles.emf ? signals?.emfMethod ?? null : null}
+      pulseEnabled={clockSfxOn}
+      onPulseEnabledChange={on => {
+        setClockSfxOn(on);
+        if (on) void enableSfx();
+      }}
       sensorProps={{
         autoAwaken: true,
         onAmbient: handleAmbient,

@@ -64,6 +64,8 @@ export function OnyxApp({
   emfMethod,
   sensorProps,
   oracleExtra,
+  pulseEnabled = true,
+  onPulseEnabledChange,
 }: {
   showSplash: boolean;
   onSplashDone: () => void;
@@ -86,6 +88,8 @@ export function OnyxApp({
   emfMethod?: string | null;
   sensorProps?: SensorArrayProps;
   oracleExtra?: ReactNode;
+  pulseEnabled?: boolean;
+  onPulseEnabledChange?: (on: boolean) => void;
 }) {
   const [mode, setMode] = useState<OnyxMode>("home");
   const [distilled, setDistilled] = useState<string>("");
@@ -388,6 +392,8 @@ export function OnyxApp({
       onOpenWhy={() => setMode("decompose")}
       onOpenYou={() => setMode("you")}
       onOpenCast={() => setMode("cast")}
+      pulseEnabled={pulseEnabled}
+      onPulseEnabledChange={onPulseEnabledChange}
     />
   );
 }

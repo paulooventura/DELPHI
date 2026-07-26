@@ -69,6 +69,9 @@ export type OnyxHomeProps = {
   onOpenWhy?: () => void;
   onOpenYou?: () => void;
   onOpenCast?: () => void;
+  /** Stone switch: sound + haptic pulse master. */
+  pulseEnabled?: boolean;
+  onPulseEnabledChange?: (on: boolean) => void;
 };
 
 export function OnyxHome({
@@ -87,21 +90,34 @@ export function OnyxHome({
   onOpenWhy,
   onOpenYou,
   onOpenCast,
+  pulseEnabled = true,
+  onPulseEnabledChange,
 }: OnyxHomeProps) {
   const [depth, setDepth] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
   const [pulseAnim, setPulseAnim] = useState<"none" | "beat" | "chime">("none");
-  const [hapticOn, setHapticOn] = useState(true);
-  const [stoneX, setStoneX] = useState(REST);
-  const [secondTick] = useState(false); // product default: off
+  const [hapticOn, setHapticOn] = useState(pulseEnabled);
+  const [stoneX, setStoneX] = useState(pulseEnabled ? REST : QUIET);
   const deviceRef = useRef<HTMLDivElement>(null);
   const wheelLock = useRef(false);
   const dragging = useRef(false);
   const moved = useRef(false);
   const startX = useRef(0);
-  const stoneXRef = useRef(REST);
-  const hapticRef = useRef(true);
+  const stoneXRef = useRef(pulseEnabled ? REST : QUIET);
+  const hapticRef = useRef(pulseEnabled);
   const lastSec = useRef(-1);
+  const onPulseRef = useRef(onPulseEnabledChange);
+  onPulseRef.current = onPulseEnabledChange;
+
+  // Keep stone in sync if parent toggles pulse (e.g. after splash unlock).
+  useEffect(() => {
+    if (dragging.current) return;
+    hapticRef.current = pulseEnabled;
+    setHapticOn(pulseEnabled);
+    const x = pulseEnabled ? REST : QUIET;
+    stoneXRef.current = x;
+    setStoneX(x);
+  }, [pulseEnabled]);
 
   const stars = useMemo(
     () =>
@@ -137,6 +153,10 @@ export function OnyxHome({
 
   const buzz = useCallback((kind: "step" | "deep" | "tick" | "second" | "minute") => {
     const on = hapticRef.current;
+    if (!on && kind !== "tick") {
+      // When quiet, still allow the tiny confirmation tick when re-enabling.
+      if (kind === "second" || kind === "minute") return;
+    }
     if (kind === "step") {
       vibrate(14, on);
       setPulseAnim("none");
@@ -146,9 +166,9 @@ export function OnyxHome({
       setPulseAnim("none");
       requestAnimationFrame(() => setPulseAnim("chime"));
     } else if (kind === "tick") {
-      vibrate(8, on);
+      vibrate(8, true);
     } else if (kind === "second") {
-      if (!secondTick) return;
+      // Gentle per-second pulse (reference: always on when the stone is lit).
       vibrate(6, on);
       setPulseAnim("none");
       requestAnimationFrame(() => setPulseAnim("beat"));
@@ -157,7 +177,7 @@ export function OnyxHome({
       setPulseAnim("none");
       requestAnimationFrame(() => setPulseAnim("chime"));
     }
-  }, [secondTick]);
+  }, []);
 
   const go = useCallback(
     (d: number) => {
@@ -184,19 +204,47 @@ export function OnyxHome({
     [buzz],
   );
 
+  // Own rAF clock — don't depend on parent `now` cadence for the felt second.
   useEffect(() => {
-    const s = now.getSeconds();
-    if (s === lastSec.current) return;
-    lastSec.current = s;
-    if (s === 0) buzz("minute");
-    else buzz("second");
-  }, [now, buzz]);
+    let raf = 0;
+    const loop = () => {
+      const s = new Date().getSeconds();
+      if (s !== lastSec.current) {
+        lastSec.current = s;
+        if (s === 0) buzz("minute");
+        else buzz("second");
+      }
+      raf = requestAnimationFrame(loop);
+    };
+    raf = requestAnimationFrame(loop);
+    return () => {
+      cancelAnimationFrame(raf);
+      // Cancel any in-flight vibrate when leaving home (no leftover buzz).
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(0);
+        } catch {
+          /* ignore */
+        }
+      }
+    };
+  }, [buzz]);
 
   useEffect(() => {
     if (pulseAnim === "none") return;
     const t = window.setTimeout(() => setPulseAnim("none"), pulseAnim === "chime" ? 2400 : 1000);
     return () => clearTimeout(t);
   }, [pulseAnim]);
+
+  const setPulse = useCallback((enabled: boolean, announce: boolean) => {
+    hapticRef.current = enabled;
+    setHapticOn(enabled);
+    const x = enabled ? REST : QUIET;
+    stoneXRef.current = x;
+    setStoneX(x);
+    onPulseRef.current?.(enabled);
+    if (announce && enabled) vibrate(8, true);
+  }, []);
 
   const applyStone = useCallback(
     (x: number) => {
@@ -208,11 +256,24 @@ export function OnyxHome({
       if (enabled !== hapticRef.current) {
         hapticRef.current = enabled;
         setHapticOn(enabled);
+        onPulseRef.current?.(enabled);
         if (enabled) vibrate(8, true);
       }
     },
     [],
   );
+
+  const endStone = useCallback(() => {
+    if (!dragging.current) return;
+    dragging.current = false;
+    if (!moved.current) {
+      // Tap flips on/off.
+      setPulse(!hapticRef.current, true);
+    } else {
+      // Snap to the side the drag landed on.
+      setPulse(hapticRef.current, false);
+    }
+  }, [setPulse]);
 
   useEffect(() => {
     const move = (e: MouseEvent) => {
@@ -220,19 +281,14 @@ export function OnyxHome({
       moved.current = true;
       applyStone(e.clientX - startX.current);
     };
-    const up = () => {
-      if (!dragging.current) return;
-      dragging.current = false;
-      if (!moved.current) applyStone(hapticRef.current ? QUIET : REST);
-      else applyStone(hapticRef.current ? REST : QUIET);
-    };
+    const up = () => endStone();
     window.addEventListener("mousemove", move);
     window.addEventListener("mouseup", up);
     return () => {
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", up);
     };
-  }, [applyStone]);
+  }, [applyStone, endStone]);
 
   const onWheel = (e: React.WheelEvent) => {
     if (wheelLock.current) return;
@@ -344,34 +400,29 @@ export function OnyxHome({
           className={`onyx-stone-track${!hapticOn ? " quiet" : ""}`}
           role="switch"
           aria-checked={hapticOn}
-          aria-label="Slide the stone to quiet the pulse"
+          aria-label="Slide the stone to quiet sound and pulse"
           tabIndex={0}
-          onMouseDown={e => {
+          onPointerDown={e => {
+            e.stopPropagation();
+            e.currentTarget.setPointerCapture(e.pointerId);
             dragging.current = true;
             moved.current = false;
             startX.current = e.clientX - stoneXRef.current;
           }}
-          onTouchStart={e => {
-            dragging.current = true;
-            moved.current = false;
-            startX.current = e.touches[0].clientX - stoneXRef.current;
-          }}
-          onTouchMove={e => {
+          onPointerMove={e => {
             if (!dragging.current) return;
             moved.current = true;
-            applyStone(e.touches[0].clientX - startX.current);
-            if (e.cancelable) e.preventDefault();
+            applyStone(e.clientX - startX.current);
           }}
-          onTouchEnd={() => {
-            if (!dragging.current) return;
-            dragging.current = false;
-            if (!moved.current) applyStone(hapticRef.current ? QUIET : REST);
-            else applyStone(hapticRef.current ? REST : QUIET);
+          onPointerUp={e => {
+            e.stopPropagation();
+            endStone();
           }}
+          onPointerCancel={endStone}
           onKeyDown={e => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
-              applyStone(hapticOn ? QUIET : REST);
+              setPulse(!hapticOn, true);
             }
           }}
         >
