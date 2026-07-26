@@ -148,31 +148,40 @@ function poleWord(axis: string, value: number): string {
 
 /**
  * Deterministic distilled phrase — the offline / fallback reading.
- * Names the CHORD (the result), not the inputs.
+ * Draws from the strongest AXES across the whole chorus. Names NO system,
+ * sign, planet, animal, or card — only the emergent quality. The character is
+ * the sum of all contributors, not a duel between two of them.
  */
 export function distillTemplate(c: Composition): string {
-  const topRes = c.resonances[0];
-  const topTension = c.tensions[0];
+  // The dominant theme = the axes where the whole chorus leans hardest and
+  // agrees most (coherence × |mean|), taken as adjectives.
+  const leaning = c.axes
+    .filter((a) => Math.abs(a.mean) > 0.25)
+    .map((a) => ({ word: poleWord(a.axis, a.mean), weight: a.coherence * Math.abs(a.mean) }))
+    .filter((x) => x.word)
+    .sort((x, y) => y.weight - x.weight);
 
-  // Lead with the strongest coherent theme.
-  const themeWords = c.activeQualities.slice(0, 3);
-  let phrase = themeWords.length
-    ? `A ${themeWords[0]}, ${themeWords[1]} quality`
-    : "A quiet, in-between quality";
+  const lead = leaning.slice(0, 3).map((x) => x.word);
+  let phrase =
+    lead.length >= 2
+      ? `A ${lead[0]}, ${lead[1]} quality`
+      : lead.length === 1
+      ? `A ${lead[0]} quality`
+      : "A quiet, in-between quality";
+  if (lead[2]) phrase += ` and ${lead[2]}`;
 
-  if (topRes) {
-    const w = poleWord(topRes.axis, topRes.pole);
-    if (w) phrase += ` — ${w} and gathering`;
+  // The counter-current = the strongest tension, named as a felt undercurrent,
+  // WITHOUT naming which traditions pull. Just the axis, as a direction.
+  const ten = c.tensions[0];
+  if (ten && ten.strength > 0.4) {
+    const hi = Math.max(...ten.poles.map((p) => p.value));
+    const lo = Math.min(...ten.poles.map((p) => p.value));
+    const pull = poleWord(ten.axis, hi);
+    const counter = poleWord(ten.axis, lo);
+    phrase += ` — ${pull} with a ${counter} current beneath`;
   }
 
-  // If there's real tension, name the friction; it's what makes it true.
-  if (topTension && topTension.strength > 0.5) {
-    const hi = topTension.poles.reduce((a, b) => (a.value > b.value ? a : b));
-    const lo = topTension.poles.reduce((a, b) => (a.value < b.value ? a : b));
-    phrase += `, ${hi.name}'s ${poleWord(topTension.axis, hi.value)} wrestling with ${lo.name}'s ${poleWord(topTension.axis, lo.value)}`;
-  }
-
-  return phrase + ".";
+  return phrase.replace(/ quality,/, ",").replace(/ quality and/, " and") + ".";
 }
 
 /**
@@ -181,22 +190,53 @@ export function distillTemplate(c: Composition): string {
  * COMPUTED composition — it names the chord, it does not invent the structure.
  */
 export function buildPrompt(c: Composition): { system: string; user: string } {
+  const n = c.contributors.length;
+
   const system = [
-    "You distill a moment's character from several cultural quality-systems into ONE sentence.",
-    "You are given the COMPUTED composition: which qualities are active, where they resonate, where they pull against each other.",
-    "Name the resulting character — the chord — NOT the input systems. Never list the signs or cards.",
-    "One sentence. Evocative but grounded. No second person, no prediction, no advice, no 'you'.",
-    "If there is tension, honor it — the friction is what makes it true. Do not smooth it into vague positivity.",
-    "Never use: journey, energy, vibes, universe, manifest, align. Write like a poet, not a horoscope.",
+    `This moment is read by ${n} independent traditions at once — cultures that never met, each observing the same instant and encoding a facet of its character.`,
+    "Name the SINGLE character that emerges from ALL of them combined — the standing wave across the whole chorus, the quality they collectively point at.",
+    "Do NOT name any system, sign, planet, animal, card, or tradition. Name the quality, never its sources.",
+    "Do not build the sentence from one or two strong notes. The character is the SUM. If there is a dominant theme and a counter-current, hold both — but as one felt weather, not a list and not a duel.",
+    "One sentence. Evocative but grounded. No second person, no 'you', no prediction, no advice.",
+    "Never use: journey, energy, vibes, universe, manifest, align, cosmic. Write like a poet naming a weather, not a horoscope.",
   ].join(" ");
 
-  const res = c.resonances[0];
-  const ten = c.tensions[0];
+  // Pass the WHOLE shape: every axis reading, all resonances, all tensions —
+  // as pure axis-language, never the tradition names (so the model can't leak them).
+  const axisLines = c.axes
+    .filter((a) => Math.abs(a.mean) > 0.2)
+    .sort((a, b) => Math.abs(b.mean) * b.coherence - Math.abs(a.mean) * a.coherence)
+    .map((a) => {
+      const dir = poleWord(a.axis, a.mean);
+      const agree = a.coherence > 0.66 ? "strongly shared" : a.coherence > 0.4 ? "broadly shared" : "mixed";
+      return `  ${dir} (${a.axis}): ${agree}, ${n >= 1 ? a.contributors.length : 0} voices`;
+    });
+
+  const resLines = c.resonances.slice(0, 3).map(
+    (r) => `  many traditions converge on ${poleWord(r.axis, r.pole)}`,
+  );
+  const tenLines = c.tensions.slice(0, 3).map((t) => {
+    const hi = Math.max(...t.poles.map((p) => p.value));
+    const lo = Math.min(...t.poles.map((p) => p.value));
+    return `  a pull between ${poleWord(t.axis, hi)} and ${poleWord(t.axis, lo)}`;
+  });
+
   const user = [
-    `Active qualities: ${c.activeQualities.join(", ")}.`,
-    res ? `Strongest resonance: ${res.entries.join(" + ")} agree on being ${poleWord(res.axis, res.pole)} (${res.axis}).` : "No strong resonance.",
-    ten ? `Strongest tension: on ${ten.axis}, ${ten.poles.map((p) => `${p.name} pulls ${poleWord(ten.axis, p.value)}`).join(" while ")}.` : "No strong tension.",
-    "Distill this into one sentence naming the moment's character.",
+    `${n} traditions observe this moment. Their combined shape:`,
+    "",
+    "The moment leans (strongest first):",
+    ...axisLines,
+    "",
+    resLines.length ? "Where the chorus agrees:" : "The chorus is evenly spread.",
+    ...resLines,
+    "",
+    tenLines.length ? "Counter-currents (hold these, don't smooth them):" : "No strong counter-current.",
+    ...tenLines,
+    "",
+    "All the qualities in play (already deduped across every tradition):",
+    `  ${c.activeQualities.join(", ")}`,
+    "",
+    "Distill ALL of this into ONE sentence naming the moment's single emergent character. Name no tradition.",
   ].join("\n");
 
   return { system, user };
