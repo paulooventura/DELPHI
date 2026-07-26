@@ -287,7 +287,7 @@ export function OnyxHome({
       : "below the horizon";
 
   return (
-    <div className="onyx-root">
+    <div className="onyx-root onyx-home-fade">
       <div
         ref={deviceRef}
         className="onyx-device"

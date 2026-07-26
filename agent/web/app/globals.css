@@ -1575,12 +1575,11 @@ html,body {
 }
 
 .cp-launch-galaxy {
+  /* Intentionally no brand PNG — that still was flashing before the onyx intro. */
   position: absolute;
   inset: 0;
-  background:
-    url("/delphi-brand-reference.png") center 35% / cover no-repeat;
-  opacity: 0.22;
-  mix-blend-mode: screen;
+  background: radial-gradient(ellipse 90% 70% at 50% 35%, rgba(140, 124, 255, 0.08) 0%, transparent 62%);
+  opacity: 0.5;
   pointer-events: none;
 }
 

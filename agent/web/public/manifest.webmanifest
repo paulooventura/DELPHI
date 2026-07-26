@@ -16,12 +16,6 @@
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
-    },
-    {
-      "src": "/delphi-brand-reference.png",
-      "sizes": "1024x548",
-      "type": "image/png",
-      "purpose": "any"
     }
   ]
 }

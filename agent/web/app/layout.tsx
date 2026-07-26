@@ -36,7 +36,7 @@ export const metadata: Metadata = {
   icons: {
     icon: "/icon.svg",
     shortcut: "/icon.svg",
-    apple: "/delphi-brand-reference.png",
+    apple: "/icon.svg",
   },
   appleWebApp: {
     capable: true,

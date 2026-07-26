@@ -49,6 +49,15 @@
   user-select: none;
 }
 
+/* Home enters after splash fades through black. */
+.onyx-home-fade {
+  animation: onyx-home-in 720ms ease forwards;
+}
+@keyframes onyx-home-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .onyx-root *,
   .onyx-root *::before,
@@ -61,7 +70,7 @@
 /* ── Splash ──────────────────────────────────────────────────────────────── */
 .onyx-film {
   position: absolute; inset: 0; z-index: 1; overflow: hidden;
-  background: #000; /* hold black until the intro frame decodes — never the old brand poster */
+  background: #000; /* hold black until a real video frame is ready — never a poster/image */
 }
 .onyx-film video {
   position: absolute; top: 50%; left: 50%;
@@ -70,10 +79,34 @@
   transform: translate(-50%, -50%) scale(1.08);
   object-fit: cover;
   background: #000;
+  opacity: 0;
+  transition: opacity 720ms ease;
   filter: grayscale(0.4) contrast(1.12) brightness(0.82) saturate(1.1);
   animation: onyx-slowpush 12s ease-out forwards;
 }
+.onyx-film video.onyx-film-ready { opacity: 1; }
 @keyframes onyx-slowpush { to { transform: translate(-50%, -50%) scale(1.16); } }
+
+/* Pure black boot/exit veil — no imagery. */
+.onyx-splash-veil {
+  position: absolute; inset: 0; z-index: 40;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 720ms ease;
+}
+.onyx-splash-veil.on { opacity: 1; }
+
+.onyx-splash-chrome {
+  position: absolute; inset: 0; z-index: 4;
+  opacity: 0;
+  transition: opacity 720ms ease;
+  pointer-events: none;
+}
+.onyx-splash-chrome.on {
+  opacity: 1;
+  pointer-events: auto;
+}
 
 .onyx-grade {
   position: absolute; inset: 0; z-index: 2; pointer-events: none;
