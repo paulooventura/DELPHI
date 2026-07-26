@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleReading } from "../../lib/worldCycles";
-import { cancelHaptic, pulseHaptic, type HapticKind } from "../../lib/haptics";
+import {
+  cancelHaptic,
+  hapticsMuted,
+  installHapticLifecycle,
+  muteHaptics,
+  pulseHaptic,
+  unmuteHaptics,
+  type HapticKind,
+} from "../../lib/haptics";
 import { claimMarkClass, streetMoonLine } from "./onyxCopy";
 
 const REST = 3;
@@ -149,6 +157,8 @@ export function OnyxHome({
     if (!on && (kind === "second" || kind === "minute" || kind === "step" || kind === "deep")) {
       return;
     }
+    // App backgrounded / closing — never start a new buzz.
+    if (hapticsMuted()) return;
     void pulseHaptic(kind);
     if (kind === "step" || kind === "second") {
       setPulseAnim("none");
@@ -190,21 +200,50 @@ export function OnyxHome({
   );
 
   // Own rAF clock — don't depend on parent `now` cadence for the felt second.
+  // Pauses hard when the app is backgrounded so close/swipe-away never buzzes.
   useEffect(() => {
+    installHapticLifecycle();
     let raf = 0;
+    let alive = true;
+
+    const onHide = () => {
+      muteHaptics();
+      cancelHaptic();
+    };
+    const onShow = () => {
+      if (document.visibilityState === "visible") unmuteHaptics();
+    };
+    const onVis = () => {
+      if (document.visibilityState === "hidden") onHide();
+      else onShow();
+    };
+
+    document.addEventListener("visibilitychange", onVis);
+    window.addEventListener("pagehide", onHide);
+    window.addEventListener("blur", onHide);
+    window.addEventListener("focus", onShow);
+
     const loop = () => {
-      const s = new Date().getSeconds();
-      if (s !== lastSec.current) {
-        lastSec.current = s;
-        if (s === 0) buzz("minute");
-        else buzz("second");
+      if (!alive) return;
+      if (document.visibilityState !== "hidden" && !hapticsMuted()) {
+        const s = new Date().getSeconds();
+        if (s !== lastSec.current) {
+          lastSec.current = s;
+          if (s === 0) buzz("minute");
+          else buzz("second");
+        }
       }
       raf = requestAnimationFrame(loop);
     };
     raf = requestAnimationFrame(loop);
     return () => {
+      alive = false;
       cancelAnimationFrame(raf);
       cancelHaptic();
+      document.removeEventListener("visibilitychange", onVis);
+      window.removeEventListener("pagehide", onHide);
+      window.removeEventListener("blur", onHide);
+      window.removeEventListener("focus", onShow);
     };
   }, [buzz]);
 

@@ -21,6 +21,7 @@ type GateState = {
 
 function vibrate(pattern: number | number[]) {
   if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
   try {
     navigator.vibrate(pattern);
   } catch {

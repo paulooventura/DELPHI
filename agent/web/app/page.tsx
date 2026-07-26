@@ -26,6 +26,7 @@ import { useSpringValue } from "../hooks/useSpringValue";
 import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
 import { useShowLaunch } from "../components/LaunchScreen";
 import { OnyxApp } from "../components/onyx/OnyxApp";
+import { installHapticLifecycle, muteHaptics, cancelHaptic } from "../lib/haptics";
 import { OracleLogo } from "../components/oracle/OracleLogo";
 import { AmbientPulse } from "../components/AmbientPulse";
 import { ClockAmbience } from "../components/ClockAmbience";
@@ -713,6 +714,7 @@ export default function Home() {
   }
 
   useEffect(() => {
+    installHapticLifecycle();
     let initial = { ...DEFAULT_TOGGLES };
     try {
       const raw = localStorage.getItem(TOGGLES_STORAGE_KEY);
@@ -722,6 +724,8 @@ export default function Home() {
     void captureSensors(initial);
     void startOrientationWatch();
     return () => {
+      muteHaptics();
+      cancelHaptic();
       stopOrientationWatch();
       stopLocationWatch();
     };
