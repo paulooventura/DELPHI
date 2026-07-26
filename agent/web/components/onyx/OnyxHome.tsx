@@ -7,11 +7,11 @@ import { claimMarkClass, streetMoonLine } from "./onyxCopy";
 
 const REST = 3;
 const QUIET = 37;
-const MAX = 3;
+/** Street → Moment → Self. (Obsolete Moon teaser removed — sky is its own mode.) */
+const MAX = 2;
 const HINTS = [
-  { c: "tap to tune in", d: "swipe down to go deeper ↓" },
-  { c: "tap to look closer", d: "swipe down to go deeper ↓" },
-  { c: "", d: "swipe down to go deeper ↓" },
+  { c: "tap for the sky", d: "swipe down to go deeper ↓" },
+  { c: "", d: "swipe up for the sky · down for deeper" },
   { c: "", d: "" },
 ] as const;
 
@@ -46,7 +46,6 @@ function MoonSvg() {
 export type OnyxHomeProps = {
   now: Date;
   phaseFraction: number;
-  moonAltDeg: number | null;
   zodiacSign: string;
   /** Distilled moment-chord sentence (computed-only). */
   momentLine: string;
@@ -69,7 +68,6 @@ export type OnyxHomeProps = {
 export function OnyxHome({
   now,
   phaseFraction,
-  moonAltDeg,
   zodiacSign,
   momentLine,
   selfTone,
@@ -164,7 +162,7 @@ export function OnyxHome({
       const nd = Math.max(0, Math.min(MAX, d));
       setDepth(prev => {
         if (nd === prev) return prev;
-        buzz(nd === 3 ? "deep" : "step");
+        buzz(nd === MAX ? "deep" : "step");
         return nd;
       });
     },
@@ -175,13 +173,21 @@ export function OnyxHome({
   const goDelta = useCallback(
     (delta: number) => {
       setDepth(prev => {
+        // Moment + swipe/scroll up → live sky (replaces the old Moon teaser).
+        if (prev === 1 && delta < 0) {
+          queueMicrotask(() => {
+            buzz("step");
+            onOpenSky();
+          });
+          return prev;
+        }
         const nd = Math.max(0, Math.min(MAX, prev + delta));
         if (nd === prev) return prev;
-        buzz(nd === 3 ? "deep" : "step");
+        buzz(nd === MAX ? "deep" : "step");
         return nd;
       });
     },
-    [buzz],
+    [buzz, onOpenSky],
   );
 
   // Own rAF clock — don't depend on parent `now` cadence for the felt second.
@@ -310,11 +316,6 @@ export function OnyxHome({
     goDelta(dy > 0 ? 1 : -1);
   };
 
-  const moonAltLabel =
-    moonAltDeg != null && Number.isFinite(moonAltDeg)
-      ? `${Math.round(moonAltDeg)}° above the horizon`
-      : "below the horizon";
-
   return (
     <div className="onyx-root onyx-home-fade">
       <div
@@ -421,7 +422,7 @@ export function OnyxHome({
         </div>
 
         <div className="onyx-ladder" aria-hidden>
-          {[0, 1, 2, 3].map(r => (
+          {[0, 1, 2].map(r => (
             <button
               key={r}
               type="button"
@@ -443,21 +444,8 @@ export function OnyxHome({
           </div>
         </div>
 
-        {/* 1 SKY TEASER */}
-        <div className={`onyx-panel onyx-p1${depth === 1 ? " show" : ""}`}>
-          <div className="onyx-center">
-            <p className="name">Moon</p>
-            <p className="det">
-              {moon.phaseName.toLowerCase()} · {moonAltLabel}
-            </p>
-            <button type="button" className="tap" onClick={onOpenSky}>
-              tap to look closer
-            </button>
-          </div>
-        </div>
-
-        {/* 2 MOMENT */}
-        <div className={`onyx-panel onyx-p2${depth === 2 ? " show" : ""}`}>
+        {/* 1 MOMENT */}
+        <div className={`onyx-panel onyx-p2${depth === 1 ? " show" : ""}`}>
           <p className="onyx-eyebrow" style={{ alignSelf: "flex-start", marginBottom: 0 }}>
             NOW
           </p>
@@ -540,8 +528,8 @@ export function OnyxHome({
           </p>
         </div>
 
-        {/* 3 SELF */}
-        <div className={`onyx-panel onyx-p3${depth === 3 ? " show" : ""}`}>
+        {/* 2 SELF */}
+        <div className={`onyx-panel onyx-p3${depth === 2 ? " show" : ""}`}>
           <div className="onyx-center">
             <div className="glyph">
               <svg width="192" height="192" viewBox="0 0 64 64" fill="none" role="img" aria-label="Your tone">
@@ -594,9 +582,9 @@ export function OnyxHome({
           <button
             type="button"
             className="onyx-compass"
-            aria-label="Descend"
+            aria-label={depth === 0 ? "Open sky" : "Descend"}
             onClick={() => {
-              if (depth === 1) onOpenSky();
+              if (depth === 0) onOpenSky();
               else go(depth + 1);
             }}
           >

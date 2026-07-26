@@ -225,25 +225,23 @@
 }
 .onyx-moon svg { display: block; filter: drop-shadow(0 0 26px rgba(140, 124, 255, 0.16)); }
 
-/* Moon + chrome icons at 3× the original Claude reference sizes. */
+/* Moon art + chrome — depths: 0 Street, 1 Moment, 2 Self. */
 .onyx-device[data-depth="0"] .onyx-moon { top: 18%; width: 276px; height: 276px; opacity: 0.78; }
-.onyx-device[data-depth="1"] .onyx-moon { top: 28%; width: 450px; height: 450px; opacity: 1; }
-.onyx-device[data-depth="2"] .onyx-moon { top: -2%; width: 354px; height: 354px; opacity: 0.3; }
-.onyx-device[data-depth="3"] .onyx-moon { top: -10%; width: 282px; height: 282px; opacity: 0.1; }
+.onyx-device[data-depth="1"] .onyx-moon { top: -2%; width: 354px; height: 354px; opacity: 0.3; }
+.onyx-device[data-depth="2"] .onyx-moon { top: -10%; width: 282px; height: 282px; opacity: 0.1; }
 .onyx-device[data-depth="0"] .onyx-vignette { opacity: 0.46; }
-.onyx-device[data-depth="1"] .onyx-vignette { opacity: 0.52; }
-.onyx-device[data-depth="2"] .onyx-vignette {
+.onyx-device[data-depth="1"] .onyx-vignette {
   opacity: 0.8;
   background: radial-gradient(100% 78% at 50% 46%, transparent 30%, rgba(0, 0, 0, 0.85) 70%, #000 100%);
 }
-.onyx-device[data-depth="3"] .onyx-vignette {
+.onyx-device[data-depth="2"] .onyx-vignette {
   opacity: 0.96;
   background: radial-gradient(80% 62% at 50% 48%, transparent 20%, rgba(0, 0, 0, 0.92) 60%, #000 100%);
 }
-.onyx-device[data-depth="2"] .onyx-stars { opacity: 0.35; }
-.onyx-device[data-depth="3"] .onyx-stars { opacity: 0.1; }
-.onyx-device[data-depth="2"] .onyx-aura { opacity: 0.6; }
-.onyx-device[data-depth="3"] .onyx-aura { opacity: 0.3; }
+.onyx-device[data-depth="1"] .onyx-stars { opacity: 0.35; }
+.onyx-device[data-depth="2"] .onyx-stars { opacity: 0.1; }
+.onyx-device[data-depth="1"] .onyx-aura { opacity: 0.6; }
+.onyx-device[data-depth="2"] .onyx-aura { opacity: 0.3; }
 
 .onyx-pulse-ring {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 7;
@@ -265,14 +263,14 @@
   font-size: 11px; letter-spacing: 0.42em; color: var(--onyx-ink-quiet); font-weight: 300;
   transition: opacity var(--onyx-settle);
 }
-.onyx-device[data-depth="3"] .onyx-wordmark { opacity: 0.35; }
+.onyx-device[data-depth="2"] .onyx-wordmark { opacity: 0.35; }
 .onyx-clock {
   position: absolute; top: 52px; left: 0; right: 0; text-align: center; z-index: 8;
   font-size: 11px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
   font-variant-numeric: tabular-nums; transition: opacity var(--onyx-settle);
 }
-.onyx-device[data-depth="2"] .onyx-clock,
-.onyx-device[data-depth="3"] .onyx-clock { opacity: 0; }
+.onyx-device[data-depth="1"] .onyx-clock,
+.onyx-device[data-depth="2"] .onyx-clock { opacity: 0; }
 .onyx-clock .sec { color: var(--onyx-light); }
 
 .onyx-ladder {
@@ -329,15 +327,6 @@
 }
 .onyx-p0 .big em { font-style: italic; color: var(--onyx-ink-bright); font-weight: 400; }
 .onyx-p0 .sub { font-size: 12px; color: var(--onyx-ink-soft); margin-top: 18px; letter-spacing: 0.03em; }
-.onyx-p1 .name {
-  font-family: var(--font-voice); font-size: 32px; font-weight: 500;
-  color: var(--onyx-ink-bright); margin-top: 26px;
-}
-.onyx-p1 .det { font-size: 12px; color: var(--onyx-ink-soft); margin-top: 8px; }
-.onyx-p1 .tap {
-  margin-top: 22px; font-size: 10px; color: var(--onyx-ink-faint); letter-spacing: 0.08em;
-  background: none; border: none; cursor: pointer; font-family: inherit;
-}
 .onyx-p2 {
   padding: 110px 30px 40px; justify-content: flex-start; gap: 20px; overflow-y: auto;
 }
@@ -400,7 +389,7 @@
   display: flex; flex-direction: column; align-items: center; gap: 13px;
   transition: opacity var(--onyx-settle);
 }
-.onyx-device[data-depth="3"] .onyx-compass-wrap { opacity: 0; pointer-events: none; }
+.onyx-device[data-depth="2"] .onyx-compass-wrap { opacity: 0; pointer-events: none; }
 .onyx-chint {
   font-size: 10px; letter-spacing: 0.08em; color: var(--onyx-ink-faint);
   transition: opacity var(--onyx-lift); min-height: 1em;
@@ -417,7 +406,7 @@
   font-size: 10px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
   transition: opacity var(--onyx-settle); min-height: 1em;
 }
-.onyx-device[data-depth="3"] .onyx-descend { opacity: 0; }
+.onyx-device[data-depth="2"] .onyx-descend { opacity: 0; }
 
 .onyx-stone-track {
   position: absolute; top: 22px; right: 20px; z-index: 9;
