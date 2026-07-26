@@ -9,6 +9,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { pulseHaptic } from "../lib/haptics";
 import "./ambientPulse.css";
 
 const REST = 3;
@@ -33,15 +34,6 @@ function loadPrefs(): PulsePrefs {
     };
   } catch {
     return { enabled: true, secondTick: false };
-  }
-}
-
-function vibrate(pattern: number | number[]) {
-  if (typeof navigator === "undefined" || !navigator.vibrate) return;
-  try {
-    navigator.vibrate(pattern);
-  } catch {
-    /* no-op */
   }
 }
 
@@ -86,7 +78,7 @@ export function AmbientPulse() {
       if (enabled !== prefsRef.current.enabled) {
         const next = { ...prefsRef.current, enabled };
         persist(next);
-        if (enabled) vibrate(8);
+        if (enabled) void pulseHaptic("tick");
       }
       if (!animate && pulseRef.current) {
         /* drag path — transition handled via style */
@@ -112,9 +104,9 @@ export function AmbientPulse() {
         setAnim(kind === "minute" ? "chime" : "beat");
       });
     }
-    if (kind === "second") vibrate(6);
-    else if (kind === "minute") vibrate([12, 50, 12, 50, 24]);
-    else vibrate(8);
+    if (kind === "second") void pulseHaptic("second");
+    else if (kind === "minute") void pulseHaptic("minute");
+    else void pulseHaptic("tick");
   }, []);
 
   useEffect(() => {
@@ -177,7 +169,7 @@ export function AmbientPulse() {
         } catch {
           /* no-op */
         }
-        if (enabled) vibrate(8);
+        if (enabled) void pulseHaptic("tick");
       }
     };
     const up = () => {
@@ -195,7 +187,7 @@ export function AmbientPulse() {
         } catch {
           /* no-op */
         }
-        if (next.enabled) vibrate(8);
+        if (next.enabled) void pulseHaptic("tick");
       } else {
         const settleX = prefsRef.current.enabled ? REST : QUIET;
         stoneXRef.current = settleX;

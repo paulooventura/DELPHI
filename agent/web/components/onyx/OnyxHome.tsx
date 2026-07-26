@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleReading } from "../../lib/worldCycles";
+import { cancelHaptic, pulseHaptic, type HapticKind } from "../../lib/haptics";
 import { claimMarkClass, streetMoonLine } from "./onyxCopy";
 
 const REST = 3;
@@ -13,15 +14,6 @@ const HINTS = [
   { c: "", d: "swipe down to go deeper ↓" },
   { c: "", d: "" },
 ] as const;
-
-function vibrate(pattern: number | number[], on: boolean) {
-  if (!on || typeof navigator === "undefined" || !navigator.vibrate) return;
-  try {
-    navigator.vibrate(pattern);
-  } catch {
-    /* no-op */
-  }
-}
 
 function MoonSvg() {
   return (
@@ -151,29 +143,17 @@ export function OnyxHome({
   });
   const sec = String(now.getSeconds()).padStart(2, "0");
 
-  const buzz = useCallback((kind: "step" | "deep" | "tick" | "second" | "minute") => {
+  const buzz = useCallback((kind: HapticKind) => {
     const on = hapticRef.current;
-    if (!on && kind !== "tick") {
-      // When quiet, still allow the tiny confirmation tick when re-enabling.
-      if (kind === "second" || kind === "minute") return;
+    // When quiet: skip clock pulses; allow confirmation tick when re-enabling.
+    if (!on && (kind === "second" || kind === "minute" || kind === "step" || kind === "deep")) {
+      return;
     }
-    if (kind === "step") {
-      vibrate(14, on);
+    void pulseHaptic(kind);
+    if (kind === "step" || kind === "second") {
       setPulseAnim("none");
       requestAnimationFrame(() => setPulseAnim("beat"));
-    } else if (kind === "deep") {
-      vibrate([20, 40, 30], on);
-      setPulseAnim("none");
-      requestAnimationFrame(() => setPulseAnim("chime"));
-    } else if (kind === "tick") {
-      vibrate(8, true);
-    } else if (kind === "second") {
-      // Gentle per-second pulse (reference: always on when the stone is lit).
-      vibrate(6, on);
-      setPulseAnim("none");
-      requestAnimationFrame(() => setPulseAnim("beat"));
-    } else if (kind === "minute") {
-      vibrate([12, 50, 12, 50, 24], on);
+    } else if (kind === "deep" || kind === "minute") {
       setPulseAnim("none");
       requestAnimationFrame(() => setPulseAnim("chime"));
     }
@@ -219,14 +199,7 @@ export function OnyxHome({
     raf = requestAnimationFrame(loop);
     return () => {
       cancelAnimationFrame(raf);
-      // Cancel any in-flight vibrate when leaving home (no leftover buzz).
-      if (typeof navigator !== "undefined" && navigator.vibrate) {
-        try {
-          navigator.vibrate(0);
-        } catch {
-          /* ignore */
-        }
-      }
+      cancelHaptic();
     };
   }, [buzz]);
 
@@ -243,7 +216,7 @@ export function OnyxHome({
     stoneXRef.current = x;
     setStoneX(x);
     onPulseRef.current?.(enabled);
-    if (announce && enabled) vibrate(8, true);
+    if (announce && enabled) void pulseHaptic("tick");
   }, []);
 
   const applyStone = useCallback(
@@ -257,7 +230,7 @@ export function OnyxHome({
         hapticRef.current = enabled;
         setHapticOn(enabled);
         onPulseRef.current?.(enabled);
-        if (enabled) vibrate(8, true);
+        if (enabled) void pulseHaptic("tick");
       }
     },
     [],

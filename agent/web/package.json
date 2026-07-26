@@ -11,9 +11,13 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "cap:sync": "npx cap sync ios",
+    "cap:open": "npx cap open ios"
   },
   "dependencies": {
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/haptics": "^8.0.2",
     "astronomy-engine": "^2.1.19",
     "axios": "^1.18.0",
     "framer-motion": "^12.42.0",
@@ -24,6 +28,8 @@
     "tz-lookup": "^6.1.25"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.4.2",
+    "@capacitor/ios": "^8.4.2",
     "@tailwindcss/postcss": "^4",
     "@types/luxon": "^3.7.2",
     "@types/node": "^20",
