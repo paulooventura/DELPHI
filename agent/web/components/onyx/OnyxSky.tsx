@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { computeCelestialBodies } from "../../lib/cosmic/celestialBodies";
 import { BRIGHT_STARS, STAR_TO_CONSTELLATION, type StarData } from "../../lib/starmap";
 import { raDecToAltAz } from "../../lib/skyPositions";
@@ -38,6 +38,18 @@ const PROV: Record<SkyKind, (o: SkyObj) => string> = {
 
 const DIRS = ["N", "·", "NE", "·", "E", "·", "SE", "·", "S", "·", "SW", "·", "W", "·", "NW", "·", "N", "·", "NE", "·", "E"];
 
+/** Horizontal / vertical FOV halves used by project() — drag maps px → degrees with these. */
+const FOV_AZ = 48;
+const FOV_ALT = 42;
+
+function normalizeDeg(d: number): number {
+  return ((d % 360) + 360) % 360;
+}
+
+function clampPitch(p: number): number {
+  return Math.max(-20, Math.min(85, p));
+}
+
 function project(
   az: number,
   alt: number,
@@ -46,11 +58,11 @@ function project(
   W: number,
   H: number,
 ): { x: number; y: number; on: boolean } {
-  let daz = ((az - heading + 540) % 360) - 180;
+  const daz = ((az - heading + 540) % 360) - 180;
   const dalt = alt - pitch;
-  const x = W / 2 + (daz / 48) * (W / 2);
-  const y = H * 0.42 - (dalt / 42) * (H * 0.38);
-  const on = Math.abs(daz) < 72 && Math.abs(dalt) < 55 && alt > -8;
+  const x = W / 2 + (daz / FOV_AZ) * (W / 2);
+  const y = H * 0.42 - (dalt / FOV_ALT) * (H * 0.38);
+  const on = Math.abs(daz) < FOV_AZ * 1.5 && Math.abs(dalt) < FOV_ALT * 1.35 && alt > -12;
   return { x, y, on };
 }
 
@@ -82,9 +94,33 @@ export function OnyxSky({
   const deviceRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ W: 390, H: 780 });
   const [filter, setFilter] = useState<"all" | SkyKind>("all");
-  const [aim, setAim] = useState({ x: 195, y: 328 });
   const [selected, setSelected] = useState<SkyObj | null>(null);
   const [litId, setLitId] = useState<string | null>(null);
+  const [dragging, setDragging] = useState(false);
+
+  // Free-look camera. Seeded from device once; after the user pans, we stop following sensors.
+  const [lookAz, setLookAz] = useState(() => normalizeDeg(headingDeg));
+  const [lookAlt, setLookAlt] = useState(() => clampPitch(pitchDeg || 25));
+  const freeLook = useRef(false);
+  const lookAzRef = useRef(lookAz);
+  const lookAltRef = useRef(lookAlt);
+  lookAzRef.current = lookAz;
+  lookAltRef.current = lookAlt;
+
+  const drag = useRef<{
+    pointerId: number;
+    x: number;
+    y: number;
+    az: number;
+    alt: number;
+    moved: boolean;
+  } | null>(null);
+
+  useEffect(() => {
+    if (freeLook.current) return;
+    setLookAz(normalizeDeg(headingDeg));
+    setLookAlt(clampPitch(pitchDeg || 25));
+  }, [headingDeg, pitchDeg]);
 
   useEffect(() => {
     const el = deviceRef.current;
@@ -94,7 +130,6 @@ export function OnyxSky({
     });
     ro.observe(el);
     setSize({ W: el.clientWidth, H: el.clientHeight });
-    setAim({ x: el.clientWidth / 2, y: el.clientHeight * 0.42 });
     return () => ro.disconnect();
   }, []);
 
@@ -116,7 +151,7 @@ export function OnyxSky({
 
     for (const b of bodies) {
       if (b.id === "sun") continue;
-      const p = project(b.az, b.alt, headingDeg, pitchDeg, W, H);
+      const p = project(b.az, b.alt, lookAz, lookAlt, W, H);
       if (!p.on) continue;
       out.push({
         id: b.id,
@@ -135,10 +170,10 @@ export function OnyxSky({
 
     const stars = (BRIGHT_STARS as Array<StarData & { distanceLy?: number }>)
       .filter(s => s.mag <= 2.5)
-      .slice(0, 36);
+      .slice(0, 48);
     for (const s of stars) {
       const pos = raDecToAltAz(now, lat, lon, s.ra, s.dec, altM);
-      const p = project(pos.az, pos.alt, headingDeg, pitchDeg, W, H);
+      const p = project(pos.az, pos.alt, lookAz, lookAlt, W, H);
       if (!p.on) continue;
       out.push({
         id: `star-${s.name}`,
@@ -156,29 +191,87 @@ export function OnyxSky({
     }
 
     return out;
-  }, [now, lat, lon, altM, headingDeg, pitchDeg, size]);
+  }, [now, lat, lon, altM, lookAz, lookAlt, size]);
 
   const visible = objects.filter(o => filter === "all" || o.kind === filter);
 
+  // Reticle is fixed at center — resolve against that aim point.
   useEffect(() => {
+    const aimX = size.W / 2;
+    const aimY = size.H * 0.42;
     let best: SkyObj | null = null;
     let bd = 1e9;
     for (const o of visible) {
-      const d = Math.hypot(o.x - aim.x, o.y - aim.y);
+      const d = Math.hypot(o.x - aimX, o.y - aimY);
       if (d < bd) {
         bd = d;
         best = o;
       }
     }
-    setLitId(best && bd < 130 ? best.id : null);
-  }, [aim, visible]);
+    setLitId(best && bd < 110 ? best.id : null);
+  }, [visible, size]);
+
+  const applyPan = useCallback((dx: number, dy: number, baseAz: number, baseAlt: number) => {
+    const { W, H } = size;
+    // Drag sky under the finger: finger right → look left (sky content moves with drag).
+    const dAz = -(dx / (W / 2)) * FOV_AZ;
+    const dAlt = (dy / (H * 0.38)) * FOV_ALT;
+    freeLook.current = true;
+    const nextAz = normalizeDeg(baseAz + dAz);
+    const nextAlt = clampPitch(baseAlt + dAlt);
+    setLookAz(nextAz);
+    setLookAlt(nextAlt);
+  }, [size]);
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (selected) return;
+    if ((e.target as HTMLElement).closest(".onyx-filt, .onyx-sky-back, .onyx-sheet, .close, .more")) return;
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+    drag.current = {
+      pointerId: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      az: lookAzRef.current,
+      alt: lookAltRef.current,
+      moved: false,
+    };
+    setDragging(true);
+  };
+
+  const onPointerMove = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    const dx = e.clientX - d.x;
+    const dy = e.clientY - d.y;
+    if (!d.moved && Math.hypot(dx, dy) < 6) return;
+    d.moved = true;
+    applyPan(dx, dy, d.az, d.alt);
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    const d = drag.current;
+    if (!d || d.pointerId !== e.pointerId) return;
+    const wasTap = !d.moved;
+    drag.current = null;
+    setDragging(false);
+    if (wasTap && litId) {
+      const o = visible.find(x => x.id === litId);
+      if (o) setSelected(o);
+    }
+  };
+
+  const onWheel = (e: React.WheelEvent) => {
+    e.preventDefault();
+    freeLook.current = true;
+    // Horizontal wheel / trackpad → azimuth; vertical → altitude
+    setLookAz(a => normalizeDeg(a + e.deltaX * 0.08));
+    setLookAlt(a => clampPitch(a - e.deltaY * 0.06));
+  };
 
   const card = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
-  const ribbonX = -((headingDeg % 360) / 360) * (DIRS.length * 44) + size.W / 2 - 22;
+  const ribbonX = -((lookAz % 360) / 360) * (DIRS.length * 44) + size.W / 2 - 22;
   const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const look = cardinalFromHeading(headingDeg);
-
-  const openSheet = (o: SkyObj) => setSelected(o);
+  const look = cardinalFromHeading(lookAz);
   const lit = visible.find(o => o.id === litId) ?? null;
 
   return (
@@ -189,34 +282,30 @@ export function OnyxSky({
         </button>
 
         <div
-          className="onyx-sky"
-          onMouseMove={e => {
-            const r = deviceRef.current?.getBoundingClientRect();
-            if (!r) return;
-            setAim({ x: e.clientX - r.left, y: e.clientY - r.top });
-          }}
-          onTouchMove={e => {
-            const r = deviceRef.current?.getBoundingClientRect();
-            const t = e.touches[0];
-            if (!r || !t) return;
-            setAim({ x: t.clientX - r.left, y: t.clientY - r.top });
-          }}
+          className={`onyx-sky${dragging ? " dragging" : ""}`}
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerCancel={onPointerUp}
+          onWheel={onWheel}
         >
-          {dust.map(d => (
-            <span
-              key={d.key}
-              className="onyx-dust"
-              style={{
-                top: `${d.top}%`,
-                left: `${d.left}%`,
-                width: d.s,
-                height: d.s,
-                ["--o" as string]: d.o,
-                ["--tw" as string]: `${d.tw}s`,
-                ["--d" as string]: `${d.d}s`,
-              }}
-            />
-          ))}
+          <div className="onyx-sky-drift">
+            {dust.map(d => (
+              <span
+                key={d.key}
+                className="onyx-dust"
+                style={{
+                  top: `${d.top}%`,
+                  left: `${d.left}%`,
+                  width: d.s,
+                  height: d.s,
+                  ["--o" as string]: d.o,
+                  ["--tw" as string]: `${d.tw}s`,
+                  ["--d" as string]: `${d.d}s`,
+                }}
+              />
+            ))}
+          </div>
 
           {visible.map(o => (
             <button
@@ -229,9 +318,10 @@ export function OnyxSky({
                 ["--br" as string]: "5s",
                 ["--bd" as string]: "0s",
               }}
+              onPointerDown={e => e.stopPropagation()}
               onClick={e => {
                 e.stopPropagation();
-                openSheet(o);
+                setSelected(o);
               }}
             >
               <span className="halo" />
@@ -269,7 +359,7 @@ export function OnyxSky({
         </div>
         <div className="onyx-sky-coords">
           <span>
-            {Math.abs(lat).toFixed(2)}°{lat >= 0 ? "N" : "S"} · looking {look}
+            {Math.abs(lat).toFixed(2)}°{lat >= 0 ? "N" : "S"} · looking {look} · {Math.round(lookAlt)}°
           </span>
           <span>{time}</span>
         </div>
@@ -309,7 +399,7 @@ export function OnyxSky({
         </div>
 
         <p className="onyx-sky-hint">
-          {lit ? `${lit.name} · tap for details` : "tap any object · aim to resolve"}
+          {lit ? `${lit.name} · tap for details` : "drag to look around · tap to resolve"}
         </p>
 
         <div className={`onyx-sheet${selected ? " up" : ""}`} id="sheet">

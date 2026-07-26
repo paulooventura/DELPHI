@@ -1,10 +1,19 @@
 "use client";
 
-import { useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CosmicClockState } from "../../lib/cosmic";
 import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
 import { computeCelestialBodies } from "../../lib/cosmic/celestialBodies";
+import { jdFromDate } from "../../lib/phase/timeResolution";
+import { composeMoment } from "../../lib/lore/compose";
+import { resolveMoment } from "../../lib/lore/resolveMoment";
+import {
+  fetchModelPhrase,
+  phraseCacheKey,
+  phraseForMoment,
+  writeCachedPhrase,
+} from "../../lib/lore/distillPhrase";
 import { DashboardContainer } from "../DashboardContainer";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import { AtlasPanel } from "../AtlasPanel";
@@ -64,6 +73,7 @@ export function OnyxApp({
   oracleExtra?: ReactNode;
 }) {
   const [mode, setMode] = useState<OnyxMode>("home");
+  const [distilled, setDistilled] = useState<string>("");
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
 
@@ -72,11 +82,40 @@ export function OnyxApp({
     return moon?.alt ?? null;
   }, [now, lat, lon, altM]);
 
+  const civilYmd = useMemo(() => {
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, "0");
+    const d = String(now.getDate()).padStart(2, "0");
+    return `${y}-${m}-${d}`;
+  }, [now]);
+
+  const momentBundle = useMemo(() => {
+    const jd = jdFromDate(now);
+    const resolved = resolveMoment(jd, lat, lon);
+    return composeMoment(resolved.entries, lat, lon, {
+      localMonth: now.getMonth() + 1,
+    });
+  }, [now, lat, lon]);
+
+  // First paint: cache or deterministic template (never blocks on network).
+  useEffect(() => {
+    const { phrase } = phraseForMoment(momentBundle.chord, civilYmd, lat, lon);
+    setDistilled(phrase);
+    const key = phraseCacheKey(civilYmd, lat, lon);
+    let cancelled = false;
+    void (async () => {
+      const model = await fetchModelPhrase(momentBundle.chord);
+      if (cancelled || !model) return;
+      writeCachedPhrase(key, model);
+      setDistilled(model);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [momentBundle, civilYmd, lat, lon]);
+
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
-  const phaseName = (cycles?.lunar?.phase ?? "Moon").toLowerCase();
-  const momentLine =
-    multiVoice?.trim() ||
-    `${phaseName.charAt(0).toUpperCase()}${phaseName.slice(1)} in ${zodiacSign}. A day for finishing what's begun.`;
+  const momentLine = distilled || multiVoice?.trim() || "Reading the sky…";
 
   const galactic = cycles?.galactic;
   const selfTone = galactic ? (
@@ -105,7 +144,16 @@ export function OnyxApp({
   );
 
   if (showSplash) {
-    return <OnyxSplash now={now} lat={lat} lon={lon} altM={altM} onEnter={onSplashDone} />;
+    return (
+      <OnyxSplash
+        now={now}
+        lat={lat}
+        lon={lon}
+        altM={altM}
+        acknowledgment={momentBundle.acknowledgment ?? null}
+        onEnter={onSplashDone}
+      />
+    );
   }
 
   if (mode === "sky") {
@@ -266,6 +314,11 @@ export function OnyxApp({
     );
   }
 
+  const landCalendarLine =
+    momentBundle.landCalendar.length > 0
+      ? `Land calendar · ${momentBundle.landCalendar[0]!.name}`
+      : null;
+
   return (
     <OnyxHome
       now={now}
@@ -276,6 +329,7 @@ export function OnyxApp({
       selfTone={selfTone}
       selfRet={selfRet}
       calendarReadings={stripReadings.slice(0, 8)}
+      landCalendarLine={landCalendarLine}
       onOpenSky={() => setMode("sky")}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}

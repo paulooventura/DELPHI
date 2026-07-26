@@ -13,12 +13,15 @@ export function OnyxSplash({
   lat,
   lon,
   altM,
+  acknowledgment,
   onEnter,
 }: {
   now: Date;
   lat: number;
   lon: number;
   altM?: number | null;
+  /** Land acknowledgment tied to the location fix — first-class, not a footnote. */
+  acknowledgment?: { people: string; text: string; pointTo: string } | null;
   onEnter: () => void;
 }) {
   const { n, w } = fmtCoord(lat, lon);
@@ -80,6 +83,15 @@ export function OnyxSplash({
         <span className="onyx-fix br">
           {time} {tz}
         </span>
+
+        {acknowledgment && (
+          <p className="onyx-land-ack" title={acknowledgment.people}>
+            {acknowledgment.text}{" "}
+            <a href={acknowledgment.pointTo} target="_blank" rel="noopener noreferrer">
+              learn more ↗
+            </a>
+          </p>
+        )}
 
         <div className="onyx-enter">
           <button type="button" onClick={onEnter}>

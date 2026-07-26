@@ -56,10 +56,13 @@ export type OnyxHomeProps = {
   phaseFraction: number;
   moonAltDeg: number | null;
   zodiacSign: string;
+  /** Distilled moment-chord sentence (computed-only). */
   momentLine: string;
   selfTone: React.ReactNode;
   selfRet: React.ReactNode;
   calendarReadings: CycleReading[];
+  /** Land calendar of place (e.g. Cherokee moon) — calendar framing, never personality. */
+  landCalendarLine?: string | null;
   onOpenSky: () => void;
   onOpenRings: () => void;
   onOpenTools: () => void;
@@ -74,6 +77,7 @@ export function OnyxHome({
   selfTone,
   selfRet,
   calendarReadings,
+  landCalendarLine,
   onOpenSky,
   onOpenRings,
   onOpenTools,
@@ -356,12 +360,10 @@ export function OnyxHome({
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
           <div className="onyx-center">
             <p className="onyx-eyebrow">{eyebrow}</p>
-            <p className="big">
-              The moon is <em>{moon.verb}</em>,
-              <br />
-              {moon.detail}
+            <p className="big">{momentLine}</p>
+            <p className="sub">
+              The moon is {moon.verb}, {moon.detail} Lift your phone to the sky.
             </p>
-            <p className="sub">Lift your phone to the sky.</p>
           </div>
         </div>
 
@@ -383,6 +385,11 @@ export function OnyxHome({
           <p className="onyx-eyebrow" style={{ alignSelf: "flex-start", marginBottom: 0 }}>
             NOW
           </p>
+          {landCalendarLine && (
+            <p className="onyx-land-cal" style={{ alignSelf: "flex-start", width: "100%" }}>
+              {landCalendarLine}
+            </p>
+          )}
           <p className="now">{momentLine}</p>
           <hr className="onyx-seam" />
           <div className="onyx-rows">

@@ -121,6 +121,15 @@
 .onyx-fix.bl { bottom: 120px; left: 26px; }
 .onyx-fix.br { bottom: 120px; right: 26px; }
 
+.onyx-land-ack {
+  position: absolute; left: 24px; right: 24px; bottom: 118px; z-index: 7;
+  font-size: 10px; line-height: 1.55; letter-spacing: 0.02em;
+  color: var(--onyx-ink-quiet); text-align: center;
+  opacity: 0; animation: onyx-reveal 2s ease-out 3.6s forwards;
+}
+.onyx-land-ack a {
+  color: var(--onyx-light); text-decoration: none; letter-spacing: 0.06em;
+}
 .onyx-enter {
   position: absolute; bottom: 56px; left: 0; right: 0; z-index: 7; text-align: center;
   opacity: 0; animation: onyx-reveal 2s ease-out 4s forwards;
@@ -271,6 +280,10 @@
   font-family: var(--font-voice); font-size: 22px; font-weight: 400; line-height: 1.42;
   color: var(--onyx-ink-bright); text-align: left; width: 100%;
 }
+.onyx-land-cal {
+  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--onyx-ink-quiet); margin: 0 0 10px; text-align: left;
+}
 .onyx-seam { width: 100%; height: 0.5px; background: var(--onyx-edge-faint); border: none; }
 .onyx-rows { width: 100%; display: flex; flex-direction: column; }
 .onyx-row {
@@ -373,6 +386,14 @@
 }
 .onyx-sky {
   position: absolute; inset: 0; z-index: 1;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+.onyx-sky.dragging { cursor: grabbing; }
+.onyx-sky-drift {
+  position: absolute; inset: 0; z-index: 0; pointer-events: none;
   animation: onyx-drift 64s ease-in-out infinite;
 }
 @keyframes onyx-drift {
