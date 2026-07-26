@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 
 function fmtCoord(lat: number, lon: number): { n: string; w: string } {
   const n = `${Math.abs(lat).toFixed(2)}°${lat >= 0 ? "N" : "S"}`;
@@ -24,6 +24,13 @@ export function OnyxSplash({
   acknowledgment?: { people: string; text: string; pointTo: string } | null;
   onEnter: () => void;
 }) {
+  const entered = useRef(false);
+  const enterOnce = () => {
+    if (entered.current) return;
+    entered.current = true;
+    onEnter();
+  };
+
   const { n, w } = fmtCoord(lat, lon);
   const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const tz = now.toLocaleTimeString([], { timeZoneName: "short" }).split(" ").pop() ?? "";
@@ -42,10 +49,22 @@ export function OnyxSplash({
   );
 
   return (
-    <div className="onyx-root" role="dialog" aria-label="Delphi splash">
+    <div
+      className="onyx-root"
+      role="dialog"
+      aria-label="Delphi splash"
+      onClick={enterOnce}
+    >
       <div className="onyx-device">
         <div className="onyx-film">
-          <video autoPlay muted loop playsInline poster="/delphi-brand-reference.png">
+          {/* Play once — no loop. Tap or video end enters HOME. */}
+          <video
+            autoPlay
+            muted
+            playsInline
+            poster="/delphi-brand-reference.png"
+            onEnded={enterOnce}
+          >
             <source src="/delphi-intro.mp4" type="video/mp4" />
           </video>
         </div>
@@ -85,7 +104,11 @@ export function OnyxSplash({
         </span>
 
         {acknowledgment && (
-          <p className="onyx-land-ack" title={acknowledgment.people}>
+          <p
+            className="onyx-land-ack"
+            title={acknowledgment.people}
+            onClick={e => e.stopPropagation()}
+          >
             {acknowledgment.text}{" "}
             <a href={acknowledgment.pointTo} target="_blank" rel="noopener noreferrer">
               learn more ↗
@@ -94,10 +117,16 @@ export function OnyxSplash({
         )}
 
         <div className="onyx-enter">
-          <button type="button" onClick={onEnter}>
+          <button
+            type="button"
+            onClick={e => {
+              e.stopPropagation();
+              enterOnce();
+            }}
+          >
             tune in ↗
           </button>
-          <span className="pulse">or hold still, and look up</span>
+          <span className="pulse">tap to skip · plays once</span>
         </div>
       </div>
     </div>

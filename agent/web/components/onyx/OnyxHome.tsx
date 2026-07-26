@@ -66,6 +66,9 @@ export type OnyxHomeProps = {
   onOpenSky: () => void;
   onOpenRings: () => void;
   onOpenTools: () => void;
+  onOpenWhy?: () => void;
+  onOpenYou?: () => void;
+  onOpenCast?: () => void;
 };
 
 export function OnyxHome({
@@ -81,6 +84,9 @@ export function OnyxHome({
   onOpenSky,
   onOpenRings,
   onOpenTools,
+  onOpenWhy,
+  onOpenYou,
+  onOpenCast,
 }: OnyxHomeProps) {
   const [depth, setDepth] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
@@ -391,6 +397,19 @@ export function OnyxHome({
             </p>
           )}
           <p className="now">{momentLine}</p>
+          {onOpenWhy && (
+            <button
+              type="button"
+              className="onyx-why"
+              onClick={e => {
+                e.stopPropagation();
+                buzz("tick");
+                onOpenWhy();
+              }}
+            >
+              tap to see why
+            </button>
+          )}
           <hr className="onyx-seam" />
           <div className="onyx-rows">
             <button
@@ -469,6 +488,32 @@ export function OnyxHome({
             <p className="te">YOUR TONE, THIS MOMENT</p>
             <p className="tone">{selfTone}</p>
             <p className="ret">{selfRet}</p>
+            <div className="onyx-side-doors">
+              {onOpenYou && (
+                <button
+                  type="button"
+                  className="onyx-ghost-btn"
+                  onClick={() => {
+                    buzz("tick");
+                    onOpenYou();
+                  }}
+                >
+                  You · natal (local)
+                </button>
+              )}
+              {onOpenCast && (
+                <button
+                  type="button"
+                  className="onyx-ghost-btn"
+                  onClick={() => {
+                    buzz("tick");
+                    onOpenCast();
+                  }}
+                >
+                  Cast · side door
+                </button>
+              )}
+            </div>
           </div>
         </div>
 

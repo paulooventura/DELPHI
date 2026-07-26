@@ -23,9 +23,24 @@ import { PauloVenturaHub } from "../PauloVenturaHub";
 import { OnyxHome } from "./OnyxHome";
 import { OnyxSky } from "./OnyxSky";
 import { OnyxSplash } from "./OnyxSplash";
+import { OnyxYou } from "./OnyxYou";
+import { OnyxCast } from "./OnyxCast";
+import { OnyxAbout } from "./OnyxAbout";
+import { OnyxDecompose } from "./OnyxDecompose";
 import "./onyx.css";
 
-export type OnyxMode = "home" | "sky" | "rings" | "tools" | "atlas" | "senses" | "oracle";
+export type OnyxMode =
+  | "home"
+  | "sky"
+  | "rings"
+  | "tools"
+  | "atlas"
+  | "senses"
+  | "oracle"
+  | "you"
+  | "cast"
+  | "about"
+  | "decompose";
 
 export function OnyxApp({
   showSplash,
@@ -254,10 +269,47 @@ export function OnyxApp({
                 Sky
                 <span>Live sky with object details</span>
               </button>
+              <button type="button" className="onyx-tool-btn" onClick={() => setMode("you")}>
+                You
+                <span>Natal chord — local only, never sent</span>
+              </button>
+              <button type="button" className="onyx-tool-btn" onClick={() => setMode("cast")}>
+                Cast
+                <span>Side-door draw — not the home chord</span>
+              </button>
+              <button type="button" className="onyx-tool-btn" onClick={() => setMode("about")}>
+                About
+                <span>Honesty tiers & integrity</span>
+              </button>
             </div>
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (mode === "you") {
+    return (
+      <OnyxYou
+        nowChord={momentBundle.chord}
+        placeLat={lat}
+        placeLon={lon}
+        onBack={() => setMode("home")}
+      />
+    );
+  }
+
+  if (mode === "cast") {
+    return <OnyxCast onBack={() => setMode("home")} />;
+  }
+
+  if (mode === "about") {
+    return <OnyxAbout onBack={() => setMode("home")} />;
+  }
+
+  if (mode === "decompose") {
+    return (
+      <OnyxDecompose chord={momentBundle.chord} onBack={() => setMode("home")} />
     );
   }
 
@@ -333,6 +385,9 @@ export function OnyxApp({
       onOpenSky={() => setMode("sky")}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}
+      onOpenWhy={() => setMode("decompose")}
+      onOpenYou={() => setMode("you")}
+      onOpenCast={() => setMode("cast")}
     />
   );
 }

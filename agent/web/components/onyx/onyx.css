@@ -559,3 +559,143 @@
   font-family: inherit; font-size: 14px; text-align: left; cursor: pointer;
 }
 .onyx-tool-btn span { display: block; font-size: 11px; color: var(--onyx-ink-quiet); margin-top: 4px; }
+
+/* ── YOU / CAST / ABOUT / DECOMPOSE ─────────────────────────────────────── */
+.onyx-layer-lead {
+  font-family: var(--font-voice);
+  font-size: 18px;
+  line-height: 1.35;
+  color: var(--onyx-ink-bright);
+  margin: 8px 0 18px;
+}
+.onyx-layer-phrase {
+  font-family: var(--font-voice);
+  font-size: 22px;
+  line-height: 1.3;
+  color: var(--onyx-ink-bright);
+  margin: 6px 0 10px;
+}
+.onyx-layer-meta {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--onyx-ink-soft);
+  margin: 6px 0;
+}
+.onyx-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+.onyx-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-form-wide { grid-column: 1 / -1; }
+.onyx-form input {
+  background: rgba(120, 108, 200, 0.06);
+  border: 0.5px solid var(--onyx-edge);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--onyx-ink-bright);
+  font-family: inherit;
+  font-size: 14px;
+}
+.onyx-form-err { color: #e8a0a0; font-size: 12px; margin: 0 0 8px; }
+.onyx-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.onyx-primary-btn {
+  background: rgba(140, 124, 255, 0.18);
+  border: 0.5px solid var(--onyx-edge-bright);
+  border-radius: 16px;
+  padding: 8px 14px;
+  color: var(--onyx-ink-bright);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.onyx-ghost-btn {
+  background: none;
+  border: 0.5px solid var(--onyx-edge);
+  border-radius: 16px;
+  padding: 8px 14px;
+  color: var(--onyx-ink-soft);
+  font-family: inherit;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.onyx-why {
+  align-self: flex-start;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 4px 0 8px;
+  color: var(--onyx-light);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+.onyx-side-doors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 18px;
+  justify-content: center;
+}
+.onyx-cast-result {
+  margin-top: 22px;
+  padding-top: 8px;
+}
+.onyx-cast-frame {
+  font-family: var(--font-voice);
+  font-size: 15px;
+  color: var(--onyx-ink);
+  margin: 4px 0 8px;
+}
+.onyx-about-block {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--onyx-ink);
+  margin-bottom: 18px;
+}
+.onyx-about-list {
+  margin: 0 0 18px;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--onyx-ink);
+}
+.onyx-about-list b { color: var(--onyx-ink-bright); }
+.onyx-decomp-card {
+  margin: 14px 0;
+  padding-bottom: 12px;
+  border-bottom: 0.5px solid var(--onyx-edge-faint);
+}
+.onyx-decomp-name {
+  font-size: 15px;
+  color: var(--onyx-ink-bright);
+  margin: 0 0 4px;
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+.onyx-decomp-name span {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--onyx-ink-quiet);
+  text-transform: uppercase;
+}
+.onyx-decomp-source,
+.onyx-decomp-claim {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--onyx-ink-quiet);
+  margin: 4px 0 0;
+}
