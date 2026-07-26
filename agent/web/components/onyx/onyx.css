@@ -440,7 +440,7 @@
 
 /* ── Sky ─────────────────────────────────────────────────────────────────── */
 .onyx-sky-device {
-  background: #000;
+  background: radial-gradient(150% 110% at 50% 30%, var(--onyx-lit) 0%, var(--onyx-base) 55%, var(--onyx-void) 100%);
   overflow: hidden;
 }
 .onyx-sky-live {
@@ -453,6 +453,20 @@
   width: 100%;
   height: 100%;
   min-height: 100%;
+}
+/* Dust + reticle sit above the live canvas but don’t block gestures. */
+.onyx-sky-device .onyx-sky-drift {
+  z-index: 2;
+  pointer-events: none;
+  opacity: 0.55;
+}
+.onyx-sky-device .onyx-reticle {
+  z-index: 6;
+  pointer-events: none;
+}
+.onyx-sky-device .onyx-heading,
+.onyx-sky-device .onyx-heading-mark {
+  pointer-events: none;
 }
 .onyx-sky {
   position: absolute; inset: 0; z-index: 1;

@@ -61,34 +61,35 @@ export function resolveSkyWeatherAppearance(
   let starScale: number;
   let cloudBrightness: number;
 
+  // Onyx violet void — cold purple light pools in black glass (matches shell UI).
   if (!isDay) {
-    skyTop = cloudCover > 0.55 ? "#0a0d14" : "#030508";
-    skyMid = cloudCover > 0.55 ? "#121820" : "#070b12";
-    skyBottom = cloudCover > 0.55 ? "#1a2230" : "#101620";
-    vignette = "rgba(15, 23, 42, 0.35)";
+    skyTop = cloudCover > 0.55 ? "#0c0c14" : "#030304";
+    skyMid = cloudCover > 0.55 ? "#15141d" : "#0a0912";
+    skyBottom = cloudCover > 0.55 ? "#1c1830" : "#12101c";
+    vignette = "rgba(18, 14, 36, 0.42)";
     starScale = clamp01((1 - cloudCover * 0.92) * (foggy ? 0.15 : 1));
-    cloudBrightness = 0.22 + cloudCover * 0.18;
+    cloudBrightness = 0.2 + cloudCover * 0.16;
   } else if (cloudCover > 0.72 || code === 3) {
-    skyTop = "#5a6472";
-    skyMid = "#6e7888";
-    skyBottom = "#8a939f";
-    vignette = "rgba(71, 85, 105, 0.18)";
+    skyTop = "#2a2640";
+    skyMid = "#3a3558";
+    skyBottom = "#5a5478";
+    vignette = "rgba(60, 52, 100, 0.22)";
     starScale = 0.04;
-    cloudBrightness = 0.55;
+    cloudBrightness = 0.5;
   } else if (cloudCover > 0.35 || code === 2) {
-    skyTop = "#3d5a80";
-    skyMid = "#5c7a9e";
-    skyBottom = "#8aa4c0";
-    vignette = "rgba(96, 165, 250, 0.08)";
+    skyTop = "#1e1840";
+    skyMid = "#3a2f6e";
+    skyBottom = "#6c5cff";
+    vignette = "rgba(140, 124, 255, 0.1)";
     starScale = 0.08;
-    cloudBrightness = 0.42;
+    cloudBrightness = 0.4;
   } else {
-    skyTop = "#1e4a7a";
-    skyMid = "#3d6fa5";
-    skyBottom = "#7eb3e8";
-    vignette = "rgba(96, 165, 250, 0.06)";
+    skyTop = "#15102e";
+    skyMid = "#2a1f5c";
+    skyBottom = "#8a7bff";
+    vignette = "rgba(169, 156, 255, 0.08)";
     starScale = 0.05;
-    cloudBrightness = 0.3;
+    cloudBrightness = 0.32;
   }
 
   const rainIntensity = raining ? clamp01(0.35 + precipProb / 140 + (code >= 65 ? 0.25 : 0)) : 0;
@@ -142,8 +143,9 @@ function puff(
   bright: number,
 ) {
   const g = ctx.createRadialGradient(x, y, 0, x, y, Math.max(rx, ry));
-  const core = `rgba(${Math.round(220 * bright)}, ${Math.round(228 * bright)}, ${Math.round(238 * bright)}, ${alpha})`;
-  const edge = `rgba(${Math.round(180 * bright)}, ${Math.round(190 * bright)}, ${Math.round(205 * bright)}, 0)`;
+  // Slight violet cast so clouds sit in the onyx palette.
+  const core = `rgba(${Math.round(210 * bright)}, ${Math.round(205 * bright)}, ${Math.round(238 * bright)}, ${alpha})`;
+  const edge = `rgba(${Math.round(150 * bright)}, ${Math.round(140 * bright)}, ${Math.round(200 * bright)}, 0)`;
   g.addColorStop(0, core);
   g.addColorStop(0.55, core.replace(/[\d.]+\)$/, `${alpha * 0.55})`));
   g.addColorStop(1, edge);

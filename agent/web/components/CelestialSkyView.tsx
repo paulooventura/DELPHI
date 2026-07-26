@@ -387,7 +387,8 @@ function drawBody(
 
   ctx.save();
   if (locked) {
-    ctx.strokeStyle = `rgba(16, 185, 129, ${alpha * 0.95})`;
+    ctx.strokeStyle = OBS.celestial.targetLock;
+    ctx.globalAlpha = alpha * 0.95;
     ctx.shadowColor = OBS.celestial.targetGlow;
     ctx.shadowBlur = 10;
     ctx.lineWidth = 1;
@@ -405,6 +406,7 @@ function drawBody(
     ctx.moveTo(x, y + baseR + 5);
     ctx.lineTo(x, y + baseR + 14);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   drawPlanetTexture(ctx, body, x, y, texBlend, baseR);
@@ -438,8 +440,8 @@ function drawBody(
     : body.name;
   ctx.font = locked ? `600 10px ${MICRO}` : `500 9px ${MICRO}`;
   ctx.fillStyle = locked
-    ? "rgba(16, 185, 129, 0.95)"
-    : `rgba(226, 232, 240, ${belowHorizon ? 0.38 : 0.72})`;
+    ? OBS.celestial.targetLock
+    : `rgba(238, 236, 251, ${belowHorizon ? 0.38 : 0.72})`;
   ctx.textAlign = "center";
   ctx.fillText(label, x, y - baseR - (locked ? 14 : 7));
   ctx.restore();
@@ -460,11 +462,13 @@ function drawMinorBody(
 
   ctx.save();
   if (locked) {
-    ctx.strokeStyle = `rgba(16, 185, 129, ${alpha * 0.95})`;
+    ctx.strokeStyle = OBS.celestial.targetLock;
+    ctx.globalAlpha = alpha * 0.95;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.arc(x, y, baseR + 9, 0, Math.PI * 2);
     ctx.stroke();
+    ctx.globalAlpha = 1;
   }
 
   if (body.kind === "comet") {
@@ -480,8 +484,8 @@ function drawMinorBody(
   if (showLabel) {
     ctx.font = locked ? `600 9px ${MICRO}` : `500 8px ${MICRO}`;
     ctx.fillStyle = locked
-      ? "rgba(16, 185, 129, 0.95)"
-      : `rgba(226, 232, 240, ${belowHorizon ? 0.32 : 0.62})`;
+      ? OBS.celestial.targetLock
+      : `rgba(238, 236, 251, ${belowHorizon ? 0.32 : 0.62})`;
     ctx.textAlign = "center";
     const suffix = body.kind === "comet" ? " ☄" : " ◇";
     ctx.fillText(
@@ -512,7 +516,7 @@ function drawAircraft(
       if (!started) { ctx.moveTo(tx, ty); started = true; }
       else ctx.lineTo(tx, ty);
     }
-    ctx.strokeStyle = locked ? "rgba(16, 185, 129, 0.35)" : "rgba(148, 163, 184, 0.18)";
+    ctx.strokeStyle = locked ? "rgba(169, 156, 255, 0.4)" : "rgba(140, 124, 255, 0.18)";
     ctx.lineWidth = 0.75;
     ctx.stroke();
   }
@@ -535,7 +539,7 @@ function drawAircraft(
       ? `${track.callsign} · ${track.depIata}→${track.arrIata}`
       : `${track.callsign} | ${altStr.replace(",", ",")}`;
   ctx.font = `500 7px ${MICRO}`;
-  ctx.fillStyle = locked ? "rgba(16, 185, 129, 0.92)" : "rgba(148, 163, 184, 0.72)";
+  ctx.fillStyle = locked ? OBS.celestial.targetLock : "rgba(211, 208, 226, 0.72)";
   ctx.textAlign = "center";
   ctx.fillText(label, x, y - size - 5);
 }
@@ -560,7 +564,7 @@ function drawSatellite(
       if (!started) { ctx.moveTo(tx, ty); started = true; }
       else ctx.lineTo(tx, ty);
     }
-    ctx.strokeStyle = locked ? "rgba(16, 185, 129, 0.4)" : "rgba(96, 165, 250, 0.22)";
+    ctx.strokeStyle = locked ? "rgba(169, 156, 255, 0.45)" : "rgba(140, 124, 255, 0.22)";
     ctx.lineWidth = 0.6;
     ctx.stroke();
   }
@@ -581,7 +585,7 @@ function drawSatellite(
     ? `${shortName} · ${Math.round(track.az)}° az · ${Math.round(track.alt)}° alt`
     : shortName;
   ctx.font = `500 7px ${MICRO}`;
-  ctx.fillStyle = locked ? "rgba(16, 185, 129, 0.92)" : "rgba(148, 163, 184, 0.68)";
+  ctx.fillStyle = locked ? OBS.celestial.targetLock : "rgba(211, 208, 226, 0.68)";
   ctx.textAlign = "center";
   ctx.fillText(label, x, y - size - 4);
 }
@@ -594,7 +598,7 @@ function drawSatelliteCluster(
 ) {
   drawSatelliteClusterGlyph(ctx, x, y, cluster.count);
   ctx.font = `600 7px ${MICRO}`;
-  ctx.fillStyle = "rgba(148, 163, 184, 0.8)";
+  ctx.fillStyle = "rgba(169, 156, 255, 0.8)";
   ctx.textAlign = "center";
   ctx.fillText(`${cluster.count} SATS`, x, y - 10);
 }
@@ -609,8 +613,8 @@ function drawTargetLockFrame(
   ctx.save();
   const breathe = 0.85 + Math.sin(pulse * 0.9) * 0.15;
   const s = size * breathe;
-  ctx.strokeStyle = "rgba(52, 211, 153, 0.82)";
-  ctx.shadowColor = "rgba(52, 211, 153, 0.55)";
+  ctx.strokeStyle = OBS.celestial.targetLock;
+  ctx.shadowColor = OBS.celestial.targetGlow;
   ctx.shadowBlur = 10;
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -657,7 +661,7 @@ function drawWarmCrosshair(
   const breathe = 0.92 + Math.sin(pulse * 1.1) * 0.05;
   ctx.save();
   const ring = ctx.createRadialGradient(cx, cy, 4, cx, cy, 28 * breathe);
-  ring.addColorStop(0, warmth > 0.5 ? "rgba(251, 191, 36, 0.18)" : "rgba(96, 165, 250, 0.14)");
+  ring.addColorStop(0, "rgba(169, 156, 255, 0.2)");
   ring.addColorStop(1, "transparent");
   ctx.fillStyle = ring;
   ctx.beginPath();
@@ -665,7 +669,7 @@ function drawWarmCrosshair(
   ctx.fill();
 
   ctx.strokeStyle = accent;
-  ctx.shadowColor = warmth > 0.5 ? OBS.night.glow : OBS.day.glow;
+  ctx.shadowColor = OBS.night.glow;
   ctx.shadowBlur = 8;
   ctx.lineWidth = 0.9;
   ctx.beginPath();
@@ -736,9 +740,9 @@ function paintBackground(
 
   if (subBlend > 0.001) {
     const earth = ctx.createLinearGradient(0, h * 0.35, 0, h);
-    earth.addColorStop(0, `rgba(26, 18, 8, ${subBlend * 0.55})`);
-    earth.addColorStop(0.55, `rgba(18, 12, 6, ${subBlend * 0.75})`);
-    earth.addColorStop(1, `rgba(10, 7, 4, ${subBlend * 0.92})`);
+    earth.addColorStop(0, `rgba(12, 12, 17, ${subBlend * 0.55})`);
+    earth.addColorStop(0.55, `rgba(7, 7, 9, ${subBlend * 0.75})`);
+    earth.addColorStop(1, `rgba(3, 3, 4, ${subBlend * 0.92})`);
     ctx.fillStyle = earth;
     ctx.fillRect(0, 0, w, h);
   }
@@ -749,10 +753,11 @@ function paintBackground(
   ctx.fillStyle = vignette;
   ctx.fillRect(0, 0, w, h);
 
-  const warmthHaze = ctx.createLinearGradient(0, h * 0.5, 0, h);
+  // Soft violet pool at the bottom edge — onyx “light enters from above”.
+  const warmthHaze = ctx.createLinearGradient(0, h * 0.45, 0, h);
   warmthHaze.addColorStop(0, "transparent");
-  warmthHaze.addColorStop(0.7, "rgba(201, 162, 39, 0.05)");
-  warmthHaze.addColorStop(1, "rgba(120, 90, 40, 0.14)");
+  warmthHaze.addColorStop(0.7, "rgba(140, 124, 255, 0.06)");
+  warmthHaze.addColorStop(1, "rgba(58, 47, 143, 0.18)");
   ctx.fillStyle = warmthHaze;
   ctx.fillRect(0, 0, w, h);
 }
