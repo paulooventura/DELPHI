@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, type ReactNode, type RefObject } from "react";
 import type { CosmicClockState } from "../../lib/cosmic";
 import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
+import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
 import { jdFromDate } from "../../lib/phase/timeResolution";
 import { composeMoment } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
@@ -15,6 +16,7 @@ import {
 } from "../../lib/lore/distillPhrase";
 import { DashboardContainer } from "../DashboardContainer";
 import type { RingSelectHandler } from "../CosmicClockWheel";
+import type { LiveAttitude } from "../CelestialSkyView";
 import { AtlasPanel } from "../AtlasPanel";
 import { SensorArray, type SensorArrayProps } from "../SensorArray";
 import { EmfReader } from "../EmfReader";
@@ -50,6 +52,13 @@ export function OnyxApp({
   altM,
   headingDeg,
   pitchDeg,
+  liveAttitudeRef,
+  liveHeading = false,
+  livePitch = false,
+  arPoseReady = true,
+  skyWeather = null,
+  skyWarmth = 0.55,
+  onEnterSky,
   cycles,
   cosmic,
   stripReadings,
@@ -74,6 +83,14 @@ export function OnyxApp({
   altM: number | null;
   headingDeg: number;
   pitchDeg: number;
+  liveAttitudeRef?: RefObject<LiveAttitude>;
+  liveHeading?: boolean;
+  livePitch?: boolean;
+  arPoseReady?: boolean;
+  skyWeather?: SkyWeatherSlot | null;
+  skyWarmth?: number;
+  /** Start orientation/location watches from the sky-open gesture. */
+  onEnterSky?: () => void;
   cycles: CycleSnapshot | null;
   cosmic: CosmicClockState | null;
   stripReadings: CycleReading[];
@@ -169,6 +186,12 @@ export function OnyxApp({
     );
   }
 
+  const openSky = () => {
+    // Must stay on the user gesture path for iOS DeviceOrientation permission.
+    onEnterSky?.();
+    setMode("sky");
+  };
+
   if (mode === "sky") {
     return (
       <OnyxSky
@@ -178,11 +201,14 @@ export function OnyxApp({
         altM={altM ?? 0}
         headingDeg={headingDeg}
         pitchDeg={pitchDeg}
+        liveAttitudeRef={liveAttitudeRef}
+        liveHeading={liveHeading}
+        livePitch={livePitch}
+        arPoseReady={arPoseReady}
+        hapticsEnabled={pulseEnabled}
+        warmth={skyWarmth}
+        weather={skyWeather}
         onBack={() => setMode("home")}
-        onTellMore={name => {
-          onTellMore?.(name);
-          setMode("oracle");
-        }}
       />
     );
   }
@@ -379,7 +405,7 @@ export function OnyxApp({
       selfRet={selfRet}
       calendarReadings={stripReadings.slice(0, 8)}
       landCalendarLine={landCalendarLine}
-      onOpenSky={() => setMode("sky")}
+      onOpenSky={openSky}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}
       onOpenWhy={() => setMode("decompose")}

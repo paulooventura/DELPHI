@@ -89,6 +89,8 @@ export function OnyxHome({
   const [hapticOn, setHapticOn] = useState(pulseEnabled);
   const [stoneX, setStoneX] = useState(pulseEnabled ? REST : QUIET);
   const deviceRef = useRef<HTMLDivElement>(null);
+  const depthRef = useRef(0);
+  depthRef.current = depth;
   const wheelLock = useRef(false);
   const dragging = useRef(false);
   const moved = useRef(false);
@@ -172,20 +174,17 @@ export function OnyxHome({
   /** Depth step that never reads a stale `depth` from the event closure. */
   const goDelta = useCallback(
     (delta: number) => {
-      setDepth(prev => {
-        // Moment + swipe/scroll up → live sky (replaces the old Moon teaser).
-        if (prev === 1 && delta < 0) {
-          queueMicrotask(() => {
-            buzz("step");
-            onOpenSky();
-          });
-          return prev;
-        }
-        const nd = Math.max(0, Math.min(MAX, prev + delta));
-        if (nd === prev) return prev;
-        buzz(nd === MAX ? "deep" : "step");
-        return nd;
-      });
+      const prev = depthRef.current;
+      // Moment + swipe/scroll up → live sky (sync call keeps iOS gesture for sensors).
+      if (prev === 1 && delta < 0) {
+        buzz("step");
+        onOpenSky();
+        return;
+      }
+      const nd = Math.max(0, Math.min(MAX, prev + delta));
+      if (nd === prev) return;
+      buzz(nd === MAX ? "deep" : "step");
+      setDepth(nd);
     },
     [buzz, onOpenSky],
   );

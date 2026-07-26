@@ -1057,6 +1057,16 @@ export default function Home() {
       altM={signals?.altM ?? null}
       headingDeg={activeHeading}
       pitchDeg={activePitch}
+      liveAttitudeRef={liveAttitudeRef}
+      liveHeading={hasLiveHeading}
+      livePitch={hasLivePitch}
+      arPoseReady={skyArPoseReady}
+      skyWeather={skyWeatherSlot}
+      skyWarmth={spectrumWarmth}
+      onEnterSky={() => {
+        if (toggles.heading || toggles.location) void startOrientationWatch();
+        void captureSensors();
+      }}
       cycles={cycles}
       cosmic={cosmic}
       stripReadings={stripReadings}
