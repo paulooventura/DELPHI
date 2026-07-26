@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { CosmicClockState } from "../../lib/cosmic";
 import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
-import { computeCelestialBodies } from "../../lib/cosmic/celestialBodies";
 import { jdFromDate } from "../../lib/phase/timeResolution";
 import { composeMoment } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
@@ -95,11 +94,6 @@ export function OnyxApp({
   const [distilled, setDistilled] = useState<string>("");
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
-
-  const moonAlt = useMemo(() => {
-    const moon = computeCelestialBodies(now, lat, lon, altM ?? 0).find(b => b.id === "moon");
-    return moon?.alt ?? null;
-  }, [now, lat, lon, altM]);
 
   const civilYmd = useMemo(() => {
     const y = now.getFullYear();
@@ -379,7 +373,6 @@ export function OnyxApp({
     <OnyxHome
       now={now}
       phaseFraction={phaseFraction}
-      moonAltDeg={moonAlt}
       zodiacSign={zodiacSign}
       momentLine={momentLine}
       selfTone={selfTone}
