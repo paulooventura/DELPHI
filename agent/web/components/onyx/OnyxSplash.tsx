@@ -57,12 +57,11 @@ export function OnyxSplash({
     >
       <div className="onyx-device">
         <div className="onyx-film">
-          {/* Play once — no loop. Tap or video end enters HOME. */}
+          {/* Play once — no loop. No poster: the old brand PNG was flashing before the onyx cut. */}
           <video
             autoPlay
             muted
             playsInline
-            poster="/delphi-brand-reference.png"
             onEnded={enterOnce}
           >
             <source src="/delphi-intro.mp4" type="video/mp4" />

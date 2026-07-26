@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { OracleLogo } from "./oracle/OracleLogo";
 import { SplashRings } from "./oracle/SplashRings";
 import { reversePlaceLabel, useLaunchSequence } from "../hooks/useLaunchSequence";
@@ -80,14 +80,21 @@ export function LaunchScreen({
 
 const LAUNCH_KEY = "delphi-launched";
 
+/**
+ * Cold-start splash gate. First paint is always "show splash" so SSR and the
+ * client agree (no flash of home / leftover chrome). After mount, skip if this
+ * session already completed the intro.
+ */
 export function useShowLaunch(): [boolean, () => void] {
-  const [show, setShow] = useState(() => {
+  const [show, setShow] = useState(true);
+
+  useLayoutEffect(() => {
     try {
-      return !sessionStorage.getItem(LAUNCH_KEY);
+      if (sessionStorage.getItem(LAUNCH_KEY)) setShow(false);
     } catch {
-      return true;
+      /* keep splash */
     }
-  });
+  }, []);
 
   const complete = useCallback(() => {
     try { sessionStorage.setItem(LAUNCH_KEY, "1"); } catch { /* ignore */ }

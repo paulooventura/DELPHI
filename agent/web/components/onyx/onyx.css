@@ -54,13 +54,17 @@
 }
 
 /* ── Splash ──────────────────────────────────────────────────────────────── */
-.onyx-film { position: absolute; inset: 0; z-index: 1; overflow: hidden; }
+.onyx-film {
+  position: absolute; inset: 0; z-index: 1; overflow: hidden;
+  background: #000; /* hold black until the intro frame decodes — never the old brand poster */
+}
 .onyx-film video {
   position: absolute; top: 50%; left: 50%;
   min-width: 100%; min-height: 100%;
   width: auto; height: auto;
   transform: translate(-50%, -50%) scale(1.08);
   object-fit: cover;
+  background: #000;
   filter: grayscale(0.4) contrast(1.12) brightness(0.82) saturate(1.1);
   animation: onyx-slowpush 12s ease-out forwards;
 }
