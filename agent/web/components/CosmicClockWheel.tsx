@@ -285,7 +285,8 @@ function CosmicSegmentRing({
       divisions > 48 ? 5 : divisions > 24 ? 6.5 : 8.5,
     ),
   );
-  const baseIcon = Math.max(5, Math.min(band * 0.55, arcLen * 0.8, 12));
+  // Cap was 12 — home/rings icons were tiny; 3× that floor for legible glyphs.
+  const baseIcon = Math.max(5, Math.min(band * 0.55, arcLen * 0.8, 36));
   const preferIcon = divisions <= 20 && ring.ringId >= 5;
   const meshDir = wheelIndex % 2 === 0 ? "cw" : "ccw";
   // Dense rings (sec/min/hr): keep focus tight so labels stay inside their slot

@@ -42,6 +42,11 @@
   position: relative;
   overflow: hidden;
   background: var(--onyx-black);
+  /* Own vertical swipes — don't let the browser steal them for overscroll. */
+  touch-action: none;
+  overscroll-behavior: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -187,10 +192,11 @@
 }
 .onyx-moon svg { display: block; filter: drop-shadow(0 0 26px rgba(140, 124, 255, 0.16)); }
 
-.onyx-device[data-depth="0"] .onyx-moon { top: 15%; width: 92px; height: 92px; opacity: 0.78; }
-.onyx-device[data-depth="1"] .onyx-moon { top: 25%; width: 150px; height: 150px; opacity: 1; }
-.onyx-device[data-depth="2"] .onyx-moon { top: -4%; width: 118px; height: 118px; opacity: 0.3; }
-.onyx-device[data-depth="3"] .onyx-moon { top: -14%; width: 94px; height: 94px; opacity: 0.1; }
+/* Moon + chrome icons at 3× the original Claude reference sizes. */
+.onyx-device[data-depth="0"] .onyx-moon { top: 18%; width: 276px; height: 276px; opacity: 0.78; }
+.onyx-device[data-depth="1"] .onyx-moon { top: 28%; width: 450px; height: 450px; opacity: 1; }
+.onyx-device[data-depth="2"] .onyx-moon { top: -2%; width: 354px; height: 354px; opacity: 0.3; }
+.onyx-device[data-depth="3"] .onyx-moon { top: -10%; width: 282px; height: 282px; opacity: 0.1; }
 .onyx-device[data-depth="0"] .onyx-vignette { opacity: 0.46; }
 .onyx-device[data-depth="1"] .onyx-vignette { opacity: 0.52; }
 .onyx-device[data-depth="2"] .onyx-vignette {
@@ -241,19 +247,41 @@
   display: flex; flex-direction: column; gap: 13px; align-items: center;
 }
 .onyx-rung {
-  width: 5px; height: 5px; border-radius: 50%; background: var(--onyx-ink-faint);
+  width: 15px; height: 15px; border-radius: 50%; background: var(--onyx-ink-faint);
   transition: all var(--onyx-lift); border: none; padding: 0; cursor: pointer;
 }
 .onyx-rung.on {
   background: var(--onyx-core); box-shadow: 0 0 8px rgba(169, 156, 255, 0.6);
-  height: 15px; border-radius: 3px;
+  height: 45px; border-radius: 8px;
 }
 
 .onyx-panel {
   position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center;
   opacity: 0; pointer-events: none; transition: opacity var(--onyx-settle);
 }
-.onyx-panel.show { opacity: 1; pointer-events: auto; }
+/* Keep panels non-blocking so vertical swipes hit .onyx-device; re-enable controls only. */
+.onyx-panel.show { opacity: 1; pointer-events: none; }
+.onyx-panel.show button,
+.onyx-panel.show a,
+.onyx-panel.show .onyx-rows,
+.onyx-panel.show .onyx-rx,
+.onyx-panel.show .onyx-why,
+.onyx-panel.show .onyx-side-doors,
+.onyx-panel.show input {
+  pointer-events: auto;
+}
+.onyx-p2.show {
+  /* Moment list may scroll; pan-y only inside this depth. */
+  touch-action: pan-y;
+  pointer-events: auto;
+}
+.onyx-p2.show .onyx-center,
+.onyx-p2.show .now,
+.onyx-p2.show .onyx-eyebrow,
+.onyx-p2.show .onyx-land-cal,
+.onyx-p2.show .onyx-prov {
+  pointer-events: none;
+}
 .onyx-center {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; align-items: center; padding: 0 34px; text-align: center;
@@ -315,7 +343,10 @@
 .onyx-prov b { color: var(--onyx-light); font-weight: 400; }
 
 .onyx-p3 .glyph { margin-bottom: 28px; }
-.onyx-p3 .glyph svg { animation: onyx-turn 60s linear infinite; }
+.onyx-p3 .glyph svg {
+  width: 192px; height: 192px; /* 3× of 64 */
+  animation: onyx-turn 60s linear infinite;
+}
 @keyframes onyx-turn { to { transform: rotate(360deg); } }
 .onyx-p3 .te {
   font-size: 10px; letter-spacing: 0.3em; color: var(--onyx-ink-quiet);
@@ -332,7 +363,7 @@
 .onyx-p3 .ret b { color: var(--onyx-core); font-weight: 400; }
 
 .onyx-compass-wrap {
-  position: absolute; bottom: 50px; left: 0; right: 0; z-index: 8;
+  position: absolute; bottom: 36px; left: 0; right: 0; z-index: 8;
   display: flex; flex-direction: column; align-items: center; gap: 13px;
   transition: opacity var(--onyx-settle);
 }
@@ -345,6 +376,7 @@
   background: none; border: none; cursor: pointer; padding: 6px;
   transition: transform var(--onyx-lift);
 }
+.onyx-compass svg { width: 186px; height: 186px; /* 3× of 62 */ }
 .onyx-compass:active { transform: scale(0.93); }
 .onyx-compass .needle { transform-origin: 31px 31px; transition: transform var(--onyx-settle); }
 .onyx-descend {

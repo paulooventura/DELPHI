@@ -95,7 +95,6 @@ export function OnyxHome({
   const [stoneX, setStoneX] = useState(REST);
   const [secondTick] = useState(false); // product default: off
   const deviceRef = useRef<HTMLDivElement>(null);
-  const y0 = useRef<number | null>(null);
   const wheelLock = useRef(false);
   const dragging = useRef(false);
   const moved = useRef(false);
@@ -172,6 +171,19 @@ export function OnyxHome({
     [buzz],
   );
 
+  /** Depth step that never reads a stale `depth` from the event closure. */
+  const goDelta = useCallback(
+    (delta: number) => {
+      setDepth(prev => {
+        const nd = Math.max(0, Math.min(MAX, prev + delta));
+        if (nd === prev) return prev;
+        buzz(nd === 3 ? "deep" : "step");
+        return nd;
+      });
+    },
+    [buzz],
+  );
+
   useEffect(() => {
     const s = now.getSeconds();
     if (s === lastSec.current) return;
@@ -228,7 +240,45 @@ export function OnyxHome({
     window.setTimeout(() => {
       wheelLock.current = false;
     }, 700);
-    go(depth + (e.deltaY > 0 ? 1 : -1));
+    e.preventDefault();
+    goDelta(e.deltaY > 0 ? 1 : -1);
+  };
+
+  const swipeY0 = useRef<number | null>(null);
+  const swipeIgnore = useRef(false);
+
+  const swipeTargetIgnored = (t: EventTarget | null) => {
+    const el = t as HTMLElement | null;
+    if (!el?.closest) return false;
+    return Boolean(
+      el.closest(
+        ".onyx-stone-track, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-rung, input, textarea, a",
+      ),
+    );
+  };
+
+  const onPointerDownSwipe = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (swipeTargetIgnored(e.target)) {
+      swipeIgnore.current = true;
+      swipeY0.current = null;
+      return;
+    }
+    swipeIgnore.current = false;
+    swipeY0.current = e.clientY;
+  };
+
+  const onPointerUpSwipe = (e: React.PointerEvent) => {
+    if (swipeIgnore.current || swipeY0.current == null) {
+      swipeIgnore.current = false;
+      swipeY0.current = null;
+      return;
+    }
+    const dy = e.clientY - swipeY0.current;
+    swipeY0.current = null;
+    if (Math.abs(dy) < 55) return;
+    // Finger/mouse moves down → go deeper (same as the reference HTML).
+    goDelta(dy > 0 ? 1 : -1);
   };
 
   const moonAltLabel =
@@ -245,19 +295,15 @@ export function OnyxHome({
         role="application"
         aria-label="Delphi"
         onWheel={onWheel}
-        onTouchStart={e => {
-          y0.current = e.touches[0]?.clientY ?? null;
-        }}
-        onTouchEnd={e => {
-          if (y0.current == null) return;
-          const dy = (e.changedTouches[0]?.clientY ?? y0.current) - y0.current;
-          if (dy > 55) go(depth + 1);
-          if (dy < -55) go(depth - 1);
-          y0.current = null;
+        onPointerDown={onPointerDownSwipe}
+        onPointerUp={onPointerUpSwipe}
+        onPointerCancel={() => {
+          swipeY0.current = null;
+          swipeIgnore.current = false;
         }}
         onKeyDown={e => {
-          if (e.key === "ArrowDown") go(depth + 1);
-          if (e.key === "ArrowUp") go(depth - 1);
+          if (e.key === "ArrowDown") goDelta(1);
+          if (e.key === "ArrowUp") goDelta(-1);
         }}
         tabIndex={0}
       >
@@ -474,7 +520,7 @@ export function OnyxHome({
         <div className={`onyx-panel onyx-p3${depth === 3 ? " show" : ""}`}>
           <div className="onyx-center">
             <div className="glyph">
-              <svg width="64" height="64" viewBox="0 0 64 64" fill="none" role="img" aria-label="Your tone">
+              <svg width="192" height="192" viewBox="0 0 64 64" fill="none" role="img" aria-label="Your tone">
                 <polygon
                   points="32,4 56,18 56,46 32,60 8,46 8,18"
                   fill="none"
@@ -530,7 +576,7 @@ export function OnyxHome({
               else go(depth + 1);
             }}
           >
-            <svg width="62" height="62" viewBox="0 0 62 62" role="img" aria-label="Compass">
+            <svg width="186" height="186" viewBox="0 0 62 62" role="img" aria-label="Compass">
               <polygon
                 points="31,3 47,11 55,31 47,51 31,59 15,51 7,31 15,11"
                 fill="rgba(120,108,200,0.05)"
