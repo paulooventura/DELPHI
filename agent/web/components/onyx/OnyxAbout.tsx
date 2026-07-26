@@ -17,12 +17,18 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
               Tarot, Orisha, I Ching, and rune draws are genuine cryptographic-random casts. Nothing
               here predicts the future — it is offered as a mirror for reflection.
             </p>
+            <p style={{ marginTop: 12 }}>
+              The home sentence names the standing wave across the whole chorus — the single
+              emergent character — not Leo, Horse, or any other source. Tap “see why” to open the
+              provenance.
+            </p>
           </div>
 
           <p className="onyx-eyebrow">HONESTY TIERS</p>
           <ul className="onyx-about-list">
             <li>
-              <b>Computed</b> — sky and calendar math on the home chord. Provenance intact.
+              <b>Computed</b> — sky and calendar math on the home chord. Provenance intact under
+              “see why.”
             </li>
             <li>
               <b>Drawn</b> — side-door casts you choose. Never automatic, never on home.

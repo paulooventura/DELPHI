@@ -30,12 +30,14 @@ describe("distillPhrase gates", () => {
     expect(acceptPhrase("The energy of the day is bright.")).toBeNull();
     expect(acceptPhrase("One. Two.")).toBeNull();
     expect(acceptPhrase("Align with the universe.")).toBeNull();
+    expect(acceptPhrase("A cosmic Leo brightness.")).toBeNull();
   });
 
-  it("fallback never blocks and names the chord", () => {
+  it("fallback never blocks and names the chord without tradition labels", () => {
     const p = fallbackPhrase(stubChord);
     expect(p.endsWith(".")).toBe(true);
     expect(p.length).toBeGreaterThan(10);
+    expect(p).not.toMatch(/leo|horse/i);
     expect(acceptPhrase(p) || p).toBeTruthy();
   });
 

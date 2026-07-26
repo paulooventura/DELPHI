@@ -6,7 +6,9 @@
 import type { Composition } from "./compose";
 import { buildPrompt, distillTemplate } from "./compose";
 
-const BANNED = /\b(energy|vibes|manifest|align|journey|universe)\b/i;
+// Mirrors compose.buildPrompt banned lexicon + western-sign leaks (no common nouns).
+const BANNED =
+  /\b(energy|vibes|manifest|align|journey|universe|cosmic)\b|\b(leo|aries|taurus|gemini|cancer|virgo|libra|scorpio|sagittarius|capricorn|aquarius|pisces)\b/i;
 
 export function phraseCacheKey(civilYmd: string, lat: number, lon: number): string {
   const rLat = Math.round(lat * 10) / 10;

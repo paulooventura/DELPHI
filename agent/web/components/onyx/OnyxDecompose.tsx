@@ -21,8 +21,8 @@ export function OnyxDecompose({
         <div className="onyx-overlay">
           <p className="onyx-eyebrow">WHY THIS CHORD</p>
           <p className="onyx-layer-lead">
-            Each tradition&apos;s contribution, intact. Resonances and tensions come from these
-            positions — nothing invented after the fact.
+            The home sentence named the chord — the sum. Here is each voice that built it:
+            provenance intact, nothing invented after the fact.
           </p>
 
           {chord.resonances.slice(0, 3).map(r => (
