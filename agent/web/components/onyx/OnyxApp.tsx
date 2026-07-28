@@ -145,7 +145,12 @@ export function OnyxApp({
   }, [momentBundle, civilYmd, lat, lon]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
-  const momentLine = distilled || multiVoice?.trim() || "Reading the sky…";
+  // World Cycles multi-voice is first-class (Atlas-enabled systems); lore distill follows.
+  const atlasVoice = multiVoice?.trim() ?? "";
+  const momentLine =
+    atlasVoice && distilled
+      ? `${atlasVoice} ${distilled}`
+      : atlasVoice || distilled || "Reading the sky…";
 
   const galactic = cycles?.galactic;
   const selfTone = galactic ? (
@@ -238,7 +243,7 @@ export function OnyxApp({
               atlasReadings={stripReadings.filter(r =>
                 ["hijri", "hebrew", "persian", "ethiopian", "chinese_lunisolar"].includes(r.systemId),
               )}
-              showAtlasOnWheel={false}
+              showAtlasOnWheel={true}
               liveCoords
               usingFallback={false}
               locationDenied={false}
