@@ -97,14 +97,41 @@
 }
 .onyx-splash-veil.on { opacity: 1; }
 
-.onyx-splash-chrome {
-  position: absolute; inset: 0; z-index: 4;
-  opacity: 0;
-  transition: opacity 720ms ease;
+/* Splash: film + DELPHI only. Kill any legacy chrome if a stale bundle leaks it. */
+.onyx-splash-only .onyx-corner,
+.onyx-splash-only .onyx-enter,
+.onyx-splash-only .onyx-land-ack,
+.onyx-splash-only .onyx-horizon,
+.onyx-splash-only .onyx-seed,
+.onyx-splash-only .onyx-splash-chrome .tag,
+.onyx-splash-only .tag {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  content: none !important;
+}
+
+.onyx-splash-wordmark {
+  position: absolute; top: 46%; left: 0; right: 0; z-index: 6;
+  text-align: center;
+  font-family: var(--font-voice); font-optical-sizing: auto;
+  font-size: 34px; font-weight: 300; letter-spacing: 0.42em;
+  color: var(--onyx-ink-bright); padding-left: 0.42em;
+  opacity: 0; transform: translateY(8px);
+  transition: opacity 720ms ease, transform 720ms ease;
   pointer-events: none;
 }
-.onyx-splash-chrome.on {
-  opacity: 1;
+.onyx-splash-wordmark.on {
+  opacity: 1; transform: translateY(0);
+}
+@keyframes onyx-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes onyx-tw {
+  0%, 100% { opacity: var(--o, 0.5); transform: scale(1); }
+  50% { opacity: calc(var(--o, 0.5) * 0.4); transform: scale(0.82); }
 }
 
 .onyx-grade {
@@ -125,24 +152,6 @@
   animation: onyx-dimsettle 12s ease-in-out forwards;
 }
 @keyframes onyx-dimsettle { 0%, 55% { opacity: 0; } 100% { opacity: 0.42; } }
-
-.onyx-splash-wordmark {
-  position: absolute; top: 46%; left: 0; right: 0; z-index: 6; text-align: center;
-  opacity: 0; animation: onyx-reveal 2.4s ease-out 1.4s forwards;
-}
-.onyx-splash-wordmark .name {
-  font-family: var(--font-voice); font-optical-sizing: auto;
-  font-size: 34px; font-weight: 300; letter-spacing: 0.42em;
-  color: var(--onyx-ink-bright); padding-left: 0.42em;
-}
-@keyframes onyx-reveal {
-  from { opacity: 0; transform: translateY(8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-@keyframes onyx-tw {
-  0%, 100% { opacity: var(--o, 0.5); transform: scale(1); }
-  50% { opacity: calc(var(--o, 0.5) * 0.4); transform: scale(0.82); }
-}
 
 /* ── Home field ──────────────────────────────────────────────────────────── */
 .onyx-field { position: absolute; inset: 0; z-index: 0; transition: transform var(--onyx-deep-settle); }

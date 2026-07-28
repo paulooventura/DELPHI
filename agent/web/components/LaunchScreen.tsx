@@ -78,7 +78,8 @@ export function LaunchScreen({
   );
 }
 
-const LAUNCH_KEY = "delphi-launched";
+/** Bump when splash chrome changes so prior sessions re-play the clean intro. */
+const LAUNCH_KEY = "delphi-launched-v3";
 
 /**
  * Cold-start splash gate. First paint is always "show splash" so SSR and the
