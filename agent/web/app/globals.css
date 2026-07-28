@@ -974,6 +974,42 @@ html,body {
   color: var(--light-core);
 }
 
+.cp-sky-object-panel-lore {
+  margin-top: 0.85rem;
+  padding-top: 0.75rem;
+  border-top: 0.5px solid var(--edge-faint);
+}
+
+.cp-sky-object-panel-lore-label {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink-quiet);
+}
+
+.cp-sky-object-panel-lore-blurb {
+  margin: 0.4rem 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  color: var(--ink-bright);
+}
+
+.cp-sky-object-panel-lore-qualities {
+  margin: 0.45rem 0 0;
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--light-core);
+}
+
+.cp-sky-object-panel-lore-source {
+  margin: 0.4rem 0 0;
+  font-size: 0.58rem;
+  line-height: 1.35;
+  color: var(--ink-quiet);
+}
+
 .cp-sky-object-panel-facts {
   margin: 0.75rem 0 0;
   display: grid;

@@ -13,8 +13,31 @@ describe("buildStableViewBasis", () => {
     for (const alt of [8, 5, 2, 0, -2, -5, -8]) {
       const basis = buildStableViewBasis(altAzToEnu(45, alt), prev);
       expect(dot(basis.right, prev.right)).toBeGreaterThan(0.92);
+      expect(dot(basis.up, prev.up)).toBeGreaterThan(0.9);
       const { az } = enuToAltAz(basis.view);
       expect(Math.abs(((az - 45 + 540) % 360) - 180)).toBeLessThan(3);
+      prev = basis;
+    }
+  });
+
+  it("does not 180-flip when oscillating through the old horizon threshold", () => {
+    // Former bug: hard world-up flip at view.z ≈ −0.05 fought continuity.
+    let prev = buildStableViewBasis(altAzToEnu(90, 6), null);
+    const alts = [4, 2, 0, -1, -3, -1, 0, 2, 4, -2, 1, -4];
+    for (const alt of alts) {
+      const basis = buildStableViewBasis(altAzToEnu(90, alt), prev);
+      expect(dot(basis.up, prev.up)).toBeGreaterThan(0.9);
+      expect(dot(basis.right, prev.right)).toBeGreaterThan(0.9);
+      prev = basis;
+    }
+  });
+
+  it("stays continuous when circling near zenith", () => {
+    let prev = buildStableViewBasis(altAzToEnu(0, 86), null);
+    for (let az = 20; az <= 360; az += 20) {
+      const basis = buildStableViewBasis(altAzToEnu(az % 360, 86), prev);
+      expect(dot(basis.up, prev.up)).toBeGreaterThan(0.85);
+      expect(dot(basis.right, prev.right)).toBeGreaterThan(0.85);
       prev = basis;
     }
   });

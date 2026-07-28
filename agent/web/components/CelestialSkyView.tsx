@@ -66,6 +66,7 @@ import {
 } from "../lib/cosmic/skyWeather";
 import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
+import { loreForSkyObject } from "../lib/skyObjectLore";
 import { SkyObjectDetailPanel, type SkyObjectDetail } from "./SkyObjectDetailPanel";
 
 export type LiveAttitude = { view: Vec3; roll: number };
@@ -136,6 +137,7 @@ function buildObjectDetail(
   trackable: Trackable,
   bodies: CelestialBody[],
   minorBodies: MinorBody[],
+  observationTime: Date,
 ): SkyObjectDetail {
   const meta = KIND_META[trackable.kind];
   const lines: Array<{ label: string; value: string }> = [
@@ -202,6 +204,13 @@ function buildObjectDetail(
     if (dso?.subtitle) lines.push({ label: "Catalog", value: dso.subtitle });
   }
 
+  const lore = loreForSkyObject({
+    id: trackable.id,
+    kind: trackable.kind,
+    name: trackable.name,
+    date: observationTime,
+  });
+
   return {
     id: trackable.id,
     kind: meta.label,
@@ -211,6 +220,7 @@ function buildObjectDetail(
     emoji: meta.emoji,
     accent: meta.accent,
     lines,
+    lore: lore ?? undefined,
   };
 }
 
@@ -861,7 +871,7 @@ export function CelestialSkyView({
         }
       }
       if (best) {
-        setSelectedDetail(buildObjectDetail(best.trackable, bodies, minorBodies));
+        setSelectedDetail(buildObjectDetail(best.trackable, bodies, minorBodies, observationTime));
         if (hapticsEnabled) {
           try { navigator.vibrate?.([4, 36, 8]); } catch { /* ignore */ }
         }
@@ -878,7 +888,7 @@ export function CelestialSkyView({
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerCancel);
     };
-  }, [bodies, minorBodies, hapticsEnabled]);
+  }, [bodies, minorBodies, hapticsEnabled, observationTime]);
 
   useEffect(() => {
     let cancelled = false;

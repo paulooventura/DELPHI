@@ -9,6 +9,12 @@ export type SkyObjectDetail = {
   emoji: string;
   accent: string;
   lines: Array<{ label: string; value: string }>;
+  /** Distilled lore under the facts — qualities + short reading. */
+  lore?: {
+    blurb: string;
+    qualities: string[];
+    source?: string;
+  };
 };
 
 export function SkyObjectDetailPanel({
@@ -40,6 +46,21 @@ export function SkyObjectDetailPanel({
           <span>{Math.round(detail.az)}° azimuth</span>
           <span>{Math.round(detail.alt)}° elevation</span>
         </div>
+
+        {detail.lore && (
+          <div className="cp-sky-object-panel-lore">
+            <p className="cp-sky-object-panel-lore-label">Reading</p>
+            <p className="cp-sky-object-panel-lore-blurb">{detail.lore.blurb}</p>
+            {detail.lore.qualities.length > 0 && (
+              <p className="cp-sky-object-panel-lore-qualities">
+                {detail.lore.qualities.join(" · ")}
+              </p>
+            )}
+            {detail.lore.source && (
+              <p className="cp-sky-object-panel-lore-source">{detail.lore.source}</p>
+            )}
+          </div>
+        )}
 
         <dl className="cp-sky-object-panel-facts">
           {detail.lines.map(line => (

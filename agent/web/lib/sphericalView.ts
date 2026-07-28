@@ -71,26 +71,56 @@ function rotateAroundAxis(v: Vec3, axis: Vec3, angleRad: number): Vec3 {
 const WORLD_UP: Vec3 = [0, 0, 1];
 const WORLD_NORTH: Vec3 = [0, 1, 0];
 
-/** Roll-free projection basis with frame-to-frame continuity (no 180° flips). */
+/**
+ * Roll-free projection basis with frame-to-frame continuity.
+ *
+ * When a previous basis exists, parallel-transport its `right` onto the new
+ * view plane — never re-cross WORLD_UP and fight continuity near the horizon
+ * (that hard flip at view.z ≈ −0.05 was the sky "freak out").
+ * World-up alignment is cold-start only. Near zenith/nadir, freeze transport.
+ */
 export function buildStableViewBasis(viewEnu: Vec3, prev?: ViewBasis | null): ViewBasis {
   const view = normalize(viewEnu);
+  const nearPole = Math.abs(view[2]) > 0.98;
 
-  let right = cross(WORLD_UP, view);
-  let rLen = Math.hypot(right[0], right[1], right[2]);
-  if (rLen < 1e-3) {
-    right = cross(WORLD_NORTH, view);
-    rLen = Math.hypot(right[0], right[1], right[2]);
-  }
-  if (rLen < 1e-3 && prev) {
-    right = prev.right;
-  } else if (rLen < 1e-3) {
-    right = [1, 0, 0];
+  let right: Vec3;
+
+  if (prev) {
+    // Project previous right onto the plane orthogonal to the new view.
+    const along = dot(prev.right, view);
+    let transported: Vec3 = [
+      prev.right[0] - view[0] * along,
+      prev.right[1] - view[1] * along,
+      prev.right[2] - view[2] * along,
+    ];
+    let tLen = Math.hypot(transported[0], transported[1], transported[2]);
+
+    if (tLen < 1e-4 && !nearPole) {
+      transported = cross(WORLD_UP, view);
+      tLen = Math.hypot(transported[0], transported[1], transported[2]);
+      if (tLen < 1e-3) {
+        transported = cross(WORLD_NORTH, view);
+        tLen = Math.hypot(transported[0], transported[1], transported[2]);
+      }
+    }
+
+    if (tLen < 1e-4) {
+      right = prev.right;
+    } else {
+      right = [transported[0] / tLen, transported[1] / tLen, transported[2] / tLen];
+    }
   } else {
-    right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
-  }
-
-  if (prev && dot(right, prev.right) < 0) {
-    right = [-right[0], -right[1], -right[2]];
+    right = cross(WORLD_UP, view);
+    let rLen = Math.hypot(right[0], right[1], right[2]);
+    if (rLen < 1e-3) {
+      right = cross(WORLD_NORTH, view);
+      rLen = Math.hypot(right[0], right[1], right[2]);
+    }
+    if (rLen < 1e-3) {
+      right = [1, 0, 0];
+    } else {
+      right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
+    }
   }
 
   let up = cross(view, right);
@@ -101,11 +131,13 @@ export function buildStableViewBasis(viewEnu: Vec3, prev?: ViewBasis | null): Vi
     up = [up[0] / uLen, up[1] / uLen, up[2] / uLen];
   }
 
-  if (view[2] > -0.05 && dot(up, WORLD_UP) < 0) {
+  // Cold start only: prefer world-up on the screen when looking near the horizon.
+  if (!prev && view[2] > -0.05 && dot(up, WORLD_UP) < 0) {
     up = [-up[0], -up[1], -up[2]];
     right = [-right[0], -right[1], -right[2]];
   }
 
+  // Continuity safety — one unflip if transport somehow inverted.
   if (prev && dot(up, prev.up) < 0) {
     up = [-up[0], -up[1], -up[2]];
     right = [-right[0], -right[1], -right[2]];
@@ -253,23 +285,16 @@ export function deviceOrientationToCameraViewEnu(
 }
 
 /**
- * Topocentric look vector — camera matrix with light horizon stabilization.
+ * Topocentric look vector — camera attitude matrix (gamma already horizon-damped).
+ * Do not blend compass heading near alt≈0: mismatched az yanked the sky sideways
+ * through the horizon. Compass path is fallback only when camera is unavailable.
  */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
   const camera = deviceOrientationToCameraViewEnu(event);
-  const stable = deviceOrientationToStableViewEnu(event);
-  if (!camera) return stable;
-  if (!stable) return camera;
-  const { alt: camAlt } = enuToAltAz(camera);
-  if (Math.abs(camAlt) >= 10) return camera;
-  const t = clamp((10 - Math.abs(camAlt)) / 10, 0, 0.25);
-  return normalize([
-    camera[0] * (1 - t) + stable[0] * t,
-    camera[1] * (1 - t) + stable[1] * t,
-    camera[2] * (1 - t) + stable[2] * t,
-  ]);
+  if (camera) return camera;
+  return deviceOrientationToStableViewEnu(event);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */
