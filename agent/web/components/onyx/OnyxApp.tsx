@@ -14,6 +14,8 @@ import {
   phraseForMoment,
   writeCachedPhrase,
 } from "../../lib/lore/distillPhrase";
+import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
+import { natalGalactic } from "../../lib/lore/resolvePerson";
 import { DashboardContainer } from "../DashboardContainer";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import type { LiveAttitude } from "../CelestialSkyView";
@@ -109,6 +111,12 @@ export function OnyxApp({
 }) {
   const [mode, setMode] = useState<OnyxMode>("home");
   const [distilled, setDistilled] = useState<string>("");
+  const [birth, setBirth] = useState<BirthRecord | null>(null);
+
+  // Local-only natal record — never sent; unlocks color lean + hour-sensitive YOU math.
+  useEffect(() => {
+    setBirth(loadBirth());
+  }, []);
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
 
@@ -119,6 +127,13 @@ export function OnyxApp({
     return `${y}-${m}-${d}`;
   }, [now]);
 
+  const natal = useMemo(() => (birth ? natalGalactic(birth) : null), [birth]);
+  const colorLean = natal?.tribe.color;
+  const distillOpts = useMemo(
+    () => (colorLean ? { colorLean } : undefined),
+    [colorLean],
+  );
+
   const momentBundle = useMemo(() => {
     const jd = jdFromDate(now);
     const resolved = resolveMoment(jd, lat, lon);
@@ -128,13 +143,14 @@ export function OnyxApp({
   }, [now, lat, lon]);
 
   // First paint: cache or deterministic template (never blocks on network).
+  // When natal color is known locally, the phrase leans toward that register.
   useEffect(() => {
-    const { phrase } = phraseForMoment(momentBundle.chord, civilYmd, lat, lon);
+    const { phrase } = phraseForMoment(momentBundle.chord, civilYmd, lat, lon, distillOpts);
     setDistilled(phrase);
-    const key = phraseCacheKey(civilYmd, lat, lon);
+    const key = phraseCacheKey(civilYmd, lat, lon, distillOpts?.colorLean);
     let cancelled = false;
     void (async () => {
-      const model = await fetchModelPhrase(momentBundle.chord);
+      const model = await fetchModelPhrase(momentBundle.chord, distillOpts);
       if (cancelled || !model) return;
       writeCachedPhrase(key, model);
       setDistilled(model);
@@ -142,7 +158,7 @@ export function OnyxApp({
     return () => {
       cancelled = true;
     };
-  }, [momentBundle, civilYmd, lat, lon]);
+  }, [momentBundle, civilYmd, lat, lon, distillOpts]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
   // Home / NOW street line = distilled chorus of mainframe qualities only.
@@ -151,12 +167,18 @@ export function OnyxApp({
   const momentLine = distilled || "Reading the sky…";
   void multiVoice;
 
-  const galactic = cycles?.galactic;
-  const selfTone = galactic ? (
+  const dayGalactic = cycles?.galactic;
+  const selfTone = natal ? (
     <>
-      You are Kin {galactic.kin} —
+      You are Kin {natal.kin} —
       <br />
-      {galactic.tone.name} {galactic.tribe.name}.
+      {natal.tone.name} {natal.tribe.name}.
+    </>
+  ) : dayGalactic ? (
+    <>
+      Today is Kin {dayGalactic.kin} —
+      <br />
+      {dayGalactic.tone.name} {dayGalactic.tribe.name}.
     </>
   ) : (
     <>
@@ -165,13 +187,23 @@ export function OnyxApp({
       of a long orbit.
     </>
   );
-  const selfRet = galactic ? (
+  const selfRet = natal ? (
     <>
-      Tone <b>{galactic.tone.tone}</b> {galactic.tone.name}.
+      Tone <b>{natal.tone.tone}</b> {natal.tone.name}.
       <br />
-      {galactic.tribe.color} {galactic.tribe.name} · {galactic.tribe.mayaSign}.
+      {natal.tribe.color} {natal.tribe.name} · {natal.tribe.mayaSign}.
       <br />
-      The moon tonight sits where the count places you.
+      {birth?.hour !== undefined
+        ? "Your hour shapes the rising chord beneath this kin."
+        : "Add your birth hour in You — it shapes rising math."}
+    </>
+  ) : dayGalactic ? (
+    <>
+      Tone <b>{dayGalactic.tone.tone}</b> {dayGalactic.tone.name}.
+      <br />
+      {dayGalactic.tribe.color} {dayGalactic.tribe.name} · {dayGalactic.tribe.mayaSign}.
+      <br />
+      Save your birth in You to hear this in your color.
     </>
   ) : (
     <>Hold still. The sky is still reading you.</>
@@ -314,6 +346,7 @@ export function OnyxApp({
       <OnyxYou
         nowChord={momentBundle.chord}
         onBack={() => setMode("home")}
+        onBirthSaved={next => setBirth(next)}
       />
     );
   }

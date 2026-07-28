@@ -734,6 +734,30 @@
   min-width: 0;
 }
 .onyx-form-wide { grid-column: 1 / -1; }
+.onyx-form-check { gap: 6px; }
+.onyx-check-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--onyx-ink);
+}
+.onyx-check-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--onyx-core);
+  padding: 0;
+}
+.onyx-form-hint {
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--onyx-ink-quiet);
+  line-height: 1.4;
+}
+.onyx-form-spacer { display: block; min-height: 1em; }
 .onyx-form input,
 .onyx-place-field input {
   background: rgba(120, 108, 200, 0.06);

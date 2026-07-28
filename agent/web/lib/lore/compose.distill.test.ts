@@ -28,4 +28,23 @@ describe("chorus distillation — no tradition names on the home phrase", () => 
     expect(user).not.toMatch(/\bHorse\b/);
     expect(user).toMatch(/Name no tradition/);
   });
+
+  it("color lean boosts matching qualities without naming the color", () => {
+    const chord = compose(active);
+    const yellow = distillTemplate(chord, { colorLean: "Yellow" });
+    const blue = distillTemplate(chord, { colorLean: "Blue" });
+    expect(yellow).not.toMatch(/\byellow\b|\bred\b|\bblue\b|\bwhite\b/i);
+    expect(blue).not.toMatch(/\byellow\b|\bred\b|\bblue\b|\bwhite\b/i);
+    // Yellow lean should keep radiant/light-facing weather in a fire-heavy chorus.
+    expect(yellow.toLowerCase()).toMatch(/radiant|warm|active|light|outward|charged/);
+  });
+
+  it("buildPrompt color lean never asks the model to name Red/White/Blue/Yellow", () => {
+    const chord = compose(active);
+    const { system, user } = buildPrompt(chord, { colorLean: "Red" });
+    expect(system).toMatch(/Never name colors/i);
+    expect(user).toMatch(/Personal register/i);
+    expect(user).not.toMatch(/\bRed\b/);
+    expect(user).toMatch(/Do not name any color/);
+  });
 });

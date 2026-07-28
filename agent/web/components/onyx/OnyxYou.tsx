@@ -25,20 +25,42 @@ function daysInMonth(year: number, month: number): number {
   return new Date(year, month, 0).getDate();
 }
 
+function parseOptionalHour(raw: string): number | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0 || n > 23) return NaN;
+  return Math.floor(n);
+}
+
+function parseOptionalMinute(raw: string): number | undefined {
+  const t = raw.trim();
+  if (!t) return undefined;
+  const n = Number(t);
+  if (!Number.isFinite(n) || n < 0 || n > 59) return NaN;
+  return Math.floor(n);
+}
+
 export function OnyxYou({
   nowChord,
   onBack,
+  onBirthSaved,
 }: {
   nowChord: Composition;
   /** @deprecated kept for call-site compat; birth place comes from city pick */
   placeLat?: number;
   placeLon?: number;
   onBack: () => void;
+  /** Fired after local save/clear so home can re-distill with color lean. */
+  onBirthSaved?: (birth: BirthRecord | null) => void;
 }) {
   const [birth, setBirth] = useState<BirthRecord | null>(() => loadBirth());
   const [year, setYear] = useState(String(birth?.year ?? ""));
   const [month, setMonth] = useState(String(birth?.month ?? ""));
   const [day, setDay] = useState(String(birth?.day ?? ""));
+  const [hour, setHour] = useState(birth?.hour !== undefined ? String(birth.hour) : "");
+  const [minute, setMinute] = useState(birth?.minute !== undefined ? String(birth.minute) : "");
+  const [knowsHour, setKnowsHour] = useState(birth?.hour !== undefined);
   const [placeLabel, setPlaceLabel] = useState(birth?.placeLabel ?? "");
   const [placeLat, setPlaceLat] = useState<number | undefined>(birth?.lat);
   const [placeLon, setPlaceLon] = useState<number | undefined>(birth?.lon);
@@ -139,10 +161,27 @@ export function OnyxYou({
       setError("Pick a city from the list to lock birth place — or clear the field.");
       return;
     }
+
+    let h: number | undefined;
+    let min: number | undefined;
+    if (knowsHour) {
+      h = parseOptionalHour(hour);
+      min = parseOptionalMinute(minute || "0");
+      if (h === undefined || Number.isNaN(h)) {
+        setError("Enter birth hour 0–23, or turn off birth time.");
+        return;
+      }
+      if (min === undefined || Number.isNaN(min)) {
+        setError("Enter birth minute 0–59.");
+        return;
+      }
+    }
+
     const next: BirthRecord = {
       year: y,
       month: m,
       day: d,
+      ...(h !== undefined ? { hour: h, minute: min ?? 0 } : {}),
       placeLabel: placeLabel.trim() || undefined,
       lat: placeLocked ? placeLat : undefined,
       lon: placeLocked ? placeLon : undefined,
@@ -150,6 +189,7 @@ export function OnyxYou({
     saveBirth(next);
     setBirth(next);
     setError(null);
+    onBirthSaved?.(next);
   }
 
   function wipe() {
@@ -158,13 +198,21 @@ export function OnyxYou({
     setYear("");
     setMonth("");
     setDay("");
+    setHour("");
+    setMinute("");
+    setKnowsHour(false);
     setPlaceLabel("");
     setPlaceLat(undefined);
     setPlaceLon(undefined);
     setPlaceLocked(false);
     setSuggestions([]);
     setError(null);
+    onBirthSaved?.(null);
   }
+
+  const personalPhrase = personal
+    ? distillTemplate(personal.chord, { colorLean: personal.galactic.tribe.color })
+    : null;
 
   return (
     <div className="onyx-root">
@@ -177,8 +225,8 @@ export function OnyxYou({
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
 
           <div className="onyx-about-block onyx-you-blurb">
-            Birth date and place are computed here and stored in this browser only. Nothing is
-            uploaded. Pick a city so the chord uses that sky, not wherever you are now.
+            Birth date, hour, and place are computed here and stored in this browser only. Nothing is
+            uploaded. Pick a city so the chord uses that sky; add your hour for rising / decan math.
           </div>
 
           <p className="onyx-eyebrow">BIRTH DATE</p>
@@ -213,6 +261,53 @@ export function OnyxYou({
                 autoComplete="bday-day"
               />
             </label>
+          </div>
+
+          <p className="onyx-eyebrow">BIRTH HOUR</p>
+          <div className="onyx-form onyx-form-date">
+            <label className="onyx-form-wide onyx-form-check">
+              <span className="onyx-check-row">
+                <input
+                  type="checkbox"
+                  checked={knowsHour}
+                  onChange={e => setKnowsHour(e.target.checked)}
+                />
+                I know my birth hour
+              </span>
+              <span className="onyx-form-hint">
+                Optional — shapes rising / decan math. Off uses noon.
+              </span>
+            </label>
+            {knowsHour && (
+              <>
+                <label>
+                  Hour
+                  <input
+                    inputMode="numeric"
+                    value={hour}
+                    onChange={e => setHour(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    placeholder="14"
+                    aria-label="Birth hour 0 to 23"
+                  />
+                </label>
+                <label>
+                  Minute
+                  <input
+                    inputMode="numeric"
+                    value={minute}
+                    onChange={e => setMinute(e.target.value.replace(/\D/g, "").slice(0, 2))}
+                    placeholder="30"
+                    aria-label="Birth minute 0 to 59"
+                  />
+                </label>
+                <label>
+                  <span className="onyx-form-spacer" />
+                  <span className="onyx-form-hint" style={{ paddingTop: 10 }}>
+                    Local clock · 24h
+                  </span>
+                </label>
+              </>
+            )}
           </div>
 
           <p className="onyx-eyebrow">BIRTH PLACE</p>
@@ -304,21 +399,33 @@ export function OnyxYou({
                   same honesty tiers as Now.
                 </li>
                 <li>
-                  <b>With Now</b> — where your chord resonates with this moment, and where it stands
-                  alone.
+                  <b>Your color</b> — Dreamspell tribe color retunes the distilled phrase toward your
+                  register (without naming the color on the street).
                 </li>
                 <li>
-                  <b>On-device only</b> — localStorage; never in phrase requests or analytics.
+                  <b>Birth hour</b> — optional; shapes rising / decan math when you know it.
+                </li>
+                <li>
+                  <b>On-device only</b> — localStorage; birth never leaves this browser.
                 </li>
               </ul>
             </>
           )}
 
-          {personal && (
+          {personal && personalPhrase && (
             <>
               <hr className="onyx-seam" />
-              <p className="onyx-eyebrow">YOUR CHORD</p>
-              <p className="onyx-layer-phrase">{distillTemplate(personal.chord)}</p>
+              <p className="onyx-eyebrow">YOUR COLOR</p>
+              <p className="onyx-layer-meta">
+                Kin {personal.galactic.kin} · {personal.galactic.tone.name}{" "}
+                <b style={{ color: "var(--onyx-core)" }}>
+                  {personal.galactic.tribe.color} {personal.galactic.tribe.name}
+                </b>
+              </p>
+              <p className="onyx-eyebrow" style={{ marginTop: 16 }}>
+                YOUR CHORD
+              </p>
+              <p className="onyx-layer-phrase">{personalPhrase}</p>
               {birth?.placeLabel && (
                 <p className="onyx-layer-meta">Born under · {birth.placeLabel}</p>
               )}
@@ -326,6 +433,16 @@ export function OnyxYou({
                 {personal.entries.map(e => e.name).join(" · ") ||
                   "No render-tier birth signs matched."}
               </p>
+              {personal.timeIsApproximate && (
+                <p className="onyx-layer-meta">
+                  Hour unknown — noon used. Add your birth hour for rising-sensitive math.
+                </p>
+              )}
+              {personal.warnings.slice(0, 2).map(w => (
+                <p key={w} className="onyx-layer-meta">
+                  {w}
+                </p>
+              ))}
 
               {personal.entries.slice(0, 4).map(e => (
                 <article key={e.id} className="onyx-decomp-card onyx-you-voice">

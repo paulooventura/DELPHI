@@ -21,6 +21,17 @@ import type { QualiaEntry, Axis } from "./qualia";
 import { AXES } from "./qualia";
 import { momentPool, type QualiaEntry as QE } from "./qualia";
 import { resolveHeritage, foregroundByLand, landCalendar, currentLandMoon } from "./geoHeritage";
+import {
+  COLOR_LEAN_BOOST,
+  COLOR_QUALITY_LEAN,
+  colorLeanMatches,
+  type TribeColor,
+} from "./colorLean";
+
+export type DistillOptions = {
+  /** Natal tribe color lean — reweights qualities already in the chorus. */
+  colorLean?: TribeColor;
+};
 
 export type AxisReading = {
   axis: string;
@@ -152,21 +163,37 @@ function poleWord(axis: string, value: number): string {
  * with axis poles as backup texture. Names NO system, sign, planet, animal,
  * or card — only the emergent weather. The character is the sum of all
  * contributors, not a report of which calendars are lit.
+ *
+ * Optional `colorLean` (natal Dreamspell tribe color) boosts matching quality
+ * words already present — never inserts the color name itself.
  */
-export function distillTemplate(c: Composition): string {
+export function distillTemplate(c: Composition, opts?: DistillOptions): string {
   // Score mainframe quality words by how many chorus voices carry them.
   const qualityWeights = new Map<string, number>();
   for (const entry of c.contributors) {
     for (const q of entry.qualities) {
       const w = q.trim().toLowerCase();
       if (!w) continue;
-      qualityWeights.set(w, (qualityWeights.get(w) ?? 0) + 1);
+      let score = (qualityWeights.get(w) ?? 0) + 1;
+      if (opts?.colorLean && colorLeanMatches(w, opts.colorLean)) {
+        score += COLOR_LEAN_BOOST;
+      }
+      qualityWeights.set(w, score);
     }
   }
   const byShare = [...qualityWeights.entries()].sort(
     (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
   );
-  const shared = byShare.filter(([, n]) => n >= 2).map(([w]) => w);
+  // Shared = carried by 2+ voices (raw count before color boost).
+  const rawCounts = new Map<string, number>();
+  for (const entry of c.contributors) {
+    for (const q of entry.qualities) {
+      const w = q.trim().toLowerCase();
+      if (!w) continue;
+      rawCounts.set(w, (rawCounts.get(w) ?? 0) + 1);
+    }
+  }
+  const shared = byShare.filter(([w]) => (rawCounts.get(w) ?? 0) >= 2).map(([w]) => w);
   const fromQualities = (shared.length >= 2 ? shared : byShare.map(([w]) => w)).slice(0, 3);
 
   // Axis poles as secondary texture when qualities are thin.
@@ -214,7 +241,7 @@ export function distillTemplate(c: Composition): string {
  * strict so the voice never drifts into horoscope cliché. The model gets the
  * COMPUTED composition — it names the chord, it does not invent the structure.
  */
-export function buildPrompt(c: Composition): { system: string; user: string } {
+export function buildPrompt(c: Composition, opts?: DistillOptions): { system: string; user: string } {
   const n = c.contributors.length;
 
   const system = [
@@ -224,6 +251,7 @@ export function buildPrompt(c: Composition): { system: string; user: string } {
     "Do not build the sentence from one or two strong notes. The character is the SUM. If there is a dominant theme and a counter-current, hold both — but as one felt weather, not a list and not a duel.",
     "One sentence. Evocative but grounded. No second person, no 'you', no prediction, no advice.",
     "Never use: journey, energy, vibes, universe, manifest, align, cosmic. Write like a poet naming a weather, not a horoscope.",
+    "Never name colors (red, white, blue, yellow) or kin labels — only felt weather.",
   ].join(" ");
 
   // Pass the WHOLE shape: every axis reading, all resonances, all tensions —
@@ -246,6 +274,15 @@ export function buildPrompt(c: Composition): { system: string; user: string } {
     return `  a pull between ${poleWord(t.axis, hi)} and ${poleWord(t.axis, lo)}`;
   });
 
+  const leanHint = opts?.colorLean
+    ? [
+        "",
+        "Personal register (optional lean — only when these qualities are already in the chorus):",
+        `  Prefer registers like: ${COLOR_QUALITY_LEAN[opts.colorLean].slice(0, 8).join(", ")}.`,
+        "  Do not invent them if absent. Do not name any color.",
+      ]
+    : [];
+
   const user = [
     `${n} traditions observe this moment. Their combined shape:`,
     "",
@@ -260,6 +297,7 @@ export function buildPrompt(c: Composition): { system: string; user: string } {
     "",
     "All the qualities in play (already deduped across every tradition):",
     `  ${c.activeQualities.join(", ")}`,
+    ...leanHint,
     "",
     "Distill ALL of this into ONE sentence naming the moment's single emergent character. Name no tradition.",
   ].join("\n");
