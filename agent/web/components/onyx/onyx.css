@@ -385,8 +385,8 @@
 .onyx-p3 .ret b { color: var(--onyx-core); font-weight: 400; }
 
 .onyx-compass-wrap {
-  position: absolute; bottom: 36px; left: 0; right: 0; z-index: 8;
-  display: flex; flex-direction: column; align-items: center; gap: 13px;
+  position: absolute; bottom: 48px; left: 0; right: 0; z-index: 8;
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
   transition: opacity var(--onyx-settle);
 }
 .onyx-device[data-depth="2"] .onyx-compass-wrap { opacity: 0; pointer-events: none; }
@@ -395,14 +395,74 @@
   transition: opacity var(--onyx-lift); min-height: 1em;
 }
 .onyx-compass {
-  background: none; border: none; cursor: pointer; padding: 6px;
-  transition: transform var(--onyx-lift);
+  --onyx-compass-x: 0px;
+  --onyx-compass-y: 0px;
+  background: none; border: none; cursor: grab; padding: 4px;
+  touch-action: none;
+  -webkit-user-select: none; user-select: none;
+  will-change: transform;
+  filter: drop-shadow(0 8px 18px rgba(80, 70, 160, 0.22));
+  transition: filter var(--onyx-lift);
 }
-.onyx-compass svg { width: 186px; height: 186px; /* 3× of 62 */ }
-.onyx-compass:active { transform: scale(0.93); }
-.onyx-compass .needle { transform-origin: 31px 31px; transition: transform var(--onyx-settle); }
+.onyx-compass svg { width: 118px; height: 118px; display: block; }
+.onyx-compass.floating {
+  animation: onyx-compass-float 4.2s ease-in-out infinite;
+}
+.onyx-compass.locked {
+  animation: none;
+  cursor: grabbing;
+  filter: drop-shadow(0 14px 28px rgba(120, 108, 200, 0.38));
+  transform: translate3d(var(--onyx-compass-x), var(--onyx-compass-y), 0) scale(0.96);
+}
+.onyx-compass.aiming {
+  filter: drop-shadow(0 16px 32px rgba(169, 156, 255, 0.48));
+}
+@keyframes onyx-compass-float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -7px, 0); }
+}
+.onyx-compass .needle {
+  transform-origin: 31px 31px;
+  transition: transform 180ms cubic-bezier(0.2, 0, 0.1, 1);
+}
+.onyx-compass.locked .needle { transition: transform 90ms linear; }
+.onyx-compass-stage {
+  position: relative;
+  width: 210px;
+  height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.onyx-compass-dirs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  color: var(--onyx-ink-faint);
+  text-transform: lowercase;
+}
+.onyx-compass-dirs span {
+  position: absolute;
+  opacity: 0;
+  transition: opacity var(--onyx-lift), color var(--onyx-lift), transform var(--onyx-lift);
+}
+.onyx-compass-wrap.holding .onyx-compass-dirs span { opacity: 0.45; }
+.onyx-compass-dirs span.on {
+  opacity: 1 !important;
+  color: var(--onyx-core);
+}
+.onyx-compass-dirs .d-up { top: 2px; left: 50%; transform: translateX(-50%); }
+.onyx-compass-dirs .d-down { bottom: 2px; left: 50%; transform: translateX(-50%); }
+.onyx-compass-dirs .d-left { left: 4px; top: 50%; transform: translateY(-50%); }
+.onyx-compass-dirs .d-right { right: 4px; top: 50%; transform: translateY(-50%); }
+.onyx-compass-dirs .d-up.on { transform: translateX(-50%) translateY(-2px); }
+.onyx-compass-dirs .d-down.on { transform: translateX(-50%) translateY(2px); }
+.onyx-compass-dirs .d-left.on { transform: translateY(-50%) translateX(-2px); }
+.onyx-compass-dirs .d-right.on { transform: translateY(-50%) translateX(2px); }
 .onyx-descend {
-  position: absolute; bottom: 22px; left: 0; right: 0; z-index: 8; text-align: center;
+  position: absolute; bottom: 18px; left: 0; right: 0; z-index: 8; text-align: center;
   font-size: 10px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
   transition: opacity var(--onyx-settle); min-height: 1em;
 }

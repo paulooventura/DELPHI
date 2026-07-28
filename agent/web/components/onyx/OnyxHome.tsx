@@ -18,10 +18,15 @@ const QUIET = 37;
 /** Street → Moment → Self. Scroll up from Street opens the live sky. */
 const MAX = 2;
 const HINTS = [
-  { c: "look up", d: "swipe up for the sky · down for deeper ↓" },
-  { c: "", d: "swipe up toward the street · down for deeper" },
+  { c: "hold the hexagon", d: "↑ sky · ↓ you · → clock · ← cast" },
+  { c: "hold the hexagon", d: "↑ sky · ↓ you · → clock · ← cast" },
   { c: "", d: "swipe up to return" },
 ] as const;
+
+type CompassAim = "up" | "down" | "left" | "right" | null;
+const COMPASS_LOCK_PX = 10;
+const COMPASS_AIM_PX = 42;
+const COMPASS_FOLLOW_MAX = 28;
 
 function MoonSvg() {
   return (
@@ -96,6 +101,10 @@ export function OnyxHome({
   const [pulseAnim, setPulseAnim] = useState<"none" | "beat" | "chime">("none");
   const [hapticOn, setHapticOn] = useState(pulseEnabled);
   const [stoneX, setStoneX] = useState(pulseEnabled ? REST : QUIET);
+  const [compassLocked, setCompassLocked] = useState(false);
+  const [compassAim, setCompassAim] = useState<CompassAim>(null);
+  const [compassNeedle, setCompassNeedle] = useState(0);
+  const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
   const deviceRef = useRef<HTMLDivElement>(null);
   const depthRef = useRef(0);
   depthRef.current = depth;
@@ -108,6 +117,8 @@ export function OnyxHome({
   const lastSec = useRef(-1);
   const onPulseRef = useRef(onPulseEnabledChange);
   onPulseRef.current = onPulseEnabledChange;
+  const compassPtr = useRef<{ id: number; x0: number; y0: number; armed: boolean } | null>(null);
+  const compassAimRef = useRef<CompassAim>(null);
 
   // Keep stone in sync if parent toggles pulse (e.g. after splash unlock).
   useEffect(() => {
@@ -320,12 +331,107 @@ export function OnyxHome({
   const swipeY0 = useRef<number | null>(null);
   const swipeIgnore = useRef(false);
 
+  const resolveCompassAim = (dx: number, dy: number): CompassAim => {
+    const dist = Math.hypot(dx, dy);
+    if (dist < COMPASS_AIM_PX) return null;
+    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "right" : "left";
+    return dy > 0 ? "down" : "up";
+  };
+
+  const commitCompassAim = useCallback(
+    (aim: CompassAim) => {
+      if (!aim) return;
+      buzz("step");
+      if (aim === "up") onOpenSky();
+      else if (aim === "down") {
+        if (onOpenYou) onOpenYou();
+        else go(MAX);
+      } else if (aim === "right") onOpenRings();
+      else if (aim === "left") {
+        if (onOpenCast) onOpenCast();
+        else onOpenTools();
+      }
+    },
+    [buzz, go, onOpenCast, onOpenRings, onOpenSky, onOpenTools, onOpenYou],
+  );
+
+  const resetCompass = useCallback(() => {
+    compassPtr.current = null;
+    compassAimRef.current = null;
+    setCompassLocked(false);
+    setCompassAim(null);
+    setCompassFollow({ x: 0, y: 0 });
+    setCompassNeedle(depthRef.current * 22);
+  }, []);
+
+  const onCompassPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    e.stopPropagation();
+    e.currentTarget.setPointerCapture(e.pointerId);
+    compassPtr.current = { id: e.pointerId, x0: e.clientX, y0: e.clientY, armed: false };
+    compassAimRef.current = null;
+    setCompassLocked(true);
+    setCompassAim(null);
+    setCompassFollow({ x: 0, y: 0 });
+    buzz("tick");
+  };
+
+  const onCompassPointerMove = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const ptr = compassPtr.current;
+    if (!ptr || ptr.id !== e.pointerId) return;
+    e.stopPropagation();
+    const dx = e.clientX - ptr.x0;
+    const dy = e.clientY - ptr.y0;
+    const dist = Math.hypot(dx, dy);
+    if (!ptr.armed && dist >= COMPASS_LOCK_PX) ptr.armed = true;
+
+    const clamp = (v: number) => Math.max(-COMPASS_FOLLOW_MAX, Math.min(COMPASS_FOLLOW_MAX, v));
+    setCompassFollow({ x: clamp(dx), y: clamp(dy) });
+
+    if (dist > 2) {
+      // Needle SVG points up; atan2(dx, -dy) → 0° when dragging up.
+      const deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
+      setCompassNeedle(deg);
+    }
+
+    const aim = resolveCompassAim(dx, dy);
+    if (aim !== compassAimRef.current) {
+      compassAimRef.current = aim;
+      setCompassAim(aim);
+      if (aim) buzz("tick");
+    }
+  };
+
+  const onCompassPointerUp = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const ptr = compassPtr.current;
+    if (!ptr || ptr.id !== e.pointerId) return;
+    e.stopPropagation();
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
+    const dx = e.clientX - ptr.x0;
+    const dy = e.clientY - ptr.y0;
+    const aim = resolveCompassAim(dx, dy);
+    const wasTap = Math.hypot(dx, dy) < COMPASS_LOCK_PX;
+    resetCompass();
+    if (aim) commitCompassAim(aim);
+    else if (wasTap) {
+      // Light tap still opens the sky from Street.
+      if (depthRef.current === 0) {
+        buzz("step");
+        onOpenSky();
+      }
+    }
+  };
+
   const swipeTargetIgnored = (t: EventTarget | null) => {
     const el = t as HTMLElement | null;
     if (!el?.closest) return false;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-rung, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-rung, input, textarea, a",
       ),
     );
   };
@@ -613,36 +719,58 @@ export function OnyxHome({
           </div>
         </div>
 
-        <div className="onyx-compass-wrap">
-          <span className="onyx-chint" style={{ opacity: HINTS[depth].c ? 1 : 0 }}>
+        <div className={`onyx-compass-wrap${compassLocked ? " holding" : ""}`}>
+          <span className="onyx-chint" style={{ opacity: HINTS[depth].c && !compassLocked ? 1 : 0 }}>
             {HINTS[depth].c}
           </span>
-          <button
-            type="button"
-            className="onyx-compass"
-            aria-label={depth === 0 ? "Open sky" : "Descend"}
-            onClick={() => {
-              if (depth === 0) onOpenSky();
-              else go(depth + 1);
-            }}
-          >
-            <svg width="186" height="186" viewBox="0 0 62 62" role="img" aria-label="Compass">
-              <polygon
-                points="31,3 47,11 55,31 47,51 31,59 15,51 7,31 15,11"
-                fill="rgba(120,108,200,0.05)"
-                stroke="var(--onyx-edge-bright)"
-                strokeWidth="0.75"
-              />
-              <circle cx="31" cy="31" r="18" fill="none" stroke="#2c2942" strokeWidth="0.5" />
-              <g className="needle" style={{ transform: `rotate(${depth * 22}deg)` }}>
-                <path d="M31 15 L35 33 L31 29 L27 33 Z" fill="var(--onyx-core)" />
-              </g>
-              <circle cx="31" cy="31" r="1.7" fill="#d8d2ff" />
-            </svg>
-          </button>
+          <div className="onyx-compass-stage">
+            <div className="onyx-compass-dirs" aria-hidden>
+              <span className={`d-up${compassAim === "up" ? " on" : ""}`}>sky</span>
+              <span className={`d-left${compassAim === "left" ? " on" : ""}`}>cast</span>
+              <span className={`d-right${compassAim === "right" ? " on" : ""}`}>clock</span>
+              <span className={`d-down${compassAim === "down" ? " on" : ""}`}>you</span>
+            </div>
+            <button
+              type="button"
+              className={`onyx-compass${compassLocked ? " locked" : " floating"}${compassAim ? " aiming" : ""}`}
+              style={
+                {
+                  ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
+                  ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
+                } as React.CSSProperties
+              }
+              aria-label="Hold and drag: up sky, down you, right clock, left cast"
+              onPointerDown={onCompassPointerDown}
+              onPointerMove={onCompassPointerMove}
+              onPointerUp={onCompassPointerUp}
+              onPointerCancel={e => {
+                e.stopPropagation();
+                resetCompass();
+              }}
+            >
+              <svg width="118" height="118" viewBox="0 0 62 62" role="img" aria-label="Compass">
+                <polygon
+                  points="31,3 47,11 55,31 47,51 31,59 15,51 7,31 15,11"
+                  fill="rgba(120,108,200,0.05)"
+                  stroke="var(--onyx-edge-bright)"
+                  strokeWidth="0.75"
+                />
+                <circle cx="31" cy="31" r="18" fill="none" stroke="#2c2942" strokeWidth="0.5" />
+                <g
+                  className="needle"
+                  style={{ transform: `rotate(${compassLocked ? compassNeedle : depth * 22}deg)` }}
+                >
+                  <path d="M31 15 L35 33 L31 29 L27 33 Z" fill="var(--onyx-core)" />
+                </g>
+                <circle cx="31" cy="31" r="1.7" fill="#d8d2ff" />
+              </svg>
+            </button>
+          </div>
         </div>
 
-        <p className="onyx-descend">{HINTS[depth].d}</p>
+        <p className="onyx-descend" style={{ opacity: compassLocked ? 0.35 : 1 }}>
+          {HINTS[depth].d}
+        </p>
       </div>
     </div>
   );
