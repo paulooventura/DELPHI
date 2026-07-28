@@ -6,14 +6,15 @@
 import type { Composition } from "./compose";
 import { buildPrompt, distillTemplate } from "./compose";
 
-// Mirrors compose.buildPrompt banned lexicon + western-sign leaks (no common nouns).
+// Horoscope filler + calendar/tradition name-drops must never reach the street line.
 const BANNED =
-  /\b(energy|vibes|manifest|align|journey|universe|cosmic)\b|\b(leo|aries|taurus|gemini|cancer|virgo|libra|scorpio|sagittarius|capricorn|aquarius|pisces)\b/i;
+  /\b(energy|vibes|manifest|align|journey|universe|cosmic)\b|\b(leo|aries|taurus|gemini|cancer|virgo|libra|scorpio|sagittarius|capricorn|aquarius|pisces)\b|\b(rat|ox|tiger|rabbit|dragon|snake|horse|goat|sheep|monkey|rooster|dog|pig|boar)\b|\b(kin|tzolk'?in|tzolkin|hijri|hebrew|ethiopian|persian|dreamspell)\b|\brhythmic\s+seed\b/i;
 
 export function phraseCacheKey(civilYmd: string, lat: number, lon: number): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  return `delphi-phrase:${civilYmd}:${rLat}:${rLon}`;
+  // v2: home line is qualities-only (no Atlas multi-voice concatenation).
+  return `delphi-phrase:v2:${civilYmd}:${rLat}:${rLon}`;
 }
 
 /** Accept only a single grounded sentence with no banned lexicon. */

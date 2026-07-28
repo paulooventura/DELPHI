@@ -148,20 +148,46 @@ function poleWord(axis: string, value: number): string {
 
 /**
  * Deterministic distilled phrase — the offline / fallback reading.
- * Draws from the strongest AXES across the whole chorus. Names NO system,
- * sign, planet, animal, or card — only the emergent quality. The character is
- * the sum of all contributors, not a duel between two of them.
+ * Distills QUALITY WORDS from the mainframe chorus (how often they co-occur),
+ * with axis poles as backup texture. Names NO system, sign, planet, animal,
+ * or card — only the emergent weather. The character is the sum of all
+ * contributors, not a report of which calendars are lit.
  */
 export function distillTemplate(c: Composition): string {
-  // The dominant theme = the axes where the whole chorus leans hardest and
-  // agrees most (coherence × |mean|), taken as adjectives.
+  // Score mainframe quality words by how many chorus voices carry them.
+  const qualityWeights = new Map<string, number>();
+  for (const entry of c.contributors) {
+    for (const q of entry.qualities) {
+      const w = q.trim().toLowerCase();
+      if (!w) continue;
+      qualityWeights.set(w, (qualityWeights.get(w) ?? 0) + 1);
+    }
+  }
+  const byShare = [...qualityWeights.entries()].sort(
+    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+  );
+  const shared = byShare.filter(([, n]) => n >= 2).map(([w]) => w);
+  const fromQualities = (shared.length >= 2 ? shared : byShare.map(([w]) => w)).slice(0, 3);
+
+  // Axis poles as secondary texture when qualities are thin.
   const leaning = c.axes
     .filter((a) => Math.abs(a.mean) > 0.25)
     .map((a) => ({ word: poleWord(a.axis, a.mean), weight: a.coherence * Math.abs(a.mean) }))
     .filter((x) => x.word)
     .sort((x, y) => y.weight - x.weight);
 
-  const lead = leaning.slice(0, 3).map((x) => x.word);
+  const lead: string[] = [];
+  for (const w of fromQualities) {
+    if (!lead.includes(w)) lead.push(w);
+    if (lead.length >= 3) break;
+  }
+  if (lead.length < 2) {
+    for (const x of leaning) {
+      if (!lead.includes(x.word)) lead.push(x.word);
+      if (lead.length >= 3) break;
+    }
+  }
+
   let phrase =
     lead.length >= 2
       ? `A ${lead[0]}, ${lead[1]} quality`
@@ -170,8 +196,7 @@ export function distillTemplate(c: Composition): string {
       : "A quiet, in-between quality";
   if (lead[2]) phrase += ` and ${lead[2]}`;
 
-  // The counter-current = the strongest tension, named as a felt undercurrent,
-  // WITHOUT naming which traditions pull. Just the axis, as a direction.
+  // Counter-current = strongest tension, as felt weather — never which systems pull.
   const ten = c.tensions[0];
   if (ten && ten.strength > 0.4) {
     const hi = Math.max(...ten.poles.map((p) => p.value));

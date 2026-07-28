@@ -145,12 +145,11 @@ export function OnyxApp({
   }, [momentBundle, civilYmd, lat, lon]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
-  // World Cycles multi-voice is first-class (Atlas-enabled systems); lore distill follows.
-  const atlasVoice = multiVoice?.trim() ?? "";
-  const momentLine =
-    atlasVoice && distilled
-      ? `${atlasVoice} ${distilled}`
-      : atlasVoice || distilled || "Reading the sky…";
+  // Home / NOW street line = distilled chorus of mainframe qualities only.
+  // Calendar name-drops (Leo, Fire Horse, Kin…) stay under the clock rows
+  // via calendarReadings / Atlas multiVoice — never concatenated here.
+  const momentLine = distilled || "Reading the sky…";
+  void multiVoice;
 
   const galactic = cycles?.galactic;
   const selfTone = galactic ? (

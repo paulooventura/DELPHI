@@ -9,12 +9,14 @@ describe("chorus distillation — no tradition names on the home phrase", () => 
     byId("el-fire")!,
   ].filter(Boolean);
 
-  it("distillTemplate names axes only — never Leo/Horse/Fire labels", () => {
+  it("distillTemplate weaves shared qualities — never Leo/Horse/Fire labels", () => {
     const chord = compose(active);
     const phrase = distillTemplate(chord);
     expect(phrase.endsWith(".")).toBe(true);
     expect(phrase).not.toMatch(/leo|horse|fire|western|chinese/i);
     expect(phrase).not.toMatch(/wrestling with/i);
+    // Leo + Fire both carry "radiant" — that shared quality should surface.
+    expect(phrase.toLowerCase()).toMatch(/radiant/);
   });
 
   it("buildPrompt user payload never lists tradition entry names", () => {
