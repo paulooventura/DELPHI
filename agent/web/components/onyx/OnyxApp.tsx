@@ -179,14 +179,7 @@ export function OnyxApp({
 
   if (showSplash) {
     return (
-      <OnyxSplash
-        now={now}
-        lat={lat}
-        lon={lon}
-        altM={altM}
-        acknowledgment={momentBundle.acknowledgment ?? null}
-        onEnter={onSplashDone}
-      />
+      <OnyxSplash onEnter={onSplashDone} />
     );
   }
 
@@ -320,8 +313,6 @@ export function OnyxApp({
     return (
       <OnyxYou
         nowChord={momentBundle.chord}
-        placeLat={lat}
-        placeLon={lon}
         onBack={() => setMode("home")}
       />
     );

@@ -105,7 +105,6 @@
 }
 .onyx-splash-chrome.on {
   opacity: 1;
-  pointer-events: auto;
 }
 
 .onyx-grade {
@@ -136,67 +135,10 @@
   font-size: 34px; font-weight: 300; letter-spacing: 0.42em;
   color: var(--onyx-ink-bright); padding-left: 0.42em;
 }
-.onyx-splash-wordmark .tag {
-  font-size: 10px; letter-spacing: 0.36em; color: var(--onyx-ink-quiet);
-  margin-top: 16px; font-weight: 300; opacity: 0;
-  animation: onyx-reveal 2s ease-out 2.6s forwards;
-}
 @keyframes onyx-reveal {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
 }
-.onyx-horizon {
-  position: absolute; top: calc(46% + 58px); left: 50%; transform: translateX(-50%);
-  z-index: 6; height: 0.5px; width: 0;
-  background: linear-gradient(90deg, transparent, var(--onyx-edge-bright), transparent);
-  animation: onyx-draw 2.6s ease-out 2.2s forwards;
-}
-@keyframes onyx-draw { to { width: 180px; } }
-
-.onyx-fix {
-  position: absolute; z-index: 6; font-size: 10px; letter-spacing: 0.18em;
-  color: var(--onyx-ink-faint); opacity: 0;
-  animation: onyx-reveal 1.8s ease-out 3.2s forwards;
-}
-.onyx-fix.tl { top: 52px; left: 26px; }
-.onyx-fix.tr { top: 52px; right: 26px; }
-.onyx-fix.bl { bottom: 120px; left: 26px; }
-.onyx-fix.br { bottom: 120px; right: 26px; }
-
-.onyx-land-ack {
-  position: absolute; left: 24px; right: 24px; bottom: 118px; z-index: 7;
-  font-size: 10px; line-height: 1.55; letter-spacing: 0.02em;
-  color: var(--onyx-ink-quiet); text-align: center;
-  opacity: 0; animation: onyx-reveal 2s ease-out 3.6s forwards;
-}
-.onyx-land-ack a {
-  color: var(--onyx-light); text-decoration: none; letter-spacing: 0.06em;
-}
-.onyx-enter {
-  position: absolute; bottom: 56px; left: 0; right: 0; z-index: 7; text-align: center;
-  opacity: 0; animation: onyx-reveal 2s ease-out 4s forwards;
-}
-.onyx-enter button {
-  background: none; border: 0.5px solid var(--onyx-edge-bright); border-radius: 26px;
-  padding: 13px 30px; color: var(--onyx-ink-bright); font-family: inherit;
-  font-size: 12px; letter-spacing: 0.14em; cursor: pointer;
-  transition: all 280ms cubic-bezier(0.2, 0, 0.1, 1);
-  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
-}
-.onyx-enter button:hover { background: rgba(120, 108, 200, 0.12); border-color: var(--onyx-core); }
-.onyx-enter button:active { transform: scale(0.97); }
-.onyx-enter .pulse {
-  display: block; margin-top: 16px; font-size: 10px; letter-spacing: 0.1em;
-  color: var(--onyx-ink-faint); animation: onyx-pulsehint 3.4s ease-in-out infinite;
-}
-@keyframes onyx-pulsehint { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.85; } }
-
-.onyx-seed {
-  position: absolute; border-radius: 50%; background: #fff; z-index: 5; opacity: 0;
-  animation: onyx-star-in 3s ease-out forwards, onyx-tw var(--tw, 4s) ease-in-out infinite;
-  animation-delay: var(--sd, 2s), var(--sd, 2s);
-}
-@keyframes onyx-star-in { to { opacity: var(--o, 0.5); } }
 @keyframes onyx-tw {
   0%, 100% { opacity: var(--o, 0.5); transform: scale(1); }
   50% { opacity: calc(var(--o, 0.5) * 0.4); transform: scale(0.82); }
@@ -765,9 +707,12 @@
 }
 .onyx-form {
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 12px;
+}
+.onyx-form-date {
+  margin-bottom: 20px;
 }
 .onyx-form label {
   display: flex;
@@ -777,9 +722,11 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
+  min-width: 0;
 }
 .onyx-form-wide { grid-column: 1 / -1; }
-.onyx-form input {
+.onyx-form input,
+.onyx-place-field input {
   background: rgba(120, 108, 200, 0.06);
   border: 0.5px solid var(--onyx-edge);
   border-radius: 10px;
@@ -787,9 +734,134 @@
   color: var(--onyx-ink-bright);
   font-family: inherit;
   font-size: 14px;
+  width: 100%;
+  min-width: 0; /* inputs default min-width was clipping Day off the device frame */
+  box-sizing: border-box;
+}
+.onyx-form input:focus,
+.onyx-place-field input:focus {
+  outline: none;
+  border-color: var(--onyx-edge-bright);
+  background: rgba(120, 108, 200, 0.1);
 }
 .onyx-form-err { color: #e8a0a0; font-size: 12px; margin: 0 0 8px; }
-.onyx-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
+.onyx-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 8px; }
+
+/* YOU — place typeahead + denser sections */
+.onyx-you .onyx-eyebrow { margin-top: 4px; }
+.onyx-you-blurb { margin-bottom: 22px; }
+.onyx-you-unlocks { margin-top: 4px; }
+.onyx-place {
+  position: relative;
+  margin-bottom: 4px;
+}
+.onyx-place-label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-place-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.onyx-place-field input { padding-right: 64px; }
+.onyx-place-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: 0;
+  color: var(--onyx-light);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 4px 6px;
+}
+.onyx-place-locked {
+  margin: 8px 0 0;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-place-list {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 4px;
+  background: rgba(8, 7, 16, 0.96);
+  border: 0.5px solid var(--onyx-edge-bright);
+  border-radius: 12px;
+  max-height: 220px;
+  overflow: auto;
+}
+.onyx-place-idle {
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-place-hit {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  border-radius: 10px;
+  padding: 12px 14px;
+  color: var(--onyx-ink-bright);
+  font-family: inherit;
+  cursor: pointer;
+}
+.onyx-place-hit:hover,
+.onyx-place-hit:focus {
+  background: rgba(120, 108, 200, 0.12);
+  outline: none;
+}
+.onyx-place-hit-name {
+  display: block;
+  font-size: 14px;
+}
+.onyx-place-hit-meta {
+  display: block;
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--onyx-ink-quiet);
+  letter-spacing: 0.04em;
+}
+.onyx-you-voice { margin: 10px 0; }
+.onyx-you-compare { display: flex; flex-direction: column; gap: 12px; margin-top: 8px; }
+.onyx-you-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.onyx-you-chip-label {
+  flex: 0 0 100%;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-faint);
+  margin-bottom: 2px;
+}
+.onyx-you-chip {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--onyx-ink-bright);
+  background: rgba(140, 124, 255, 0.14);
+  border: 0.5px solid var(--onyx-edge);
+  border-radius: 12px;
+  padding: 5px 10px;
+}
+.onyx-you-chip.quiet {
+  background: rgba(120, 108, 200, 0.05);
+  color: var(--onyx-ink-soft);
+}
+
 .onyx-primary-btn {
   background: rgba(140, 124, 255, 0.18);
   border: 0.5px solid var(--onyx-edge-bright);

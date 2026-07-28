@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   clearBirth,
   loadBirth,
@@ -9,6 +9,7 @@ import {
 } from "../../lib/lore/birthStore";
 import { composePerson } from "../../lib/lore/resolvePerson";
 import { distillTemplate, type Composition } from "../../lib/lore/compose";
+import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
 
 function overlap(a: Composition, b: Composition) {
   const nowQ = new Set(a.activeQualities);
@@ -19,15 +20,19 @@ function overlap(a: Composition, b: Composition) {
   return { shared, onlyYou, onlyNow };
 }
 
+function daysInMonth(year: number, month: number): number {
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return 31;
+  return new Date(year, month, 0).getDate();
+}
+
 export function OnyxYou({
   nowChord,
-  placeLat,
-  placeLon,
   onBack,
 }: {
   nowChord: Composition;
-  placeLat: number;
-  placeLon: number;
+  /** @deprecated kept for call-site compat; birth place comes from city pick */
+  placeLat?: number;
+  placeLon?: number;
   onBack: () => void;
 }) {
   const [birth, setBirth] = useState<BirthRecord | null>(() => loadBirth());
@@ -35,7 +40,17 @@ export function OnyxYou({
   const [month, setMonth] = useState(String(birth?.month ?? ""));
   const [day, setDay] = useState(String(birth?.day ?? ""));
   const [placeLabel, setPlaceLabel] = useState(birth?.placeLabel ?? "");
+  const [placeLat, setPlaceLat] = useState<number | undefined>(birth?.lat);
+  const [placeLon, setPlaceLon] = useState<number | undefined>(birth?.lon);
+  const [placeLocked, setPlaceLocked] = useState(
+    () => Boolean(birth?.placeLabel && birth?.lat != null && birth?.lon != null),
+  );
+  const [suggestions, setSuggestions] = useState<PlaceHit[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [listOpen, setListOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
+  const placeWrapRef = useRef<HTMLDivElement>(null);
 
   const personal = useMemo(() => {
     if (!birth) return null;
@@ -46,6 +61,62 @@ export function OnyxYou({
     if (!personal) return null;
     return overlap(nowChord, personal.chord);
   }, [nowChord, personal]);
+
+  // Debounced city typeahead
+  useEffect(() => {
+    if (placeLocked) {
+      setSuggestions([]);
+      setSearching(false);
+      return;
+    }
+    const q = placeLabel.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    const t = window.setTimeout(() => {
+      abortRef.current?.abort();
+      const ac = new AbortController();
+      abortRef.current = ac;
+      void searchPlaces(q, { count: 6, signal: ac.signal }).then(hits => {
+        if (ac.signal.aborted) return;
+        setSuggestions(hits);
+        setListOpen(true);
+        setSearching(false);
+      });
+    }, 280);
+    return () => {
+      window.clearTimeout(t);
+      abortRef.current?.abort();
+    };
+  }, [placeLabel, placeLocked]);
+
+  useEffect(() => {
+    const onDoc = (e: MouseEvent) => {
+      if (!placeWrapRef.current?.contains(e.target as Node)) setListOpen(false);
+    };
+    document.addEventListener("mousedown", onDoc);
+    return () => document.removeEventListener("mousedown", onDoc);
+  }, []);
+
+  function lockPlace(hit: PlaceHit) {
+    setPlaceLabel(hit.label);
+    setPlaceLat(hit.lat);
+    setPlaceLon(hit.lon);
+    setPlaceLocked(true);
+    setSuggestions([]);
+    setListOpen(false);
+    setError(null);
+  }
+
+  function unlockPlace() {
+    setPlaceLocked(false);
+    setPlaceLat(undefined);
+    setPlaceLon(undefined);
+    setListOpen(true);
+  }
 
   function persist() {
     const y = Number(year);
@@ -59,8 +130,13 @@ export function OnyxYou({
       setError("Enter month 1–12.");
       return;
     }
-    if (!Number.isFinite(d) || d < 1 || d > 31) {
-      setError("Enter day 1–31.");
+    const maxDay = daysInMonth(y, m);
+    if (!Number.isFinite(d) || d < 1 || d > maxDay) {
+      setError(`Enter day 1–${maxDay} for that month.`);
+      return;
+    }
+    if (placeLabel.trim() && !placeLocked) {
+      setError("Pick a city from the list to lock birth place — or clear the field.");
       return;
     }
     const next: BirthRecord = {
@@ -68,8 +144,8 @@ export function OnyxYou({
       month: m,
       day: d,
       placeLabel: placeLabel.trim() || undefined,
-      lat: placeLat,
-      lon: placeLon,
+      lat: placeLocked ? placeLat : undefined,
+      lon: placeLocked ? placeLon : undefined,
     };
     saveBirth(next);
     setBirth(next);
@@ -83,6 +159,10 @@ export function OnyxYou({
     setMonth("");
     setDay("");
     setPlaceLabel("");
+    setPlaceLat(undefined);
+    setPlaceLon(undefined);
+    setPlaceLocked(false);
+    setSuggestions([]);
     setError(null);
   }
 
@@ -92,20 +172,25 @@ export function OnyxYou({
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
           close
         </button>
-        <div className="onyx-overlay">
+        <div className="onyx-overlay onyx-you">
           <p className="onyx-eyebrow">YOU</p>
-          <p className="onyx-layer-lead">
-            Opt-in natal chord. Birth data stays on this device — computed here, never sent.
-          </p>
+          <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
 
-          <div className="onyx-form">
+          <div className="onyx-about-block onyx-you-blurb">
+            Birth date and place are computed here and stored in this browser only. Nothing is
+            uploaded. Pick a city so the chord uses that sky, not wherever you are now.
+          </div>
+
+          <p className="onyx-eyebrow">BIRTH DATE</p>
+          <div className="onyx-form onyx-form-date">
             <label>
               Year
               <input
                 inputMode="numeric"
                 value={year}
-                onChange={e => setYear(e.target.value)}
+                onChange={e => setYear(e.target.value.replace(/\D/g, "").slice(0, 4))}
                 placeholder="1990"
+                autoComplete="bday-year"
               />
             </label>
             <label>
@@ -113,8 +198,9 @@ export function OnyxYou({
               <input
                 inputMode="numeric"
                 value={month}
-                onChange={e => setMonth(e.target.value)}
+                onChange={e => setMonth(e.target.value.replace(/\D/g, "").slice(0, 2))}
                 placeholder="7"
+                autoComplete="bday-month"
               />
             </label>
             <label>
@@ -122,18 +208,77 @@ export function OnyxYou({
               <input
                 inputMode="numeric"
                 value={day}
-                onChange={e => setDay(e.target.value)}
+                onChange={e => setDay(e.target.value.replace(/\D/g, "").slice(0, 2))}
                 placeholder="24"
+                autoComplete="bday-day"
               />
             </label>
-            <label className="onyx-form-wide">
-              Place label (optional)
-              <input
-                value={placeLabel}
-                onChange={e => setPlaceLabel(e.target.value)}
-                placeholder="City name only — not uploaded"
-              />
+          </div>
+
+          <p className="onyx-eyebrow">BIRTH PLACE</p>
+          <div className="onyx-place" ref={placeWrapRef}>
+            <label className="onyx-place-label">
+              City
+              <div className="onyx-place-field">
+                <input
+                  value={placeLabel}
+                  onChange={e => {
+                    setPlaceLabel(e.target.value);
+                    if (placeLocked) unlockPlace();
+                    setListOpen(true);
+                  }}
+                  onFocus={() => {
+                    if (!placeLocked && suggestions.length > 0) setListOpen(true);
+                  }}
+                  placeholder="Start typing a city…"
+                  autoComplete="off"
+                  aria-autocomplete="list"
+                  aria-expanded={listOpen && suggestions.length > 0}
+                />
+                {placeLocked && (
+                  <button
+                    type="button"
+                    className="onyx-place-clear"
+                    onClick={() => {
+                      setPlaceLabel("");
+                      unlockPlace();
+                    }}
+                    aria-label="Clear city"
+                  >
+                    clear
+                  </button>
+                )}
+              </div>
             </label>
+
+            {placeLocked && placeLat != null && placeLon != null && (
+              <p className="onyx-place-locked">
+                Locked · {placeLat.toFixed(2)}°, {placeLon.toFixed(2)}°
+              </p>
+            )}
+
+            {!placeLocked && listOpen && (suggestions.length > 0 || searching) && (
+              <ul className="onyx-place-list" role="listbox">
+                {searching && suggestions.length === 0 && (
+                  <li className="onyx-place-idle">Searching…</li>
+                )}
+                {suggestions.map(hit => (
+                  <li key={hit.id}>
+                    <button
+                      type="button"
+                      role="option"
+                      className="onyx-place-hit"
+                      onClick={() => lockPlace(hit)}
+                    >
+                      <span className="onyx-place-hit-name">{hit.name}</span>
+                      <span className="onyx-place-hit-meta">
+                        {[hit.admin1, hit.country].filter(Boolean).join(" · ")}
+                      </span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
 
           {error && <p className="onyx-form-err">{error}</p>}
@@ -149,35 +294,86 @@ export function OnyxYou({
             )}
           </div>
 
+          {!birth && (
+            <>
+              <hr className="onyx-seam" />
+              <p className="onyx-eyebrow">WHAT THIS UNLOCKS</p>
+              <ul className="onyx-about-list onyx-you-unlocks">
+                <li>
+                  <b>Natal chord</b> — calendar and sky signs for your birth moment, scored with the
+                  same honesty tiers as Now.
+                </li>
+                <li>
+                  <b>With Now</b> — where your chord resonates with this moment, and where it stands
+                  alone.
+                </li>
+                <li>
+                  <b>On-device only</b> — localStorage; never in phrase requests or analytics.
+                </li>
+              </ul>
+            </>
+          )}
+
           {personal && (
             <>
               <hr className="onyx-seam" />
               <p className="onyx-eyebrow">YOUR CHORD</p>
               <p className="onyx-layer-phrase">{distillTemplate(personal.chord)}</p>
+              {birth?.placeLabel && (
+                <p className="onyx-layer-meta">Born under · {birth.placeLabel}</p>
+              )}
               <p className="onyx-layer-meta">
-                {personal.entries.map(e => e.name).join(" · ") || "No render-tier birth signs matched."}
+                {personal.entries.map(e => e.name).join(" · ") ||
+                  "No render-tier birth signs matched."}
               </p>
+
+              {personal.entries.slice(0, 4).map(e => (
+                <article key={e.id} className="onyx-decomp-card onyx-you-voice">
+                  <p className="onyx-decomp-name">
+                    {e.name}
+                    <span>{e.system}</span>
+                  </p>
+                  {e.source && <p className="onyx-decomp-source">{e.source}</p>}
+                </article>
+              ))}
 
               {compare && (
                 <>
                   <p className="onyx-eyebrow" style={{ marginTop: 20 }}>
                     WITH NOW
                   </p>
-                  {compare.shared.length > 0 && (
-                    <p className="onyx-layer-meta">
-                      Resonates · {compare.shared.slice(0, 8).join(", ")}
-                    </p>
-                  )}
-                  {compare.onlyYou.length > 0 && (
-                    <p className="onyx-layer-meta">
-                      Yours alone · {compare.onlyYou.slice(0, 6).join(", ")}
-                    </p>
-                  )}
-                  {compare.onlyNow.length > 0 && (
-                    <p className="onyx-layer-meta">
-                      Moment alone · {compare.onlyNow.slice(0, 6).join(", ")}
-                    </p>
-                  )}
+                  <div className="onyx-you-compare">
+                    {compare.shared.length > 0 && (
+                      <div className="onyx-you-chip-row">
+                        <span className="onyx-you-chip-label">Resonates</span>
+                        {compare.shared.slice(0, 8).map(q => (
+                          <span key={`s-${q}`} className="onyx-you-chip">
+                            {q}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {compare.onlyYou.length > 0 && (
+                      <div className="onyx-you-chip-row">
+                        <span className="onyx-you-chip-label">Yours alone</span>
+                        {compare.onlyYou.slice(0, 6).map(q => (
+                          <span key={`y-${q}`} className="onyx-you-chip quiet">
+                            {q}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {compare.onlyNow.length > 0 && (
+                      <div className="onyx-you-chip-row">
+                        <span className="onyx-you-chip-label">Moment alone</span>
+                        {compare.onlyNow.slice(0, 6).map(q => (
+                          <span key={`n-${q}`} className="onyx-you-chip quiet">
+                            {q}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </>
               )}
             </>

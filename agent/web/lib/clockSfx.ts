@@ -208,12 +208,16 @@ type SchumannBed = {
   master: GainNode;
   sources: Array<OscillatorNode | AudioBufferSourceNode>;
   nodes: AudioNode[];
+  timers: number[];
 };
 
 let schumannBed: SchumannBed | null = null;
 
+const SCHUMANN_FUND = 7.83;
+
 /**
  * Calm deep-breath bed: 32.5 Hz core + audible harmonics, delay/reverb, slow inhale/exhale.
+ * Occasional harmonic blooms from the Schumann series add texture without crowding the pad.
  */
 export function startSchumannAtmosphere(ctx: AudioContext): void {
   if (schumannBed) return;
@@ -232,6 +236,7 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
 
   const sources: Array<OscillatorNode | AudioBufferSourceNode> = [];
   const nodes: AudioNode[] = [master, echo, hall];
+  const timers: number[] = [];
 
   // Breath envelope — ~8s inhale / exhale cycle into a VCA
   const vca = ctx.createGain();
@@ -252,7 +257,7 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
 
   const partials: Array<{ hz: number; level: number; type: OscillatorType }> = [
     { hz: SCHUMANN_HZ, level: 0.7, type: "sine" },
-    { hz: 7.83, level: 0.28, type: "sine" },
+    { hz: SCHUMANN_FUND, level: 0.28, type: "sine" },
     { hz: 14.3, level: 0.2, type: "sine" },
     { hz: 20.8, level: 0.16, type: "sine" },
     { hz: 65, level: 0.32, type: "sine" }, // audible warmth
@@ -298,12 +303,66 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   sources.push(hiss);
   nodes.push(hissLp, hissGain);
 
-  schumannBed = { master, sources, nodes };
+  // Intermittent harmonic blooms — Schumann multiples that swell in and out
+  const bloomVoices: Array<{ gain: GainNode; peak: number }> = [
+    { hz: SCHUMANN_FUND * 5, peak: 0.09 }, // ~39.15
+    { hz: SCHUMANN_FUND * 7, peak: 0.07 }, // ~54.8
+    { hz: SCHUMANN_HZ * 1.5, peak: 0.08 }, // ~48.75 (fifth above core)
+    { hz: SCHUMANN_FUND * 10, peak: 0.06 }, // ~78.3
+    { hz: SCHUMANN_HZ * 5, peak: 0.05 }, // 162.5
+    { hz: SCHUMANN_FUND * 13, peak: 0.045 }, // ~101.8
+  ].map(({ hz, peak }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    const lp = ctx.createBiquadFilter();
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(hz, ctx.currentTime);
+    lp.type = "lowpass";
+    lp.frequency.setValueAtTime(Math.max(180, hz * 4), ctx.currentTime);
+    lp.Q.setValueAtTime(0.7, ctx.currentTime);
+    gain.gain.setValueAtTime(0.0001, ctx.currentTime);
+    osc.connect(lp);
+    lp.connect(gain);
+    gain.connect(vca);
+    osc.start();
+    sources.push(osc);
+    nodes.push(gain, lp);
+    return { gain, peak };
+  });
+
+  const scheduleBloom = () => {
+    if (!schumannBed) return;
+    const voice = bloomVoices[Math.floor(Math.random() * bloomVoices.length)];
+    if (!voice) return;
+    const now = ctx.currentTime;
+    const rise = 1.2 + Math.random() * 2.2;
+    const hold = 0.4 + Math.random() * 1.6;
+    const fall = 2.0 + Math.random() * 3.5;
+    const level = voice.peak * (0.55 + Math.random() * 0.45);
+    try {
+      voice.gain.gain.cancelScheduledValues(now);
+      voice.gain.gain.setValueAtTime(Math.max(0.0001, voice.gain.gain.value), now);
+      voice.gain.gain.exponentialRampToValueAtTime(level, now + rise);
+      voice.gain.gain.exponentialRampToValueAtTime(level * 0.85, now + rise + hold);
+      voice.gain.gain.exponentialRampToValueAtTime(0.0001, now + rise + hold + fall);
+    } catch {
+      /* ignore scheduling races on teardown */
+    }
+    const nextMs = 2800 + Math.random() * 7200;
+    const id = window.setTimeout(scheduleBloom, nextMs);
+    timers.push(id);
+  };
+  // First bloom after the bed has faded in
+  timers.push(window.setTimeout(scheduleBloom, 4200 + Math.random() * 2400));
+
+  schumannBed = { master, sources, nodes, timers };
 }
 
 export function stopSchumannAtmosphere(opts?: { immediate?: boolean }): void {
   if (!schumannBed) return;
-  const { master, sources } = schumannBed;
+  const { master, sources, timers } = schumannBed;
+  for (const id of timers) window.clearTimeout(id);
+  timers.length = 0;
   const ctx = master.context;
   const t = ctx.currentTime;
   const immediate = opts?.immediate === true;
