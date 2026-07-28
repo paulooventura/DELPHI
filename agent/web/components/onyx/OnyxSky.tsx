@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   CelestialSkyView,
   type LiveAttitude,
@@ -10,6 +10,7 @@ import { cardinalFromHeading } from "./onyxCopy";
 
 const DIRS = ["N", "·", "NE", "·", "E", "·", "SE", "·", "S", "·", "SW", "·", "W", "·", "NW", "·", "N", "·", "NE", "·", "E"];
 const CARD = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
+const EXIT_MS = 480;
 
 export function OnyxSky({
   now,
@@ -49,6 +50,12 @@ export function OnyxSky({
   const az = ((headingDeg % 360) + 360) % 360;
   const ribbonX = -(az / 360) * (DIRS.length * 44) + 195 - 22;
 
+  const [phase, setPhase] = useState<"enter" | "live" | "exit">("enter");
+  const leavingRef = useRef(false);
+  const swipeY0 = useRef<number | null>(null);
+  const swipeIgnore = useRef(false);
+  const wheelLock = useRef(false);
+
   const dust = useMemo(
     () =>
       Array.from({ length: 48 }, (_, i) => {
@@ -60,10 +67,99 @@ export function OnyxSky({
     [],
   );
 
+  useEffect(() => {
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      setPhase("live");
+      return;
+    }
+    const t = window.setTimeout(() => setPhase("live"), 720);
+    return () => clearTimeout(t);
+  }, []);
+
+  const leave = useCallback(() => {
+    if (leavingRef.current) return;
+    leavingRef.current = true;
+    const reduce =
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduce) {
+      onBack();
+      return;
+    }
+    setPhase("exit");
+    window.setTimeout(() => onBack(), EXIT_MS);
+  }, [onBack]);
+
+  const swipeTargetIgnored = (t: EventTarget | null) => {
+    const el = t as HTMLElement | null;
+    if (!el?.closest) return false;
+    // Detail sheet / chrome controls own their gestures.
+    return Boolean(el.closest(".onyx-sky-back, .cp-sky-object-panel, button, a, input, textarea"));
+  };
+
+  const onPointerDown = (e: React.PointerEvent) => {
+    if (e.pointerType === "mouse" && e.button !== 0) return;
+    if (e.pointerType === "touch" && e.isPrimary === false) {
+      swipeIgnore.current = true;
+      swipeY0.current = null;
+      return;
+    }
+    if (swipeTargetIgnored(e.target)) {
+      swipeIgnore.current = true;
+      swipeY0.current = null;
+      return;
+    }
+    swipeIgnore.current = false;
+    swipeY0.current = e.clientY;
+  };
+
+  const onPointerUp = (e: React.PointerEvent) => {
+    if (swipeIgnore.current || swipeY0.current == null) {
+      swipeIgnore.current = false;
+      swipeY0.current = null;
+      return;
+    }
+    const dy = e.clientY - swipeY0.current;
+    swipeY0.current = null;
+    // Finger moves down → back to the street (inverse of home → sky).
+    if (dy > 72) leave();
+  };
+
+  const onPointerCancel = () => {
+    swipeY0.current = null;
+    swipeIgnore.current = false;
+  };
+
+  const phaseClass =
+    phase === "enter" ? " onyx-sky-enter" : phase === "exit" ? " onyx-sky-exit" : "";
+
   return (
-    <div className="onyx-root">
-      <div className="onyx-device onyx-sky-device" role="application" aria-label="Delphi sky view">
-        <button type="button" className="onyx-sky-back" onClick={onBack}>
+    <div className={`onyx-root${phaseClass}`}>
+      <div
+        className="onyx-device onyx-sky-device"
+        role="application"
+        aria-label="Delphi sky view"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={onPointerCancel}
+        onWheel={e => {
+          if (wheelLock.current) return;
+          if (e.deltaY <= 40) return;
+          wheelLock.current = true;
+          window.setTimeout(() => {
+            wheelLock.current = false;
+          }, 700);
+          leave();
+        }}
+        onKeyDown={e => {
+          if (e.key === "Escape" || e.key === "ArrowDown") leave();
+        }}
+        tabIndex={0}
+      >
+        <button type="button" className="onyx-sky-back" onClick={leave}>
           ← home
         </button>
 
@@ -142,7 +238,7 @@ export function OnyxSky({
         <p className="onyx-sky-hint">
           {live
             ? arPoseReady
-              ? "Live AR — aim the phone to see what’s around you"
+              ? "Live AR — aim the phone · swipe down for home"
               : "Hold the phone more upright to lock AR pose"
             : "Allow motion & location — then aim the phone at the sky"}
         </p>

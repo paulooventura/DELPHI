@@ -15,12 +15,12 @@ import { claimMarkClass, streetMoonLine } from "./onyxCopy";
 
 const REST = 3;
 const QUIET = 37;
-/** Street → Moment → Self. (Obsolete Moon teaser removed — sky is its own mode.) */
+/** Street → Moment → Self. Scroll up from Street opens the live sky. */
 const MAX = 2;
 const HINTS = [
-  { c: "tap for the sky", d: "swipe down to go deeper ↓" },
-  { c: "", d: "swipe up for the sky · down for deeper" },
-  { c: "", d: "" },
+  { c: "look up", d: "swipe up for the sky · down for deeper ↓" },
+  { c: "", d: "swipe up toward the street · down for deeper" },
+  { c: "", d: "swipe up to return" },
 ] as const;
 
 function MoonSvg() {
@@ -185,8 +185,8 @@ export function OnyxHome({
   const goDelta = useCallback(
     (delta: number) => {
       const prev = depthRef.current;
-      // Moment + swipe/scroll up → live sky (sync call keeps iOS gesture for sensors).
-      if (prev === 1 && delta < 0) {
+      // Street + swipe/scroll up → live sky (sync call keeps iOS gesture for sensors).
+      if (prev === 0 && delta < 0) {
         buzz("step");
         onOpenSky();
         return;

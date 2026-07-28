@@ -293,7 +293,7 @@ export function OnyxApp({
                 Oracle
                 <span>Ask / research</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("sky")}>
+              <button type="button" className="onyx-tool-btn" onClick={openSky}>
                 Sky
                 <span>Live sky with object details</span>
               </button>

@@ -439,6 +439,34 @@
 .onyx-stone-track.quiet .onyx-stone svg { filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); }
 
 /* ── Sky ─────────────────────────────────────────────────────────────────── */
+/* Rise into the sky from the street (scroll-up metaphor). */
+.onyx-sky-enter {
+  animation: onyx-sky-rise 720ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+.onyx-sky-exit {
+  animation: onyx-sky-fall 480ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+@keyframes onyx-sky-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes onyx-sky-fall {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(12%);
+  }
+}
+
 .onyx-sky-device {
   background: radial-gradient(150% 110% at 50% 30%, var(--onyx-lit) 0%, var(--onyx-base) 55%, var(--onyx-void) 100%);
   overflow: hidden;
@@ -563,8 +591,9 @@
   letter-spacing: 0.1em; color: var(--onyx-ink-soft);
 }
 .onyx-tick.card { color: var(--onyx-core); font-weight: 500; }
+/* Sit just above the heading ribbon (not stranded under the coords). */
 .onyx-heading-mark {
-  position: absolute; left: 50%; top: 117px; transform: translateX(-50%); z-index: 8;
+  position: absolute; left: 50%; bottom: 154px; top: auto; transform: translateX(-50%); z-index: 8;
 }
 .onyx-filters {
   position: absolute; bottom: 66px; left: 0; right: 0; z-index: 8;
@@ -616,10 +645,19 @@
   animation: onyx-ret 6s ease-in-out infinite;
 }
 .onyx-sky-back {
-  position: absolute; top: 18px; left: 18px; z-index: 10;
-  background: none; border: 0.5px solid var(--onyx-edge); border-radius: 16px;
+  position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); left: 18px; z-index: 10;
+  background: rgba(6, 6, 10, 0.35); border: 0.5px solid var(--onyx-edge); border-radius: 16px;
   padding: 6px 12px; color: var(--onyx-ink-soft); font-family: inherit;
   font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: border-color var(--onyx-lift), color var(--onyx-lift), background var(--onyx-lift);
+}
+.onyx-sky-back:hover,
+.onyx-sky-back:focus-visible {
+  border-color: var(--onyx-edge-bright);
+  color: var(--onyx-ink-bright);
+  background: rgba(120, 108, 200, 0.12);
+  outline: none;
 }
 
 /* ── Overlay tools (rings / atlas / senses / oracle) ─────────────────────── */
