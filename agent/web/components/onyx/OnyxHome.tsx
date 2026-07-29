@@ -12,14 +12,15 @@ import {
   type HapticKind,
 } from "../../lib/haptics";
 import { claimMarkClass, streetMoonLine } from "./onyxCopy";
+import { OnyxCrystal } from "./OnyxCrystal";
 
 const REST = 3;
 const QUIET = 37;
 /** Street → Moment → Self. Scroll up from Street opens the live sky. */
 const MAX = 2;
 const HINTS = [
-  { c: "hold the hexagon", d: "↑ sky · ↓ you · → clock · ← cast" },
-  { c: "hold the hexagon", d: "↑ sky · ↓ you · → clock · ← cast" },
+  { c: "tilt the crystal", d: "↑ sky · ↓ you · → clock · ← cast" },
+  { c: "tilt the crystal", d: "↑ sky · ↓ you · → clock · ← cast" },
   { c: "", d: "swipe up to return" },
 ] as const;
 
@@ -27,34 +28,6 @@ type CompassAim = "up" | "down" | "left" | "right" | null;
 const COMPASS_LOCK_PX = 10;
 const COMPASS_AIM_PX = 42;
 const COMPASS_FOLLOW_MAX = 28;
-
-function MoonSvg() {
-  return (
-    <svg viewBox="0 0 150 150" fill="none" role="img" aria-label="Moon">
-      <defs>
-        <radialGradient id="onyx-mn" cx="50%" cy="42%" r="62%">
-          <stop offset="0%" stopColor="#c9c0ff" stopOpacity={0.95} />
-          <stop offset="55%" stopColor="#8a7bff" stopOpacity={0.8} />
-          <stop offset="100%" stopColor="#3a2f8f" stopOpacity={0.6} />
-        </radialGradient>
-        <linearGradient id="onyx-fc" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#b3a6ff" stopOpacity={0.7} />
-          <stop offset="50%" stopColor="#4b4570" stopOpacity={0.18} />
-          <stop offset="100%" stopColor="#8a7bff" stopOpacity={0.52} />
-        </linearGradient>
-      </defs>
-      <polygon
-        points="75,12 123,41 123,109 75,138 27,109 27,41"
-        fill="rgba(120,108,200,0.035)"
-        stroke="url(#onyx-fc)"
-        strokeWidth="1"
-      />
-      <circle cx="75" cy="75" r="25" fill="none" stroke="#8a7bff" strokeWidth="0.5" strokeOpacity={0.5} />
-      <path d="M75 52 a23 23 0 0 1 0 46 a17 26 0 0 0 0 -46" fill="url(#onyx-mn)" />
-      <circle cx="66" cy="64" r="5" fill="#d8d2ff" fillOpacity={0.4} />
-    </svg>
-  );
-}
 
 export type HeldCastChip = {
   id: string;
@@ -541,9 +514,7 @@ export function OnyxHome({
               />
             ))}
           </div>
-          <div className="onyx-moon">
-            <MoonSvg />
-          </div>
+          <OnyxCrystal />
         </div>
 
         <div className="onyx-vignette" />

@@ -195,16 +195,48 @@
   animation: onyx-tw var(--tw, 4s) ease-in-out infinite; animation-delay: var(--d, 0s);
 }
 
-.onyx-moon {
-  position: absolute; z-index: 2; left: 50%; top: 20%;
-  transform: translate(-50%, -50%); transition: all var(--onyx-deep-settle);
+/* Gimbal-linked octagonal onyx crystal — background presence, not a hero moon. */
+.onyx-crystal-stage {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+  perspective: 920px;
+  perspective-origin: 50% 46%;
+  transition: opacity var(--onyx-deep-settle);
 }
-.onyx-moon svg { display: block; filter: drop-shadow(0 0 26px rgba(140, 124, 255, 0.16)); }
+.onyx-crystal {
+  position: relative;
+  width: 148px;
+  height: 148px;
+  transform-style: preserve-3d;
+  will-change: transform;
+  filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(120, 108, 220, 0.18));
+}
+.onyx-crystal-glow {
+  position: absolute;
+  inset: 8% 12%;
+  border-radius: 28%;
+  background: radial-gradient(circle at 42% 38%, rgba(120, 108, 220, 0.28), transparent 68%);
+  filter: blur(10px);
+  opacity: 0.85;
+  transform: translateZ(-12px);
+}
+.onyx-crystal-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
 
-/* Moon art + chrome — depths: 0 Street, 1 Moment, 2 Self. */
-.onyx-device[data-depth="0"] .onyx-moon { top: 18%; width: 276px; height: 276px; opacity: 0.78; }
-.onyx-device[data-depth="1"] .onyx-moon { top: -2%; width: 354px; height: 354px; opacity: 0.3; }
-.onyx-device[data-depth="2"] .onyx-moon { top: -10%; width: 282px; height: 282px; opacity: 0.1; }
+/* Depths: 0 Street, 1 Moment, 2 Self — crystal recedes, never balloons. */
+.onyx-device[data-depth="0"] .onyx-crystal-stage { opacity: 0.72; }
+.onyx-device[data-depth="0"] .onyx-crystal { width: 148px; height: 148px; }
+.onyx-device[data-depth="1"] .onyx-crystal-stage { opacity: 0.34; }
+.onyx-device[data-depth="1"] .onyx-crystal { width: 128px; height: 128px; }
+.onyx-device[data-depth="2"] .onyx-crystal-stage { opacity: 0.14; }
+.onyx-device[data-depth="2"] .onyx-crystal { width: 112px; height: 112px; }
 .onyx-device[data-depth="0"] .onyx-vignette { opacity: 0.46; }
 .onyx-device[data-depth="1"] .onyx-vignette {
   opacity: 0.8;
