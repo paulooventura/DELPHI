@@ -80,6 +80,14 @@ describe("cast integrity — crypto draw + home isolation", () => {
     expect(r.positions).toEqual(["What was", "What is", "What leans forward"]);
   });
 
+  it("rune bag pull keeps the held question", () => {
+    const r = castRuneSpread("one", "  What should I tend?  ");
+    expect(r.drawn.length).toBe(1);
+    expect(r.question).toBe("What should I tend?");
+    expect(r.framing.frame).toMatch(/bag/i);
+    expect(castRuneSpread("one", "   ").question).toBeUndefined();
+  });
+
   it("no cast entry reaches the home chord", () => {
     const jd = jdFromDate(new Date("2026-07-24T18:00:00Z"));
     const { entries } = resolveMoment(jd, 36.16, -86.78);

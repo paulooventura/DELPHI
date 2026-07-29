@@ -1001,6 +1001,238 @@
   padding-top: 4px;
   width: 100%;
 }
+.onyx-cast-question {
+  margin: 8px 0 4px;
+  max-width: 28ch;
+  text-align: center;
+  font-family: var(--font-voice);
+  font-size: 15px;
+  line-height: 1.35;
+  color: var(--onyx-ink);
+}
+.onyx-cast-question span {
+  display: block;
+  margin-bottom: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-rune-bag,
+.onyx-coin-stage,
+.onyx-deck-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+.onyx-rune-question-label {
+  margin: 14px 0 6px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-rune-question {
+  width: 100%;
+  resize: vertical;
+  min-height: 72px;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid rgba(150, 128, 86, 0.4);
+  background: rgba(6, 3, 16, 0.55);
+  color: var(--onyx-ink);
+  font-family: var(--font-voice);
+  font-size: 15px;
+  line-height: 1.4;
+  touch-action: manipulation;
+}
+.onyx-rune-question::placeholder {
+  color: var(--onyx-ink-quiet);
+  opacity: 0.75;
+}
+.onyx-rune-question:disabled {
+  opacity: 0.65;
+}
+.onyx-gesture-surface {
+  margin-top: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 28px 18px 20px;
+  border-radius: 14px;
+  border: 1px solid rgba(150, 128, 86, 0.45);
+  background:
+    radial-gradient(ellipse 70% 55% at 50% 28%, rgba(70, 48, 110, 0.38), transparent 72%),
+    rgba(8, 4, 18, 0.82);
+  color: rgba(196, 174, 128, 0.95);
+  cursor: grab;
+  user-select: none;
+  touch-action: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+  will-change: transform;
+}
+.onyx-gesture-surface:active {
+  cursor: grabbing;
+}
+.onyx-gesture-surface.committing {
+  cursor: wait;
+  border-color: rgba(196, 174, 128, 0.75);
+  box-shadow: 0 0 28px rgba(120, 90, 40, 0.22);
+}
+.onyx-gesture-cta {
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--onyx-ink);
+  text-align: center;
+}
+.onyx-gesture-sub {
+  font-size: 11px;
+  color: var(--onyx-ink-quiet);
+  text-align: center;
+}
+.onyx-energy {
+  margin-top: 8px;
+  width: min(100%, 200px);
+  height: 3px;
+  border-radius: 2px;
+  background: rgba(150, 128, 86, 0.2);
+  overflow: hidden;
+}
+.onyx-energy-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(150, 128, 86, 0.45), rgba(210, 190, 150, 0.9));
+  transition: width 80ms linear;
+}
+.onyx-bag-surface.mode-shake .onyx-bag-glyph {
+  animation: onyx-rune-bag-shake 0.28s ease-in-out infinite;
+}
+.onyx-bag-surface.mode-rub .onyx-bag-glyph {
+  filter: brightness(1.08);
+}
+.onyx-bag-glyph {
+  display: block;
+  line-height: 0;
+  touch-action: none;
+}
+@keyframes onyx-rune-bag-shake {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  25% { transform: translate3d(-5px, 2px, 0) rotate(-5deg); }
+  50% { transform: translate3d(6px, -2px, 0) rotate(5deg); }
+  75% { transform: translate3d(-3px, 1px, 0) rotate(-3deg); }
+}
+
+/* I Ching coins */
+.onyx-coins {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  min-height: 88px;
+  margin-bottom: 4px;
+}
+.onyx-coin {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(196, 174, 128, 0.55);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(230, 210, 160, 0.35), transparent 45%),
+    linear-gradient(145deg, #8a6a2e 0%, #3a2a12 55%, #1a1208 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 230, 180, 0.25),
+    0 8px 18px rgba(0, 0, 0, 0.45);
+  transition: transform 120ms ease;
+}
+.onyx-coin.tails {
+  background:
+    radial-gradient(circle at 35% 30%, rgba(160, 150, 140, 0.25), transparent 45%),
+    linear-gradient(145deg, #5a5040 0%, #221c14 55%, #0e0b08 100%);
+}
+.onyx-coin-face {
+  font-size: 18px;
+  color: rgba(245, 230, 190, 0.85);
+  line-height: 1;
+}
+.onyx-coin-surface.phase-shake .onyx-coin {
+  animation: onyx-coin-rattle 0.16s ease-in-out infinite;
+}
+.onyx-coin.flying {
+  animation: onyx-coin-fly 0.78s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes onyx-coin-rattle {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(3px, -2px, 0) rotate(12deg); }
+}
+@keyframes onyx-coin-fly {
+  0% { transform: translateY(0) rotate(0deg) scale(1); }
+  40% { transform: translateY(-54px) rotate(220deg) scale(1.08); }
+  100% { transform: translateY(0) rotate(540deg) scale(1); }
+}
+
+/* Tarot deck glide */
+.onyx-deck {
+  position: relative;
+  width: min(100%, 220px);
+  height: 140px;
+  margin: 4px 0 10px;
+}
+.onyx-deck-card {
+  position: absolute;
+  left: 50%;
+  top: 18px;
+  width: 72px;
+  height: 108px;
+  margin-left: -36px;
+  border-radius: 7px;
+  border: 1px solid rgba(150, 128, 86, 0.5);
+  background:
+    linear-gradient(160deg, rgba(60, 40, 110, 0.55), transparent 55%),
+    linear-gradient(180deg, #1a1030 0%, #060310 100%);
+  box-shadow: 0 10px 22px rgba(0, 0, 0, 0.45);
+  transform-origin: 50% 90%;
+  transition: transform 60ms linear;
+}
+.onyx-deck-card::after {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(196, 174, 128, 0.22);
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      -28deg,
+      transparent,
+      transparent 3px,
+      rgba(196, 174, 128, 0.06) 3px,
+      rgba(196, 174, 128, 0.06) 4px
+    );
+}
+.onyx-deck-finger {
+  position: absolute;
+  top: 8px;
+  width: 14px;
+  height: 14px;
+  margin-left: -7px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(230, 210, 170, 0.85), rgba(150, 120, 70, 0.2) 70%, transparent);
+  box-shadow: 0 0 16px rgba(210, 180, 120, 0.35);
+  pointer-events: none;
+  transition: left 40ms linear;
+}
+.onyx-deck-surface.committing .onyx-deck-card:nth-child(4) {
+  animation: onyx-card-pull 0.55s ease forwards;
+}
+@keyframes onyx-card-pull {
+  to {
+    transform: translateY(48px) rotate(8deg) scale(1.05);
+    opacity: 0.15;
+  }
+}
 .onyx-cast-spread-grid {
   display: grid;
   grid-template-columns: 1fr;

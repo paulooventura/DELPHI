@@ -90,8 +90,8 @@ export const CAST_FRAMING: Record<
   },
   "rune-cast": {
     label: "Runes",
-    frame: "Elder Futhark, cast just now.",
-    note: "Full 24-rune Elder Futhark (rune poems). No blank rune. A cast is traditional; a rune 'zodiac' by birthdate is not.",
+    frame: "A rune, drawn from the bag.",
+    note: "Elder Futhark (24). Hold a question, reach into the bag, draw one stave. No blank rune. A cast is traditional; a rune 'zodiac' by birthdate is not.",
   },
   "orisha-cast": {
     label: "Orisha",
@@ -210,11 +210,11 @@ export type RuneSpread = {
 export const RUNE_SPREADS: RuneSpread[] = [
   {
     id: "one",
-    label: "One rune",
-    blurb: "A single stave from the Futhark.",
+    label: "From the bag",
+    blurb: "Ask, then draw one stave — the classic cast.",
     count: 1,
     positions: ["The rune"],
-    frame: "A rune, drawn just now.",
+    frame: "A rune, drawn from the bag for your question.",
   },
   {
     id: "norns",
@@ -222,7 +222,7 @@ export const RUNE_SPREADS: RuneSpread[] = [
     blurb: "What was · what is · what leans forward",
     count: 3,
     positions: ["What was", "What is", "What leans forward"],
-    frame: "Three runes — the Norns' cast.",
+    frame: "Three runes drawn from the bag — the Norns' cast.",
   },
 ];
 
@@ -255,6 +255,8 @@ export type CastResult = {
   positions?: string[];
   spreadId?: string;
   spreadLabel?: string;
+  /** Question held before the draw (runes / optional for others). */
+  question?: string;
   cowrieUp?: number;
   ichingLines?: number[];
   changingLines?: number[];
@@ -400,11 +402,15 @@ export function castIChingMode(_mode: IChingModeId): CastResult {
   return castIChingCoins();
 }
 
-export function castRuneSpread(spreadId: RuneSpreadId): CastResult {
+export function castRuneSpread(
+  spreadId: RuneSpreadId,
+  question?: string,
+): CastResult {
   const spread = RUNE_SPREADS.find(s => s.id === spreadId);
   if (!spread) throw new Error(`unknown rune spread: ${spreadId}`);
   const base = CAST_FRAMING["rune-cast"]!;
   const drawn = cast("rune-cast", spread.count);
+  const q = question?.trim() || undefined;
   return {
     system: "rune-cast",
     framing: { ...base, frame: spread.frame },
@@ -413,5 +419,6 @@ export function castRuneSpread(spreadId: RuneSpreadId): CastResult {
     positions: spread.positions,
     spreadId: spread.id,
     spreadLabel: spread.label,
+    question: q,
   };
 }

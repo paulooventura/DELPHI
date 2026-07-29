@@ -13,7 +13,6 @@ import {
   RUNE_SPREADS,
   TAROT_SPREADS,
   type CastResult,
-  type IChingModeId,
   type OrishaModeId,
   type RuneSpreadId,
   type TarotSpreadId,
@@ -22,10 +21,15 @@ import { embraceCast, type EmbracedCast } from "../../lib/lore/castStore";
 import { CAST_SYSTEMS } from "../../lib/lore/qualia";
 import { CastCard } from "./CastCard";
 import { CastGems, type CastGemChoice } from "./CastGems";
+import { CoinTossStage, RuneBagStage, TarotDeckStage } from "./CastGestureStages";
 
 const RITUAL_FADE_MS = 480;
 
 type Picker = "tarot" | "orisha" | "iching" | "rune" | null;
+type Gesture =
+  | { kind: "rune"; spreadId: RuneSpreadId; question: string; committing: boolean }
+  | { kind: "coins"; committing: boolean }
+  | { kind: "deck"; spreadId: TarotSpreadId; committing: boolean };
 
 /**
  * Side-door divination — tradition-faithful modes, honest framing.
@@ -40,6 +44,7 @@ export function OnyxCast({
 }) {
   const [result, setResult] = useState<CastResult | null>(null);
   const [picker, setPicker] = useState<Picker>(null);
+  const [gesture, setGesture] = useState<Gesture | null>(null);
   const [ritual, setRitual] = useState<{
     system: string;
     src: string;
@@ -79,6 +84,7 @@ export function OnyxCast({
     pendingRef.current = pending;
     setResult(null);
     setPicker(null);
+    setGesture(null);
     if (!src) {
       setResult(pending);
       pendingRef.current = null;
@@ -90,10 +96,29 @@ export function OnyxCast({
 
   function openTradition(system: string) {
     setResult(null);
+    setGesture(null);
     if (system === "tarot" || system === "tarot-major") setPicker("tarot");
     else if (system.startsWith("orisha")) setPicker("orisha");
     else if (system.startsWith("iching")) setPicker("iching");
     else if (system === "rune-cast") setPicker("rune");
+  }
+
+  function openRuneBag(spreadId: RuneSpreadId, question = "") {
+    setResult(null);
+    setPicker(null);
+    setGesture({ kind: "rune", spreadId, question, committing: false });
+  }
+
+  function openCoinToss() {
+    setResult(null);
+    setPicker(null);
+    setGesture({ kind: "coins", committing: false });
+  }
+
+  function openTarotDeck(spreadId: TarotSpreadId) {
+    setResult(null);
+    setPicker(null);
+    setGesture({ kind: "deck", spreadId, committing: false });
   }
 
   useEffect(() => {
@@ -186,15 +211,22 @@ export function OnyxCast({
                       : system === "rune-cast"
                         ? "rune"
                         : null;
-              const active = picker === pickerFor || result?.framing.label === framing?.label;
+              const gesturing =
+                (system === "rune-cast" && gesture?.kind === "rune") ||
+                (system === "iching-hexagram" && gesture?.kind === "coins") ||
+                (system === "tarot" && gesture?.kind === "deck");
+              const active =
+                picker === pickerFor ||
+                gesturing ||
+                result?.framing.label === framing?.label;
               const subtitle =
                 system === "tarot"
-                  ? "One · three · Celtic Cross · reversals"
+                  ? "Feel the deck · spreads · reversals"
                   : system === "orisha-cast"
                     ? "Sixteen cowries · Orisha names"
                     : system === "iching-hexagram"
-                      ? "Three-coin hexagram · changing lines"
-                      : "One rune · Norns three";
+                      ? "Shake & toss three coins"
+                      : "Ask · shake the bag · pull";
               return (
                 <button
                   key={system}
@@ -212,7 +244,7 @@ export function OnyxCast({
           {picker === "tarot" && (
             <ModePicker
               title="TAROT SPREAD"
-              hint="Full Rider-Waite-Smith. Each card may fall upright or reversed."
+              hint="Choose a spread, then run your finger along the deck."
               onBack={() => setPicker(null)}
             >
               {TAROT_SPREADS.map(s => (
@@ -220,7 +252,7 @@ export function OnyxCast({
                   key={s.id}
                   type="button"
                   className="onyx-tool-btn"
-                  onClick={() => runRitual(castTarotSpread(s.id as TarotSpreadId))}
+                  onClick={() => openTarotDeck(s.id as TarotSpreadId)}
                 >
                   {s.label}
                   <span>{s.blurb}</span>
@@ -252,7 +284,7 @@ export function OnyxCast({
           {picker === "iching" && (
             <ModePicker
               title="I CHING METHOD"
-              hint="Coins build six lines bottom-to-top. Changing lines open a relating hexagram."
+              hint="Three coins in the hand. Shake, then toss — changing lines when they appear."
               onBack={() => setPicker(null)}
             >
               {ICHING_MODES.map(m => (
@@ -260,7 +292,7 @@ export function OnyxCast({
                   key={m.id}
                   type="button"
                   className="onyx-tool-btn"
-                  onClick={() => runRitual(castIChingMode(m.id as IChingModeId))}
+                  onClick={() => openCoinToss()}
                 >
                   {m.label}
                   <span>{m.blurb}</span>
@@ -272,7 +304,7 @@ export function OnyxCast({
           {picker === "rune" && (
             <ModePicker
               title="RUNE CAST"
-              hint="Elder Futhark — twenty-four staves. No blank rune."
+              hint="Hold a question. Shake, tap, or rub the bag — then pull."
               onBack={() => setPicker(null)}
             >
               {RUNE_SPREADS.map(s => (
@@ -280,7 +312,7 @@ export function OnyxCast({
                   key={s.id}
                   type="button"
                   className="onyx-tool-btn"
-                  onClick={() => runRitual(castRuneSpread(s.id as RuneSpreadId))}
+                  onClick={() => openRuneBag(s.id as RuneSpreadId)}
                 >
                   {s.label}
                   <span>{s.blurb}</span>
@@ -289,12 +321,74 @@ export function OnyxCast({
             </ModePicker>
           )}
 
+          {gesture?.kind === "rune" && (
+            <RuneBagStage
+              spreadId={gesture.spreadId}
+              question={gesture.question}
+              committing={gesture.committing}
+              onQuestion={q =>
+                setGesture(g => (g?.kind === "rune" ? { ...g, question: q } : g))
+              }
+              onCommit={() => {
+                const g = gesture;
+                if (g.kind !== "rune" || g.committing) return;
+                setGesture({ ...g, committing: true });
+                runRitual(castRuneSpread(g.spreadId, g.question));
+              }}
+              onBack={() => {
+                if (gesture.committing) return;
+                setGesture(null);
+                setPicker("rune");
+              }}
+            />
+          )}
+
+          {gesture?.kind === "coins" && (
+            <CoinTossStage
+              committing={gesture.committing}
+              onCommit={() => {
+                if (gesture.committing) return;
+                setGesture({ kind: "coins", committing: true });
+                runRitual(castIChingMode("coins"));
+              }}
+              onBack={() => {
+                if (gesture.committing) return;
+                setGesture(null);
+                setPicker("iching");
+              }}
+            />
+          )}
+
+          {gesture?.kind === "deck" && (
+            <TarotDeckStage
+              spreadId={gesture.spreadId}
+              committing={gesture.committing}
+              onCommit={() => {
+                const g = gesture;
+                if (g.kind !== "deck" || g.committing) return;
+                setGesture({ ...g, committing: true });
+                runRitual(castTarotSpread(g.spreadId));
+              }}
+              onBack={() => {
+                if (gesture.committing) return;
+                setGesture(null);
+                setPicker("tarot");
+              }}
+            />
+          )}
+
           {result && (
             <div className="onyx-cast-result">
               <p className="onyx-eyebrow">
                 {result.framing.label}
                 {result.spreadLabel ? ` · ${result.spreadLabel}` : ""}
               </p>
+              {result.question && (
+                <p className="onyx-cast-question">
+                  <span>You asked</span>
+                  {result.question}
+                </p>
+              )}
               <p className="onyx-cast-frame">{result.framing.frame}</p>
 
               {result.cowrieUp != null && (
@@ -358,7 +452,6 @@ export function OnyxCast({
                       qualities,
                       spreadLabel: result.spreadLabel,
                     });
-                    // Parent retunes the home moment and returns — do not double-navigate.
                     if (onEmbraced) onEmbraced(list);
                     else onBack();
                     return;
@@ -367,18 +460,16 @@ export function OnyxCast({
                     setResult(null);
                     return;
                   }
-                  // Yellow — change: same mode again.
                   const sid = result.spreadId;
                   if (result.framing.label === "Tarot" && sid)
-                    runRitual(castTarotSpread(sid as TarotSpreadId));
+                    openTarotDeck(sid as TarotSpreadId);
                   else if (result.framing.label === "Orisha" && sid)
                     runRitual(castOrishaMode(sid as OrishaModeId));
-                  else if (result.framing.label === "I Ching" && sid)
-                    runRitual(castIChingMode(sid as IChingModeId));
+                  else if (result.framing.label === "I Ching")
+                    openCoinToss();
                   else if (result.framing.label === "Runes" && sid)
-                    runRitual(castRuneSpread(sid as RuneSpreadId));
-                  else
-                    openTradition(result.system);
+                    openRuneBag(sid as RuneSpreadId, result.question ?? "");
+                  else openTradition(result.system);
                 }}
               />
               <p className="onyx-cast-gem-hint">

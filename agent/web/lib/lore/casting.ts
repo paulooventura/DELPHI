@@ -224,14 +224,16 @@ export const NARRATION: Record<Phase, Record<Realm | "common", string[]>> = {
     ],
     tarot: ["Choose your spread. The deck holds seventy-eight cards."],
     iching: ["You'll cast a hexagram — six lines, built from the ground up."],
-    runes: ["Choose how the runes will come to you — drawn, or cast across the cloth."],
+    runes: [
+      "Hold your question. Reach into the bag — one stave (or three for the Norns) leaves the pouch.",
+    ],
     orisha: ["Sixteen cowries will be cast — a reflection in the spirit of the tradition, not a babalawo's reading."],
   },
   during: {
     common: ["Touch yellow to slow down. Touch red to let it go."],
     tarot: ["The deck is shuffled. Cards are laid into their positions…"],
     iching: ["Three coins, thrown six times. Each throw builds one line, from the ground up…"],
-    runes: ["The runes are cast. Where they fall, and which face the light, is the reading…"],
+    runes: ["Your hand is in the bag. The stave that finds your fingers is the reading…"],
     orisha: ["The cowries are cast onto the mat. We count how many open to the sky…"],
   },
   after: {
