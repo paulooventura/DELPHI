@@ -38,9 +38,14 @@ type Gesture =
 export function OnyxCast({
   onBack,
   onEmbraced,
+  held = [],
+  onResetHeld,
 }: {
   onBack: () => void;
   onEmbraced?: (list: EmbracedCast[]) => void;
+  /** Currently held (embraced) draws — for reset without leaving CAST. */
+  held?: EmbracedCast[];
+  onResetHeld?: () => void;
 }) {
   const [result, setResult] = useState<CastResult | null>(null);
   const [picker, setPicker] = useState<Picker>(null);
@@ -197,6 +202,34 @@ export function OnyxCast({
             Choose a tradition rooted in its own method — crypto-random, never the sky clock. Off by
             default.
           </p>
+
+          {held.length > 0 && !result && !picker && !gesture && (
+            <div className="onyx-cast-held">
+              <div className="onyx-held-head">
+                <p className="onyx-held-eyebrow">
+                  Holding {held.length} draw{held.length === 1 ? "" : "s"}
+                </p>
+                {onResetHeld && (
+                  <button type="button" className="onyx-held-reset" onClick={onResetHeld}>
+                    Reset divinations
+                  </button>
+                )}
+              </div>
+              <ul className="onyx-cast-held-list">
+                {held.slice(0, 5).map(h => (
+                  <li key={h.id}>
+                    <b>{h.label}</b>
+                    {" · "}
+                    {h.names.slice(0, 2).join(" · ")}
+                    {h.names.length > 2 ? "…" : ""}
+                  </li>
+                ))}
+              </ul>
+              <p className="onyx-cast-gem-hint">
+                Reset clears every held draw from the moment. Red gem only drops the current reveal.
+              </p>
+            </div>
+          )}
 
           <div className="onyx-tools-grid">
             {CAST_SYSTEMS.map(system => {

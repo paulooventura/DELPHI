@@ -51,9 +51,19 @@ export function saveEmbraced(list: EmbracedCast[]): void {
   }
 }
 
-export function clearEmbraced(): void {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem(KEY);
+/** Clear every held draw. Returns empty list for state updates. */
+export function clearEmbraced(): EmbracedCast[] {
+  if (typeof window !== "undefined") {
+    localStorage.removeItem(KEY);
+  }
+  return [];
+}
+
+/** Drop one held draw by id. */
+export function releaseEmbraced(id: string): EmbracedCast[] {
+  const list = loadEmbraced().filter(e => e.id !== id);
+  saveEmbraced(list);
+  return list;
 }
 
 /** Newest first. */

@@ -20,9 +20,9 @@ const QUIET = 37;
 /** Street → Moment → Self. Scroll up from Street opens the live sky. */
 const MAX = 2;
 const HINTS = [
-  { c: "tilt the crystal", d: "↑ sky · ↓ you · → clock · ← cast" },
-  { c: "tilt the crystal", d: "↑ sky · ↓ you · → clock · ← cast" },
-  { c: "", d: "swipe up to return" },
+  "↑ sky · ↓ you · → clock · ← cast",
+  "↑ sky · ↓ you · → clock · ← cast",
+  "swipe up to return",
 ] as const;
 
 type CompassAim = "up" | "down" | "left" | "right" | null;
@@ -63,6 +63,10 @@ export type OnyxHomeProps = {
   landAcknowledgment?: { text: string; people: string; pointTo?: string } | null;
   /** Embraced casts — labeled strip; folds into with-drawn when that layer is active. */
   heldCasts?: HeldCastChip[];
+  /** Clear every held divination. */
+  onResetHeld?: () => void;
+  /** Release one held draw by id. */
+  onReleaseHeld?: (id: string) => void;
   onOpenSky: () => void;
   onOpenRings: () => void;
   onOpenTools: () => void;
@@ -89,6 +93,8 @@ export function OnyxHome({
   landCalendarLine,
   landAcknowledgment,
   heldCasts = [],
+  onResetHeld,
+  onReleaseHeld,
   onOpenSky,
   onOpenRings,
   onOpenTools,
@@ -613,28 +619,14 @@ export function OnyxHome({
               </div>
             )}
             {heldCasts.length > 0 && (
-              <div className="onyx-held">
-                <p className="onyx-held-eyebrow">Held · embraced cast</p>
-                <div className="onyx-held-row">
-                  {heldCasts.map(h => (
-                    <button
-                      key={h.id}
-                      type="button"
-                      className="onyx-held-chip"
-                      onClick={e => {
-                        e.stopPropagation();
-                        buzz("tick");
-                        onOpenCast?.();
-                      }}
-                    >
-                      <b>{h.label}</b>
-                      {" · "}
-                      {h.names.slice(0, 2).join(" · ")}
-                      {h.names.length > 2 ? "…" : ""}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              <HeldStrip
+                casts={heldCasts}
+                eyebrow="Held · embraced cast"
+                onOpenCast={onOpenCast}
+                onResetHeld={onResetHeld}
+                onReleaseHeld={onReleaseHeld}
+                buzz={buzz}
+              />
             )}
           </div>
         </div>
@@ -698,28 +690,14 @@ export function OnyxHome({
           )}
           <p className="now">{momentLine}</p>
           {heldCasts.length > 0 && (
-            <div className="onyx-held">
-              <p className="onyx-held-eyebrow">Held · not the sky clock</p>
-              <div className="onyx-held-row">
-                {heldCasts.map(h => (
-                  <button
-                    key={h.id}
-                    type="button"
-                    className="onyx-held-chip"
-                    onClick={e => {
-                      e.stopPropagation();
-                      buzz("tick");
-                      onOpenCast?.();
-                    }}
-                  >
-                    <b>{h.label}</b>
-                    {" · "}
-                    {h.names.slice(0, 2).join(" · ")}
-                    {h.names.length > 2 ? "…" : ""}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <HeldStrip
+              casts={heldCasts}
+              eyebrow="Held · not the sky clock"
+              onOpenCast={onOpenCast}
+              onResetHeld={onResetHeld}
+              onReleaseHeld={onReleaseHeld}
+              buzz={buzz}
+            />
           )}
           {onOpenWhy && (
             <button
@@ -842,9 +820,6 @@ export function OnyxHome({
         </div>
 
         <div className={`onyx-compass-wrap${compassLocked ? " holding" : ""}`}>
-          <span className="onyx-chint" style={{ opacity: HINTS[depth].c && !compassLocked ? 1 : 0 }}>
-            {HINTS[depth].c}
-          </span>
           <div className="onyx-compass-stage">
             <div className="onyx-compass-dirs" aria-hidden>
               <span className={`d-up${compassAim === "up" ? " on" : ""}`}>sky</span>
@@ -891,8 +866,79 @@ export function OnyxHome({
         </div>
 
         <p className="onyx-descend" style={{ opacity: compassLocked ? 0.35 : 1 }}>
-          {HINTS[depth].d}
+          {HINTS[depth]}
         </p>
+      </div>
+    </div>
+  );
+}
+
+function HeldStrip({
+  casts,
+  eyebrow,
+  onOpenCast,
+  onResetHeld,
+  onReleaseHeld,
+  buzz,
+}: {
+  casts: HeldCastChip[];
+  eyebrow: string;
+  onOpenCast?: () => void;
+  onResetHeld?: () => void;
+  onReleaseHeld?: (id: string) => void;
+  buzz: (kind: HapticKind) => void;
+}) {
+  return (
+    <div className="onyx-held">
+      <div className="onyx-held-head">
+        <p className="onyx-held-eyebrow">{eyebrow}</p>
+        {onResetHeld && (
+          <button
+            type="button"
+            className="onyx-held-reset"
+            onClick={e => {
+              e.stopPropagation();
+              buzz("tick");
+              onResetHeld();
+            }}
+          >
+            Reset
+          </button>
+        )}
+      </div>
+      <div className="onyx-held-row">
+        {casts.map(h => (
+          <span key={h.id} className="onyx-held-chip-wrap">
+            <button
+              type="button"
+              className="onyx-held-chip"
+              onClick={e => {
+                e.stopPropagation();
+                buzz("tick");
+                onOpenCast?.();
+              }}
+            >
+              <b>{h.label}</b>
+              {" · "}
+              {h.names.slice(0, 2).join(" · ")}
+              {h.names.length > 2 ? "…" : ""}
+            </button>
+            {onReleaseHeld && (
+              <button
+                type="button"
+                className="onyx-held-release"
+                aria-label={`Release ${h.label}`}
+                onClick={e => {
+                  e.stopPropagation();
+                  buzz("tick");
+                  onReleaseHeld(h.id);
+                }}
+              >
+                ×
+              </button>
+            )}
+          </span>
+        ))}
       </div>
     </div>
   );

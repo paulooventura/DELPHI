@@ -19,7 +19,12 @@ import {
   writeCachedPhrase,
 } from "../../lib/lore/distillPhrase";
 import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
-import { loadEmbraced, type EmbracedCast } from "../../lib/lore/castStore";
+import {
+  clearEmbraced,
+  loadEmbraced,
+  releaseEmbraced,
+  type EmbracedCast,
+} from "../../lib/lore/castStore";
 import { natalGalactic, resolvePerson } from "../../lib/lore/resolvePerson";
 import { byId } from "../../lib/lore/qualia";
 import { DashboardContainer } from "../DashboardContainer";
@@ -138,6 +143,11 @@ export function OnyxApp({
     setBirth(loadBirth());
     setEmbraced(loadEmbraced());
   }, []);
+
+  function resetHeldDivinations() {
+    setEmbraced(clearEmbraced());
+    setActiveLayerChoice(prev => (prev === "with-drawn" ? undefined : prev));
+  }
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
 
@@ -427,15 +437,22 @@ export function OnyxApp({
     );
   }
 
+  function resetHeldDivinations() {
+    setEmbraced(clearEmbraced());
+    setActiveLayerChoice(prev => (prev === "with-drawn" ? undefined : prev));
+  }
+
   if (mode === "cast") {
     return (
       <OnyxCast
         onBack={() => setMode("home")}
+        held={embraced}
         onEmbraced={list => {
           setEmbraced(list);
           setActiveLayerChoice(undefined); // deepen to with-drawn
           setMode("home");
         }}
+        onResetHeld={resetHeldDivinations}
       />
     );
   }
@@ -531,6 +548,16 @@ export function OnyxApp({
       landCalendarLine={landCalendarLine}
       landAcknowledgment={landAcknowledgment}
       heldCasts={embraced.slice(0, 3)}
+      onResetHeld={() => {
+        resetHeldDivinations();
+      }}
+      onReleaseHeld={id => {
+        const next = releaseEmbraced(id);
+        setEmbraced(next);
+        if (next.length === 0) {
+          setActiveLayerChoice(prev => (prev === "with-drawn" ? undefined : prev));
+        }
+      }}
       onOpenSky={openSky}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}
