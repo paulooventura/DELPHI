@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
   activeCellCenterX,
   computeOrreryState,
+  discreteScrollStartX,
   GHATI_MS,
   laneColor,
+  laneMotion,
   laneScrollStartX,
 } from "./orreryLanes";
 import { computeSolarDayEvents } from "../cosmic/astronomy";
@@ -48,17 +50,41 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(ph.activeLabel.toLowerCase()).toMatch(/hour|saturn|jupiter|mars|sun|venus|mercury|moon/);
   });
 
-  it("now-line bisects the active cell at mid-progress (no half-cell left bias)", () => {
+  it("phase offset vs fixed now-line is the reading (not force-centered)", () => {
     const nowX = 200;
     const cellW = 80;
-    // Mid-unit → cell centered on the line
+    // progress 0 → left edge on the line (unit just began)
+    const startLeft = laneScrollStartX(nowX, 3, 0, cellW) + 3 * cellW;
+    expect(startLeft).toBeCloseTo(nowX, 6);
+    // progress 0.5 → cell bisected (halfway) — a reading, not a layout goal
     expect(activeCellCenterX(nowX, 0.5, cellW)).toBeCloseTo(nowX, 6);
-    // Start of unit → left edge on the line
-    const startX = laneScrollStartX(nowX, 3, 0, cellW);
-    expect(startX + 3 * cellW).toBeCloseTo(nowX, 6);
-    // End of unit → right edge on the line
+    // progress 1 → right edge on the line (about to end)
     const endLeft = laneScrollStartX(nowX, 3, 1, cellW) + 3 * cellW;
     expect(endLeft + cellW).toBeCloseTo(nowX, 6);
+    // Mid-progress must NOT snap left edge to the line
+    const midLeft = laneScrollStartX(nowX, 3, 0.5, cellW) + 3 * cellW;
+    expect(midLeft).toBeCloseTo(nowX - cellW / 2, 6);
+  });
+
+  it("classifies continuous glide vs discrete-tick escapement lanes", () => {
+    expect(laneMotion("ms")).toBe("continuous");
+    expect(laneMotion("sec")).toBe("continuous");
+    expect(laneMotion("min")).toBe("continuous");
+    expect(laneMotion("ghati")).toBe("continuous");
+    expect(laneMotion("day")).toBe("continuous");
+    expect(laneMotion("planetary-hour")).toBe("discrete-tick");
+    expect(laneMotion("shi")).toBe("discrete-tick");
+    expect(laneMotion("muhurta")).toBe("discrete-tick");
+    expect(laneMotion("pancawara")).toBe("discrete-tick");
+    expect(laneMotion("wuku-tzolkin")).toBe("discrete-tick");
+    expect(laneMotion("moon")).toBe("discrete-tick");
+    expect(laneMotion("season")).toBe("discrete-tick");
+  });
+
+  it("discrete hold parks left edge on the now-line until the next tick", () => {
+    const nowX = 200;
+    const cellW = 80;
+    expect(discreteScrollStartX(nowX, 5, cellW) + 5 * cellW).toBeCloseTo(nowX, 6);
   });
 
   it("Nashville 5:30 PM CDT 2026-07-29 — ghati ~29 from sunrise, not ~44 from midnight", () => {

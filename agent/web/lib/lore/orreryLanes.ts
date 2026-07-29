@@ -1,6 +1,9 @@
 /**
  * Orrery lane math — true cycle progress for the stacked-lanes clock (CLOCK-SPEC).
- * Progress is 0..1 within the current cell; index is the cell at the now-line.
+ *
+ * Fixed now-line at screen center. Cells scroll right→left through it; a cell's
+ * offset relative to the line IS the reading (phase within the cycle).
+ * Do not center the active cell — that destroys phase information.
  */
 
 import { computeSolarDayEvents } from "../cosmic/astronomy";
@@ -13,9 +16,11 @@ import { resolveMoment } from "./resolveMoment";
 export const GHATI_MS = 24 * 60 * 1000;
 
 /**
- * Horizontal scroll origin for a lane strip.
- * Active cell left edge = nowX − progress·cellW, so at progress 0.5 the
- * glowing cell is bisected by the now-line.
+ * Horizontal scroll origin for a continuous lane strip (cells move left).
+ * Phase at the fixed now-line:
+ *   progress 0   → active left edge on the line (unit just began)
+ *   progress 0.5 → active cell centered (halfway)
+ *   progress 1   → active right edge on the line (about to end)
  */
 export function laneScrollStartX(
   nowX: number,
@@ -26,7 +31,19 @@ export function laneScrollStartX(
   return nowX - (index + progress) * cellW;
 }
 
-/** Center X of the active cell under the now-line convention. */
+/**
+ * Scroll origin while a discrete-tick lane holds (or springs) at unwrapped index.
+ * Settled: active left edge on the now-line — cell in force until the next tick.
+ */
+export function discreteScrollStartX(
+  nowX: number,
+  unwrappedIndex: number,
+  cellW: number,
+): number {
+  return nowX - unwrappedIndex * cellW;
+}
+
+/** Center X of the active cell for a given progress (phase helper, not a layout goal). */
 export function activeCellCenterX(nowX: number, progress: number, cellW: number): number {
   return nowX + (0.5 - progress) * cellW;
 }
@@ -47,6 +64,26 @@ export type OrreryLaneId =
   | "wuku-tzolkin"
   | "season";
 
+/**
+ * Motion class for a lane.
+ * - continuous: smooth leftward glide at true rate (time flowing)
+ * - discrete-tick: hold cell, spring-snap on cycle tick (escapement)
+ */
+export type OrreryMotion = "continuous" | "discrete-tick";
+
+/** Time-flowing lanes — uninterrupted glide through the now-line. */
+export const CONTINUOUS_LANE_IDS: readonly OrreryLaneId[] = [
+  "ms",
+  "sec",
+  "min",
+  "ghati",
+  "day",
+];
+
+export function laneMotion(id: OrreryLaneId): OrreryMotion {
+  return CONTINUOUS_LANE_IDS.includes(id) ? "continuous" : "discrete-tick";
+}
+
 export type OrreryCell = {
   id: string;
   label: string;
@@ -61,9 +98,9 @@ export type OrreryLaneState = {
   tier: LaneTier;
   /** Colour key for the red→blue speed gradient (0 = fastest/red, 1 = slowest/blue). */
   speedT: number;
-  /** Index of the cell under the now-line. */
+  /** Index of the active cell (the unit currently in force). */
   index: number;
-  /** 0..1 progress through the current cell. */
+  /** 0..1 phase through the current cell — drives continuous scroll offset. */
   progress: number;
   cells: OrreryCell[];
   /** Active cell label (now-line). */

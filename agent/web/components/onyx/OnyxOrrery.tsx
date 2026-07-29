@@ -1,16 +1,21 @@
 "use client";
 
 /**
- * Live stacked-lanes orrery — CLOCK-SPEC + spring-mechanism motion.
- * Discrete lanes settle with a damped spring (fast twitch / slow heave).
- * Millisecond lane stays a continuous gradient sweep — no spring.
+ * Live stacked-lanes orrery — fixed now-line, phase-through-the-line motion.
+ *
+ * Continuous lanes (ms/sec/min/ghati/day): smooth leftward glide at true rate.
+ * Discrete-tick lanes: hold, then spring-snap on cycle tick (escapement).
+ * The offset of a cell vs the line is the reading — never force-center.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
 import {
   computeOrreryState,
+  discreteScrollStartX,
   laneColor,
+  laneMotion,
+  laneScrollStartX,
   type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
@@ -97,6 +102,7 @@ export function OnyxOrrery({
       const padTop = 8;
       const slowH = 52;
       const laneGap = 2;
+      // Single shared centerline for every lane — fixed, unmoving.
       const nowX = w * 0.5;
       const avail = h - padTop - slowH - 8;
       const laneH = Math.max(18, (avail - laneGap * (lanes.length - 1)) / lanes.length);
@@ -130,6 +136,7 @@ export function OnyxOrrery({
         const y1 = y + laneH;
         hits.push({ y0, y1, id: lane.id });
 
+        const motion = laneMotion(lane.id);
         const isMs = lane.id === "ms";
         const isFast = lane.speedT < 0.25;
         const band = laneColor(lane.speedT, lane.tier === "measured" ? 0.2 : 0.14);
@@ -139,11 +146,12 @@ export function OnyxOrrery({
         const cellW = isFast ? 28 : Math.max(52, Math.min(88, (w - padX * 2) / 5.5));
         const n = lane.cells.length || 1;
 
-        let scrollPos: number;
-        if (isMs) {
-          // Continuous gradient sweep — no spring
-          scrollPos = lane.index + lane.progress;
+        let startX: number;
+        if (motion === "continuous") {
+          // True-rate glide — phase offset is the reading
+          startX = laneScrollStartX(nowX, lane.index, lane.progress, cellW);
         } else {
+          // Hold until tick, then spring-snap one cell (escapement)
           let spring = springs.get(lane.id);
           if (!spring || spring.n !== n) {
             spring = createLaneSpring(lane.index, n);
@@ -151,34 +159,32 @@ export function OnyxOrrery({
           }
           retargetSpring(spring, lane.index, n);
 
-          // Restraint cue: now-line brightens just before a fast lane releases
-          if (lane.speedT < 0.22 && lane.progress > 0.9) {
-            nowPulseRef.current = Math.max(nowPulseRef.current, 0.55 + lane.progress * 0.35);
+          // Restraint cue: faint now-line brighten just before a discrete release
+          if (lane.progress > 0.9) {
+            nowPulseRef.current = Math.max(
+              nowPulseRef.current,
+              0.45 + lane.progress * 0.4,
+            );
           }
 
           const justSettled = stepSpring(spring, lane.speedT, dt);
-          if (
-            justSettled &&
-            hapticsRef.current &&
-            !hapticsMuted() &&
-            lane.speedT < 0.85 // skip ultra-slow seasons for tick spam
-          ) {
+          if (justSettled && hapticsRef.current && !hapticsMuted()) {
             void pulseHaptic("tick");
           }
-          // Settled: cell centered on now-line (pos + 0.5 in startX math)
-          scrollPos = spring.pos + 0.5;
+          startX = discreteScrollStartX(nowX, spring.pos, cellW);
         }
 
-        const startX = nowX - scrollPos * cellW;
         const first = Math.floor((-startX - cellW) / cellW);
         const last = Math.ceil((w - startX) / cellW) + 1;
+        // Cell geometrically under the fixed now-line
+        const underLine = mod(Math.floor((nowX - startX) / cellW), n);
 
         for (let k = first; k <= last; k++) {
           const ci = mod(k, n);
           const x = startX + k * cellW;
           if (x + cellW < 0 || x > w) continue;
           const cell = lane.cells[ci]!;
-          const atNow = ci === lane.index;
+          const atNow = ci === underLine;
 
           if (isMs) {
             const g = ctx.createLinearGradient(x, y0, x + cellW, y0);
@@ -240,7 +246,7 @@ export function OnyxOrrery({
       }
       hitRef.current = hits;
 
-      // Now-line — faint brighter pulse as stored tension before a fast release
+      // Fixed now-line — shared centerline; faint pulse as discrete tension cue
       const pulse = nowPulseRef.current;
       const lineA = 0.75 + pulse * 0.25;
       ctx.strokeStyle = `rgba(200, 190, 255, ${lineA})`;

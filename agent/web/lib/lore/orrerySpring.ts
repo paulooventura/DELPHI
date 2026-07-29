@@ -1,7 +1,7 @@
 /**
- * Clockwork spring — underdamped settle for orrery lane advances.
- * Fast lanes (speedT→0): high stiffness, twitchy. Slow (speedT→1): heavy flywheel.
- * Target ~3–6% overshoot, quick settle. Not used on the continuous ms lane.
+ * Escapement spring — underdamped snap when a discrete-tick lane advances.
+ * Settles onto the next integer index (hold position), not onto cell-center.
+ * Fast lanes: high stiffness. Slow lanes: heavy flywheel. ~3–6% overshoot.
  */
 
 export type LaneSpring = {
@@ -53,10 +53,7 @@ export function wrapDelta(from: number, to: number, n: number): number {
 export function retargetSpring(s: LaneSpring, nextIndex: number, n: number): void {
   s.n = Math.max(1, n);
   const next = ((nextIndex % s.n) + s.n) % s.n;
-  if (next === s.lastIndex) {
-    // Keep target pinned to the unwrapped index nearest pos that maps to next
-    return;
-  }
+  if (next === s.lastIndex) return;
   const step = wrapDelta(s.lastIndex, next, s.n);
   s.target = s.target + step;
   s.lastIndex = next;
