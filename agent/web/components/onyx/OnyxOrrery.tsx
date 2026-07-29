@@ -110,12 +110,12 @@ export function OnyxOrrery({
         ctx.fillStyle = band;
         ctx.fillRect(padX, y0, w - padX * 2, laneH);
 
-        // Cell strip — scroll so active cell center sits on now-line
+        // Cell strip — now-line bisects the active cell by progress:
+        // progress 0 → left edge on the line; 0.5 → cell centered; 1 → right edge.
+        // (Previously an extra −cellW/2 shoved every lane ~half a cell left.)
         const cellW = isFast ? 28 : Math.max(52, Math.min(88, (w - padX * 2) / 5.5));
         const n = lane.cells.length || 1;
-        const offset = (lane.index + lane.progress) * cellW;
-        // Draw cells centered on now-line
-        const startX = nowX - offset - cellW / 2;
+        const startX = nowX - (lane.index + lane.progress) * cellW;
         const first = Math.floor((-startX - cellW) / cellW);
         const last = Math.ceil((w - startX) / cellW) + 1;
 

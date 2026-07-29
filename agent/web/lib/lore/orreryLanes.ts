@@ -3,10 +3,33 @@
  * Progress is 0..1 within the current cell; index is the cell at the now-line.
  */
 
+import { computeSolarDayEvents } from "../cosmic/astronomy";
 import { muhurtaPhase } from "../cosmic/math";
 import { jdFromDate } from "../phase/timeResolution";
 import { QUALIA, byId } from "./qualia";
 import { resolveMoment } from "./resolveMoment";
+
+/** 1 ghati = 24 minutes. Zero-point is local sunrise, not midnight. */
+export const GHATI_MS = 24 * 60 * 1000;
+
+/**
+ * Horizontal scroll origin for a lane strip.
+ * Active cell left edge = nowX − progress·cellW, so at progress 0.5 the
+ * glowing cell is bisected by the now-line.
+ */
+export function laneScrollStartX(
+  nowX: number,
+  index: number,
+  progress: number,
+  cellW: number,
+): number {
+  return nowX - (index + progress) * cellW;
+}
+
+/** Center X of the active cell under the now-line convention. */
+export function activeCellCenterX(nowX: number, progress: number, cellW: number): number {
+  return nowX + (0.5 - progress) * cellW;
+}
 
 export type LaneTier = "measured" | "celebrated" | "display";
 
@@ -155,9 +178,17 @@ export function computeOrreryState(
   const wukuProg = (pawukon % 7) / 7 + dayFrac / 7;
   const pancaIndex = Math.max(0, meta.pancawara - 1);
   const pancaProg = dayFrac; // advances with the civil day
-  const ghatiFloat = dayFrac * 60; // 60 ghatis / day
-  const ghatiIndex = Math.floor(ghatiFloat) % 60;
-  const ghatiProg = ghatiFloat - Math.floor(ghatiFloat);
+
+  // Ghati — 60 × 24 min from local sunrise (not midnight).
+  const solarToday = computeSolarDayEvents(date, lat, lon);
+  let sunrise = solarToday.sunrise;
+  if (date.getTime() < sunrise.getTime()) {
+    const prevDay = new Date(date.getTime() - 86_400_000);
+    sunrise = computeSolarDayEvents(prevDay, lat, lon).sunrise;
+  }
+  const ghatiFloat = (date.getTime() - sunrise.getTime()) / GHATI_MS;
+  const ghatiIndex = Math.floor(mod(ghatiFloat, 60));
+  const ghatiProg = mod(ghatiFloat, 1);
 
   // Display order: north (slow) → south (fast). speedT 1 = blue/north, 0 = red/south.
   const lanesNorthToSouth: OrreryLaneState[] = [
@@ -273,7 +304,7 @@ export function computeOrreryState(
         label: `G ${i + 1}`,
       })),
       activeLabel: `Ghati ${ghatiIndex + 1}`,
-      source: "Vedic ghati — 60 divisions of the day (~24 min)",
+      source: "Vedic ghati — 60 × ~24 min from local sunrise (not midnight)",
     },
     {
       id: "min",
