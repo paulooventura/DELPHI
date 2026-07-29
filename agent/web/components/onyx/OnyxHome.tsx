@@ -144,16 +144,6 @@ export function OnyxHome({
   );
 
   const moon = streetMoonLine(phaseFraction);
-  const eyebrow = now
-    .toLocaleString([], {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-      hour: "numeric",
-      minute: "2-digit",
-    })
-    .toUpperCase()
-    .replace(",", " ·");
   const clockLabel = now.toLocaleString([], {
     weekday: "short",
     day: "numeric",
@@ -592,7 +582,6 @@ export function OnyxHome({
         {/* 0 STREET */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
           <div className="onyx-center">
-            <p className="onyx-eyebrow">{eyebrow}</p>
             {readingLayerLabel && (
               <p className="onyx-layer-label">{readingLayerLabel}</p>
             )}
