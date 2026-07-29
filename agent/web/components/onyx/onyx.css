@@ -195,7 +195,7 @@
   animation: onyx-tw var(--tw, 4s) ease-in-out infinite; animation-delay: var(--d, 0s);
 }
 
-/* Gimbal-linked octagonal onyx crystal — background presence, not a hero moon. */
+/* Gimbal-linked rectangular 4-face onyx crystal — background presence. */
 .onyx-crystal-stage {
   position: absolute;
   inset: 0;
@@ -209,7 +209,7 @@
 }
 .onyx-crystal {
   position: relative;
-  /* Portrait frame — profile crystal is taller than wide (viewBox 100×140). */
+  /* Portrait frame — tall rectangular crystal (viewBox 100×140). */
   width: 118px;
   height: 165px;
   transform-style: preserve-3d;

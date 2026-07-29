@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Background octagonal onyx crystal — gimbal-linked.
+ * Background rectangular 4-face lapidated onyx crystal — gimbal-linked.
  * beta / gamma from DeviceOrientation drive a soft 3D tilt;
  * desktop falls back to pointer parallax.
  */
@@ -11,8 +11,8 @@ import { watchDeviceOrientation } from "../../lib/localSignals";
 
 type Pose = { rx: number; ry: number; tx: number; ty: number; hx: number; hy: number };
 
-/** Resting pose — slight yaw so the profile reads as volume, not a flat card. */
-const IDLE: Pose = { rx: 4, ry: -12, tx: 0, ty: 0, hx: 38, hy: 32 };
+/** Resting pose — slight yaw so the rectangular body reads as volume. */
+const IDLE: Pose = { rx: 4, ry: -12, tx: 0, ty: 0, hx: 38, hy: 34 };
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
@@ -67,8 +67,8 @@ export function OnyxCrystal() {
         ry: clamp(dg * 0.75 - 12, -28, 18),
         tx: dg * 0.5,
         ty: -db * 0.3,
-        hx: clamp(38 + dg * 0.7, 24, 58),
-        hy: clamp(32 - db * 0.55, 18, 52),
+        hx: clamp(38 + dg * 0.7, 26, 56),
+        hy: clamp(34 - db * 0.55, 22, 56),
       };
     };
 
@@ -119,8 +119,9 @@ export function OnyxCrystal() {
       <div className="onyx-crystal" ref={bodyRef}>
         <div className="onyx-crystal-glow" />
         {/*
-          Profile / elevation of an octagonal crystal — tip, crown, girdle, pavilion.
-          Not a top-down flat octagon (those radial spokes read as looking down the axis).
+          Rectangular symmetrical lapidated crystal — four primary faces.
+          Elevation: pointed crown + rectangular prism body + pointed pavilion.
+          Center ridge = meeting of the two near faces; outer edges = the other pair.
         */}
         <svg className="onyx-crystal-svg" viewBox="0 0 100 140" fill="none">
           <defs>
@@ -131,20 +132,20 @@ export function OnyxCrystal() {
               <stop offset="100%" stopColor="#1c1630" />
             </linearGradient>
             <linearGradient id="onyx-xtal-left" x1="0" y1="0.2" x2="1" y2="0.8">
-              <stop offset="0%" stopColor="#3a3058" stopOpacity="0.55" />
-              <stop offset="100%" stopColor="#0a0810" stopOpacity="0.15" />
+              <stop offset="0%" stopColor="#3a3058" stopOpacity="0.58" />
+              <stop offset="100%" stopColor="#0a0810" stopOpacity="0.12" />
             </linearGradient>
             <linearGradient id="onyx-xtal-right" x1="1" y1="0.15" x2="0" y2="0.9">
-              <stop offset="0%" stopColor="#1a1428" stopOpacity="0.2" />
-              <stop offset="100%" stopColor="#000" stopOpacity="0.55" />
+              <stop offset="0%" stopColor="#1a1428" stopOpacity="0.18" />
+              <stop offset="100%" stopColor="#000" stopOpacity="0.58" />
             </linearGradient>
             <linearGradient id="onyx-xtal-edge" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#c4ae80" stopOpacity="0.8" />
               <stop offset="50%" stopColor="#8a7bff" stopOpacity="0.4" />
               <stop offset="100%" stopColor="#c4ae80" stopOpacity="0.55" />
             </linearGradient>
-            <radialGradient id="onyx-xtal-core" cx="40%" cy="38%" r="50%">
-              <stop offset="0%" stopColor="#6a5cff" stopOpacity="0.32" />
+            <radialGradient id="onyx-xtal-core" cx="40%" cy="42%" r="48%">
+              <stop offset="0%" stopColor="#6a5cff" stopOpacity="0.3" />
               <stop offset="55%" stopColor="#2a2048" stopOpacity="0.1" />
               <stop offset="100%" stopColor="#000" stopOpacity="0" />
             </radialGradient>
@@ -155,21 +156,15 @@ export function OnyxCrystal() {
             </radialGradient>
           </defs>
 
-          {/* Full silhouette — double-terminated octagonal crystal in profile */}
+          {/* Silhouette — double-terminated rectangular prism (4 faces) */}
           <polygon
             points="
-              50,6
-              62,22
-              74,34
-              78,52
-              74,70
-              62,88
-              50,134
-              38,88
-              26,70
-              22,52
-              26,34
-              38,22
+              50,8
+              70,28
+              70,112
+              50,132
+              30,112
+              30,28
             "
             fill="url(#onyx-xtal-body)"
             stroke="url(#onyx-xtal-edge)"
@@ -177,67 +172,53 @@ export function OnyxCrystal() {
             strokeLinejoin="round"
           />
 
-          {/* Left face (lit) */}
+          {/* Near-left face (lit) */}
           <polygon
-            points="50,6 38,22 26,34 22,52 26,70 38,88 50,134 50,70 50,52 50,34 50,22"
+            points="50,8 30,28 30,112 50,132 50,70 50,28"
             fill="url(#onyx-xtal-left)"
           />
-          {/* Right face (shadow) */}
+          {/* Near-right face (shadow) */}
           <polygon
-            points="50,6 62,22 74,34 78,52 74,70 62,88 50,134 50,70 50,52 50,34 50,22"
+            points="50,8 70,28 70,112 50,132 50,70 50,28"
             fill="url(#onyx-xtal-right)"
           />
 
           <polygon
-            points="
-              50,6
-              62,22
-              74,34
-              78,52
-              74,70
-              62,88
-              50,134
-              38,88
-              26,70
-              22,52
-              26,34
-              38,22
-            "
+            points="50,8 70,28 70,112 50,132 30,112 30,28"
             fill="url(#onyx-xtal-core)"
           />
 
-          {/* Crown / girdle / pavilion facet lines — vertical structure of an octagon in elevation */}
-          <g stroke="rgba(196,174,128,0.28)" strokeWidth="0.55" strokeLinecap="round">
-            {/* Center spine */}
-            <line x1="50" y1="6" x2="50" y2="134" />
-            {/* Near-vertical side ridges (octagon flats seen in profile) */}
-            <line x1="38" y1="22" x2="38" y2="88" />
-            <line x1="62" y1="22" x2="62" y2="88" />
-            <line x1="30" y1="38" x2="30" y2="72" opacity="0.7" />
-            <line x1="70" y1="38" x2="70" y2="72" opacity="0.7" />
-            {/* Girdle belt */}
-            <line x1="22" y1="52" x2="78" y2="52" stroke="rgba(180,166,255,0.22)" />
-            {/* Crown breaks */}
-            <line x1="38" y1="22" x2="62" y2="22" stroke="rgba(230,220,255,0.2)" />
-            <line x1="26" y1="34" x2="74" y2="34" stroke="rgba(180,166,255,0.14)" />
-            {/* Pavilion breaks */}
-            <line x1="26" y1="70" x2="74" y2="70" stroke="rgba(180,166,255,0.14)" />
-            <line x1="38" y1="88" x2="62" y2="88" stroke="rgba(196,174,128,0.18)" />
+          {/* Lapidation — four-face ridges + crown / pavilion bevels */}
+          <g stroke="rgba(196,174,128,0.3)" strokeWidth="0.55" strokeLinecap="round">
+            {/* Center ridge — two near faces meet */}
+            <line x1="50" y1="8" x2="50" y2="132" />
+            {/* Outer prism edges (far pair of faces) */}
+            <line x1="30" y1="28" x2="30" y2="112" />
+            <line x1="70" y1="28" x2="70" y2="112" />
+            {/* Crown shoulder */}
+            <line x1="30" y1="28" x2="70" y2="28" stroke="rgba(230,220,255,0.22)" />
+            {/* Pavilion shoulder */}
+            <line x1="30" y1="112" x2="70" y2="112" stroke="rgba(196,174,128,0.2)" />
+            {/* Mid girdle belt */}
+            <line x1="30" y1="70" x2="70" y2="70" stroke="rgba(180,166,255,0.2)" />
+            {/* Soft internal facet breaks on each face */}
+            <line x1="40" y1="34" x2="40" y2="106" stroke="rgba(180,166,255,0.12)" />
+            <line x1="60" y1="34" x2="60" y2="106" stroke="rgba(180,166,255,0.1)" />
           </g>
 
-          {/* Lit bevel on the near-left crown */}
+          {/* Lit bevel on near-left crown */}
           <polyline
-            points="50,8 39,22 28,34 24,48"
+            points="50,10 32,28 32,48"
             fill="none"
-            stroke="rgba(230,220,255,0.32)"
+            stroke="rgba(230,220,255,0.34)"
             strokeWidth="0.75"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
           <polyline
-            points="50,8 61,22 72,34"
+            points="50,10 68,28"
             fill="none"
-            stroke="rgba(196,174,128,0.18)"
+            stroke="rgba(196,174,128,0.2)"
             strokeWidth="0.55"
             strokeLinecap="round"
           />
@@ -246,15 +227,15 @@ export function OnyxCrystal() {
           <ellipse
             ref={glossRef}
             cx="38"
-            cy="32"
-            rx="9"
-            ry="11"
+            cy="34"
+            rx="8"
+            ry="12"
             fill="url(#onyx-xtal-gloss)"
             opacity="0.85"
           />
 
-          {/* Core spark near girdle */}
-          <circle cx="50" cy="52" r="1.4" fill="rgba(220,210,255,0.4)" />
+          {/* Core spark at girdle */}
+          <circle cx="50" cy="70" r="1.35" fill="rgba(220,210,255,0.4)" />
         </svg>
       </div>
     </div>
