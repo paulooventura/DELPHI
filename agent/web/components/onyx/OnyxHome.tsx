@@ -435,7 +435,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-rung, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
       ),
     );
   };
@@ -565,18 +565,6 @@ export function OnyxHome({
               <circle cx="9" cy="9" r="1.6" fill="var(--onyx-core)" fillOpacity={0.75} />
             </svg>
           </span>
-        </div>
-
-        <div className="onyx-ladder" aria-hidden>
-          {[0, 1, 2].map(r => (
-            <button
-              key={r}
-              type="button"
-              className={`onyx-rung${depth === r ? " on" : ""}`}
-              onClick={() => go(r)}
-              aria-label={`Depth ${r}`}
-            />
-          ))}
         </div>
 
         {/* 0 STREET */}

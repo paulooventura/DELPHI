@@ -282,19 +282,6 @@
 .onyx-device[data-depth="2"] .onyx-clock { opacity: 0; }
 .onyx-clock .sec { color: var(--onyx-light); }
 
-.onyx-ladder {
-  position: absolute; right: 18px; top: 50%; transform: translateY(-50%); z-index: 8;
-  display: flex; flex-direction: column; gap: 13px; align-items: center;
-}
-.onyx-rung {
-  width: 15px; height: 15px; border-radius: 50%; background: var(--onyx-ink-faint);
-  transition: all var(--onyx-lift); border: none; padding: 0; cursor: pointer;
-}
-.onyx-rung.on {
-  background: var(--onyx-core); box-shadow: 0 0 8px rgba(169, 156, 255, 0.6);
-  height: 45px; border-radius: 8px;
-}
-
 .onyx-panel {
   position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center;
   opacity: 0; pointer-events: none; transition: opacity var(--onyx-settle);
