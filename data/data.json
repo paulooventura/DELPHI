@@ -71,7 +71,8 @@
     "mediterranean",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "el-earth",
@@ -100,7 +101,8 @@
     "mediterranean",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "el-air",
@@ -129,7 +131,8 @@
     "mediterranean",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "el-water",
@@ -159,7 +162,8 @@
     "mediterranean",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-aries",
@@ -192,7 +196,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-taurus",
@@ -223,7 +228,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-gemini",
@@ -254,7 +260,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-cancer",
@@ -286,7 +293,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-leo",
@@ -319,7 +327,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-virgo",
@@ -351,7 +360,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-libra",
@@ -383,7 +393,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-scorpio",
@@ -416,7 +427,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-sagittarius",
@@ -448,7 +460,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-capricorn",
@@ -481,7 +494,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-aquarius",
@@ -513,7 +527,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wz-pisces",
@@ -545,7 +560,8 @@
     "babylon",
     "greece"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-rat",
@@ -574,7 +590,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-ox",
@@ -603,7 +620,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-tiger",
@@ -633,7 +651,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-rabbit",
@@ -662,7 +681,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-dragon",
@@ -692,7 +712,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-snake",
@@ -722,7 +743,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-horse",
@@ -753,7 +775,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-goat",
@@ -782,7 +805,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-monkey",
@@ -811,7 +835,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-rooster",
@@ -841,7 +866,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-dog",
@@ -870,7 +896,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "cz-pig",
@@ -900,7 +927,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wx-wood",
@@ -930,7 +958,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wx-fire",
@@ -960,7 +989,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wx-earth",
@@ -989,7 +1019,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wx-metal",
@@ -1020,7 +1051,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "wx-water",
@@ -1051,7 +1083,8 @@
     "china",
     "east-asia"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "mp-new",
@@ -1068,7 +1101,9 @@
    "ax": {
     "rising": 0.2,
     "outward": -0.8,
-    "light": -0.9
+    "light": -0.9,
+    "active": -0.3,
+    "gentle": 0.2
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1078,7 +1113,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-wax-cres",
@@ -1094,7 +1130,9 @@
    "ax": {
     "rising": 0.5,
     "outward": -0.2,
-    "light": -0.4
+    "light": -0.4,
+    "active": 0.2,
+    "warm": 0.1
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1104,7 +1142,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-first-q",
@@ -1120,7 +1159,9 @@
    "ax": {
     "active": 0.5,
     "rising": 0.6,
-    "outward": 0.2
+    "outward": 0.2,
+    "steady": -0.2,
+    "gentle": -0.2
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1130,7 +1171,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-wax-gib",
@@ -1147,7 +1189,9 @@
     "rising": 0.6,
     "active": 0.3,
     "outward": 0.4,
-    "light": 0.4
+    "light": 0.4,
+    "warm": 0.2,
+    "steady": 0.1
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1157,7 +1201,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-full",
@@ -1174,7 +1219,10 @@
    "ax": {
     "rising": 0.0,
     "outward": 0.8,
-    "light": 0.9
+    "light": 0.9,
+    "active": 0.3,
+    "warm": 0.3,
+    "gentle": -0.1
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1184,7 +1232,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-wan-gib",
@@ -1200,7 +1249,9 @@
    "ax": {
     "rising": -0.4,
     "outward": 0.4,
-    "light": 0.5
+    "light": 0.5,
+    "active": -0.2,
+    "gentle": 0.4
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1210,7 +1261,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-last-q",
@@ -1226,7 +1278,9 @@
    "ax": {
     "active": -0.3,
     "rising": -0.6,
-    "outward": -0.2
+    "outward": -0.2,
+    "steady": -0.2,
+    "binding": -0.2
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1236,7 +1290,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "mp-wan-cres",
@@ -1253,7 +1308,9 @@
     "active": -0.6,
     "rising": -0.7,
     "outward": -0.6,
-    "light": -0.6
+    "light": -0.6,
+    "gentle": 0.3,
+    "binding": -0.3
    },
    "source": "Ephemeris (position measured); phase-quality is folk/agricultural",
    "claim": "measurement",
@@ -1263,7 +1320,8 @@
    "origin": [
     "global"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "pd-sun",
@@ -1291,7 +1349,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "pd-moon",
@@ -1319,7 +1378,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "pd-mars",
@@ -1346,7 +1406,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "pd-mercury",
@@ -1374,7 +1435,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "pd-jupiter",
@@ -1403,7 +1465,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "pd-venus",
@@ -1431,7 +1494,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "pd-saturn",
@@ -1460,7 +1524,8 @@
     "mediterranean",
     "babylon"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-imix",
@@ -1487,7 +1552,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-ik",
@@ -1513,7 +1579,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-akbal",
@@ -1539,7 +1606,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-kan",
@@ -1565,7 +1633,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-chicchan",
@@ -1592,7 +1661,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-cimi",
@@ -1619,7 +1689,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-manik",
@@ -1645,7 +1716,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-lamat",
@@ -1672,7 +1744,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-muluc",
@@ -1699,7 +1772,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-oc",
@@ -1726,7 +1800,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-chuen",
@@ -1753,7 +1828,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-eb",
@@ -1780,7 +1856,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-ben",
@@ -1807,7 +1884,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-ix",
@@ -1834,7 +1912,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-men",
@@ -1861,7 +1940,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-cib",
@@ -1888,7 +1968,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-caban",
@@ -1915,7 +1996,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-etznab",
@@ -1943,7 +2025,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-cauac",
@@ -1970,7 +2053,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tz-ahau",
@@ -1997,7 +2081,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-1",
@@ -2012,7 +2097,9 @@
    ],
    "ax": {
     "rising": 0.7,
-    "active": 0.4
+    "active": 0.4,
+    "outward": 0.4,
+    "light": 0.3
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2022,7 +2109,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-2",
@@ -2036,7 +2124,9 @@
    ],
    "ax": {
     "steady": -0.2,
-    "active": -0.2
+    "active": -0.2,
+    "gentle": -0.2,
+    "outward": -0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2046,7 +2136,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-3",
@@ -2060,7 +2151,9 @@
    ],
    "ax": {
     "active": 0.6,
-    "rising": 0.4
+    "rising": 0.4,
+    "outward": 0.4,
+    "warm": 0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2070,7 +2163,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-4",
@@ -2084,7 +2178,8 @@
    ],
    "ax": {
     "steady": 0.6,
-    "binding": 0.5
+    "binding": 0.5,
+    "outward": -0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2094,7 +2189,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-5",
@@ -2108,7 +2204,9 @@
    ],
    "ax": {
     "active": 0.6,
-    "outward": 0.6
+    "outward": 0.6,
+    "warm": 0.3,
+    "light": 0.4
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2118,7 +2216,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-6",
@@ -2132,7 +2231,9 @@
    ],
    "ax": {
     "steady": 0.5,
-    "active": 0.2
+    "active": 0.2,
+    "gentle": 0.3,
+    "warm": 0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2142,7 +2243,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-7",
@@ -2156,7 +2258,8 @@
    ],
    "ax": {
     "outward": -0.2,
-    "light": 0.3
+    "light": 0.3,
+    "active": -0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2166,7 +2269,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-8",
@@ -2180,7 +2284,9 @@
    ],
    "ax": {
     "steady": 0.4,
-    "gentle": 0.3
+    "gentle": 0.3,
+    "outward": 0.3,
+    "light": 0.3
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2190,7 +2296,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-9",
@@ -2205,7 +2312,8 @@
    "ax": {
     "active": 0.6,
     "rising": 0.5,
-    "warm": 0.4
+    "warm": 0.4,
+    "outward": 0.4
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2215,7 +2323,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-10",
@@ -2229,7 +2338,9 @@
    ],
    "ax": {
     "active": 0.4,
-    "binding": 0.5
+    "binding": 0.5,
+    "outward": 0.3,
+    "steady": 0.3
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2239,7 +2350,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-11",
@@ -2254,7 +2366,9 @@
    "ax": {
     "active": 0.3,
     "binding": -0.7,
-    "steady": -0.5
+    "steady": -0.5,
+    "outward": 0.3,
+    "light": 0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2264,7 +2378,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-12",
@@ -2279,7 +2394,9 @@
    "ax": {
     "steady": 0.5,
     "outward": 0.4,
-    "gentle": 0.4
+    "gentle": 0.4,
+    "warm": 0.3,
+    "light": 0.3
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2289,7 +2406,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "tn-13",
@@ -2304,7 +2422,9 @@
    "ax": {
     "rising": -0.3,
     "outward": 0.3,
-    "light": 0.4
+    "light": 0.4,
+    "gentle": 0.4,
+    "warm": 0.2
    },
    "source": "Maya Tzolk'in galactic/cosmic tones (1–13) — the modulation of the day-sign",
    "claim": "interpretation",
@@ -2314,7 +2434,8 @@
    "origin": [
     "mesoamerica"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "nk-ashwini",
@@ -2341,7 +2462,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-bharani",
@@ -2368,7 +2490,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-krittika",
@@ -2395,7 +2518,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-rohini",
@@ -2422,7 +2546,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-mrigashira",
@@ -2449,7 +2574,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-ardra",
@@ -2476,7 +2602,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-punarvasu",
@@ -2503,7 +2630,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-pushya",
@@ -2530,7 +2658,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-ashlesha",
@@ -2557,7 +2686,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-magha",
@@ -2584,7 +2714,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-purva-phalguni",
@@ -2611,7 +2742,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-uttara-phalguni",
@@ -2638,7 +2770,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-hasta",
@@ -2665,7 +2798,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-chitra",
@@ -2692,7 +2826,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-swati",
@@ -2718,7 +2853,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-vishakha",
@@ -2745,7 +2881,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-anuradha",
@@ -2772,7 +2909,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-jyeshtha",
@@ -2799,7 +2937,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-mula",
@@ -2827,7 +2966,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-purva-ashadha",
@@ -2853,7 +2993,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-uttara-ashadha",
@@ -2880,7 +3021,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-shravana",
@@ -2907,7 +3049,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-dhanishta",
@@ -2934,7 +3077,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-shatabhisha",
@@ -2960,7 +3104,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-purva-bhadrapada",
@@ -2987,7 +3132,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-uttara-bhadrapada",
@@ -3015,7 +3161,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "nk-revati",
@@ -3042,7 +3189,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "measured"
   },
   {
    "id": "or-eshu",
@@ -3071,7 +3219,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-ogun",
@@ -3100,7 +3249,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-yemoja",
@@ -3129,7 +3279,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-oshun",
@@ -3158,7 +3309,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-shango",
@@ -3188,7 +3340,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-oya",
@@ -3217,7 +3370,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-obatala",
@@ -3246,7 +3400,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "or-orunmila",
@@ -3274,7 +3429,8 @@
     "west-africa",
     "yorubaland"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-mesha",
@@ -3302,7 +3458,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-vrishabha",
@@ -3330,7 +3487,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-mithuna",
@@ -3357,7 +3515,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-karka",
@@ -3384,7 +3543,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-simha",
@@ -3412,7 +3572,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-kanya",
@@ -3439,7 +3600,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-tula",
@@ -3467,7 +3629,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-vrishchika",
@@ -3496,7 +3659,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-dhanus",
@@ -3525,7 +3689,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-makara",
@@ -3554,7 +3719,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-kumbha",
@@ -3582,7 +3748,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "vsz-meena",
@@ -3610,7 +3777,8 @@
    "origin": [
     "india"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-01",
@@ -3636,7 +3804,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-02",
@@ -3662,7 +3831,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-03",
@@ -3687,7 +3857,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-04",
@@ -3714,7 +3885,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-05",
@@ -3740,7 +3912,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-06",
@@ -3766,7 +3939,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-07",
@@ -3792,7 +3966,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-08",
@@ -3818,7 +3993,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-09",
@@ -3844,7 +4020,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-10",
@@ -3870,7 +4047,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-11",
@@ -3895,7 +4073,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-12",
@@ -3921,7 +4100,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-13",
@@ -3947,7 +4127,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-14",
@@ -3972,7 +4153,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-15",
@@ -3998,7 +4180,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-16",
@@ -4024,7 +4207,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-17",
@@ -4049,7 +4233,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-18",
@@ -4075,7 +4260,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-19",
@@ -4101,7 +4287,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-20",
@@ -4127,7 +4314,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-21",
@@ -4153,7 +4341,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-22",
@@ -4178,7 +4367,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-23",
@@ -4204,7 +4394,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-24",
@@ -4230,7 +4421,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-25",
@@ -4256,7 +4448,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-26",
@@ -4282,7 +4475,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-27",
@@ -4308,7 +4502,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-28",
@@ -4334,7 +4529,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-29",
@@ -4360,7 +4556,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-30",
@@ -4386,7 +4583,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-31",
@@ -4412,7 +4610,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-32",
@@ -4437,7 +4636,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-33",
@@ -4463,7 +4663,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-34",
@@ -4489,7 +4690,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-35",
@@ -4514,7 +4716,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "dc-36",
@@ -4540,7 +4743,8 @@
     "egypt",
     "nile"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-birch",
@@ -4566,7 +4770,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-rowan",
@@ -4592,7 +4797,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-ash",
@@ -4618,7 +4824,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-alder",
@@ -4644,7 +4851,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-willow",
@@ -4671,7 +4879,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-hawthorn",
@@ -4698,7 +4907,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-oak",
@@ -4725,7 +4935,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-holly",
@@ -4751,7 +4962,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-hazel",
@@ -4777,7 +4989,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-vine",
@@ -4804,7 +5017,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-ivy",
@@ -4830,7 +5044,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-reed",
@@ -4857,7 +5072,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ct-elder",
@@ -4884,7 +5100,8 @@
    "origin": [
     "modern"
    ],
-   "honesty": "render"
+   "honesty": "render",
+   "tier": "celebrated"
   },
   {
    "id": "ch-cold",
@@ -4906,7 +5123,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-bony",
@@ -4928,7 +5146,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-windy",
@@ -4950,7 +5169,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-flower",
@@ -4972,7 +5192,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-planting",
@@ -4994,7 +5215,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-green-corn",
@@ -5016,7 +5238,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-ripe-corn",
@@ -5038,7 +5261,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-fruit",
@@ -5060,7 +5284,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-nut",
@@ -5082,7 +5307,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-harvest",
@@ -5104,7 +5330,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-hunting",
@@ -5126,7 +5353,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-snow",
@@ -5148,7 +5376,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ch-big-winter",
@@ -5170,7 +5399,8 @@
     "southeast-woodlands",
     "cherokee"
    ],
-   "honesty": "foreground"
+   "honesty": "foreground",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-0",
@@ -5199,7 +5429,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "0"
+   "rank": "0",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-I",
@@ -5228,7 +5459,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "I"
+   "rank": "I",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-II",
@@ -5256,7 +5488,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "II"
+   "rank": "II",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-III",
@@ -5285,7 +5518,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "III"
+   "rank": "III",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-IV",
@@ -5314,7 +5548,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "IV"
+   "rank": "IV",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-V",
@@ -5342,7 +5577,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "V"
+   "rank": "V",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-VI",
@@ -5371,7 +5607,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "VI"
+   "rank": "VI",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-VII",
@@ -5400,7 +5637,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "VII"
+   "rank": "VII",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-VIII",
@@ -5428,7 +5666,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "VIII"
+   "rank": "VIII",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-IX",
@@ -5456,7 +5695,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "IX"
+   "rank": "IX",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-X",
@@ -5483,7 +5723,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "X"
+   "rank": "X",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XI",
@@ -5512,7 +5753,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XI"
+   "rank": "XI",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XII",
@@ -5540,7 +5782,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XII"
+   "rank": "XII",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XIII",
@@ -5570,7 +5813,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XIII"
+   "rank": "XIII",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XIV",
@@ -5599,7 +5843,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XIV"
+   "rank": "XIV",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XV",
@@ -5628,7 +5873,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XV"
+   "rank": "XV",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XVI",
@@ -5657,7 +5903,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XVI"
+   "rank": "XVI",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XVII",
@@ -5687,7 +5934,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XVII"
+   "rank": "XVII",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XVIII",
@@ -5715,7 +5963,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XVIII"
+   "rank": "XVIII",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XIX",
@@ -5745,7 +5994,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XIX"
+   "rank": "XIX",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XX",
@@ -5774,7 +6024,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XX"
+   "rank": "XX",
+   "tier": "celebrated"
   },
   {
    "id": "ta-maj-XXI",
@@ -5803,7 +6054,8 @@
    ],
    "honesty": "render",
    "arcana": "major",
-   "rank": "XXI"
+   "rank": "XXI",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-ace",
@@ -5835,7 +6087,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "ace"
+   "rank": "ace",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-2",
@@ -5865,7 +6118,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "2"
+   "rank": "2",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-3",
@@ -5896,7 +6150,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "3"
+   "rank": "3",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-4",
@@ -5928,7 +6183,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "4"
+   "rank": "4",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-5",
@@ -5960,7 +6216,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "5"
+   "rank": "5",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-6",
@@ -5991,7 +6248,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "6"
+   "rank": "6",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-7",
@@ -6021,7 +6279,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "7"
+   "rank": "7",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-8",
@@ -6051,7 +6310,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "8"
+   "rank": "8",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-9",
@@ -6082,7 +6342,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "9"
+   "rank": "9",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-10",
@@ -6113,7 +6374,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "10"
+   "rank": "10",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-page",
@@ -6144,7 +6406,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "page"
+   "rank": "page",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-knight",
@@ -6174,7 +6437,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "knight"
+   "rank": "knight",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-queen",
@@ -6205,7 +6469,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "queen"
+   "rank": "queen",
+   "tier": "celebrated"
   },
   {
    "id": "ta-wands-king",
@@ -6236,7 +6501,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "wands",
-   "rank": "king"
+   "rank": "king",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-ace",
@@ -6269,7 +6535,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "ace"
+   "rank": "ace",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-2",
@@ -6300,7 +6567,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "2"
+   "rank": "2",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-3",
@@ -6332,7 +6600,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "3"
+   "rank": "3",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-4",
@@ -6365,7 +6634,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "4"
+   "rank": "4",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-5",
@@ -6397,7 +6667,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "5"
+   "rank": "5",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-6",
@@ -6428,7 +6699,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "6"
+   "rank": "6",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-7",
@@ -6459,7 +6731,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "7"
+   "rank": "7",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-8",
@@ -6490,7 +6763,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "8"
+   "rank": "8",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-9",
@@ -6522,7 +6796,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "9"
+   "rank": "9",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-10",
@@ -6554,7 +6829,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "10"
+   "rank": "10",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-page",
@@ -6586,7 +6862,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "page"
+   "rank": "page",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-knight",
@@ -6617,7 +6894,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "knight"
+   "rank": "knight",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-queen",
@@ -6648,7 +6926,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "queen"
+   "rank": "queen",
+   "tier": "celebrated"
   },
   {
    "id": "ta-cups-king",
@@ -6680,7 +6959,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "cups",
-   "rank": "king"
+   "rank": "king",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-ace",
@@ -6713,7 +6993,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "ace"
+   "rank": "ace",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-2",
@@ -6744,7 +7025,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "2"
+   "rank": "2",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-3",
@@ -6776,7 +7058,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "3"
+   "rank": "3",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-4",
@@ -6808,7 +7091,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "4"
+   "rank": "4",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-5",
@@ -6838,7 +7122,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "5"
+   "rank": "5",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-6",
@@ -6869,7 +7154,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "6"
+   "rank": "6",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-7",
@@ -6901,7 +7187,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "7"
+   "rank": "7",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-8",
@@ -6932,7 +7219,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "8"
+   "rank": "8",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-9",
@@ -6964,7 +7252,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "9"
+   "rank": "9",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-10",
@@ -6996,7 +7285,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "10"
+   "rank": "10",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-page",
@@ -7028,7 +7318,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "page"
+   "rank": "page",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-knight",
@@ -7059,7 +7350,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "knight"
+   "rank": "knight",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-queen",
@@ -7091,7 +7383,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "queen"
+   "rank": "queen",
+   "tier": "celebrated"
   },
   {
    "id": "ta-swords-king",
@@ -7124,7 +7417,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "swords",
-   "rank": "king"
+   "rank": "king",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-ace",
@@ -7156,7 +7450,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "ace"
+   "rank": "ace",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-2",
@@ -7186,7 +7481,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "2"
+   "rank": "2",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-3",
@@ -7217,7 +7513,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "3"
+   "rank": "3",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-4",
@@ -7247,7 +7544,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "4"
+   "rank": "4",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-5",
@@ -7278,7 +7576,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "5"
+   "rank": "5",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-6",
@@ -7309,7 +7608,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "6"
+   "rank": "6",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-7",
@@ -7340,7 +7640,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "7"
+   "rank": "7",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-8",
@@ -7370,7 +7671,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "8"
+   "rank": "8",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-9",
@@ -7401,7 +7703,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "9"
+   "rank": "9",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-10",
@@ -7431,7 +7734,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "10"
+   "rank": "10",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-page",
@@ -7462,7 +7766,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "page"
+   "rank": "page",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-knight",
@@ -7492,7 +7797,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "knight"
+   "rank": "knight",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-queen",
@@ -7524,7 +7830,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "queen"
+   "rank": "queen",
+   "tier": "celebrated"
   },
   {
    "id": "ta-pentacles-king",
@@ -7555,7 +7862,8 @@
    "honesty": "render",
    "arcana": "minor",
    "suit": "pentacles",
-   "rank": "king"
+   "rank": "king",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-01",
@@ -7583,7 +7891,8 @@
    ],
    "honesty": "render",
    "hexNum": 1,
-   "pinyin": "Qian"
+   "pinyin": "Qian",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-02",
@@ -7611,7 +7920,8 @@
    ],
    "honesty": "render",
    "hexNum": 2,
-   "pinyin": "Kun"
+   "pinyin": "Kun",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-03",
@@ -7637,7 +7947,8 @@
    ],
    "honesty": "render",
    "hexNum": 3,
-   "pinyin": "Zhun"
+   "pinyin": "Zhun",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-04",
@@ -7662,7 +7973,8 @@
    ],
    "honesty": "render",
    "hexNum": 4,
-   "pinyin": "Meng"
+   "pinyin": "Meng",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-05",
@@ -7688,7 +8000,8 @@
    ],
    "honesty": "render",
    "hexNum": 5,
-   "pinyin": "Xu"
+   "pinyin": "Xu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-06",
@@ -7715,7 +8028,8 @@
    ],
    "honesty": "render",
    "hexNum": 6,
-   "pinyin": "Song"
+   "pinyin": "Song",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-07",
@@ -7742,7 +8056,8 @@
    ],
    "honesty": "render",
    "hexNum": 7,
-   "pinyin": "Shi"
+   "pinyin": "Shi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-08",
@@ -7768,7 +8083,8 @@
    ],
    "honesty": "render",
    "hexNum": 8,
-   "pinyin": "Bi"
+   "pinyin": "Bi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-09",
@@ -7793,7 +8109,8 @@
    ],
    "honesty": "render",
    "hexNum": 9,
-   "pinyin": "Xiao Chu"
+   "pinyin": "Xiao Chu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-10",
@@ -7818,7 +8135,8 @@
    ],
    "honesty": "render",
    "hexNum": 10,
-   "pinyin": "Lu"
+   "pinyin": "Lu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-11",
@@ -7845,7 +8163,8 @@
    ],
    "honesty": "render",
    "hexNum": 11,
-   "pinyin": "Tai"
+   "pinyin": "Tai",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-12",
@@ -7872,7 +8191,8 @@
    ],
    "honesty": "render",
    "hexNum": 12,
-   "pinyin": "Pi"
+   "pinyin": "Pi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-13",
@@ -7897,7 +8217,8 @@
    ],
    "honesty": "render",
    "hexNum": 13,
-   "pinyin": "Tong Ren"
+   "pinyin": "Tong Ren",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-14",
@@ -7924,7 +8245,8 @@
    ],
    "honesty": "render",
    "hexNum": 14,
-   "pinyin": "Da You"
+   "pinyin": "Da You",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-15",
@@ -7951,7 +8273,8 @@
    ],
    "honesty": "render",
    "hexNum": 15,
-   "pinyin": "Qian"
+   "pinyin": "Qian",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-16",
@@ -7978,7 +8301,8 @@
    ],
    "honesty": "render",
    "hexNum": 16,
-   "pinyin": "Yu"
+   "pinyin": "Yu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-17",
@@ -8004,7 +8328,8 @@
    ],
    "honesty": "render",
    "hexNum": 17,
-   "pinyin": "Sui"
+   "pinyin": "Sui",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-18",
@@ -8029,7 +8354,8 @@
    ],
    "honesty": "render",
    "hexNum": 18,
-   "pinyin": "Gu"
+   "pinyin": "Gu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-19",
@@ -8054,7 +8380,8 @@
    ],
    "honesty": "render",
    "hexNum": 19,
-   "pinyin": "Lin"
+   "pinyin": "Lin",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-20",
@@ -8081,7 +8408,8 @@
    ],
    "honesty": "render",
    "hexNum": 20,
-   "pinyin": "Guan"
+   "pinyin": "Guan",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-21",
@@ -8106,7 +8434,8 @@
    ],
    "honesty": "render",
    "hexNum": 21,
-   "pinyin": "Shi He"
+   "pinyin": "Shi He",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-22",
@@ -8133,7 +8462,8 @@
    ],
    "honesty": "render",
    "hexNum": 22,
-   "pinyin": "Bi"
+   "pinyin": "Bi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-23",
@@ -8161,7 +8491,8 @@
    ],
    "honesty": "render",
    "hexNum": 23,
-   "pinyin": "Bo"
+   "pinyin": "Bo",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-24",
@@ -8187,7 +8518,8 @@
    ],
    "honesty": "render",
    "hexNum": 24,
-   "pinyin": "Fu"
+   "pinyin": "Fu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-25",
@@ -8214,7 +8546,8 @@
    ],
    "honesty": "render",
    "hexNum": 25,
-   "pinyin": "Wu Wang"
+   "pinyin": "Wu Wang",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-26",
@@ -8239,7 +8572,8 @@
    ],
    "honesty": "render",
    "hexNum": 26,
-   "pinyin": "Da Chu"
+   "pinyin": "Da Chu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-27",
@@ -8265,7 +8599,8 @@
    ],
    "honesty": "render",
    "hexNum": 27,
-   "pinyin": "Yi"
+   "pinyin": "Yi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-28",
@@ -8291,7 +8626,8 @@
    ],
    "honesty": "render",
    "hexNum": 28,
-   "pinyin": "Da Guo"
+   "pinyin": "Da Guo",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-29",
@@ -8319,7 +8655,8 @@
    ],
    "honesty": "render",
    "hexNum": 29,
-   "pinyin": "Kan"
+   "pinyin": "Kan",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-30",
@@ -8347,7 +8684,8 @@
    ],
    "honesty": "render",
    "hexNum": 30,
-   "pinyin": "Li"
+   "pinyin": "Li",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-31",
@@ -8375,7 +8713,8 @@
    ],
    "honesty": "render",
    "hexNum": 31,
-   "pinyin": "Xian"
+   "pinyin": "Xian",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-32",
@@ -8401,7 +8740,8 @@
    ],
    "honesty": "render",
    "hexNum": 32,
-   "pinyin": "Heng"
+   "pinyin": "Heng",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-33",
@@ -8426,7 +8766,8 @@
    ],
    "honesty": "render",
    "hexNum": 33,
-   "pinyin": "Dun"
+   "pinyin": "Dun",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-34",
@@ -8452,7 +8793,8 @@
    ],
    "honesty": "render",
    "hexNum": 34,
-   "pinyin": "Da Zhuang"
+   "pinyin": "Da Zhuang",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-35",
@@ -8479,7 +8821,8 @@
    ],
    "honesty": "render",
    "hexNum": 35,
-   "pinyin": "Jin"
+   "pinyin": "Jin",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-36",
@@ -8505,7 +8848,8 @@
    ],
    "honesty": "render",
    "hexNum": 36,
-   "pinyin": "Ming Yi"
+   "pinyin": "Ming Yi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-37",
@@ -8532,7 +8876,8 @@
    ],
    "honesty": "render",
    "hexNum": 37,
-   "pinyin": "Jia Ren"
+   "pinyin": "Jia Ren",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-38",
@@ -8558,7 +8903,8 @@
    ],
    "honesty": "render",
    "hexNum": 38,
-   "pinyin": "Kui"
+   "pinyin": "Kui",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-39",
@@ -8584,7 +8930,8 @@
    ],
    "honesty": "render",
    "hexNum": 39,
-   "pinyin": "Jian"
+   "pinyin": "Jian",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-40",
@@ -8611,7 +8958,8 @@
    ],
    "honesty": "render",
    "hexNum": 40,
-   "pinyin": "Jie"
+   "pinyin": "Jie",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-41",
@@ -8638,7 +8986,8 @@
    ],
    "honesty": "render",
    "hexNum": 41,
-   "pinyin": "Sun"
+   "pinyin": "Sun",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-42",
@@ -8664,7 +9013,8 @@
    ],
    "honesty": "render",
    "hexNum": 42,
-   "pinyin": "Yi"
+   "pinyin": "Yi",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-43",
@@ -8690,7 +9040,8 @@
    ],
    "honesty": "render",
    "hexNum": 43,
-   "pinyin": "Guai"
+   "pinyin": "Guai",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-44",
@@ -8716,7 +9067,8 @@
    ],
    "honesty": "render",
    "hexNum": 44,
-   "pinyin": "Gou"
+   "pinyin": "Gou",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-45",
@@ -8742,7 +9094,8 @@
    ],
    "honesty": "render",
    "hexNum": 45,
-   "pinyin": "Cui"
+   "pinyin": "Cui",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-46",
@@ -8768,7 +9121,8 @@
    ],
    "honesty": "render",
    "hexNum": 46,
-   "pinyin": "Sheng"
+   "pinyin": "Sheng",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-47",
@@ -8795,7 +9149,8 @@
    ],
    "honesty": "render",
    "hexNum": 47,
-   "pinyin": "Kun"
+   "pinyin": "Kun",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-48",
@@ -8821,7 +9176,8 @@
    ],
    "honesty": "render",
    "hexNum": 48,
-   "pinyin": "Jing"
+   "pinyin": "Jing",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-49",
@@ -8847,7 +9203,8 @@
    ],
    "honesty": "render",
    "hexNum": 49,
-   "pinyin": "Ge"
+   "pinyin": "Ge",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-50",
@@ -8874,7 +9231,8 @@
    ],
    "honesty": "render",
    "hexNum": 50,
-   "pinyin": "Ding"
+   "pinyin": "Ding",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-51",
@@ -8901,7 +9259,8 @@
    ],
    "honesty": "render",
    "hexNum": 51,
-   "pinyin": "Zhen"
+   "pinyin": "Zhen",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-52",
@@ -8928,7 +9287,8 @@
    ],
    "honesty": "render",
    "hexNum": 52,
-   "pinyin": "Gen"
+   "pinyin": "Gen",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-53",
@@ -8954,7 +9314,8 @@
    ],
    "honesty": "render",
    "hexNum": 53,
-   "pinyin": "Jian"
+   "pinyin": "Jian",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-54",
@@ -8979,7 +9340,8 @@
    ],
    "honesty": "render",
    "hexNum": 54,
-   "pinyin": "Gui Mei"
+   "pinyin": "Gui Mei",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-55",
@@ -9006,7 +9368,8 @@
    ],
    "honesty": "render",
    "hexNum": 55,
-   "pinyin": "Feng"
+   "pinyin": "Feng",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-56",
@@ -9033,7 +9396,8 @@
    ],
    "honesty": "render",
    "hexNum": 56,
-   "pinyin": "Lu"
+   "pinyin": "Lu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-57",
@@ -9060,7 +9424,8 @@
    ],
    "honesty": "render",
    "hexNum": 57,
-   "pinyin": "Xun"
+   "pinyin": "Xun",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-58",
@@ -9088,7 +9453,8 @@
    ],
    "honesty": "render",
    "hexNum": 58,
-   "pinyin": "Dui"
+   "pinyin": "Dui",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-59",
@@ -9114,7 +9480,8 @@
    ],
    "honesty": "render",
    "hexNum": 59,
-   "pinyin": "Huan"
+   "pinyin": "Huan",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-60",
@@ -9140,7 +9507,8 @@
    ],
    "honesty": "render",
    "hexNum": 60,
-   "pinyin": "Jie"
+   "pinyin": "Jie",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-61",
@@ -9167,7 +9535,8 @@
    ],
    "honesty": "render",
    "hexNum": 61,
-   "pinyin": "Zhong Fu"
+   "pinyin": "Zhong Fu",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-62",
@@ -9192,7 +9561,8 @@
    ],
    "honesty": "render",
    "hexNum": 62,
-   "pinyin": "Xiao Guo"
+   "pinyin": "Xiao Guo",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-63",
@@ -9218,7 +9588,8 @@
    ],
    "honesty": "render",
    "hexNum": 63,
-   "pinyin": "Ji Ji"
+   "pinyin": "Ji Ji",
+   "tier": "celebrated"
   },
   {
    "id": "ic-hex-64",
@@ -9244,7 +9615,8 @@
    ],
    "honesty": "render",
    "hexNum": 64,
-   "pinyin": "Wei Ji"
+   "pinyin": "Wei Ji",
+   "tier": "celebrated"
   },
   {
    "id": "ru-fehu",
@@ -9272,7 +9644,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-uruz",
@@ -9300,7 +9673,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-thurisaz",
@@ -9328,7 +9702,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-ansuz",
@@ -9356,7 +9731,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-raidho",
@@ -9384,7 +9760,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-kenaz",
@@ -9412,7 +9789,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-gebo",
@@ -9440,7 +9818,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-wunjo",
@@ -9469,7 +9848,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-hagalaz",
@@ -9497,7 +9877,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-nauthiz",
@@ -9525,7 +9906,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-isa",
@@ -9554,7 +9936,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-jera",
@@ -9582,7 +9965,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-eihwaz",
@@ -9610,7 +9994,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-perthro",
@@ -9637,7 +10022,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-algiz",
@@ -9665,7 +10051,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-sowilo",
@@ -9694,7 +10081,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-tiwaz",
@@ -9723,7 +10111,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-berkano",
@@ -9750,7 +10139,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-ehwaz",
@@ -9778,7 +10168,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-mannaz",
@@ -9805,7 +10196,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-laguz",
@@ -9834,7 +10226,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-ingwaz",
@@ -9862,7 +10255,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-dagaz",
@@ -9890,7 +10284,8 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
   },
   {
    "id": "ru-othala",
@@ -9917,7 +10312,3266 @@
     "germanic"
    ],
    "honesty": "render",
-   "futhark": "elder"
+   "futhark": "elder",
+   "tier": "celebrated"
+  },
+  {
+   "id": "wk-01",
+   "system": "pawukon-wuku",
+   "name": "Sinta",
+   "glyph": "᭟",
+   "qualities": [
+    "beginning",
+    "origin",
+    "the first light"
+   ],
+   "ax": {
+    "active": 0.4,
+    "rising": 0.6,
+    "light": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 1 of 30 — beginning, origin, the first light.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 1
+  },
+  {
+   "id": "wk-02",
+   "system": "pawukon-wuku",
+   "name": "Landep",
+   "glyph": "᭟",
+   "qualities": [
+    "sharpness",
+    "discernment",
+    "the honed blade"
+   ],
+   "ax": {
+    "active": 0.5,
+    "gentle": -0.4,
+    "light": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 2 of 30 — sharpness, discernment, the honed blade.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 2
+  },
+  {
+   "id": "wk-03",
+   "system": "pawukon-wuku",
+   "name": "Ukir",
+   "glyph": "᭟",
+   "qualities": [
+    "aspiration",
+    "the mountain",
+    "growth upward"
+   ],
+   "ax": {
+    "rising": 0.6,
+    "steady": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 3 of 30 — aspiration, the mountain, growth upward.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 3
+  },
+  {
+   "id": "wk-04",
+   "system": "pawukon-wuku",
+   "name": "Kulantir",
+   "glyph": "᭟",
+   "qualities": [
+    "movement",
+    "restlessness",
+    "setting out"
+   ],
+   "ax": {
+    "active": 0.5,
+    "steady": -0.5
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 4 of 30 — movement, restlessness, setting out.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 4
+  },
+  {
+   "id": "wk-05",
+   "system": "pawukon-wuku",
+   "name": "Tolu",
+   "glyph": "᭟",
+   "qualities": [
+    "balance",
+    "three-fold stability",
+    "grounding"
+   ],
+   "ax": {
+    "steady": 0.5,
+    "binding": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 5 of 30 — balance, three-fold stability, grounding.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 5
+  },
+  {
+   "id": "wk-06",
+   "system": "pawukon-wuku",
+   "name": "Gumbreg",
+   "glyph": "᭟",
+   "qualities": [
+    "vitality",
+    "animal force",
+    "fertility"
+   ],
+   "ax": {
+    "active": 0.5,
+    "warm": 0.3,
+    "rising": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 6 of 30 — vitality, animal force, fertility.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 6
+  },
+  {
+   "id": "wk-07",
+   "system": "pawukon-wuku",
+   "name": "Wariga",
+   "glyph": "᭟",
+   "qualities": [
+    "knowledge of time",
+    "calendar-wisdom",
+    "order"
+   ],
+   "ax": {
+    "binding": 0.4,
+    "light": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 7 of 30 — knowledge of time, calendar-wisdom, order.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 7
+  },
+  {
+   "id": "wk-08",
+   "system": "pawukon-wuku",
+   "name": "Warigadean",
+   "glyph": "᭟",
+   "qualities": [
+    "provision",
+    "resourcefulness",
+    "gathering"
+   ],
+   "ax": {
+    "active": 0.3,
+    "binding": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 8 of 30 — provision, resourcefulness, gathering.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 8
+  },
+  {
+   "id": "wk-09",
+   "system": "pawukon-wuku",
+   "name": "Julungwangi",
+   "glyph": "᭟",
+   "qualities": [
+    "fragrance",
+    "beauty",
+    "blossoming grace"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "outward": 0.4,
+    "gentle": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 9 of 30 — fragrance, beauty, blossoming grace.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 9
+  },
+  {
+   "id": "wk-10",
+   "system": "pawukon-wuku",
+   "name": "Sungsang",
+   "glyph": "᭟",
+   "qualities": [
+    "reversal",
+    "inversion",
+    "turning inward"
+   ],
+   "ax": {
+    "active": -0.3,
+    "outward": -0.5
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 10 of 30 — reversal, inversion, turning inward.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 10
+  },
+  {
+   "id": "wk-11",
+   "system": "pawukon-wuku",
+   "name": "Dungulan",
+   "glyph": "᭟",
+   "qualities": [
+    "victory of dharma",
+    "good over evil (Galungan)"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.5,
+    "light": 0.6
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 11 of 30 — victory of dharma, good over evil (Galungan).",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 11
+  },
+  {
+   "id": "wk-12",
+   "system": "pawukon-wuku",
+   "name": "Kuningan",
+   "glyph": "᭟",
+   "qualities": [
+    "ancestral blessing",
+    "gratitude",
+    "the golden day"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "gentle": 0.5,
+    "light": 0.5
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 12 of 30 — ancestral blessing, gratitude, the golden day.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 12
+  },
+  {
+   "id": "wk-13",
+   "system": "pawukon-wuku",
+   "name": "Langkir",
+   "glyph": "᭟",
+   "qualities": [
+    "fierceness",
+    "warning",
+    "the shadow-guard"
+   ],
+   "ax": {
+    "active": 0.4,
+    "gentle": -0.6,
+    "light": -0.5
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 13 of 30 — fierceness, warning, the shadow-guard.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 13
+  },
+  {
+   "id": "wk-14",
+   "system": "pawukon-wuku",
+   "name": "Medangsia",
+   "glyph": "᭟",
+   "qualities": [
+    "refinement",
+    "cleansing",
+    "purification"
+   ],
+   "ax": {
+    "binding": 0.3,
+    "gentle": 0.3,
+    "light": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 14 of 30 — refinement, cleansing, purification.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 14
+  },
+  {
+   "id": "wk-15",
+   "system": "pawukon-wuku",
+   "name": "Pujut",
+   "glyph": "᭟",
+   "qualities": [
+    "aspiration fulfilled",
+    "the summit reached"
+   ],
+   "ax": {
+    "rising": 0.5,
+    "outward": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 15 of 30 — aspiration fulfilled, the summit reached.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 15
+  },
+  {
+   "id": "wk-16",
+   "system": "pawukon-wuku",
+   "name": "Pahang",
+   "glyph": "᭟",
+   "qualities": [
+    "resilience",
+    "endurance",
+    "holding firm"
+   ],
+   "ax": {
+    "steady": 0.6,
+    "binding": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 16 of 30 — resilience, endurance, holding firm.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 16
+  },
+  {
+   "id": "wk-17",
+   "system": "pawukon-wuku",
+   "name": "Krulut",
+   "glyph": "᭟",
+   "qualities": [
+    "love",
+    "music",
+    "tenderness"
+   ],
+   "ax": {
+    "warm": 0.5,
+    "outward": 0.4,
+    "gentle": 0.7
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 17 of 30 — love, music, tenderness, the heart.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 17
+  },
+  {
+   "id": "wk-18",
+   "system": "pawukon-wuku",
+   "name": "Merakih",
+   "glyph": "᭟",
+   "qualities": [
+    "longing",
+    "striving",
+    "reaching toward"
+   ],
+   "ax": {
+    "active": 0.4,
+    "rising": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 18 of 30 — longing, striving, reaching toward.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 18
+  },
+  {
+   "id": "wk-19",
+   "system": "pawukon-wuku",
+   "name": "Tambir",
+   "glyph": "᭟",
+   "qualities": [
+    "adaptation",
+    "ambiguity",
+    "the shifting face"
+   ],
+   "ax": {
+    "steady": -0.5,
+    "light": -0.2
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 19 of 30 — adaptation, ambiguity, the shifting face.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 19
+  },
+  {
+   "id": "wk-20",
+   "system": "pawukon-wuku",
+   "name": "Medangkungan",
+   "glyph": "᭟",
+   "qualities": [
+    "depth",
+    "hidden foundation",
+    "the well"
+   ],
+   "ax": {
+    "outward": -0.5,
+    "binding": 0.3,
+    "light": -0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 20 of 30 — depth, hidden foundation, the well.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 20
+  },
+  {
+   "id": "wk-21",
+   "system": "pawukon-wuku",
+   "name": "Matal",
+   "glyph": "᭟",
+   "qualities": [
+    "rootedness",
+    "anchoring",
+    "the firm base"
+   ],
+   "ax": {
+    "steady": 0.7,
+    "binding": 0.5
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 21 of 30 — rootedness, anchoring, the firm base.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 21
+  },
+  {
+   "id": "wk-22",
+   "system": "pawukon-wuku",
+   "name": "Uye",
+   "glyph": "᭟",
+   "qualities": [
+    "nurture",
+    "animal-care",
+    "tending life"
+   ],
+   "ax": {
+    "gentle": 0.6,
+    "warm": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 22 of 30 — nurture, animal-care, tending life.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 22
+  },
+  {
+   "id": "wk-23",
+   "system": "pawukon-wuku",
+   "name": "Menail",
+   "glyph": "᭟",
+   "qualities": [
+    "refuge",
+    "sanctuary",
+    "the sheltered space"
+   ],
+   "ax": {
+    "outward": -0.4,
+    "gentle": 0.4,
+    "binding": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 23 of 30 — refuge, sanctuary, the sheltered space.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 23
+  },
+  {
+   "id": "wk-24",
+   "system": "pawukon-wuku",
+   "name": "Prangbakat",
+   "glyph": "᭟",
+   "qualities": [
+    "striving-force",
+    "the industrious push"
+   ],
+   "ax": {
+    "active": 0.6,
+    "rising": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 24 of 30 — striving-force, the industrious push.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 24
+  },
+  {
+   "id": "wk-25",
+   "system": "pawukon-wuku",
+   "name": "Bala",
+   "glyph": "᭟",
+   "qualities": [
+    "strength",
+    "army",
+    "marshaled power"
+   ],
+   "ax": {
+    "active": 0.6,
+    "binding": 0.4,
+    "gentle": -0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 25 of 30 — strength, army, marshaled power.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 25
+  },
+  {
+   "id": "wk-26",
+   "system": "pawukon-wuku",
+   "name": "Ugu",
+   "glyph": "᭟",
+   "qualities": [
+    "service",
+    "humility",
+    "the useful hand"
+   ],
+   "ax": {
+    "active": 0.2,
+    "gentle": 0.4,
+    "outward": -0.2
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 26 of 30 — service, humility, the useful hand.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 26
+  },
+  {
+   "id": "wk-27",
+   "system": "pawukon-wuku",
+   "name": "Wayang",
+   "glyph": "᭟",
+   "qualities": [
+    "shadow-play",
+    "illusion",
+    "art and story"
+   ],
+   "ax": {
+    "outward": -0.3,
+    "light": -0.4,
+    "gentle": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 27 of 30 — shadow-play, illusion, art and story.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 27
+  },
+  {
+   "id": "wk-28",
+   "system": "pawukon-wuku",
+   "name": "Kulawu",
+   "glyph": "᭟",
+   "qualities": [
+    "maturity",
+    "the grey wisdom",
+    "seasoned depth"
+   ],
+   "ax": {
+    "steady": 0.5,
+    "outward": -0.3,
+    "light": -0.2
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 28 of 30 — maturity, the grey wisdom, seasoned depth.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 28
+  },
+  {
+   "id": "wk-29",
+   "system": "pawukon-wuku",
+   "name": "Dukut",
+   "glyph": "᭟",
+   "qualities": [
+    "abundance of grass",
+    "pastoral plenty"
+   ],
+   "ax": {
+    "rising": 0.4,
+    "warm": 0.3,
+    "gentle": 0.4
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 29 of 30 — abundance of grass, pastoral plenty.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 29
+  },
+  {
+   "id": "wk-30",
+   "system": "pawukon-wuku",
+   "name": "Watugunung",
+   "glyph": "᭟",
+   "qualities": [
+    "culmination",
+    "downfall and enlightenment",
+    "the cycle's close"
+   ],
+   "ax": {
+    "rising": -0.3,
+    "light": 0.5,
+    "outward": 0.3
+   },
+   "source": "Balinese/Javanese Pawukon — 30 wuku (210-day cycle), from the Watugunung myth",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Wuku 30 of 30 — culmination, downfall and enlightenment, the cycle's close.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "wukuNum": 30
+  },
+  {
+   "id": "pc-1",
+   "system": "pancawara",
+   "name": "Umanis",
+   "glyph": "᭞",
+   "qualities": [
+    "sweetness",
+    "openness",
+    "giving"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "gentle": 0.5,
+    "outward": 0.3
+   },
+   "source": "Balinese Pancawara — the 5-day market week (each day carries urip / character)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Pancawara 1 of 5 — sweetness, openness, giving.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "pc-2",
+   "system": "pancawara",
+   "name": "Paing",
+   "glyph": "᭞",
+   "qualities": [
+    "intensity",
+    "focus",
+    "sharpness"
+   ],
+   "ax": {
+    "active": 0.5,
+    "gentle": -0.3
+   },
+   "source": "Balinese Pancawara — the 5-day market week (each day carries urip / character)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Pancawara 2 of 5 — intensity, focus, sharpness.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "pc-3",
+   "system": "pancawara",
+   "name": "Pon",
+   "glyph": "᭞",
+   "qualities": [
+    "abundance",
+    "brightness",
+    "wealth"
+   ],
+   "ax": {
+    "warm": 0.3,
+    "outward": 0.4,
+    "light": 0.4
+   },
+   "source": "Balinese Pancawara — the 5-day market week (each day carries urip / character)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Pancawara 3 of 5 — abundance, brightness, wealth.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "pc-4",
+   "system": "pancawara",
+   "name": "Wage",
+   "glyph": "᭞",
+   "qualities": [
+    "endurance",
+    "groundedness",
+    "patience"
+   ],
+   "ax": {
+    "steady": 0.5,
+    "binding": 0.4
+   },
+   "source": "Balinese Pancawara — the 5-day market week (each day carries urip / character)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Pancawara 4 of 5 — endurance, groundedness, patience.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "pc-5",
+   "system": "pancawara",
+   "name": "Kliwon",
+   "glyph": "᭞",
+   "qualities": [
+    "spiritual potency",
+    "the sacred hinge",
+    "transition"
+   ],
+   "ax": {
+    "outward": -0.3,
+    "light": -0.2,
+    "binding": -0.2
+   },
+   "source": "Balinese Pancawara — the 5-day market week (each day carries urip / character)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Pancawara 5 of 5 — spiritual potency, the sacred hinge, transition.",
+   "origin": [
+    "bali",
+    "java"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "mz-01",
+   "system": "anwa-manzil",
+   "name": "Al-Sharatain",
+   "glyph": "☾",
+   "qualities": [
+    "beginning"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.5
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 1 of 28 — the two signs, the ram's horns — beginning.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 1
+  },
+  {
+   "id": "mz-02",
+   "system": "anwa-manzil",
+   "name": "Al-Butayn",
+   "glyph": "☾",
+   "qualities": [
+    "hidden gestation"
+   ],
+   "ax": {
+    "outward": -0.4,
+    "rising": 0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 2 of 28 — the little belly — hidden gestation.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 2
+  },
+  {
+   "id": "mz-03",
+   "system": "anwa-manzil",
+   "name": "Al-Thurayya",
+   "glyph": "☾",
+   "qualities": [
+    "the many gathered"
+   ],
+   "ax": {
+    "rising": 0.4,
+    "outward": 0.4,
+    "light": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 3 of 28 — the Pleiades, abundance — the many gathered.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 3
+  },
+  {
+   "id": "mz-04",
+   "system": "anwa-manzil",
+   "name": "Al-Dabaran",
+   "glyph": "☾",
+   "qualities": [
+    "persistence",
+    "pursuit"
+   ],
+   "ax": {
+    "active": 0.3,
+    "steady": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 4 of 28 — the follower — persistence, pursuit.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 4
+  },
+  {
+   "id": "mz-05",
+   "system": "anwa-manzil",
+   "name": "Al-Haqa",
+   "glyph": "☾",
+   "qualities": [
+    "subtlety",
+    "small light"
+   ],
+   "ax": {
+    "light": 0.3,
+    "outward": -0.2
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 5 of 28 — the white spot — subtlety, small light.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 5
+  },
+  {
+   "id": "mz-06",
+   "system": "anwa-manzil",
+   "name": "Al-Hana",
+   "glyph": "☾",
+   "qualities": [
+    "identity",
+    "distinction"
+   ],
+   "ax": {
+    "outward": 0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 6 of 28 — the brand-mark — identity, distinction.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 6
+  },
+  {
+   "id": "mz-07",
+   "system": "anwa-manzil",
+   "name": "Al-Dhira",
+   "glyph": "☾",
+   "qualities": [
+    "reach",
+    "strength extended"
+   ],
+   "ax": {
+    "active": 0.5,
+    "outward": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 7 of 28 — the forearm — reach, strength extended.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 7
+  },
+  {
+   "id": "mz-08",
+   "system": "anwa-manzil",
+   "name": "Al-Nathra",
+   "glyph": "☾",
+   "qualities": [
+    "nourishment",
+    "shelter"
+   ],
+   "ax": {
+    "gentle": 0.4,
+    "binding": 0.2
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 8 of 28 — the gap, the manger — nourishment, shelter.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 8
+  },
+  {
+   "id": "mz-09",
+   "system": "anwa-manzil",
+   "name": "Al-Tarf",
+   "glyph": "☾",
+   "qualities": [
+    "vigilance",
+    "the watchful eye"
+   ],
+   "ax": {
+    "active": 0.3,
+    "light": 0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 9 of 28 — the glance — vigilance, the watchful eye.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 9
+  },
+  {
+   "id": "mz-10",
+   "system": "anwa-manzil",
+   "name": "Al-Jabha",
+   "glyph": "☾",
+   "qualities": [
+    "pride",
+    "prominence"
+   ],
+   "ax": {
+    "outward": 0.5,
+    "light": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 10 of 28 — the forehead — pride, prominence.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 10
+  },
+  {
+   "id": "mz-11",
+   "system": "anwa-manzil",
+   "name": "Al-Zubra",
+   "glyph": "☾",
+   "qualities": [
+    "dignity",
+    "radiant strength"
+   ],
+   "ax": {
+    "warm": 0.3,
+    "outward": 0.4,
+    "light": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 11 of 28 — the mane — dignity, radiant strength.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 11
+  },
+  {
+   "id": "mz-12",
+   "system": "anwa-manzil",
+   "name": "Al-Sarfa",
+   "glyph": "☾",
+   "qualities": [
+    "change of weather",
+    "the shift"
+   ],
+   "ax": {
+    "steady": -0.5
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 12 of 28 — the turning — change of weather, the shift.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 12
+  },
+  {
+   "id": "mz-13",
+   "system": "anwa-manzil",
+   "name": "Al-Awwa",
+   "glyph": "☾",
+   "qualities": [
+    "announcement",
+    "the herald's cry"
+   ],
+   "ax": {
+    "active": 0.4,
+    "outward": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 13 of 28 — the barker — announcement, the herald's cry.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 13
+  },
+  {
+   "id": "mz-14",
+   "system": "anwa-manzil",
+   "name": "Al-Simak",
+   "glyph": "☾",
+   "qualities": [
+    "the lofty",
+    "the exalted"
+   ],
+   "ax": {
+    "rising": 0.5,
+    "light": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 14 of 28 — the unarmed, Spica — the lofty, the exalted.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 14
+  },
+  {
+   "id": "mz-15",
+   "system": "anwa-manzil",
+   "name": "Al-Ghafr",
+   "glyph": "☾",
+   "qualities": [
+    "concealment",
+    "gentle veiling"
+   ],
+   "ax": {
+    "outward": -0.4,
+    "gentle": 0.4,
+    "light": -0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 15 of 28 — the covering — concealment, gentle veiling.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 15
+  },
+  {
+   "id": "mz-16",
+   "system": "anwa-manzil",
+   "name": "Al-Zubana",
+   "glyph": "☾",
+   "qualities": [
+    "grasping",
+    "negotiation"
+   ],
+   "ax": {
+    "active": 0.3,
+    "gentle": -0.2
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 16 of 28 — the claws — grasping, negotiation.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 16
+  },
+  {
+   "id": "mz-17",
+   "system": "anwa-manzil",
+   "name": "Al-Iklil",
+   "glyph": "☾",
+   "qualities": [
+    "honor",
+    "the encircling"
+   ],
+   "ax": {
+    "binding": 0.4,
+    "outward": 0.4,
+    "light": 0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 17 of 28 — the crown — honor, the encircling.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 17
+  },
+  {
+   "id": "mz-18",
+   "system": "anwa-manzil",
+   "name": "Al-Qalb",
+   "glyph": "☾",
+   "qualities": [
+    "passion",
+    "the deep core"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "outward": -0.3,
+    "light": -0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 18 of 28 — the heart, Antares — passion, the deep core.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 18
+  },
+  {
+   "id": "mz-19",
+   "system": "anwa-manzil",
+   "name": "Al-Shaula",
+   "glyph": "☾",
+   "qualities": [
+    "sharpness",
+    "the raised tail"
+   ],
+   "ax": {
+    "active": 0.4,
+    "gentle": -0.5
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 19 of 28 — the sting — sharpness, the raised tail.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 19
+  },
+  {
+   "id": "mz-20",
+   "system": "anwa-manzil",
+   "name": "Al-Naaim",
+   "glyph": "☾",
+   "qualities": [
+    "freedom",
+    "roaming"
+   ],
+   "ax": {
+    "active": 0.4,
+    "steady": -0.5
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 20 of 28 — the ostriches — freedom, roaming.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 20
+  },
+  {
+   "id": "mz-21",
+   "system": "anwa-manzil",
+   "name": "Al-Balda",
+   "glyph": "☾",
+   "qualities": [
+    "fallow",
+    "potential",
+    "rest"
+   ],
+   "ax": {
+    "active": -0.4,
+    "outward": -0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 21 of 28 — the empty place — fallow, potential, rest.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 21
+  },
+  {
+   "id": "mz-22",
+   "system": "anwa-manzil",
+   "name": "Sad al-Dhabih",
+   "glyph": "☾",
+   "qualities": [
+    "decisive fortune"
+   ],
+   "ax": {
+    "active": 0.4,
+    "gentle": -0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 22 of 28 — the slayer's luck — decisive fortune.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 22
+  },
+  {
+   "id": "mz-23",
+   "system": "anwa-manzil",
+   "name": "Sad Bula",
+   "glyph": "☾",
+   "qualities": [
+    "absorption",
+    "taking in"
+   ],
+   "ax": {
+    "outward": -0.3,
+    "binding": 0.2
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 23 of 28 — the swallower's luck — absorption, taking in.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 23
+  },
+  {
+   "id": "mz-24",
+   "system": "anwa-manzil",
+   "name": "Sad al-Suud",
+   "glyph": "☾",
+   "qualities": [
+    "grace",
+    "flow"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "gentle": 0.5,
+    "light": 0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 24 of 28 — the luckiest of the lucky — grace, flow.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 24
+  },
+  {
+   "id": "mz-25",
+   "system": "anwa-manzil",
+   "name": "Sad al-Akhbiya",
+   "glyph": "☾",
+   "qualities": [
+    "shelter",
+    "the hidden home"
+   ],
+   "ax": {
+    "outward": -0.4,
+    "binding": 0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 25 of 28 — the luck of tents — shelter, the hidden home.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 25
+  },
+  {
+   "id": "mz-26",
+   "system": "anwa-manzil",
+   "name": "Al-Fargh al-Muqaddam",
+   "glyph": "☾",
+   "qualities": [
+    "pouring out",
+    "release"
+   ],
+   "ax": {
+    "active": 0.3,
+    "binding": -0.4
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 26 of 28 — the fore-spout — pouring out, release.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 26
+  },
+  {
+   "id": "mz-27",
+   "system": "anwa-manzil",
+   "name": "Al-Fargh al-Muakhkhar",
+   "glyph": "☾",
+   "qualities": [
+    "the last pouring",
+    "completion"
+   ],
+   "ax": {
+    "rising": -0.3,
+    "binding": -0.3
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 27 of 28 — the rear-spout — the last pouring, completion.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 27
+  },
+  {
+   "id": "mz-28",
+   "system": "anwa-manzil",
+   "name": "Al-Risha",
+   "glyph": "☾",
+   "qualities": [
+    "connection",
+    "drawing up"
+   ],
+   "ax": {
+    "binding": -0.2,
+    "gentle": 0.3,
+    "outward": -0.2
+   },
+   "source": "Arabic anwā' / manāzil al-qamar — the 28 lunar stations (pre-Islamic Arabian star-calendar)",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "Lunar station 28 of 28 — the well-rope, the fish — connection, drawing up.",
+   "origin": [
+    "arabia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "manzilNum": 28
+  },
+  {
+   "id": "ph-saturn",
+   "system": "planetary-hour",
+   "name": "Saturn hour",
+   "glyph": "☄",
+   "qualities": [
+    "limitation",
+    "discipline",
+    "gravity"
+   ],
+   "ax": {
+    "active": -0.2,
+    "warm": -0.6,
+    "binding": 0.8,
+    "gentle": -0.4,
+    "light": -0.3
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Saturn — limitation, discipline, gravity, the sober hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "ph-jupiter",
+   "system": "planetary-hour",
+   "name": "Jupiter hour",
+   "glyph": "♃",
+   "qualities": [
+    "expansion",
+    "fortune",
+    "generosity"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.5,
+    "warm": 0.4,
+    "outward": 0.5,
+    "gentle": 0.5
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Jupiter — expansion, fortune, generosity, the benevolent hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "ph-mars",
+   "system": "planetary-hour",
+   "name": "Mars hour",
+   "glyph": "♂",
+   "qualities": [
+    "force",
+    "urgency",
+    "courage"
+   ],
+   "ax": {
+    "active": 0.9,
+    "warm": 0.4,
+    "gentle": -0.8
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Mars — force, urgency, courage, the sharp hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "ph-sun",
+   "system": "planetary-hour",
+   "name": "Sun hour",
+   "glyph": "☉",
+   "qualities": [
+    "vitality",
+    "clarity",
+    "sovereignty"
+   ],
+   "ax": {
+    "active": 0.6,
+    "warm": 0.8,
+    "outward": 0.7,
+    "light": 0.9
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Sun — vitality, clarity, sovereignty, the radiant hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "ph-venus",
+   "system": "planetary-hour",
+   "name": "Venus hour",
+   "glyph": "♀",
+   "qualities": [
+    "love",
+    "harmony",
+    "beauty"
+   ],
+   "ax": {
+    "active": -0.1,
+    "warm": 0.5,
+    "outward": 0.2,
+    "gentle": 0.8
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Venus — love, harmony, beauty, the sweet hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "ph-mercury",
+   "system": "planetary-hour",
+   "name": "Mercury hour",
+   "glyph": "☿",
+   "qualities": [
+    "mind",
+    "exchange",
+    "quickness"
+   ],
+   "ax": {
+    "active": 0.5,
+    "steady": -0.6,
+    "outward": 0.3,
+    "light": 0.3
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Mercury — mind, exchange, quickness, the clever hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "ph-moon",
+   "system": "planetary-hour",
+   "name": "Moon hour",
+   "glyph": "☽",
+   "qualities": [
+    "feeling",
+    "tide",
+    "reflection"
+   ],
+   "ax": {
+    "active": -0.5,
+    "outward": -0.4,
+    "gentle": 0.5,
+    "light": -0.3
+   },
+   "source": "Classical planetary hours (Chaldean order) — unequal hours dividing day/night, each planet-ruled",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The hour of Moon — feeling, tide, reflection, the fluid hour. Hours are unequal, stretching with the season's daylight.",
+   "origin": [
+    "mediterranean",
+    "babylon"
+   ],
+   "honesty": "render",
+   "tier": "celebrated"
+  },
+  {
+   "id": "shi-zi",
+   "system": "chinese-shi",
+   "name": "Zi (Rat) hour",
+   "glyph": "時",
+   "qualities": [
+    "midnight",
+    "stillness",
+    "the seed of yang"
+   ],
+   "ax": {
+    "active": -0.4,
+    "outward": -0.5,
+    "light": -0.6
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Rat — 23:00–01:00 — midnight, stillness, the seed of yang.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Zi",
+   "animal": "Rat"
+  },
+  {
+   "id": "shi-chou",
+   "system": "chinese-shi",
+   "name": "Chou (Ox) hour",
+   "glyph": "時",
+   "qualities": [
+    "deep night",
+    "patient labor unseen"
+   ],
+   "ax": {
+    "steady": 0.6,
+    "outward": -0.4,
+    "light": -0.5
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Ox — 01:00–03:00 — deep night, patient labor unseen.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Chou",
+   "animal": "Ox"
+  },
+  {
+   "id": "shi-yin",
+   "system": "chinese-shi",
+   "name": "Yin (Tiger) hour",
+   "glyph": "時",
+   "qualities": [
+    "before dawn",
+    "the stirring",
+    "first courage"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.5,
+    "light": -0.2
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Tiger — 03:00–05:00 — before dawn, the stirring, first courage.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Yin",
+   "animal": "Tiger"
+  },
+  {
+   "id": "shi-mao",
+   "system": "chinese-shi",
+   "name": "Mao (Rabbit) hour",
+   "glyph": "時",
+   "qualities": [
+    "sunrise",
+    "gentle emergence",
+    "the soft light"
+   ],
+   "ax": {
+    "rising": 0.5,
+    "gentle": 0.5,
+    "light": 0.4
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Rabbit — 05:00–07:00 — sunrise, gentle emergence, the soft light.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Mao",
+   "animal": "Rabbit"
+  },
+  {
+   "id": "shi-chen",
+   "system": "chinese-shi",
+   "name": "Chen (Dragon) hour",
+   "glyph": "時",
+   "qualities": [
+    "morning vigor",
+    "the rising power"
+   ],
+   "ax": {
+    "active": 0.6,
+    "rising": 0.6,
+    "outward": 0.5,
+    "light": 0.5
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Dragon — 07:00–09:00 — morning vigor, the rising power.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Chen",
+   "animal": "Dragon"
+  },
+  {
+   "id": "shi-si",
+   "system": "chinese-shi",
+   "name": "Si (Snake) hour",
+   "glyph": "時",
+   "qualities": [
+    "late morning",
+    "focused warmth",
+    "coiled intent"
+   ],
+   "ax": {
+    "active": 0.3,
+    "warm": 0.4,
+    "outward": -0.3
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Snake — 09:00–11:00 — late morning, focused warmth, coiled intent.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Si",
+   "animal": "Snake"
+  },
+  {
+   "id": "shi-wu",
+   "system": "chinese-shi",
+   "name": "Wu (Horse) hour",
+   "glyph": "時",
+   "qualities": [
+    "noon",
+    "the peak of yang",
+    "full radiance"
+   ],
+   "ax": {
+    "active": 0.7,
+    "warm": 0.7,
+    "outward": 0.6,
+    "light": 0.8
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Horse — 11:00–13:00 — noon, the peak of yang, full radiance.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Wu",
+   "animal": "Horse"
+  },
+  {
+   "id": "shi-wei",
+   "system": "chinese-shi",
+   "name": "Wei (Goat) hour",
+   "glyph": "時",
+   "qualities": [
+    "early afternoon",
+    "ease",
+    "gentle grazing"
+   ],
+   "ax": {
+    "active": -0.2,
+    "gentle": 0.5,
+    "warm": 0.3
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Goat — 13:00–15:00 — early afternoon, ease, gentle grazing.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Wei",
+   "animal": "Goat"
+  },
+  {
+   "id": "shi-shen",
+   "system": "chinese-shi",
+   "name": "Shen (Monkey) hour",
+   "glyph": "時",
+   "qualities": [
+    "afternoon",
+    "cleverness",
+    "restless play"
+   ],
+   "ax": {
+    "active": 0.6,
+    "steady": -0.6,
+    "outward": 0.3
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Monkey — 15:00–17:00 — afternoon, cleverness, restless play.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Shen",
+   "animal": "Monkey"
+  },
+  {
+   "id": "shi-you",
+   "system": "chinese-shi",
+   "name": "You (Rooster) hour",
+   "glyph": "時",
+   "qualities": [
+    "sunset",
+    "gathering-in",
+    "the herald of dusk"
+   ],
+   "ax": {
+    "active": 0.3,
+    "outward": 0.4,
+    "light": 0.2
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Rooster — 17:00–19:00 — sunset, gathering-in, the herald of dusk.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "You",
+   "animal": "Rooster"
+  },
+  {
+   "id": "shi-xu",
+   "system": "chinese-shi",
+   "name": "Xu (Dog) hour",
+   "glyph": "時",
+   "qualities": [
+    "evening",
+    "loyalty",
+    "the guarded hearth"
+   ],
+   "ax": {
+    "steady": 0.4,
+    "gentle": 0.3,
+    "outward": -0.2
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Dog — 19:00–21:00 — evening, loyalty, the guarded hearth.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Xu",
+   "animal": "Dog"
+  },
+  {
+   "id": "shi-hai",
+   "system": "chinese-shi",
+   "name": "Hai (Pig) hour",
+   "glyph": "時",
+   "qualities": [
+    "late night",
+    "rest",
+    "honest sleep"
+   ],
+   "ax": {
+    "active": -0.5,
+    "gentle": 0.4,
+    "outward": -0.4,
+    "light": -0.4
+   },
+   "source": "Chinese shí (時辰) — the 12 traditional double-hours, each an Earthly Branch + animal",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "The double-hour of Pig — 21:00–23:00 — late night, rest, honest sleep.",
+   "origin": [
+    "china",
+    "east-asia"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "branch": "Hai",
+   "animal": "Pig"
+  },
+  {
+   "id": "num-0",
+   "system": "numerology",
+   "name": "Number 0",
+   "glyph": "0",
+   "qualities": [
+    "the void",
+    "potential",
+    "the unmanifest circle"
+   ],
+   "ax": {
+    "outward": -0.5,
+    "light": -0.4,
+    "binding": -0.3
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 0 — the void, potential, the unmanifest circle.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 0
+  },
+  {
+   "id": "num-1",
+   "system": "numerology",
+   "name": "Number 1",
+   "glyph": "1",
+   "qualities": [
+    "unity",
+    "initiation",
+    "the singular will"
+   ],
+   "ax": {
+    "active": 0.8,
+    "rising": 0.6,
+    "outward": 0.4
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 1 — unity, initiation, the singular will.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 1
+  },
+  {
+   "id": "num-2",
+   "system": "numerology",
+   "name": "Number 2",
+   "glyph": "2",
+   "qualities": [
+    "duality",
+    "balance",
+    "receptive pairing"
+   ],
+   "ax": {
+    "active": -0.4,
+    "gentle": 0.5,
+    "steady": 0.2
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 2 — duality, balance, receptive pairing.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 2
+  },
+  {
+   "id": "num-3",
+   "system": "numerology",
+   "name": "Number 3",
+   "glyph": "3",
+   "qualities": [
+    "creativity",
+    "synthesis",
+    "joyful expression"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.4,
+    "outward": 0.5,
+    "warm": 0.3
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 3 — creativity, synthesis, joyful expression.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 3
+  },
+  {
+   "id": "num-4",
+   "system": "numerology",
+   "name": "Number 4",
+   "glyph": "4",
+   "qualities": [
+    "structure",
+    "foundation",
+    "the stable square"
+   ],
+   "ax": {
+    "steady": 0.8,
+    "binding": 0.7
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 4 — structure, foundation, the stable square.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 4
+  },
+  {
+   "id": "num-5",
+   "system": "numerology",
+   "name": "Number 5",
+   "glyph": "5",
+   "qualities": [
+    "change",
+    "freedom",
+    "restless motion"
+   ],
+   "ax": {
+    "active": 0.6,
+    "steady": -0.8,
+    "outward": 0.3
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 5 — change, freedom, restless motion.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 5
+  },
+  {
+   "id": "num-6",
+   "system": "numerology",
+   "name": "Number 6",
+   "glyph": "6",
+   "qualities": [
+    "harmony",
+    "care",
+    "nurturing responsibility"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "gentle": 0.7,
+    "binding": 0.2
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 6 — harmony, care, nurturing responsibility.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 6
+  },
+  {
+   "id": "num-7",
+   "system": "numerology",
+   "name": "Number 7",
+   "glyph": "7",
+   "qualities": [
+    "mystery",
+    "inwardness",
+    "the seeker's depth"
+   ],
+   "ax": {
+    "active": -0.4,
+    "outward": -0.7,
+    "light": -0.3
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 7 — mystery, inwardness, the seeker's depth.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 7
+  },
+  {
+   "id": "num-8",
+   "system": "numerology",
+   "name": "Number 8",
+   "glyph": "8",
+   "qualities": [
+    "power",
+    "cycle",
+    "material mastery"
+   ],
+   "ax": {
+    "active": 0.5,
+    "binding": 0.5,
+    "outward": 0.4
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 8 — power, cycle, material mastery, the infinite loop.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 8
+  },
+  {
+   "id": "num-9",
+   "system": "numerology",
+   "name": "Number 9",
+   "glyph": "9",
+   "qualities": [
+    "completion",
+    "wisdom",
+    "the closing turn"
+   ],
+   "ax": {
+    "rising": -0.3,
+    "outward": 0.3,
+    "light": 0.4,
+    "gentle": 0.4
+   },
+   "source": "Numerology 0–9 — cross-cultural number-quality (Pythagorean, Vedic, Chinese roots)",
+   "claim": "interpretation",
+   "nature": "computed",
+   "observes": "both",
+   "observed": "The quality of 9 — completion, wisdom, the closing turn.",
+   "origin": [
+    "global"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "digit": 9
+  },
+  {
+   "id": "muh-01",
+   "system": "muhurta",
+   "name": "Rudra",
+   "glyph": "⸙",
+   "qualities": [
+    "fierce power",
+    "dissolution"
+   ],
+   "ax": {
+    "active": 0.5,
+    "gentle": -0.6
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 1 of 30 — fierce power, dissolution.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 1
+  },
+  {
+   "id": "muh-02",
+   "system": "muhurta",
+   "name": "Ahi",
+   "glyph": "⸙",
+   "qualities": [
+    "the serpent",
+    "latent danger"
+   ],
+   "ax": {
+    "outward": -0.4,
+    "light": -0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 2 of 30 — the serpent, latent danger.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 2
+  },
+  {
+   "id": "muh-03",
+   "system": "muhurta",
+   "name": "Mitra",
+   "glyph": "⸙",
+   "qualities": [
+    "friendship",
+    "warmth",
+    "alliance"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "gentle": 0.5
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 3 of 30 — friendship, warmth, alliance.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 3
+  },
+  {
+   "id": "muh-04",
+   "system": "muhurta",
+   "name": "Pitri",
+   "glyph": "⸙",
+   "qualities": [
+    "the ancestors",
+    "memory",
+    "lineage"
+   ],
+   "ax": {
+    "outward": -0.3,
+    "steady": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 4 of 30 — the ancestors, memory, lineage.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 4
+  },
+  {
+   "id": "muh-05",
+   "system": "muhurta",
+   "name": "Vasu",
+   "glyph": "⸙",
+   "qualities": [
+    "wealth",
+    "the good things",
+    "abundance"
+   ],
+   "ax": {
+    "warm": 0.3,
+    "rising": 0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 5 of 30 — wealth, the good things, abundance.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 5
+  },
+  {
+   "id": "muh-06",
+   "system": "muhurta",
+   "name": "Vara",
+   "glyph": "⸙",
+   "qualities": [
+    "the boon",
+    "blessing",
+    "choice"
+   ],
+   "ax": {
+    "gentle": 0.4,
+    "light": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 6 of 30 — the boon, blessing, choice.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 6
+  },
+  {
+   "id": "muh-07",
+   "system": "muhurta",
+   "name": "Vishvavasu",
+   "glyph": "⸙",
+   "qualities": [
+    "universal wealth",
+    "shared good"
+   ],
+   "ax": {
+    "outward": 0.4,
+    "warm": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 7 of 30 — universal wealth, shared good.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 7
+  },
+  {
+   "id": "muh-08",
+   "system": "muhurta",
+   "name": "Abhijit",
+   "glyph": "⸙",
+   "qualities": [
+    "the victorious",
+    "midday's crown — most auspicious"
+   ],
+   "ax": {
+    "active": 0.5,
+    "outward": 0.5,
+    "light": 0.7,
+    "rising": 0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 8 of 30 — the victorious, midday's crown — most auspicious.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 8
+  },
+  {
+   "id": "muh-09",
+   "system": "muhurta",
+   "name": "Rohini",
+   "glyph": "⸙",
+   "qualities": [
+    "growth",
+    "fertility",
+    "ascent"
+   ],
+   "ax": {
+    "rising": 0.5,
+    "warm": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 9 of 30 — growth, fertility, ascent.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 9
+  },
+  {
+   "id": "muh-10",
+   "system": "muhurta",
+   "name": "Bala",
+   "glyph": "⸙",
+   "qualities": [
+    "strength",
+    "vigor"
+   ],
+   "ax": {
+    "active": 0.6
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 10 of 30 — strength, vigor.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 10
+  },
+  {
+   "id": "muh-11",
+   "system": "muhurta",
+   "name": "Vijaya",
+   "glyph": "⸙",
+   "qualities": [
+    "victory",
+    "triumph",
+    "the winning turn"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.5,
+    "outward": 0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 11 of 30 — victory, triumph, the winning turn.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 11
+  },
+  {
+   "id": "muh-12",
+   "system": "muhurta",
+   "name": "Naishreyasa",
+   "glyph": "⸙",
+   "qualities": [
+    "the highest good",
+    "excellence"
+   ],
+   "ax": {
+    "rising": 0.4,
+    "light": 0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 12 of 30 — the highest good, excellence.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 12
+  },
+  {
+   "id": "muh-13",
+   "system": "muhurta",
+   "name": "Varuna",
+   "glyph": "⸙",
+   "qualities": [
+    "the waters",
+    "depth",
+    "cosmic order"
+   ],
+   "ax": {
+    "active": -0.3,
+    "outward": -0.4,
+    "binding": -0.2,
+    "light": -0.2
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 13 of 30 — the waters, depth, cosmic order.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 13
+  },
+  {
+   "id": "muh-14",
+   "system": "muhurta",
+   "name": "Aryaman",
+   "glyph": "⸙",
+   "qualities": [
+    "nobility",
+    "honor",
+    "the shared path"
+   ],
+   "ax": {
+    "steady": 0.4,
+    "gentle": 0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 14 of 30 — nobility, honor, the shared path.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 14
+  },
+  {
+   "id": "muh-15",
+   "system": "muhurta",
+   "name": "Bhaga",
+   "glyph": "⸙",
+   "qualities": [
+    "fortune",
+    "delight",
+    "the portioned gift"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "gentle": 0.4,
+    "outward": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 15 of 30 — fortune, delight, the portioned gift.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 15
+  },
+  {
+   "id": "muh-16",
+   "system": "muhurta",
+   "name": "Girisha",
+   "glyph": "⸙",
+   "qualities": [
+    "the mountain-lord",
+    "stillness",
+    "height"
+   ],
+   "ax": {
+    "steady": 0.6,
+    "outward": -0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 16 of 30 — the mountain-lord, stillness, height.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 16
+  },
+  {
+   "id": "muh-17",
+   "system": "muhurta",
+   "name": "Ajapada",
+   "glyph": "⸙",
+   "qualities": [
+    "the one-footed",
+    "mysterious fire"
+   ],
+   "ax": {
+    "active": 0.3,
+    "warm": 0.2,
+    "light": -0.2
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 17 of 30 — the one-footed, mysterious fire.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 17
+  },
+  {
+   "id": "muh-18",
+   "system": "muhurta",
+   "name": "Ahirbudhnya",
+   "glyph": "⸙",
+   "qualities": [
+    "the deep serpent",
+    "the abyss's wisdom"
+   ],
+   "ax": {
+    "outward": -0.6,
+    "binding": -0.3,
+    "light": -0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 18 of 30 — the deep serpent, the abyss's wisdom.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 18
+  },
+  {
+   "id": "muh-19",
+   "system": "muhurta",
+   "name": "Pushan",
+   "glyph": "⸙",
+   "qualities": [
+    "the nourisher",
+    "safe passage"
+   ],
+   "ax": {
+    "gentle": 0.5,
+    "binding": -0.2
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 19 of 30 — the nourisher, safe passage.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 19
+  },
+  {
+   "id": "muh-20",
+   "system": "muhurta",
+   "name": "Ashvini",
+   "glyph": "⸙",
+   "qualities": [
+    "the horse-twins",
+    "swift healing"
+   ],
+   "ax": {
+    "active": 0.7,
+    "rising": 0.5,
+    "gentle": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 20 of 30 — the horse-twins, swift healing.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 20
+  },
+  {
+   "id": "muh-21",
+   "system": "muhurta",
+   "name": "Yama",
+   "glyph": "⸙",
+   "qualities": [
+    "restraint",
+    "the boundary",
+    "mortality"
+   ],
+   "ax": {
+    "binding": 0.5,
+    "gentle": -0.4,
+    "light": -0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 21 of 30 — restraint, the boundary, mortality.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 21
+  },
+  {
+   "id": "muh-22",
+   "system": "muhurta",
+   "name": "Agni",
+   "glyph": "⸙",
+   "qualities": [
+    "fire",
+    "transformation",
+    "the kindling"
+   ],
+   "ax": {
+    "active": 0.6,
+    "warm": 0.7,
+    "light": 0.5
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 22 of 30 — fire, transformation, the kindling.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 22
+  },
+  {
+   "id": "muh-23",
+   "system": "muhurta",
+   "name": "Vidhatri",
+   "glyph": "⸙",
+   "qualities": [
+    "the ordainer",
+    "disposition",
+    "arrangement"
+   ],
+   "ax": {
+    "binding": 0.5,
+    "steady": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 23 of 30 — the ordainer, disposition, arrangement.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 23
+  },
+  {
+   "id": "muh-24",
+   "system": "muhurta",
+   "name": "Kanda",
+   "glyph": "⸙",
+   "qualities": [
+    "the segment",
+    "division",
+    "articulation"
+   ],
+   "ax": {
+    "binding": 0.4
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 24 of 30 — the segment, division, articulation.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 24
+  },
+  {
+   "id": "muh-25",
+   "system": "muhurta",
+   "name": "Aditi",
+   "glyph": "⸙",
+   "qualities": [
+    "boundlessness",
+    "the infinite mother"
+   ],
+   "ax": {
+    "outward": 0.3,
+    "gentle": 0.6,
+    "rising": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 25 of 30 — boundlessness, the infinite mother.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 25
+  },
+  {
+   "id": "muh-26",
+   "system": "muhurta",
+   "name": "Jiva",
+   "glyph": "⸙",
+   "qualities": [
+    "life-force",
+    "vitality",
+    "the living breath"
+   ],
+   "ax": {
+    "active": 0.5,
+    "rising": 0.4,
+    "warm": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 26 of 30 — life-force, vitality, the living breath.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 26
+  },
+  {
+   "id": "muh-27",
+   "system": "muhurta",
+   "name": "Vishnu",
+   "glyph": "⸙",
+   "qualities": [
+    "preservation",
+    "sustenance",
+    "the pervading"
+   ],
+   "ax": {
+    "steady": 0.5,
+    "gentle": 0.4,
+    "light": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 27 of 30 — preservation, sustenance, the pervading.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 27
+  },
+  {
+   "id": "muh-28",
+   "system": "muhurta",
+   "name": "Dyumadgadyuti",
+   "glyph": "⸙",
+   "qualities": [
+    "radiant splendor",
+    "brilliance"
+   ],
+   "ax": {
+    "warm": 0.4,
+    "outward": 0.5,
+    "light": 0.7
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 28 of 30 — radiant splendor, brilliance.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 28
+  },
+  {
+   "id": "muh-29",
+   "system": "muhurta",
+   "name": "Brahma",
+   "glyph": "⸙",
+   "qualities": [
+    "the sacred dawn-hour",
+    "creation",
+    "pure potential"
+   ],
+   "ax": {
+    "rising": 0.6,
+    "light": 0.5,
+    "outward": -0.2
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 29 of 30 — the sacred dawn-hour, creation, pure potential.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 29
+  },
+  {
+   "id": "muh-30",
+   "system": "muhurta",
+   "name": "Samudram",
+   "glyph": "⸙",
+   "qualities": [
+    "the ocean",
+    "vastness",
+    "the gathering deep"
+   ],
+   "ax": {
+    "outward": -0.3,
+    "binding": -0.3,
+    "gentle": 0.3
+   },
+   "source": "Vedic muhūrta — 30 divisions of the day (~48 min each), each with traditional character",
+   "claim": "convention",
+   "nature": "computed",
+   "observes": "moment",
+   "observed": "Muhūrta 30 of 30 — the ocean, vastness, the gathering deep.",
+   "origin": [
+    "india"
+   ],
+   "honesty": "render",
+   "tier": "celebrated",
+   "muhurtaNum": 30
   }
  ]
 }

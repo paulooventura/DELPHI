@@ -40,24 +40,18 @@ The **eight axes** (each −1..+1): active·rising·steady·warm·outward·bindi
 
 ---
 
-## PART 0 — Fix the Tzolk'in count (BLOCKER — the day-sign feeds the chord)
+## PART 0 — Fix the Tzolk'in count (DONE)
 
-Still open from earlier and it blocks Part 1, because Tzolk'in day-sign + tone are
-computed inputs to the moment.
+Tzolk'in day-sign + tone feed the chord. Golden tests are green:
 
-- Reference (GMT 584283 converter) gives **1 Ak'b'al, Long Count 13.0.13.14.3** for
-  2026-07-24; the app currently shows 2 Kan. Compare our Long Count to
-  `13.0.13.14.3` — if Long Count matches but Tzolk'in doesn't, the modulo-260
-  indexing is off by one; if Long Count also disagrees, the correlation constant is
-  wrong. Use the **local civil date**, not the UTC instant.
-- `galactic1320` (Dreamspell) still just relabels the Tzolk'in kin — flipping the
-  Maya-correlation dropdown moves both. Give Dreamspell its **own anchor + Feb-29-skip
-  rule**, reading only from `ctx`. Once independent, the correlation dropdown must
-  stop affecting the Dreamspell card.
+- **2026-07-24** → **1 Ak'b'al**, Long Count `13.0.13.14.3` (DELPHI kin **183**
+  with 1 Imix = kin 1). Local civil date, not UTC instant.
+- Dreamspell (`galactic1320`) has its **own anchor + Feb-29-skip**; the Maya
+  correlation dropdown no longer moves the Dreamspell card.
+- Feb-28/29/Mar-1 2024: traditional Tzolk'in advances through the leap day;
+  Dreamspell holds across Feb 29.
 
-⚠ **Checkpoint:** golden test asserts `1 Ak'b'al` (kin 121) for 2026-07-24, and a
-Feb-28/29/Mar-1 2024 test shows traditional Tzolk'in advancing through the leap day
-while Dreamspell holds. `tsc` clean.
+⚠ **Checkpoint:** `mayaCalendars.golden.test.ts` + resolveMoment Akbal asserts. `tsc` clean.
 
 ---
 
@@ -296,7 +290,7 @@ emblems, and the 5 ritual animations.
 
 # ADDENDUM 2 — The layered, living moment phrase
 
-`compose.ts` exports `composeLayers()` and `layerPrompt()`. Build the home
+`compose.ts` now exports `composeLayers()` and `layerPrompt()`. Build the home
 reading as user-chosen layers — consistent math, transparent lore.
 
 ## The three layers (composeLayers)
@@ -336,3 +330,50 @@ reading as user-chosen layers — consistent math, transparent lore.
    computed-only even if cast/birth entries are passed to `composeLayers`.
 10. Adding natal input yields a distinct Layer 1 without changing Layer 0;
     drawing yields Layer 2; clearing the draw returns exactly the prior phrase.
+
+---
+
+# ADDENDUM 3 — Complete mainframe (v5), snapshot phrase, orrery clock
+
+## Mainframe grew to 478 entries / 24 systems
+
+New systems (all `nature: computed`, `tier: celebrated` unless noted):
+- **pawukon-wuku** (30) + **pancawara** (5) — Balinese 210-day cycle
+- **anwa-manzil** (28) — Arabic lunar stations
+- **planetary-hour** (7), **chinese-shi** (12), **muhurta** (30) — SUB-DAY,
+  quality-bearing: they shift through the day and make each snapshot differ
+- **numerology** (10) — 0–9, reads the moment's reduced numbers
+
+Every entry now has **`tier: "measured" | "celebrated"`**. This is the legitimacy
+spine — surface it at the point of reading:
+- `measured` (35) — real astronomy/math (moon phase, nakshatra position). The
+  official claim, precise.
+- `celebrated` (443) — honoring how a culture read the sky. Offered with respect,
+  NOT official representation. Use `measured()` / `celebrated()` helpers.
+
+The resolver (Part 1) must now also resolve the sub-day rings for the current
+instant: which planetary hour (unequal, from sunrise/sunset), which chinese shí
+(2-hour block), which muhūrta (~48-min block), plus the wuku, pancawara, manzil,
+and the numerology root of the date. All feed `momentPool()`.
+
+## Snapshot phrase (compose.ts → takeSnapshot)
+
+The home phrase LOCKS when the home screen opens. Call `takeSnapshot(activeNow,
+lat, lon)` once on home-open (and again on return) — never on a timer, never per
+render. The clock spins live; the phrase is the still reading of the arrival
+instant. Because the sub-day rings are in `activeNow`, consecutive visits differ
+through the day (a Sun-hour open reads brighter than a Saturn-hour open) — alive,
+but computed, not random. `provenance(snap)` gives the tier-honest "computed from
+N measured positions, celebrated through M traditions" line for "tap to see why."
+
+Invariant 11: two snapshots at the same instant + place are identical; snapshots
+minutes apart differ only as the real cycles moved.
+
+## The orrery clock (CLOCK-SPEC.md)
+
+Build per `CLOCK-SPEC.md`: 12 horizontal lanes stacked vertically, scrolling left,
+fixed now-line down the center, fastest-south/slowest-north, **red→blue speed
+gradient**, a "slow sky" cluster at the north for near-frozen systems. Render LIVE
+(canvas/SVG at real computed rates), not a fixed loop. Reached by swiping right;
+a once-through Midjourney splash video resolves into the live view. Tier styling
+applies here too (measured = crisp/exact, celebrated = soft/warm).

@@ -17,7 +17,7 @@
  * The distillation never erases which tradition said what.
  */
 
-import type { QualiaEntry, Axis } from "./qualia";
+import type { QualiaEntry, Axis, Polarities } from "./qualia";
 import { AXES } from "./qualia";
 import { momentPool, type QualiaEntry as QE } from "./qualia";
 import { resolveHeritage, foregroundByLand, landCalendar, currentLandMoon } from "./geoHeritage";
@@ -524,4 +524,83 @@ export function composeLayers(
 export function layerPrompt(reading: LayeredReading): { system: string; user: string } {
   const layer = reading.layers.find((l) => l.id === reading.active)!;
   return buildPrompt(layer.chord);
+}
+
+
+/* ----------------------------------------------------------------------------
+   SNAPSHOT — the moment phrase locks when the home screen opens (Addendum 3).
+   The clock spins live; the PHRASE is a still reading of the arrival instant.
+   Call takeSnapshot once on home-open / return — never on a timer, never per render.
+   ---------------------------------------------------------------------------- */
+
+export type MomentSnapshot = {
+  takenAt: number;               // epoch ms — when the home screen opened
+  chord: Composition;
+  ordered: QE[];                 // land-first ordered contributors
+  phrase?: string;               // filled by the caller (model or template)
+  measuredCount: number;         // how many measured-tier voices (the honest core)
+  celebratedCount: number;       // how many celebrated-tier voices (the chorus)
+  heritage: ReturnType<typeof resolveHeritage>;
+  landCalendar: QE[];
+  acknowledgment: ReturnType<typeof resolveHeritage>["acknowledgment"];
+};
+
+/**
+ * Take the snapshot. Call ONCE when home opens (and again on return).
+ * `activeNow` should include slow rings AND sub-day rings from resolveMoment.
+ */
+export function takeSnapshot(activeNow: QE[], lat: number, lon: number): MomentSnapshot {
+  // Computed-only + render-honesty — foreground/acknowledge never score the chord.
+  const computed = activeNow.filter(
+    (e) => e.nature === "computed" && e.honesty === "render",
+  );
+  const heritage = resolveHeritage(lat, lon);
+  const ordered = foregroundByLand(computed, heritage.regions);
+  const chord = compose(ordered);
+  const month = new Date().getMonth() + 1;
+  const currentMoon = currentLandMoon(heritage.regions, month);
+  return {
+    takenAt: Date.now(),
+    chord,
+    ordered,
+    measuredCount: computed.filter((e) => e.tier === "measured").length,
+    celebratedCount: computed.filter((e) => e.tier === "celebrated").length,
+    heritage,
+    landCalendar: currentMoon ? [currentMoon] : landCalendar(heritage.regions).slice(0, 1),
+    acknowledgment: heritage.acknowledgment,
+  };
+}
+
+/**
+ * Optional sub-day blend — scale incoming polarities by weight before composing.
+ * Locked snapshots don't need this; kept for a breathing variant.
+ */
+export function blendTransition(
+  current: QE[],
+  incoming: { entry: QE; weight: number }[],
+): Composition {
+  const scaled: QE[] = incoming.map(({ entry, weight }) => ({
+    ...entry,
+    polarities: Object.fromEntries(
+      Object.entries(entry.polarities).map(([k, v]) => [k, (v as number) * weight]),
+    ) as Polarities,
+  }));
+  return compose([...current, ...scaled]);
+}
+
+/**
+ * Tier-honest provenance for "tap to see why":
+ * "computed from N measured positions, celebrated through M cultural traditions."
+ */
+export function provenance(snap: MomentSnapshot): {
+  measured: QE[];
+  celebrated: QE[];
+  line: string;
+} {
+  const measured = snap.ordered.filter((e) => e.tier === "measured");
+  const celebrated = snap.ordered.filter((e) => e.tier === "celebrated");
+  const line =
+    `Computed from ${measured.length} measured position${measured.length === 1 ? "" : "s"}, ` +
+    `celebrated through ${celebrated.length} cultural tradition${celebrated.length === 1 ? "" : "s"}.`;
+  return { measured, celebrated, line };
 }

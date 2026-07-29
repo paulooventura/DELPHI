@@ -3,8 +3,13 @@
  *
  * Given (jd, lat, lon), returns the moment-pool qualia ids for the traditions
  * that can be resolved from ephemeris + civil calendars. Never cast, never birth.
+ *
+ * v5 also resolves sub-day quality rings (planetary hour, chinese shí, muhūrta)
+ * plus pawukon / pancawara / manzil / numerology — so consecutive snapshots differ
+ * through the day from real cycles, not churn.
  */
 
+import { muhurtaPhase } from "../cosmic/math";
 import { computePhases } from "../phase/engine";
 import { dateFromJd } from "../phase/timeResolution";
 import { buildCycleContext } from "../worldCycles/context";
@@ -40,6 +45,18 @@ const PD = [
   "pd-sun", "pd-moon", "pd-mars", "pd-mercury", "pd-jupiter", "pd-venus", "pd-saturn",
 ] as const;
 
+/** Chaldean order for planetary hours. */
+const CHALDEAN = [
+  "saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon",
+] as const;
+
+/** Weekday (0=Sun … 6=Sat) → first hour's planet index in CHALDEAN. */
+const DAY_RULER_IDX = [3, 6, 2, 5, 1, 4, 0] as const;
+
+const SHI_BRANCH = [
+  "zi", "chou", "yin", "mao", "chen", "si", "wu", "wei", "shen", "you", "xu", "hai",
+] as const;
+
 /** Plugin sign spelling → qualia tz-* slug. */
 const TZ_SIGN: Record<string, string> = {
   Imix: "tz-imix",
@@ -64,8 +81,27 @@ const TZ_SIGN: Record<string, string> = {
   Ajaw: "tz-ahau",
 };
 
+/**
+ * Pawukon day-0 epoch (JD noon scale, floor(jd+0.5)).
+ * Convention anchor for a stable 210-day count until a Balinese cultural office verifies.
+ */
+const PAWUKON_EPOCH_JD = 2451545; // 2000-01-01
+
 function norm360(x: number): number {
   return ((x % 360) + 360) % 360;
+}
+
+function reduceDigits(n: number): number {
+  let x = Math.abs(Math.floor(n));
+  while (x > 9) {
+    let s = 0;
+    while (x > 0) {
+      s += x % 10;
+      x = Math.floor(x / 10);
+    }
+    x = s;
+  }
+  return x;
 }
 
 /**
@@ -77,10 +113,38 @@ function risingEclipticLon(jd: number, latDeg: number, lonDeg: number): number {
   const eps = 23.4392911 * D2R;
   const φ = latDeg * D2R;
   const θ = localSiderealTime(jd, lonDeg) * D2R; // RAMC in radians
-  // λ = atan2( cos θ , −(sin θ cos ε + tan φ sin ε) )
   const y = Math.cos(θ);
   const x = -(Math.sin(θ) * Math.cos(eps) + Math.tan(φ) * Math.sin(eps));
   return norm360((Math.atan2(y, x) * 180) / Math.PI);
+}
+
+function localParts(instant: Date, timeZone: string): {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  weekday: number;
+} {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    hourCycle: "h23",
+    weekday: "short",
+  }).formatToParts(instant);
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? "0";
+  const wdMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  return {
+    year: Number(get("year")),
+    month: Number(get("month")),
+    day: Number(get("day")),
+    hour: Number(get("hour")),
+    weekday: wdMap[get("weekday")] ?? instant.getUTCDay(),
+  };
 }
 
 export type MomentResolution = {
@@ -96,6 +160,13 @@ export type MomentResolution = {
     tzolkinTone: number;
     chineseAnimal: string;
     chineseElement: string;
+    planetaryHour: string;
+    chineseShi: string;
+    muhurta: number;
+    wuku: number;
+    pancawara: number;
+    manzil: number;
+    numerology: number;
   };
 };
 
@@ -126,26 +197,20 @@ export function resolveMoment(jd: number, lat: number, lon: number): MomentResol
   const rising = risingEclipticLon(jd, lat, lon);
 
   const instant = dateFromJd(jd);
-  // Prefer a zone near the observer so civil DOW / CNY / Tzolk'in use local date.
   let timeZone = "UTC";
   try {
-    // coarse: Americas east → America/Chicago for Nashville-class coords
     if (lon >= -100 && lon <= -70 && lat >= 24 && lat <= 50) timeZone = "America/Chicago";
     else if (lon >= 30 && lon <= 36 && lat >= 33 && lat <= 36) timeZone = "Asia/Nicosia";
   } catch {
     /* keep UTC */
   }
   const ctx = buildCycleContext(instant, { lat, lon, timeZone, ayanamsa: "lahiri" });
+  const local = localParts(instant, timeZone);
 
   const tz = tzolkinPlugin.resolve(ctx);
   const cn = chineseYearPlugin.resolve(ctx);
   const animal = String(cn.meta.animal ?? "Rat");
   const element = String(cn.meta.element ?? "Wood");
-
-  // Local weekday: Luxon-free — use Intl parts (0=Sun … 6=Sat).
-  const wdName = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short" }).format(instant);
-  const wdMap: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const wd = wdMap[wdName] ?? instant.getUTCDay();
 
   const wz = WZ[Math.floor(sunTropical / 30) % 12]!;
   const vsz = VSZ[Math.floor(sunSidereal / 30) % 12]!;
@@ -153,12 +218,43 @@ export function resolveMoment(jd: number, lat: number, lon: number): MomentResol
   const nk = NK[Math.floor(moonSidereal / (360 / 27)) % 27]!;
   const cz = `cz-${animal.toLowerCase()}`;
   const wx = `wx-${element.toLowerCase()}`;
-  const pd = PD[wd]!;
+  const pd = PD[local.weekday]!;
   const tzId = TZ_SIGN[String(tz.meta.sign)] ?? "tz-imix";
   const tn = `tn-${Number(tz.meta.tone)}`;
   const dc = `dc-${String((Math.floor(rising / 10) % 36) + 1).padStart(2, "0")}`;
 
-  const ids = [wz, vsz, mp, nk, cz, wx, pd, tzId, tn, dc];
+  // Arabic manzil — Moon's sidereal station (28).
+  const manzilNum = (Math.floor(moonSidereal / (360 / 28)) % 28) + 1;
+  const mz = `mz-${String(manzilNum).padStart(2, "0")}`;
+
+  // Pawukon 210-day cycle → wuku (30×7d) + pancawara (5).
+  const civilDay = Math.floor(jd + 0.5);
+  const pawukon = ((civilDay - PAWUKON_EPOCH_JD) % 210 + 210) % 210;
+  const wukuNum = Math.floor(pawukon / 7) + 1; // 1–30
+  const pancaNum = (pawukon % 5) + 1; // 1–5
+  const wk = `wk-${String(wukuNum).padStart(2, "0")}`;
+  const pc = `pc-${pancaNum}`;
+
+  // Chinese shí — 12 double-hours; Zi straddles 23:00–01:00.
+  const shiIndex = Math.floor(((local.hour + 1) % 24) / 2) % 12;
+  const shi = `shi-${SHI_BRANCH[shiIndex]!}`;
+
+  // Planetary hour — equal-hour Chaldean cascade (unequal hours when sunrise lands later).
+  const planetIdx = (DAY_RULER_IDX[local.weekday]! + local.hour) % 7;
+  const ph = `ph-${CHALDEAN[planetIdx]!}`;
+
+  // Vedic muhūrta — 30 × ~48 min from local midnight (sunrise-relative when available upstream).
+  const muh = muhurtaPhase(instant);
+  const muhId = `muh-${String(muh.index + 1).padStart(2, "0")}`;
+
+  // Numerology — reduced civil date digits (0–9).
+  const numDigit = reduceDigits(local.year * 10000 + local.month * 100 + local.day);
+  const num = `num-${numDigit}`;
+
+  const ids = [
+    wz, vsz, mp, nk, cz, wx, pd, tzId, tn, dc,
+    mz, wk, pc, shi, ph, muhId, num,
+  ];
   const entries: QualiaEntry[] = [];
   for (const id of ids) {
     const e = byId(id);
@@ -178,6 +274,13 @@ export function resolveMoment(jd: number, lat: number, lon: number): MomentResol
       tzolkinTone: Number(tz.meta.tone),
       chineseAnimal: animal,
       chineseElement: element,
+      planetaryHour: CHALDEAN[planetIdx]!,
+      chineseShi: SHI_BRANCH[shiIndex]!,
+      muhurta: muh.index + 1,
+      wuku: wukuNum,
+      pancawara: pancaNum,
+      manzil: manzilNum,
+      numerology: numDigit,
     },
   };
 }
