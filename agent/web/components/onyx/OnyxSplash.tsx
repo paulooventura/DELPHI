@@ -9,8 +9,8 @@ const FADE_MS = 720;
  * Nothing on screen except the film and centered DELPHI. No corners, tagline,
  * coords, land ack, enter chrome, or seeds.
  *
- * Tap primes device access on the user-gesture path (required on iOS).
- * Auto-end of the film does not prime — the access gate covers that case.
+ * Tap can re-run device access on the user-gesture path (required on iOS).
+ * The access gate already owns the first ask on every load.
  */
 export function OnyxSplash({
   onEnter,

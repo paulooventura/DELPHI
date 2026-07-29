@@ -275,7 +275,8 @@ export function OnyxApp({
     <>Hold still. The sky is still reading you.</>
   );
 
-  // Access gate is first — before splash — so permissions land on open.
+  // Access gate FIRST on every load — before splash/home — so OS prompts
+  // always ride a user gesture at open, not after navigating back to home.
   if (showAccessGate && onAllowAccess) {
     return <DeviceAccessGate onAllow={onAllowAccess} busy={accessBusy} />;
   }

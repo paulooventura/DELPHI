@@ -21,7 +21,7 @@ function installMemoryStorage() {
   return memory;
 }
 
-describe("deviceAccess — ask once on open", () => {
+describe("deviceAccess — ask on open gesture", () => {
   beforeEach(() => {
     installMemoryStorage();
     vi.stubGlobal("navigator", {

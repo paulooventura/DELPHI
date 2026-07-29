@@ -1,8 +1,8 @@
 "use client";
 
 /**
- * First screen when device access has not been primed.
- * One tap → location + orientation + motion prompts, then the app continues.
+ * First screen on every load until Allow is tapped.
+ * One tap → location + orientation + motion prompts, then splash/home.
  */
 export function DeviceAccessGate({
   onAllow,
@@ -20,14 +20,16 @@ export function DeviceAccessGate({
             Delphi reads the sky from where you are.
           </p>
           <p className="onyx-layer-lead" style={{ margin: 0 }}>
-            Allow location and device sensors once — then the compass, sky map, and
-            moment stay live without asking again.
+            Allow location and device sensors so the compass, sky map, and moment
+            stay live. This screen opens every time you load Delphi — tap once to
+            continue.
           </p>
           <button
             type="button"
             className="onyx-tool-btn"
             disabled={busy}
             onClick={onAllow}
+            autoFocus
           >
             {busy ? "Requesting…" : "Allow access"}
             <span>Location · orientation · motion</span>

@@ -7,7 +7,7 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
-import { hasPrimedDeviceAccess, requestDeviceAccessPermissions } from "../lib/deviceAccess";
+import { requestDeviceAccessPermissions } from "../lib/deviceAccess";
 import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
@@ -276,8 +276,8 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
   const [showLaunch, completeLaunch] = useShowLaunch();
-  /** Blocks splash/home until the one-time location + sensor ask runs. */
-  const [needsAccessGate, setNeedsAccessGate] = useState(() => !hasPrimedDeviceAccess());
+  /** Always true on load — gate must run before splash/home every open. */
+  const [needsAccessGate, setNeedsAccessGate] = useState(true);
   const [accessBusy, setAccessBusy] = useState(false);
   const primingAccessRef = useRef(false);
   useScreenWakeLock(true);
@@ -719,7 +719,7 @@ export default function Home() {
   }
 
   /**
-   * One-time permission ask from the Allow button (user gesture).
+   * Permission ask from the Allow button (user gesture) — every page load.
    * Location starts inside requestDeviceAccessPermissions before awaits.
    */
   async function primeDeviceAccess() {
@@ -745,12 +745,8 @@ export default function Home() {
       if (raw) initial = { ...DEFAULT_TOGGLES, ...JSON.parse(raw) };
     } catch { /* fresh session — all senses on */ }
     setToggles(initial);
-    // Only auto-start watches if we already asked once — never requestPermission
-    // from a mount effect (iOS ignores / denies that path).
-    if (hasPrimedDeviceAccess()) {
-      void captureSensors(initial);
-      void startOrientationWatch();
-    }
+    // Never requestPermission or start watches from mount — the access gate
+    // must own the gesture path on every load.
     return () => {
       muteHaptics();
       cancelHaptic();

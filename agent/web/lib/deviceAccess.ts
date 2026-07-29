@@ -1,14 +1,18 @@
 /**
- * One-time device access — location + orientation + motion.
+ * Device access — location + orientation + motion.
  * Must run from a user gesture (Allow button). iOS will not show
  * DeviceOrientation/Motion dialogs from a mount effect.
+ *
+ * The UI gate is shown on EVERY page load until Allow is tapped for that load.
+ * OS dialogs only appear when the browser still needs consent; if already
+ * granted, the tap simply starts watches immediately.
  */
 
 import { requestOrientationPermission } from "./localSignals";
 import { requestMotionPermission } from "./deviceSensors";
 
-/** Bump when the prime flow changes so stale "asked" flags re-prompt. */
-const STORAGE_KEY = "delphi-device-access-v2";
+/** Ever-asked marker (diagnostics / future); does not skip the open gate. */
+const STORAGE_KEY = "delphi-device-access-v3";
 
 export function hasPrimedDeviceAccess(): boolean {
   try {
