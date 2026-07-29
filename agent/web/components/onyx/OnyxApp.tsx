@@ -349,7 +349,14 @@ export function OnyxApp({
   }
 
   if (mode === "rings") {
-    return <OnyxOrrery lat={lat} lon={lon} onBack={() => setMode("home")} />;
+    return (
+      <OnyxOrrery
+        lat={lat}
+        lon={lon}
+        onBack={() => setMode("home")}
+        hapticsEnabled={pulseEnabled}
+      />
+    );
   }
 
   if (mode === "tools") {

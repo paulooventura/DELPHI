@@ -1,33 +1,49 @@
 "use client";
 
 /**
- * Live stacked-lanes orrery — CLOCK-SPEC.
- * North = slow/blue, south = fast/red. Fixed now-line down the center.
- * Reached by swiping right from home ("clock").
+ * Live stacked-lanes orrery — CLOCK-SPEC + spring-mechanism motion.
+ * Discrete lanes settle with a damped spring (fast twitch / slow heave).
+ * Millisecond lane stays a continuous gradient sweep — no spring.
  */
 
 import { useEffect, useRef, useState } from "react";
+import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
 import {
   computeOrreryState,
   laneColor,
+  type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
+import {
+  createLaneSpring,
+  retargetSpring,
+  stepSpring,
+  type LaneSpring,
+} from "../../lib/lore/orrerySpring";
 
 export function OnyxOrrery({
   lat,
   lon,
   onBack,
+  hapticsEnabled = true,
 }: {
   lat: number;
   lon: number;
   onBack: () => void;
+  /** Master stone toggle — escapement ticks respect this. */
+  hapticsEnabled?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const visibleRef = useRef(true);
+  const hapticsRef = useRef(hapticsEnabled);
+  hapticsRef.current = hapticsEnabled;
   const [expanded, setExpanded] = useState<OrreryLaneState | null>(null);
   const lanesRef = useRef<OrreryLaneState[]>([]);
   const hitRef = useRef<{ y0: number; y1: number; id: string }[]>([]);
+  const springsRef = useRef<Map<OrreryLaneId, LaneSpring>>(new Map());
+  const nowPulseRef = useRef(0);
+  const lastTsRef = useRef(0);
 
   useEffect(() => {
     visibleRef.current = true;
@@ -40,6 +56,7 @@ export function OnyxOrrery({
 
     let raf = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const springs = springsRef.current;
 
     const resize = () => {
       const w = wrap.clientWidth;
@@ -54,15 +71,23 @@ export function OnyxOrrery({
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
 
-    const draw = () => {
+    const draw = (ts: number) => {
       if (!visibleRef.current) {
+        lastTsRef.current = 0;
         raf = requestAnimationFrame(draw);
         return;
       }
+      const prev = lastTsRef.current || ts;
+      const dt = Math.min(0.05, (ts - prev) / 1000);
+      lastTsRef.current = ts;
+
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
       const { lanes, slowSky } = computeOrreryState(new Date(), lat, lon);
       lanesRef.current = lanes;
+
+      // Decay stored-tension cue on the now-line
+      nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
 
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#000";
@@ -105,17 +130,46 @@ export function OnyxOrrery({
         const y1 = y + laneH;
         hits.push({ y0, y1, id: lane.id });
 
+        const isMs = lane.id === "ms";
         const isFast = lane.speedT < 0.25;
         const band = laneColor(lane.speedT, lane.tier === "measured" ? 0.2 : 0.14);
         ctx.fillStyle = band;
         ctx.fillRect(padX, y0, w - padX * 2, laneH);
 
-        // Cell strip — now-line bisects the active cell by progress:
-        // progress 0 → left edge on the line; 0.5 → cell centered; 1 → right edge.
-        // (Previously an extra −cellW/2 shoved every lane ~half a cell left.)
         const cellW = isFast ? 28 : Math.max(52, Math.min(88, (w - padX * 2) / 5.5));
         const n = lane.cells.length || 1;
-        const startX = nowX - (lane.index + lane.progress) * cellW;
+
+        let scrollPos: number;
+        if (isMs) {
+          // Continuous gradient sweep — no spring
+          scrollPos = lane.index + lane.progress;
+        } else {
+          let spring = springs.get(lane.id);
+          if (!spring || spring.n !== n) {
+            spring = createLaneSpring(lane.index, n);
+            springs.set(lane.id, spring);
+          }
+          retargetSpring(spring, lane.index, n);
+
+          // Restraint cue: now-line brightens just before a fast lane releases
+          if (lane.speedT < 0.22 && lane.progress > 0.9) {
+            nowPulseRef.current = Math.max(nowPulseRef.current, 0.55 + lane.progress * 0.35);
+          }
+
+          const justSettled = stepSpring(spring, lane.speedT, dt);
+          if (
+            justSettled &&
+            hapticsRef.current &&
+            !hapticsMuted() &&
+            lane.speedT < 0.85 // skip ultra-slow seasons for tick spam
+          ) {
+            void pulseHaptic("tick");
+          }
+          // Settled: cell centered on now-line (pos + 0.5 in startX math)
+          scrollPos = spring.pos + 0.5;
+        }
+
+        const startX = nowX - scrollPos * cellW;
         const first = Math.floor((-startX - cellW) / cellW);
         const last = Math.ceil((w - startX) / cellW) + 1;
 
@@ -126,8 +180,7 @@ export function OnyxOrrery({
           const cell = lane.cells[ci]!;
           const atNow = ci === lane.index;
 
-          if (lane.id === "ms") {
-            // Gradient sweep only — no numerals
+          if (isMs) {
             const g = ctx.createLinearGradient(x, y0, x + cellW, y0);
             g.addColorStop(0, laneColor(0, 0.05));
             g.addColorStop(0.5, laneColor(0, 0.55));
@@ -166,35 +219,40 @@ export function OnyxOrrery({
           }
         }
 
-        // Lane name (left gutter overlay)
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
         ctx.font = "600 8px ui-sans-serif, system-ui, sans-serif";
         ctx.fillStyle = laneColor(lane.speedT, 0.75);
         const nameY = y0 + 10;
-        ctx.fillText(lane.name.toUpperCase(), padX + 6, nameY);
+        const name = lane.name.toUpperCase();
+        ctx.fillText(name, padX + 6, nameY);
         if (lane.tier === "measured") {
           ctx.fillStyle = "rgba(230,235,255,0.45)";
           ctx.font = "7px ui-sans-serif, system-ui, sans-serif";
-          ctx.fillText("MEASURED", padX + 6 + ctx.measureText(lane.name.toUpperCase()).width + 6, nameY);
+          ctx.fillText("MEASURED", padX + 6 + ctx.measureText(name).width + 6, nameY);
         } else if (lane.tier === "celebrated") {
           ctx.fillStyle = "rgba(200,180,140,0.4)";
           ctx.font = "7px ui-sans-serif, system-ui, sans-serif";
-          ctx.fillText("CELEBRATED", padX + 6 + ctx.measureText(lane.name.toUpperCase()).width + 6, nameY);
+          ctx.fillText("CELEBRATED", padX + 6 + ctx.measureText(name).width + 6, nameY);
         }
 
         y = y1 + laneGap;
       }
       hitRef.current = hits;
 
-      // Now-line
-      ctx.strokeStyle = "rgba(200, 190, 255, 0.85)";
-      ctx.lineWidth = 1.25;
+      // Now-line — faint brighter pulse as stored tension before a fast release
+      const pulse = nowPulseRef.current;
+      const lineA = 0.75 + pulse * 0.25;
+      ctx.strokeStyle = `rgba(200, 190, 255, ${lineA})`;
+      ctx.lineWidth = 1.25 + pulse * 0.9;
+      ctx.shadowColor = `rgba(160, 140, 255, ${pulse * 0.55})`;
+      ctx.shadowBlur = pulse * 12;
       ctx.beginPath();
       ctx.moveTo(nowX, padTop);
       ctx.lineTo(nowX, h - 4);
       ctx.stroke();
-      ctx.fillStyle = "rgba(200, 190, 255, 0.9)";
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = `rgba(200, 190, 255, ${0.85 + pulse * 0.15})`;
       ctx.beginPath();
       ctx.moveTo(nowX, padTop - 2);
       ctx.lineTo(nowX - 4, padTop + 6);
@@ -209,6 +267,7 @@ export function OnyxOrrery({
 
     const onVis = () => {
       visibleRef.current = document.visibilityState === "visible";
+      if (!visibleRef.current) lastTsRef.current = 0;
     };
     document.addEventListener("visibilitychange", onVis);
 
@@ -216,6 +275,7 @@ export function OnyxOrrery({
       cancelAnimationFrame(raf);
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVis);
+      springs.clear();
     };
   }, [lat, lon]);
 
