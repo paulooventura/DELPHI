@@ -67,6 +67,8 @@ export type OnyxHomeProps = {
   calendarReadings: CycleReading[];
   /** Land calendar of place (e.g. Cherokee moon) — calendar framing, never personality. */
   landCalendarLine?: string | null;
+  /** Land acknowledgment at the location fix — first-class, not a footnote. */
+  landAcknowledgment?: { text: string; people: string; pointTo?: string } | null;
   onOpenSky: () => void;
   onOpenRings: () => void;
   onOpenTools: () => void;
@@ -87,6 +89,7 @@ export function OnyxHome({
   selfRet,
   calendarReadings,
   landCalendarLine,
+  landAcknowledgment,
   onOpenSky,
   onOpenRings,
   onOpenTools,
@@ -606,6 +609,24 @@ export function OnyxHome({
           <p className="onyx-eyebrow" style={{ alignSelf: "flex-start", marginBottom: 0 }}>
             NOW
           </p>
+          {landAcknowledgment && (
+            <p className="onyx-land-ack" style={{ alignSelf: "flex-start", width: "100%" }}>
+              {landAcknowledgment.text}
+              {landAcknowledgment.pointTo && (
+                <>
+                  {" "}
+                  <a
+                    href={landAcknowledgment.pointTo}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    Learn more
+                  </a>
+                </>
+              )}
+            </p>
+          )}
           {landCalendarLine && (
             <p className="onyx-land-cal" style={{ alignSelf: "flex-start", width: "100%" }}>
               {landCalendarLine}

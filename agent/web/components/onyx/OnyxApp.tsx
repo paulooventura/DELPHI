@@ -422,6 +422,13 @@ export function OnyxApp({
     momentBundle.landCalendar.length > 0
       ? `Land calendar · ${momentBundle.landCalendar[0]!.name}`
       : null;
+  const landAcknowledgment = momentBundle.acknowledgment
+    ? {
+        text: momentBundle.acknowledgment.text,
+        people: momentBundle.acknowledgment.people,
+        pointTo: momentBundle.acknowledgment.pointTo,
+      }
+    : null;
 
   return (
     <OnyxHome
@@ -433,6 +440,7 @@ export function OnyxApp({
       selfRet={selfRet}
       calendarReadings={stripReadings.slice(0, 8)}
       landCalendarLine={landCalendarLine}
+      landAcknowledgment={landAcknowledgment}
       onOpenSky={openSky}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}

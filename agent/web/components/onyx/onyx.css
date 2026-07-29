@@ -281,6 +281,17 @@
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
 }
+.onyx-p2.show .onyx-center,
+.onyx-p2.show .now,
+.onyx-p2.show .onyx-eyebrow,
+.onyx-p2.show .onyx-land-cal,
+.onyx-p2.show .onyx-land-ack,
+.onyx-p2.show .onyx-prov {
+  pointer-events: none;
+}
+.onyx-p2.show .onyx-land-ack a {
+  pointer-events: auto;
+}
 .onyx-center {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; align-items: center; padding: 0 34px; text-align: center;
@@ -302,9 +313,24 @@
   font-family: var(--font-voice); font-size: 22px; font-weight: 400; line-height: 1.42;
   color: var(--onyx-ink-bright); text-align: left; width: 100%;
 }
+.onyx-land-ack {
+  font-size: 12px; letter-spacing: 0.02em; line-height: 1.45;
+  color: var(--onyx-ink-soft); margin: 0 0 12px; text-align: left;
+}
+.onyx-land-ack a {
+  color: var(--onyx-core); text-decoration: none; border-bottom: 0.5px solid var(--onyx-edge);
+}
 .onyx-land-cal {
   font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--onyx-ink-quiet); margin: 0 0 10px; text-align: left;
+}
+.onyx-cast-glyph {
+  width: 72px; height: 72px; margin: 8px 0 16px;
+  display: flex; align-items: center; justify-content: center;
+  border: 0.5px solid var(--onyx-edge); border-radius: 2px;
+  background: linear-gradient(160deg, rgba(140,124,255,0.08), transparent 70%);
+  color: var(--onyx-ink-bright); font-size: 28px; font-weight: 300;
+  letter-spacing: 0.04em;
 }
 .onyx-seam { width: 100%; height: 0.5px; background: var(--onyx-edge-faint); border: none; }
 .onyx-rows { width: 100%; display: flex; flex-direction: column; }

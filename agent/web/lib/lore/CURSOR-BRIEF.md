@@ -217,3 +217,77 @@ independent and can follow. Confirm `tsc` + the two invariant tests pass before 
 2. The moment-chord contains only `nature: "computed"` entries.
 3. `foreground`/`acknowledge` entries never enter `compose()`.
 4. The cast uses crypto entropy + rejection sampling; no cast entry touches home.
+
+---
+
+# ADDENDUM — Full-fidelity casts + the three-phase ritual
+
+Supersedes the cast portions above. New files: `casting.ts` (ritual engine),
+`ASSET-MANIFEST.md` (the Midjourney/SVG assets). `qualia.ts` is regenerated to
+356 entries with full cast decks.
+
+## The decks are now full fidelity
+
+- **Tarot 78** — `tarot-major` (22) + `tarot-minor` (56). Use `tarotDeck()` for
+  the full 78-card draw. Cards carry `arcana`/`suit`/`rank`.
+- **I Ching 64** — `iching-hexagram`, carry `hexNum`/`pinyin`. (The 8 trigrams
+  were removed; hexagrams are what a cast yields.)
+- **Runes 24** — `rune-cast`, Elder Futhark, `futhark: "elder"`. No blank rune.
+- **Orisha 8** — UNCHANGED. Do not expand toward the 256 odu. This is the honesty
+  boundary; the framing ("reflection in the spirit of the tradition, not a
+  babalawo's reading") is load-bearing, not decoration.
+
+## The three-phase ritual (casting.ts)
+
+Every cast is BEFORE → DURING → AFTER, mapped to the Resonant Consent arc. Build
+it as a state machine:
+
+- **BEFORE (Introduction):** the screen stills; narration frames it honestly
+  (mirror, not forecast); the user chooses a **depth** from `DEPTHS[realm]`
+  (tarot: one/three/celtic-cross · runes: draw-1/3/5/scatter · iching: hexagram ·
+  orisha: cowrie); holds a question; touches GREEN to proceed.
+- **DURING (Experience):** the realm's ritual animation plays (see manifest);
+  `performCast(cfg)` resolves the crypto draw *inside* the gesture; objects emerge
+  into positions. YELLOW (slow) and RED (stop) are live the whole time.
+- **AFTER (Conclusion):** the reading resolves with positions + meanings +
+  provenance; narration invites integration; GREEN saves, RED releases cleanly.
+
+Each realm has its own verb, honored by `performCast`:
+- Tarot is **laid** — draw from 78 into positional spreads; upright/reversed is a
+  crypto coin.
+- I Ching is **built** — six lines bottom-up via 3-coin throws (6/7/8/9); changing
+  lines transform the primary hexagram into a second ("moving toward"). King Wen
+  lookup is in `casting.ts` and is verified (all-yang→1, all-yin→2, Peace→11).
+- Runes are **cast** — draw (1/3/5) or scatter (5–9, face-up/down, reversed).
+- Orisha is **counted** — 16 cowries, count mouth-up → maps to one of 8.
+
+## The gemstones (green/yellow/red)
+
+`STONES_BY_PHASE` says which are active per phase. Render as onyx SVG (crisp,
+animatable, ~64–96px). They are the Resonant Consent cue system made touchable —
+GREEN proceed/save, YELLOW pause/slow, RED stop/release. Always reachable; the
+user is never trapped in a cast.
+
+## The narration
+
+`NARRATION[phase][realm]` (+ `.common`) holds the lines. Show them timed to each
+phase. They teach the real mechanism AND hold the honest frame. Keep the Orisha
+line verbatim.
+
+## Assets
+
+Per `ASSET-MANIFEST.md`. Build an asset-slot system: images drop into named slots
+(`tarot/major/00-the-fool.png`, `iching/11.png`, `runes/fehu.png`,
+`orisha/ogun.png`) and render as they arrive. Until an asset lands, show a
+placeholder onyx glyph (the entry's `glyph` field). Nothing blocks on complete
+art. Recommend: render I Ching hexagram figures and rune glyphs as **SVG**
+(geometric, animate better); use Midjourney for the 78 tarot faces, 8 Orisha
+emblems, and the 5 ritual animations.
+
+## New invariants (add tests)
+
+5. `tarotDeck()` returns exactly 78; a tarot cast never repeats a card.
+6. I Ching: `performCast` produces a valid King Wen number 1–64; changing lines
+   yield a different transformed hexagram.
+7. Every `performCast` outcome draws only `nature: "cast"` entries.
+8. Orisha pool stays length 8; no code path expands it.

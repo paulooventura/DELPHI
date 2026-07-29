@@ -3,7 +3,7 @@ import { castReading, drawIndex, CAST_FRAMING } from "./cast";
 import { composeMoment } from "./compose";
 import { resolveMoment } from "./resolveMoment";
 import { jdFromDate } from "../phase/timeResolution";
-import { CAST_SYSTEMS } from "./qualia";
+import { CAST_SYSTEMS, castPool, tarotDeck } from "./qualia";
 
 describe("cast integrity — crypto draw + home isolation", () => {
   it("drawIndex uses crypto.getRandomValues (never Math.random)", () => {
@@ -34,12 +34,20 @@ describe("cast integrity — crypto draw + home isolation", () => {
   it("no cast entry reaches the home chord", () => {
     const jd = jdFromDate(new Date("2026-07-24T18:00:00Z"));
     const { entries } = resolveMoment(jd, 36.16, -86.78);
-    const drawn = castReading("tarot-major", 3).drawn;
+    const drawn = castReading("tarot", 3).drawn;
     const polluted = [...entries, ...drawn];
     const moment = composeMoment(polluted, 36.16, -86.78);
     for (const c of moment.chord.contributors) {
       expect(c.nature).toBe("computed");
       expect(c.nature).not.toBe("cast");
     }
+  });
+
+  it("Orisha pool stays length 8 — honesty boundary", () => {
+    expect(castPool("orisha-cast")).toHaveLength(8);
+  });
+
+  it("tarotDeck is exactly 78", () => {
+    expect(tarotDeck()).toHaveLength(78);
   });
 });

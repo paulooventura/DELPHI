@@ -16,9 +16,12 @@
  *
  * Never on the home screen. Never automatic. The user chooses whether to cast
  * and which tradition. Off by default.
+ *
+ * Full-fidelity decks live in qualia.ts (tarot 78, iching 64, runes 24, orisha 8).
+ * Ritual choreography is in casting.ts — this module is the crypto draw only.
  */
 
-import { castPool, type QualiaEntry } from "./qualia";
+import { castPool, tarotDeck, type QualiaEntry } from "./qualia";
 
 /** Unbiased index in [0, n). Crypto entropy + rejection sampling — provably uniform. */
 export function drawIndex(n: number): number {
@@ -29,20 +32,26 @@ export function drawIndex(n: number): number {
   let x: number;
   do {
     crypto.getRandomValues(buf);
-    x = buf[0];
+    x = buf[0]!;
   } while (x >= max); // reject the biased tail
   return x % n;
 }
 
+/** Resolve the cast pool for a CAST_SYSTEMS id (tarot spans major+minor). */
+function poolFor(system: string): QualiaEntry[] {
+  if (system === "tarot") return [...tarotDeck()];
+  return [...castPool(system)];
+}
+
 /** Draw `count` distinct entries from a tradition's pool. */
 export function cast(system: string, count = 1): QualiaEntry[] {
-  const pool = [...castPool(system)];
+  const pool = poolFor(system);
   if (pool.length === 0) return [];
   const out: QualiaEntry[] = [];
   const k = Math.min(count, pool.length);
   for (let i = 0; i < k; i++) {
     const idx = drawIndex(pool.length);
-    out.push(pool[idx]);
+    out.push(pool[idx]!);
     pool.splice(idx, 1); // draw without replacement
   }
   return out;
@@ -53,27 +62,27 @@ export const CAST_FRAMING: Record<
   string,
   { label: string; frame: string; note: string }
 > = {
-  "tarot-major": {
+  tarot: {
     label: "Tarot",
     frame: "A card, drawn just now, for you.",
-    note: "Rider-Waite-Smith major arcana. A free draw — the deck belongs to everyone.",
+    note: "Rider-Waite-Smith, full 78. A free draw — the deck belongs to everyone.",
   },
-  "orisha-cast": {
-    label: "Orisha",
-    frame: "A reflection, drawn in the spirit of the 16-cowrie tradition.",
-    note:
-      "Inspired by the Yoruba 16-cowrie method — offered for reflection, NOT a traditional Ifá reading, which is cast and interpreted by an initiated babalawo.",
-  },
-  "iching-trigram": {
+  "iching-hexagram": {
     label: "I Ching",
-    frame: "A trigram, cast just now.",
-    note: "One of the eight bagua of the I Ching — the changing lines of the moment.",
+    frame: "A hexagram, cast just now.",
+    note: "Sixty-four hexagrams of the Zhouyi — six lines built from the bottom up.",
   },
   "rune-cast": {
     label: "Runes",
     frame: "A rune, drawn just now.",
     note:
       "Elder Futhark, whose meanings survive in the rune poems. A cast is traditional; a rune 'zodiac' by birthdate is a modern invention.",
+  },
+  "orisha-cast": {
+    label: "Orisha",
+    frame: "A reflection, drawn in the spirit of the 16-cowrie tradition.",
+    note:
+      "Inspired by the Yoruba 16-cowrie method — offered for reflection, NOT a traditional Ifá reading, which is cast and interpreted by an initiated babalawo.",
   },
 };
 
