@@ -319,6 +319,17 @@ export function OnyxHome({
   }, [applyStone, endStone]);
 
   const onWheel = (e: React.WheelEvent) => {
+    // NOW / clock depth: let the panel scroll instead of stealing the wheel for depth.
+    if (depthRef.current === 1) {
+      const panel = deviceRef.current?.querySelector(".onyx-p2") as HTMLElement | null;
+      if (panel && panel.scrollHeight > panel.clientHeight + 2) {
+        const atTop = panel.scrollTop <= 0;
+        const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
+        if (!(atTop && e.deltaY < 0) && !(atBottom && e.deltaY > 0)) {
+          return;
+        }
+      }
+    }
     if (wheelLock.current) return;
     wheelLock.current = true;
     window.setTimeout(() => {
@@ -429,6 +440,8 @@ export function OnyxHome({
   const swipeTargetIgnored = (t: EventTarget | null) => {
     const el = t as HTMLElement | null;
     if (!el?.closest) return false;
+    // Clock / NOW panel owns vertical gestures for scrolling on phones.
+    if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
         ".onyx-stone-track, .onyx-compass, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-rung, input, textarea, a",

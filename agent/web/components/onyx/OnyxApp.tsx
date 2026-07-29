@@ -245,7 +245,7 @@ export function OnyxApp({
   if (mode === "rings" && cosmic) {
     return (
       <div className="onyx-root">
-        <div className="onyx-device" style={{ overflow: "auto", background: "#000" }}>
+        <div className="onyx-device onyx-device-scroll" style={{ background: "#000" }}>
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
@@ -368,7 +368,7 @@ export function OnyxApp({
   if (mode === "atlas") {
     return (
       <div className="onyx-root">
-        <div className="onyx-device" style={{ overflow: "auto" }}>
+        <div className="onyx-device onyx-device-scroll">
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
@@ -383,7 +383,7 @@ export function OnyxApp({
   if (mode === "senses") {
     return (
       <div className="onyx-root">
-        <div className="onyx-device" style={{ overflow: "auto" }}>
+        <div className="onyx-device onyx-device-scroll">
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
@@ -405,7 +405,7 @@ export function OnyxApp({
   if (mode === "oracle") {
     return (
       <div className="onyx-root">
-        <div className="onyx-device" style={{ overflow: "auto" }}>
+        <div className="onyx-device onyx-device-scroll">
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>

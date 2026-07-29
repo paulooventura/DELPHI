@@ -49,6 +49,28 @@
   user-select: none;
 }
 
+/* Overlay / clock shells that must scroll on phones (touch-action:none blocks pan). */
+.onyx-device.onyx-device-scroll {
+  overflow-x: hidden;
+  overflow-y: auto;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Inside the phone shell, don't force a desktop-tab viewport height that eats the scroll. */
+.onyx-device-scroll .cp-dashboard-wheel-zone {
+  height: auto;
+  min-height: min(72dvh, 560px);
+  max-height: none;
+}
+
+/* NOW / clock depth: panel is the scroller; allow vertical pan on the device. */
+.onyx-device[data-depth="1"] {
+  touch-action: pan-y;
+}
+
 /* Home enters after splash fades through black. */
 .onyx-home-fade {
   animation: onyx-home-in 720ms ease forwards;
@@ -253,16 +275,11 @@
   pointer-events: auto;
 }
 .onyx-p2.show {
-  /* Moment list may scroll; pan-y only inside this depth. */
+  /* Moment / clock list — full panel must take touches so phones can scroll. */
   touch-action: pan-y;
   pointer-events: auto;
-}
-.onyx-p2.show .onyx-center,
-.onyx-p2.show .now,
-.onyx-p2.show .onyx-eyebrow,
-.onyx-p2.show .onyx-land-cal,
-.onyx-p2.show .onyx-prov {
-  pointer-events: none;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 .onyx-center {
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
