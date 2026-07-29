@@ -92,8 +92,10 @@ export function OnyxCrystal() {
       applyDelta(db, dg);
     });
 
-    const host = stage.closest(".onyx-device") ?? stage;
-    const onPointer = (e: PointerEvent) => {
+    const host =
+      (stage.closest(".onyx-device") as HTMLElement | null) ?? stage;
+    const onPointer = (ev: Event) => {
+      const e = ev as PointerEvent;
       // Phone gimbal wins while fresh; desktop / idle uses pointer parallax.
       if (gimbalLive && performance.now() - lastGimbal < 900) return;
       const r = host.getBoundingClientRect();
