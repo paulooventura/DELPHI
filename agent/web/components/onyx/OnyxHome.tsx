@@ -48,6 +48,8 @@ export type OnyxHomeProps = {
   zodiacSign: string;
   /** Distilled sentence for the active reading layer. */
   momentLine: string;
+  /** Tier-honest provenance for the locked snapshot (measured vs celebrated). */
+  provenanceLine?: string | null;
   /** Active layer label — names exactly what's folded in. */
   readingLayerLabel?: string;
   /** Available layers for one-tap switch (Layer 0 always first). */
@@ -83,6 +85,7 @@ export function OnyxHome({
   phaseFraction,
   zodiacSign,
   momentLine,
+  provenanceLine,
   readingLayerLabel,
   readingLayers = [],
   activeLayerId = "moment",
@@ -593,6 +596,9 @@ export function OnyxHome({
             )}
             <p className="big">{momentLine}</p>
             <p className="sub">Lift your phone to the sky.</p>
+            {provenanceLine && (
+              <p className="onyx-provenance">{provenanceLine}</p>
+            )}
             {readingLayers.length > 1 && (
               <div className="onyx-layers">
                 <p className="onyx-held-eyebrow">How to read</p>

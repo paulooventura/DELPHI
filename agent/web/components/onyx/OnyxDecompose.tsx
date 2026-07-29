@@ -2,12 +2,14 @@
 
 import { decompose, type Composition } from "../../lib/lore/compose";
 
-/** "Tap to see why" — provenance intact: source + claim verbatim. */
+/** "Tap to see why" — provenance intact: source + claim + tier verbatim. */
 export function OnyxDecompose({
   chord,
+  provenanceLine,
   onBack,
 }: {
   chord: Composition;
+  provenanceLine?: string | null;
   onBack: () => void;
 }) {
   const rows = decompose(chord);
@@ -24,6 +26,11 @@ export function OnyxDecompose({
             The home sentence named the chord — the sum. Here is each voice that built it:
             provenance intact, nothing invented after the fact.
           </p>
+          {provenanceLine && (
+            <p className="onyx-provenance" style={{ alignSelf: "flex-start", marginTop: 0 }}>
+              {provenanceLine}
+            </p>
+          )}
 
           {chord.resonances.slice(0, 3).map(r => (
             <p key={`r-${r.axis}`} className="onyx-layer-meta">
@@ -45,12 +52,13 @@ export function OnyxDecompose({
                 : entry.nature === "birth"
                   ? "natal"
                   : "moment";
+            const tierLabel = entry.tier === "measured" ? "measured" : "celebrated";
             return (
               <article key={entry.id} className="onyx-decomp-card">
                 <p className="onyx-decomp-name">
                   {entry.name}
                   <span>
-                    {natureLabel} · {entry.system}
+                    {tierLabel} · {natureLabel} · {entry.system}
                   </span>
                 </p>
                 <p className="onyx-layer-meta">{contributes.join(" · ") || "—"}</p>

@@ -8,8 +8,10 @@ import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
 import { jdFromDate } from "../../lib/phase/timeResolution";
 import {
   composeLayers,
-  composeMoment,
+  provenance,
+  takeSnapshot,
   type LayerId,
+  type MomentSnapshot,
 } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
 import {
@@ -137,6 +139,8 @@ export function OnyxApp({
   const [embraced, setEmbraced] = useState<EmbracedCast[]>([]);
   /** Sticky user choice; undefined = deepest available (Addendum 2). */
   const [activeLayerChoice, setActiveLayerChoice] = useState<LayerId | undefined>();
+  /** Locked Layer-0 reading — taken on home open / return, never per-tick. */
+  const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
 
   // Local-only natal + embraced casts — never sent; fold into labeled layers.
   useEffect(() => {
@@ -150,6 +154,15 @@ export function OnyxApp({
   }
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
+  const homeReady = !showAccessGate && !showSplash;
+
+  // Snapshot locks when home opens or when the user returns — not on the clock tick.
+  useEffect(() => {
+    if (!homeReady || mode !== "home") return;
+    const jd = jdFromDate(new Date());
+    const resolved = resolveMoment(jd, lat, lon);
+    setHomeSnap(takeSnapshot(resolved.entries, lat, lon));
+  }, [homeReady, mode, lat, lon]);
 
   const civilYmd = useMemo(() => {
     const y = now.getFullYear();
@@ -159,14 +172,6 @@ export function OnyxApp({
   }, [now]);
 
   const natal = useMemo(() => (birth ? natalGalactic(birth) : null), [birth]);
-
-  const momentBundle = useMemo(() => {
-    const jd = jdFromDate(now);
-    const resolved = resolveMoment(jd, lat, lon);
-    return composeMoment(resolved.entries, lat, lon, {
-      localMonth: now.getMonth() + 1,
-    });
-  }, [now, lat, lon]);
 
   const natalEntries = useMemo(() => {
     if (!birth) return [];
@@ -189,19 +194,26 @@ export function OnyxApp({
     return out;
   }, [embraced]);
 
+  const lockedMomentEntries = homeSnap?.ordered ?? [];
+
   const layered = useMemo(
     () =>
-      composeLayers(momentBundle.ordered, {
+      composeLayers(lockedMomentEntries, {
         natal: natalEntries,
         drawn: drawnEntries,
         active: activeLayerChoice,
       }),
-    [momentBundle.ordered, natalEntries, drawnEntries, activeLayerChoice],
+    [lockedMomentEntries, natalEntries, drawnEntries, activeLayerChoice],
   );
 
   const activeReading = useMemo(
     () => layered.layers.find(l => l.id === layered.active) ?? layered.layers[0]!,
     [layered],
+  );
+
+  const snapProvenance = useMemo(
+    () => (homeSnap ? provenance(homeSnap) : null),
+    [homeSnap],
   );
 
   const layerCacheKey = useMemo(() => {
@@ -213,11 +225,13 @@ export function OnyxApp({
       .map(e => e.id)
       .sort()
       .join("+") || "none";
-    return `${layered.active}:${natalFp}:${drawnFp}`;
-  }, [layered.active, natalEntries, drawnEntries]);
+    const snapFp = homeSnap?.takenAt ?? 0;
+    return `${layered.active}:${snapFp}:${natalFp}:${drawnFp}`;
+  }, [layered.active, natalEntries, drawnEntries, homeSnap?.takenAt]);
 
-  // Distill the ACTIVE layer only. Layer 0 stays computed-only in composeLayers.
+  // Distill the ACTIVE layer only. Layer 0 chord comes from the locked snapshot.
   useEffect(() => {
+    if (!homeSnap || lockedMomentEntries.length === 0) return;
     const chord = activeReading.chord;
     const { phrase } = phraseForMoment(chord, civilYmd, lat, lon, undefined, layerCacheKey);
     setDistilled(phrase);
@@ -235,7 +249,16 @@ export function OnyxApp({
     return () => {
       cancelled = true;
     };
-  }, [activeReading, layered.active, civilYmd, lat, lon, layerCacheKey]);
+  }, [
+    homeSnap,
+    lockedMomentEntries.length,
+    activeReading,
+    layered.active,
+    civilYmd,
+    lat,
+    lon,
+    layerCacheKey,
+  ]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
   // Home street line = distilled chorus of the active reading layer.
@@ -426,7 +449,7 @@ export function OnyxApp({
   if (mode === "you") {
     return (
       <OnyxYou
-        nowChord={layered.layers[0]!.chord}
+        nowChord={homeSnap?.chord ?? activeReading.chord}
         onBack={() => setMode("home")}
         onBirthSaved={next => {
           setBirth(next);
@@ -458,7 +481,11 @@ export function OnyxApp({
 
   if (mode === "decompose") {
     return (
-      <OnyxDecompose chord={activeReading.chord} onBack={() => setMode("home")} />
+      <OnyxDecompose
+        chord={activeReading.chord}
+        provenanceLine={snapProvenance?.line}
+        onBack={() => setMode("home")}
+      />
     );
   }
 
@@ -516,14 +543,14 @@ export function OnyxApp({
   }
 
   const landCalendarLine =
-    momentBundle.landCalendar.length > 0
-      ? `Land calendar · ${momentBundle.landCalendar[0]!.name}`
+    homeSnap && homeSnap.landCalendar.length > 0
+      ? `Land calendar · ${homeSnap.landCalendar[0]!.name}`
       : null;
-  const landAcknowledgment = momentBundle.acknowledgment
+  const landAcknowledgment = homeSnap?.acknowledgment
     ? {
-        text: momentBundle.acknowledgment.text,
-        people: momentBundle.acknowledgment.people,
-        pointTo: momentBundle.acknowledgment.pointTo,
+        text: homeSnap.acknowledgment.text,
+        people: homeSnap.acknowledgment.people,
+        pointTo: homeSnap.acknowledgment.pointTo,
       }
     : null;
 
@@ -533,6 +560,7 @@ export function OnyxApp({
       phaseFraction={phaseFraction}
       zodiacSign={zodiacSign}
       momentLine={momentLine}
+      provenanceLine={snapProvenance?.line}
       readingLayerLabel={activeReading.label}
       readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}
       activeLayerId={layered.active}

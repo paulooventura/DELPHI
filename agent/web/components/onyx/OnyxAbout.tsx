@@ -26,11 +26,23 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
             </p>
           </div>
 
+          <p className="onyx-eyebrow">LEGITIMACY — MEASURED VS CELEBRATED</p>
+          <ul className="onyx-about-list">
+            <li>
+              <b>Measured</b> — real astronomy and math Delphi stakes precision on (moon phase,
+              nakshatra position, and kin). Shown at the point of reading.
+            </li>
+            <li>
+              <b>Celebrated</b> — how cultures have read the sky, offered with respect — not official
+              representation of any nation or priesthood.
+            </li>
+          </ul>
+
           <p className="onyx-eyebrow">HONESTY TIERS</p>
           <ul className="onyx-about-list">
             <li>
-              <b>Computed</b> — sky and calendar math on Layer 0 (“The moment”). Same for anyone
-              at that place and instant. Provenance intact under “see why.”
+              <b>Computed</b> — sky and calendar math on Layer 0 (“The moment”). Locked when you
+              arrive home; same for anyone at that place and instant.
             </li>
             <li>
               <b>Through you</b> — birth data you save folds into a labeled layer. One tap returns
