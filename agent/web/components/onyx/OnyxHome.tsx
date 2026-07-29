@@ -11,8 +11,9 @@ import {
   unmuteHaptics,
   type HapticKind,
 } from "../../lib/haptics";
-import { claimMarkClass, streetMoonLine } from "./onyxCopy";
+import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
+import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
 
 const REST = 3;
 const QUIET = 37;
@@ -138,12 +139,22 @@ export function OnyxHome({
         const left = (i * 37) % 100;
         const s = i % 8 === 0 ? 1.2 + (i % 3) * 0.4 : 0.4 + (i % 5) * 0.15;
         const o = 0.22 + (i % 6) * 0.08;
-        return { top, left, s, o, tw: 3 + (i % 5), d: (i % 5) * 0.7, key: i };
+        // ~1 in 5 stars get an occasional bright shimmer burst.
+        const shimmer = i % 5 === 0;
+        return {
+          top,
+          left,
+          s,
+          o,
+          tw: shimmer ? 7 + (i % 6) : 3 + (i % 5),
+          d: (i % 11) * 0.85,
+          shimmer,
+          key: i,
+        };
       }),
     [],
   );
 
-  const moon = streetMoonLine(phaseFraction);
   const clockLabel = now.toLocaleString([], {
     weekday: "short",
     day: "numeric",
@@ -491,7 +502,7 @@ export function OnyxHome({
             {stars.map(s => (
               <span
                 key={s.key}
-                className="onyx-dust"
+                className={`onyx-dust${s.shimmer ? " shimmer" : ""}`}
                 style={{
                   top: `${s.top}%`,
                   left: `${s.left}%`,
@@ -510,6 +521,7 @@ export function OnyxHome({
         <div className="onyx-vignette" />
         <div className={`onyx-pulse-ring${pulseAnim === "beat" ? " beat" : ""}${pulseAnim === "chime" ? " chime" : ""}`} />
 
+        <OnyxPhaseMoon phaseFraction={phaseFraction} />
         <p className="onyx-wordmark">DELPHI</p>
         <p className="onyx-clock">
           {clockLabel.toUpperCase().replace(",", " ·")}:
@@ -574,9 +586,7 @@ export function OnyxHome({
               <p className="onyx-layer-label">{readingLayerLabel}</p>
             )}
             <p className="big">{momentLine}</p>
-            <p className="sub">
-              The moon is {moon.verb}, {moon.detail} Lift your phone to the sky.
-            </p>
+            <p className="sub">Lift your phone to the sky.</p>
             {readingLayers.length > 1 && (
               <div className="onyx-layers">
                 <p className="onyx-held-eyebrow">How to read</p>
