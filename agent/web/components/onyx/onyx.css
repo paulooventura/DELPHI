@@ -939,12 +939,151 @@
 .onyx-cast-result {
   margin-top: 22px;
   padding-top: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .onyx-cast-frame {
   font-family: var(--font-voice);
   font-size: 15px;
   color: var(--onyx-ink);
-  margin: 4px 0 8px;
+  margin: 4px 0 14px;
+  text-align: center;
+}
+.onyx-cast-drawing {
+  margin: 28px 0 8px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-cast-card {
+  width: min(100%, 240px);
+  margin: 0 auto 16px;
+}
+.onyx-cast-card-face {
+  position: relative;
+  aspect-ratio: 2 / 3;
+  border-radius: 10px;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 80% 55% at 50% 38%, rgba(60, 40, 110, 0.55), transparent 70%),
+    linear-gradient(180deg, #241546 0%, #060310 100%);
+  border: 1px solid rgba(150, 128, 86, 0.55);
+  box-shadow:
+    inset 0 0 0 6px rgba(6, 3, 16, 0.55),
+    inset 0 0 0 7px rgba(150, 128, 86, 0.28),
+    0 18px 40px rgba(0, 0, 0, 0.55);
+}
+.onyx-cast-card-aura {
+  position: absolute;
+  left: 50%;
+  top: 38%;
+  width: 72%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(72, 48, 130, 0.55) 0%, rgba(36, 21, 70, 0.15) 62%, transparent 72%);
+  pointer-events: none;
+}
+.onyx-cast-card-symbol-wrap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 12%;
+  height: 58%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.onyx-cast-symbol {
+  filter: drop-shadow(0 0 10px rgba(233, 214, 168, 0.18));
+}
+.onyx-cast-card-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  min-height: 18%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.7rem 0.75rem 0.85rem;
+  background: rgba(12, 8, 24, 0.82);
+  border-top: 1px solid rgba(233, 214, 168, 0.45);
+}
+.onyx-cast-card-title {
+  margin: 0;
+  text-align: center;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  color: #e9d6a8;
+  line-height: 1.25;
+}
+.onyx-cast-card-qualities {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--onyx-light);
+  line-height: 1.4;
+}
+.onyx-cast-card-observed {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--onyx-ink);
+  font-family: var(--font-voice);
+}
+.onyx-tool-btn.on {
+  border-color: rgba(233, 214, 168, 0.45);
+  color: #e9d6a8;
+}
+
+/* Cast ritual — tradition film, then reveal */
+.onyx-cast-ritual {
+  overflow: hidden;
+  cursor: pointer;
+}
+.onyx-cast-film {
+  position: absolute; inset: 0; z-index: 1;
+  background: #000;
+}
+.onyx-cast-film video {
+  position: absolute; top: 50%; left: 50%;
+  min-width: 100%; min-height: 100%;
+  width: auto; height: auto;
+  transform: translate(-50%, -50%);
+  object-fit: cover;
+  filter: grayscale(0.15) contrast(1.08) brightness(0.88);
+}
+.onyx-cast-ritual-grade {
+  position: absolute; inset: 0; z-index: 2; pointer-events: none;
+  background:
+    radial-gradient(120% 90% at 50% 40%, transparent 30%, rgba(2, 2, 4, 0.55) 100%),
+    linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, transparent 28%, transparent 62%, rgba(0, 0, 0, 0.65) 100%);
+}
+.onyx-cast-ritual-label {
+  position: absolute; top: 56px; left: 0; right: 0; z-index: 6;
+  text-align: center;
+  font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+  color: var(--onyx-ink-soft);
+  pointer-events: none;
+}
+.onyx-cast-ritual-hint {
+  position: absolute; bottom: 52px; left: 0; right: 0; z-index: 6;
+  text-align: center;
+  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: var(--onyx-ink-faint);
+  pointer-events: none;
+  animation: onyx-cast-hint 2.8s ease-in-out infinite;
+}
+@keyframes onyx-cast-hint {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 0.85; }
 }
 .onyx-about-block {
   font-size: 13px;
