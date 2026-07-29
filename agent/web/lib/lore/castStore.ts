@@ -1,8 +1,8 @@
 /**
  * Embraced casts — LOCAL ONLY.
- * Persisted when the user chooses the green gem. Never fed into composeMoment
- * (home chord stays computed-only). Distill may lean on qualities; home shows
- * a labeled "Held" strip.
+ * Persisted when the user chooses the green gem. Never fed into composeMoment /
+ * Layer 0 (computed-only). Folded into the labeled `with-drawn` layer via
+ * composeLayers when the user chooses that reading. Home also shows a "Held" strip.
  */
 
 export type EmbracedCast = {

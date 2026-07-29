@@ -63,12 +63,23 @@ export type HeldCastChip = {
   spreadLabel?: string;
 };
 
+export type ReadingLayerChip = {
+  id: "moment" | "through-you" | "with-drawn";
+  label: string;
+};
+
 export type OnyxHomeProps = {
   now: Date;
   phaseFraction: number;
   zodiacSign: string;
-  /** Distilled moment-chord sentence (computed-only). */
+  /** Distilled sentence for the active reading layer. */
   momentLine: string;
+  /** Active layer label — names exactly what's folded in. */
+  readingLayerLabel?: string;
+  /** Available layers for one-tap switch (Layer 0 always first). */
+  readingLayers?: ReadingLayerChip[];
+  activeLayerId?: ReadingLayerChip["id"];
+  onSelectLayer?: (id: ReadingLayerChip["id"]) => void;
   selfTone: React.ReactNode;
   selfRet: React.ReactNode;
   calendarReadings: CycleReading[];
@@ -76,7 +87,7 @@ export type OnyxHomeProps = {
   landCalendarLine?: string | null;
   /** Land acknowledgment at the location fix — first-class, not a footnote. */
   landAcknowledgment?: { text: string; people: string; pointTo?: string } | null;
-  /** Embraced casts — labeled strip; never mixed into the sky chord. */
+  /** Embraced casts — labeled strip; folds into with-drawn when that layer is active. */
   heldCasts?: HeldCastChip[];
   onOpenSky: () => void;
   onOpenRings: () => void;
@@ -94,6 +105,10 @@ export function OnyxHome({
   phaseFraction,
   zodiacSign,
   momentLine,
+  readingLayerLabel,
+  readingLayers = [],
+  activeLayerId = "moment",
+  onSelectLayer,
   selfTone,
   selfRet,
   calendarReadings,
@@ -607,10 +622,38 @@ export function OnyxHome({
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
           <div className="onyx-center">
             <p className="onyx-eyebrow">{eyebrow}</p>
+            {readingLayerLabel && (
+              <p className="onyx-layer-label">{readingLayerLabel}</p>
+            )}
             <p className="big">{momentLine}</p>
             <p className="sub">
               The moon is {moon.verb}, {moon.detail} Lift your phone to the sky.
             </p>
+            {readingLayers.length > 1 && (
+              <div className="onyx-layers">
+                <p className="onyx-held-eyebrow">How to read</p>
+                <div className="onyx-held-row">
+                  {readingLayers.map(l => (
+                    <button
+                      key={l.id}
+                      type="button"
+                      className={`onyx-layer-chip${activeLayerId === l.id ? " on" : ""}`}
+                      onClick={e => {
+                        e.stopPropagation();
+                        buzz("tick");
+                        onSelectLayer?.(l.id);
+                      }}
+                    >
+                      {l.id === "moment"
+                        ? "The moment"
+                        : l.id === "through-you"
+                          ? "Through you"
+                          : "What you drew"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {heldCasts.length > 0 && (
               <div className="onyx-held">
                 <p className="onyx-held-eyebrow">Held · embraced cast</p>
@@ -643,6 +686,35 @@ export function OnyxHome({
           <p className="onyx-eyebrow" style={{ alignSelf: "flex-start", marginBottom: 0 }}>
             NOW
           </p>
+          {readingLayerLabel && (
+            <p className="onyx-layer-label" style={{ alignSelf: "flex-start" }}>
+              {readingLayerLabel}
+            </p>
+          )}
+          {readingLayers.length > 1 && (
+            <div className="onyx-layers" style={{ alignSelf: "flex-start", width: "100%" }}>
+              <div className="onyx-held-row">
+                {readingLayers.map(l => (
+                  <button
+                    key={l.id}
+                    type="button"
+                    className={`onyx-layer-chip${activeLayerId === l.id ? " on" : ""}`}
+                    onClick={e => {
+                      e.stopPropagation();
+                      buzz("tick");
+                      onSelectLayer?.(l.id);
+                    }}
+                  >
+                    {l.id === "moment"
+                      ? "The moment"
+                      : l.id === "through-you"
+                        ? "Through you"
+                        : "What you drew"}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {landAcknowledgment && (
             <p className="onyx-land-ack" style={{ alignSelf: "flex-start", width: "100%" }}>
               {landAcknowledgment.text}

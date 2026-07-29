@@ -38,19 +38,29 @@ export function OnyxDecompose({
 
           <hr className="onyx-seam" />
 
-          {rows.map(({ entry, contributes }) => (
-            <article key={entry.id} className="onyx-decomp-card">
-              <p className="onyx-decomp-name">
-                {entry.name}
-                <span>{entry.system}</span>
-              </p>
-              <p className="onyx-layer-meta">{contributes.join(" · ") || "—"}</p>
-              {entry.source && (
-                <p className="onyx-decomp-source">{entry.source}</p>
-              )}
-              <p className="onyx-decomp-claim">claim · {entry.claim}</p>
-            </article>
-          ))}
+          {rows.map(({ entry, contributes }) => {
+            const natureLabel =
+              entry.nature === "cast"
+                ? "drawn"
+                : entry.nature === "birth"
+                  ? "natal"
+                  : "moment";
+            return (
+              <article key={entry.id} className="onyx-decomp-card">
+                <p className="onyx-decomp-name">
+                  {entry.name}
+                  <span>
+                    {natureLabel} · {entry.system}
+                  </span>
+                </p>
+                <p className="onyx-layer-meta">{contributes.join(" · ") || "—"}</p>
+                {entry.source && (
+                  <p className="onyx-decomp-source">{entry.source}</p>
+                )}
+                <p className="onyx-decomp-claim">claim · {entry.claim}</p>
+              </article>
+            );
+          })}
         </div>
       </div>
     </div>

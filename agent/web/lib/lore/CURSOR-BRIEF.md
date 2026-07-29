@@ -291,3 +291,48 @@ emblems, and the 5 ritual animations.
    yield a different transformed hexagram.
 7. Every `performCast` outcome draws only `nature: "cast"` entries.
 8. Orisha pool stays length 8; no code path expands it.
+
+---
+
+# ADDENDUM 2 — The layered, living moment phrase
+
+`compose.ts` exports `composeLayers()` and `layerPrompt()`. Build the home
+reading as user-chosen layers — consistent math, transparent lore.
+
+## The three layers (composeLayers)
+
+- **Layer 0 — "The moment"** — computed-only, the ground truth. Enforced: even if
+  a cast/birth entry is passed, Layer 0 strips to `nature: "computed"`. Two users
+  in the same place at the same time get the SAME Layer 0. Recompute only when the
+  sky rolls over (active moment-entries change — roughly hourly), never on a timer
+  or per render. Cache per (date-hour + rounded coords).
+- **Layer 1 — "The moment, through you"** — appears only when birth data is set.
+  Folds natal entries onto Layer 0. Labeled. Layer 0 stays intact beneath.
+- **Layer 2 — "…coloured by what you drew"** — appears only after a cast. Folds
+  drawn entries onto the top layer. Labeled. Persists until cleared or the day turns.
+
+## Rules (the whole point)
+
+- **Consistent math, transparent lore.** Layer 0 is pure and identical for
+  everyone at that place/instant. The lore layers always show a label naming
+  exactly what they add, and offer one-tap return to Layer 0.
+- **The user chooses how to read.** Let them switch freely between available
+  layers; `composeLayers({active})` sets which is showing. Default to the deepest
+  available, but the choice is theirs and sticky.
+- **Additive and reversible.** Dropping a layer returns the one beneath, unchanged
+  — we rebuild from entry sets, never mutate lower layers.
+- **Freshness from truth, not churn.** Recompose on real events only: sky rolls
+  over, birth data added, card drawn, layer toggled. The phrase should feel
+  authored and stable, never shuffled.
+- Every layer distills with the same chorus-wide voice (`layerPrompt` → the model;
+  name the emergent character, never the systems). Fall back to `distillTemplate`
+  on the active layer's chord.
+- Decomposition ("tap to see why") reflects the ACTIVE layer, tracing its phrase
+  back to every contributor, each labeled by `nature` (moment / natal / drawn).
+
+## Test (add)
+
+9. Layer 0 is identical for two users at the same place+instant, and stays
+   computed-only even if cast/birth entries are passed to `composeLayers`.
+10. Adding natal input yields a distinct Layer 1 without changing Layer 0;
+    drawing yields Layer 2; clearing the draw returns exactly the prior phrase.

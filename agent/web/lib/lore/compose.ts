@@ -431,3 +431,97 @@ export function composeMoment(
     acknowledgment: heritage.acknowledgment, // surfaced at the location fix
   };
 }
+
+
+/* ----------------------------------------------------------------------------
+   LAYERS — the living moment phrase (Addendum 2).
+   Each layer re-composes live via compose(). Dropping a layer returns the one
+   beneath it UNCHANGED — because we never mutate the layers below, we rebuild
+   from the entry sets each time. Freshness comes from real inputs (the sky
+   rolling over, birth data added, a card drawn), never from a timer or churn.
+   ---------------------------------------------------------------------------- */
+
+export type LayerId = "moment" | "through-you" | "with-drawn";
+
+export type ReadingLayer = {
+  id: LayerId;
+  label: string;                 // what the user sees — names exactly what's in it
+  entries: QE[];                 // the cumulative entry set composed for this layer
+  chord: Composition;
+  /** the entries THIS layer added on top of the one below (for transparency) */
+  added: QE[];
+};
+
+export type LayeredReading = {
+  layers: ReadingLayer[];        // [moment] or [moment, through-you] or all three
+  active: LayerId;               // which layer the user is currently reading
+};
+
+/**
+ * Build the available reading layers from what the user has revealed.
+ *
+ * - `moment` is ALWAYS present and ALWAYS computed-only (the invariant).
+ * - `through-you` appears only if `natal` entries are supplied (birth data set).
+ * - `with-drawn` appears only if `drawn` entries are supplied (a cast happened).
+ *
+ * The caller decides which layer is `active` (the user's choice). Nothing here
+ * changes on a timer — call this again only when the inputs actually change:
+ * the sky rolls over (new `moment`), birth data is added (`natal`), a card is
+ * drawn (`drawn`), or the user clears a layer.
+ */
+export function composeLayers(
+  moment: QE[],
+  opts: { natal?: QE[]; drawn?: QE[]; active?: LayerId } = {},
+): LayeredReading {
+  // Layer 0 — pure moment. Enforce computed-only regardless of what's passed.
+  const m = moment.filter((e) => e.nature === "computed");
+  const layers: ReadingLayer[] = [
+    { id: "moment", label: "The moment", entries: m, chord: compose(m), added: [] },
+  ];
+
+  // Layer 1 — through you (natal qualities folded in).
+  if (opts.natal && opts.natal.length) {
+    const natal = opts.natal.filter((e) => e.nature !== "cast"); // natal, not draws
+    const entries = [...m, ...natal];
+    layers.push({
+      id: "through-you",
+      label: "The moment, through you",
+      entries,
+      chord: compose(entries),
+      added: natal,
+    });
+  }
+
+  // Layer 2 — with what you drew (cast entries folded onto the top layer so far).
+  if (opts.drawn && opts.drawn.length) {
+    const base = layers[layers.length - 1]!.entries; // fold onto whatever's on top
+    const drawn = opts.drawn.filter((e) => e.nature === "cast");
+    const entries = [...base, ...drawn];
+    layers.push({
+      id: "with-drawn",
+      label:
+        layers.length > 1
+          ? "The moment, through you, coloured by what you drew"
+          : "The moment, coloured by what you drew",
+      entries,
+      chord: compose(entries),
+      added: drawn,
+    });
+  }
+
+  // Default active layer = the deepest available, unless the user chose one.
+  const available = layers.map((l) => l.id);
+  const active =
+    opts.active && available.includes(opts.active)
+      ? opts.active
+      : layers[layers.length - 1]!.id;
+
+  return { layers, active };
+}
+
+/** The phrase for whichever layer is active. Distill with the same chorus-wide
+ *  voice used everywhere (name the character, never the systems). */
+export function layerPrompt(reading: LayeredReading): { system: string; user: string } {
+  const layer = reading.layers.find((l) => l.id === reading.active)!;
+  return buildPrompt(layer.chord);
+}

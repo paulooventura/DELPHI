@@ -17,12 +17,14 @@ export function phraseCacheKey(
   lon: number,
   colorLean?: TribeColor | null,
   castLeanKey = "none",
+  /** Active reading layer + fingerprints (Addendum 2). */
+  layerKey = "moment",
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v5: natal color lean + held-cast fingerprint (local only; retunes street line).
+  // v6: layered reading — cache per layer + personal fingerprints.
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v5:${civilYmd}:${rLat}:${rLon}:${lean}:${castLeanKey}`;
+  return `delphi-phrase:v6:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 /** Accept only a single grounded sentence with no banned lexicon. */
@@ -97,9 +99,10 @@ export function phraseForMoment(
   lat: number,
   lon: number,
   opts?: DistillOptions,
+  layerKey = "moment",
 ): PhraseResult {
   const castKey = (opts?.castLean ?? []).slice(0, 6).join("+") || "none";
-  const key = phraseCacheKey(civilYmd, lat, lon, opts?.colorLean, castKey);
+  const key = phraseCacheKey(civilYmd, lat, lon, opts?.colorLean, castKey, layerKey);
   const cached = readCachedPhrase(key);
   if (cached && acceptPhrase(cached)) {
     return { phrase: cached, source: "cache" };

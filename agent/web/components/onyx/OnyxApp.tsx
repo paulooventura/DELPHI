@@ -6,7 +6,11 @@ import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
 import { jdFromDate } from "../../lib/phase/timeResolution";
-import { composeMoment } from "../../lib/lore/compose";
+import {
+  composeLayers,
+  composeMoment,
+  type LayerId,
+} from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
 import {
   fetchModelPhrase,
@@ -15,13 +19,9 @@ import {
   writeCachedPhrase,
 } from "../../lib/lore/distillPhrase";
 import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
-import {
-  castLeanKey,
-  latestCastLean,
-  loadEmbraced,
-  type EmbracedCast,
-} from "../../lib/lore/castStore";
-import { natalGalactic } from "../../lib/lore/resolvePerson";
+import { loadEmbraced, type EmbracedCast } from "../../lib/lore/castStore";
+import { natalGalactic, resolvePerson } from "../../lib/lore/resolvePerson";
+import { byId } from "../../lib/lore/qualia";
 import { DashboardContainer } from "../DashboardContainer";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import type { LiveAttitude } from "../CelestialSkyView";
@@ -130,8 +130,10 @@ export function OnyxApp({
   const [distilled, setDistilled] = useState<string>("");
   const [birth, setBirth] = useState<BirthRecord | null>(null);
   const [embraced, setEmbraced] = useState<EmbracedCast[]>([]);
+  /** Sticky user choice; undefined = deepest available (Addendum 2). */
+  const [activeLayerChoice, setActiveLayerChoice] = useState<LayerId | undefined>();
 
-  // Local-only natal + embraced casts — never sent; retune the street phrase.
+  // Local-only natal + embraced casts — never sent; fold into labeled layers.
   useEffect(() => {
     setBirth(loadBirth());
     setEmbraced(loadEmbraced());
@@ -147,16 +149,6 @@ export function OnyxApp({
   }, [now]);
 
   const natal = useMemo(() => (birth ? natalGalactic(birth) : null), [birth]);
-  const colorLean = natal?.tribe.color;
-  const castLean = useMemo(() => latestCastLean(embraced), [embraced]);
-  const distillOpts = useMemo(() => {
-    if (!colorLean && castLean.length === 0) return undefined;
-    return {
-      ...(colorLean ? { colorLean } : {}),
-      ...(castLean.length ? { castLean } : {}),
-    };
-  }, [colorLean, castLean]);
-  const leanCacheKey = useMemo(() => castLeanKey(embraced), [embraced]);
 
   const momentBundle = useMemo(() => {
     const jd = jdFromDate(now);
@@ -166,20 +158,66 @@ export function OnyxApp({
     });
   }, [now, lat, lon]);
 
-  // Birth color + embraced casts retune the street phrase locally.
-  // When personal lean is active, the deterministic template wins — the model
-  // must not overwrite a leaned phrase with a generic sky-only sentence.
+  const natalEntries = useMemo(() => {
+    if (!birth) return [];
+    return resolvePerson(birth).entries.filter(e => e.honesty === "render");
+  }, [birth]);
+
+  const drawnEntries = useMemo(() => {
+    const seen = new Set<string>();
+    const out = [];
+    for (const cast of embraced) {
+      for (const id of cast.entryIds ?? []) {
+        if (seen.has(id)) continue;
+        const e = byId(id);
+        if (e?.nature === "cast") {
+          seen.add(id);
+          out.push(e);
+        }
+      }
+    }
+    return out;
+  }, [embraced]);
+
+  const layered = useMemo(
+    () =>
+      composeLayers(momentBundle.ordered, {
+        natal: natalEntries,
+        drawn: drawnEntries,
+        active: activeLayerChoice,
+      }),
+    [momentBundle.ordered, natalEntries, drawnEntries, activeLayerChoice],
+  );
+
+  const activeReading = useMemo(
+    () => layered.layers.find(l => l.id === layered.active) ?? layered.layers[0]!,
+    [layered],
+  );
+
+  const layerCacheKey = useMemo(() => {
+    const natalFp = natalEntries
+      .map(e => e.id)
+      .sort()
+      .join("+") || "none";
+    const drawnFp = drawnEntries
+      .map(e => e.id)
+      .sort()
+      .join("+") || "none";
+    return `${layered.active}:${natalFp}:${drawnFp}`;
+  }, [layered.active, natalEntries, drawnEntries]);
+
+  // Distill the ACTIVE layer only. Layer 0 stays computed-only in composeLayers.
   useEffect(() => {
-    const { phrase } = phraseForMoment(momentBundle.chord, civilYmd, lat, lon, distillOpts);
+    const chord = activeReading.chord;
+    const { phrase } = phraseForMoment(chord, civilYmd, lat, lon, undefined, layerCacheKey);
     setDistilled(phrase);
-    const hasPersonalLean = Boolean(
-      distillOpts?.colorLean || (distillOpts?.castLean && distillOpts.castLean.length > 0),
-    );
-    if (hasPersonalLean) return;
-    const key = phraseCacheKey(civilYmd, lat, lon, distillOpts?.colorLean, leanCacheKey);
+    // Personal layers keep the deterministic template so the model cannot
+    // overwrite a natal/cast chord with a generic sky-only sentence.
+    if (layered.active !== "moment") return;
+    const key = phraseCacheKey(civilYmd, lat, lon, null, "none", layerCacheKey);
     let cancelled = false;
     void (async () => {
-      const model = await fetchModelPhrase(momentBundle.chord, distillOpts);
+      const model = await fetchModelPhrase(chord);
       if (cancelled || !model) return;
       writeCachedPhrase(key, model);
       setDistilled(model);
@@ -187,12 +225,11 @@ export function OnyxApp({
     return () => {
       cancelled = true;
     };
-  }, [momentBundle, civilYmd, lat, lon, distillOpts, leanCacheKey]);
+  }, [activeReading, layered.active, civilYmd, lat, lon, layerCacheKey]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
-  // Home / NOW street line = distilled chorus of mainframe qualities only.
-  // Calendar name-drops (Leo, Fire Horse, Kin…) stay under the clock rows
-  // via calendarReadings / Atlas multiVoice — never concatenated here.
+  // Home street line = distilled chorus of the active reading layer.
+  // Calendar name-drops stay under the clock rows — never concatenated here.
   const momentLine = distilled || "Reading the sky…";
   void multiVoice;
 
@@ -362,7 +399,7 @@ export function OnyxApp({
               </button>
               <button type="button" className="onyx-tool-btn" onClick={() => setMode("cast")}>
                 Cast
-                <span>Side-door draw — not the home chord</span>
+                <span>Draw — colours a labeled reading layer</span>
               </button>
               <button type="button" className="onyx-tool-btn" onClick={() => setMode("about")}>
                 About
@@ -378,10 +415,11 @@ export function OnyxApp({
   if (mode === "you") {
     return (
       <OnyxYou
-        nowChord={momentBundle.chord}
+        nowChord={layered.layers[0]!.chord}
         onBack={() => setMode("home")}
         onBirthSaved={next => {
           setBirth(next);
+          setActiveLayerChoice(undefined); // deepen to through-you
           setMode("home");
         }}
       />
@@ -394,6 +432,7 @@ export function OnyxApp({
         onBack={() => setMode("home")}
         onEmbraced={list => {
           setEmbraced(list);
+          setActiveLayerChoice(undefined); // deepen to with-drawn
           setMode("home");
         }}
       />
@@ -406,7 +445,7 @@ export function OnyxApp({
 
   if (mode === "decompose") {
     return (
-      <OnyxDecompose chord={momentBundle.chord} onBack={() => setMode("home")} />
+      <OnyxDecompose chord={activeReading.chord} onBack={() => setMode("home")} />
     );
   }
 
@@ -481,6 +520,10 @@ export function OnyxApp({
       phaseFraction={phaseFraction}
       zodiacSign={zodiacSign}
       momentLine={momentLine}
+      readingLayerLabel={activeReading.label}
+      readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}
+      activeLayerId={layered.active}
+      onSelectLayer={id => setActiveLayerChoice(id)}
       selfTone={selfTone}
       selfRet={selfRet}
       calendarReadings={stripReadings.slice(0, 8)}

@@ -29,11 +29,15 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
           <p className="onyx-eyebrow">HONESTY TIERS</p>
           <ul className="onyx-about-list">
             <li>
-              <b>Computed</b> — sky and calendar math on the home chord. Provenance intact under
-              “see why.”
+              <b>Computed</b> — sky and calendar math on Layer 0 (“The moment”). Same for anyone
+              at that place and instant. Provenance intact under “see why.”
             </li>
             <li>
-              <b>Drawn</b> — side-door casts you choose. Never automatic, never on home.
+              <b>Through you</b> — birth data you save folds into a labeled layer. One tap returns
+              to the pure moment.
+            </li>
+            <li>
+              <b>Drawn</b> — casts you embrace colour a labeled layer. Never automatic onto Layer 0.
             </li>
             <li>
               <b>Acknowledged</b> — land heritage and sacred calendars shown with respect; they do

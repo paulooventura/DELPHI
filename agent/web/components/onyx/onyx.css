@@ -1168,7 +1168,38 @@
   max-width: 22rem;
 }
 
-/* Held casts under home moment — labeled, never mixed into the sky chord */
+/* Active reading layer — names exactly what is folded in */
+.onyx-layer-label {
+  margin: 0 0 8px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--onyx-ink-quiet);
+  max-width: 22rem;
+}
+.onyx-layers {
+  margin-top: 12px;
+  width: 100%;
+  text-align: left;
+}
+.onyx-layer-chip {
+  border: 0.5px solid rgba(138, 123, 255, 0.35);
+  background: transparent;
+  color: var(--onyx-ink-quiet);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.onyx-layer-chip.on {
+  border-color: rgba(138, 123, 255, 0.7);
+  background: rgba(138, 123, 255, 0.12);
+  color: var(--onyx-ink);
+}
+
+/* Held casts under home moment — labeled strip; colours with-drawn layer when chosen */
 .onyx-held {
   margin-top: 14px;
   width: 100%;
