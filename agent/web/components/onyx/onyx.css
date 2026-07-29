@@ -1665,7 +1665,7 @@
   margin: 4px 0 0;
 }
 
-/* Stacked-lanes orrery (CLOCK-SPEC) */
+/* Stacked-lanes orrery canvas (OnyxOrrery) */
 .onyx-orrery-device {
   display: flex;
   flex-direction: column;
@@ -1724,4 +1724,250 @@
   border: 0.5px solid rgba(140, 124, 255, 0.35);
   border-radius: 12px;
   backdrop-filter: blur(10px);
+}
+
+/* ── Orrery · stacked lanes (OnyxLanesClock DOM) ───────────────────────────── */
+.onyx-lanes-device {
+  background: var(--onyx-black);
+}
+.onyx-lanes {
+  position: relative;
+  z-index: 20;
+  min-height: 100%;
+  padding: 52px 0 calc(28px + env(safe-area-inset-bottom, 0px));
+  background: var(--onyx-black);
+  color: var(--onyx-ink);
+}
+.onyx-lanes-eyebrow {
+  padding: 0 18px;
+  margin-bottom: 14px;
+}
+.onyx-lanes-slowsky {
+  margin: 0 12px 14px;
+  padding: 10px 12px 8px;
+  border: 0.5px solid rgba(40, 80, 160, 0.35);
+  border-radius: 10px;
+  background: linear-gradient(180deg, rgba(12, 24, 56, 0.55), rgba(0, 0, 0, 0.2));
+}
+.onyx-lanes-slowsky-title {
+  margin: 0 0 8px;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: #6a8ad0;
+}
+.onyx-lanes-slowsky-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+}
+.onyx-lanes-slowsky-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  line-height: 1.35;
+  color: var(--onyx-ink-soft);
+}
+.onyx-lanes-slowsky-list li span:first-child {
+  color: #5a72a8;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 9px;
+  flex: 0 0 auto;
+}
+.onyx-lanes-slowsky-list li span:last-child {
+  text-align: right;
+  color: #b8c8e8;
+}
+.onyx-lanes-stack {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 0 0 8px;
+}
+.onyx-lanes-now {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+  z-index: 4;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    rgba(140, 124, 255, 0.15),
+    rgba(242, 240, 251, 0.85) 12%,
+    rgba(242, 240, 251, 0.95) 88%,
+    rgba(140, 124, 255, 0.15)
+  );
+  box-shadow: 0 0 10px rgba(242, 240, 251, 0.35), 0 0 22px rgba(140, 124, 255, 0.25);
+}
+.onyx-lane {
+  position: relative;
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.onyx-lane-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  padding: 0 12px 2px;
+  pointer-events: none;
+}
+.onyx-lane-name {
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-lane-now-val {
+  font-size: 10px;
+  color: var(--onyx-ink-soft);
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.onyx-lane-viewport {
+  position: relative;
+  display: block;
+  height: 28px;
+  overflow: hidden;
+  border-radius: 2px;
+  background: color-mix(in srgb, var(--lane-color) 18%, #000 82%);
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--lane-color) 45%, transparent);
+}
+.onyx-lane--measured .onyx-lane-viewport {
+  box-shadow: inset 0 0 0 0.5px color-mix(in srgb, var(--lane-color) 55%, transparent);
+}
+.onyx-lane--celebrated .onyx-lane-viewport {
+  background: color-mix(in srgb, var(--lane-color) 22%, #000 78%);
+}
+.onyx-lane.is-open .onyx-lane-viewport {
+  box-shadow:
+    inset 0 0 0 0.5px color-mix(in srgb, var(--lane-color) 70%, #fff 10%),
+    0 0 14px color-mix(in srgb, var(--lane-color) 35%, transparent);
+}
+.onyx-lane-viewport::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  left: calc(50% - 38px);
+  width: 76px;
+  z-index: 2;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--lane-color) 55%, #fff 10%) 45%,
+    color-mix(in srgb, var(--lane-color) 55%, #fff 10%) 55%,
+    transparent
+  );
+  mix-blend-mode: screen;
+  opacity: 0.55;
+}
+.onyx-lane-track {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: flex;
+  height: 100%;
+  will-change: transform;
+  z-index: 1;
+}
+.onyx-lane-cycle {
+  display: flex;
+  flex: 0 0 auto;
+  height: 100%;
+}
+.onyx-lane-cell {
+  flex: 0 0 72px;
+  width: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, var(--lane-color) 35%, #f2f0fb 65%);
+  border-right: 0.5px solid color-mix(in srgb, var(--lane-color) 40%, transparent);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.onyx-lane--celebrated .onyx-lane-cell {
+  font-family: var(--font-voice);
+  font-size: 11px;
+  font-weight: 400;
+}
+.onyx-lane--measured .onyx-lane-cell {
+  font-variant-numeric: tabular-nums;
+}
+.onyx-lane-cycle--pulse {
+  background: repeating-linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--lane-color) 70%, #000 30%) 0 2px,
+    color-mix(in srgb, var(--lane-color) 25%, #000 75%) 2px 28px
+  );
+}
+.onyx-lane-tick {
+  flex: 0 0 28px;
+  width: 28px;
+  height: 100%;
+  border-right: 0.5px solid color-mix(in srgb, var(--lane-color) 55%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--lane-color) 55%, transparent),
+    color-mix(in srgb, var(--lane-color) 15%, transparent)
+  );
+}
+.onyx-lane-track--pulse .onyx-lane-tick:nth-child(5n) {
+  border-right-width: 1px;
+  border-right-color: color-mix(in srgb, var(--lane-color) 85%, #fff 10%);
+}
+.onyx-lane-explain {
+  margin: 14px 12px 0;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 0.5px solid var(--onyx-edge);
+  background: rgba(8, 6, 16, 0.92);
+}
+.onyx-lane-explain-name {
+  margin: 0 0 8px;
+  font-family: var(--font-voice);
+  font-size: 16px;
+  color: var(--onyx-ink-bright);
+}
+.onyx-lane-explain-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--onyx-ink);
+}
+.onyx-lane-explain-row span:first-child {
+  color: var(--onyx-ink-quiet);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 10px;
+}
+.onyx-lane-explain-row span:last-child {
+  text-align: right;
+  color: var(--onyx-ink-bright);
 }
