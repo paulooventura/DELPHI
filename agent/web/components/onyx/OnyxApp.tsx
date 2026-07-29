@@ -15,6 +15,12 @@ import {
   writeCachedPhrase,
 } from "../../lib/lore/distillPhrase";
 import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
+import {
+  castLeanKey,
+  latestCastLean,
+  loadEmbraced,
+  type EmbracedCast,
+} from "../../lib/lore/castStore";
 import { natalGalactic } from "../../lib/lore/resolvePerson";
 import { DashboardContainer } from "../DashboardContainer";
 import type { RingSelectHandler } from "../CosmicClockWheel";
@@ -112,10 +118,12 @@ export function OnyxApp({
   const [mode, setMode] = useState<OnyxMode>("home");
   const [distilled, setDistilled] = useState<string>("");
   const [birth, setBirth] = useState<BirthRecord | null>(null);
+  const [embraced, setEmbraced] = useState<EmbracedCast[]>([]);
 
-  // Local-only natal record — never sent; unlocks color lean + hour-sensitive YOU math.
+  // Local-only natal + embraced casts — never sent; retune the street phrase.
   useEffect(() => {
     setBirth(loadBirth());
+    setEmbraced(loadEmbraced());
   }, []);
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
@@ -129,10 +137,15 @@ export function OnyxApp({
 
   const natal = useMemo(() => (birth ? natalGalactic(birth) : null), [birth]);
   const colorLean = natal?.tribe.color;
-  const distillOpts = useMemo(
-    () => (colorLean ? { colorLean } : undefined),
-    [colorLean],
-  );
+  const castLean = useMemo(() => latestCastLean(embraced), [embraced]);
+  const distillOpts = useMemo(() => {
+    if (!colorLean && castLean.length === 0) return undefined;
+    return {
+      ...(colorLean ? { colorLean } : {}),
+      ...(castLean.length ? { castLean } : {}),
+    };
+  }, [colorLean, castLean]);
+  const leanCacheKey = useMemo(() => castLeanKey(embraced), [embraced]);
 
   const momentBundle = useMemo(() => {
     const jd = jdFromDate(now);
@@ -143,11 +156,11 @@ export function OnyxApp({
   }, [now, lat, lon]);
 
   // First paint: cache or deterministic template (never blocks on network).
-  // When natal color is known locally, the phrase leans toward that register.
+  // Birth color + embraced cast qualities retune the street phrase locally.
   useEffect(() => {
     const { phrase } = phraseForMoment(momentBundle.chord, civilYmd, lat, lon, distillOpts);
     setDistilled(phrase);
-    const key = phraseCacheKey(civilYmd, lat, lon, distillOpts?.colorLean);
+    const key = phraseCacheKey(civilYmd, lat, lon, distillOpts?.colorLean, leanCacheKey);
     let cancelled = false;
     void (async () => {
       const model = await fetchModelPhrase(momentBundle.chord, distillOpts);
@@ -158,7 +171,7 @@ export function OnyxApp({
     return () => {
       cancelled = true;
     };
-  }, [momentBundle, civilYmd, lat, lon, distillOpts]);
+  }, [momentBundle, civilYmd, lat, lon, distillOpts, leanCacheKey]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
   // Home / NOW street line = distilled chorus of mainframe qualities only.
@@ -346,13 +359,24 @@ export function OnyxApp({
       <OnyxYou
         nowChord={momentBundle.chord}
         onBack={() => setMode("home")}
-        onBirthSaved={next => setBirth(next)}
+        onBirthSaved={next => {
+          setBirth(next);
+          setMode("home");
+        }}
       />
     );
   }
 
   if (mode === "cast") {
-    return <OnyxCast onBack={() => setMode("home")} />;
+    return (
+      <OnyxCast
+        onBack={() => setMode("home")}
+        onEmbraced={list => {
+          setEmbraced(list);
+          setMode("home");
+        }}
+      />
+    );
   }
 
   if (mode === "about") {
@@ -441,6 +465,7 @@ export function OnyxApp({
       calendarReadings={stripReadings.slice(0, 8)}
       landCalendarLine={landCalendarLine}
       landAcknowledgment={landAcknowledgment}
+      heldCasts={embraced.slice(0, 3)}
       onOpenSky={openSky}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}

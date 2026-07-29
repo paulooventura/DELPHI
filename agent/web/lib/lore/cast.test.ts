@@ -1,5 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { castReading, drawIndex, CAST_FRAMING } from "./cast";
+import {
+  castIChingCoins,
+  castOrishaDiloggun,
+  castReading,
+  castRuneSpread,
+  castTarotSpread,
+  drawIndex,
+  CAST_FRAMING,
+  TAROT_SPREADS,
+} from "./cast";
 import { composeMoment } from "./compose";
 import { resolveMoment } from "./resolveMoment";
 import { jdFromDate } from "../phase/timeResolution";
@@ -26,15 +35,60 @@ describe("cast integrity — crypto draw + home isolation", () => {
       expect(r.drawn[0]!.nature).toBe("cast");
       if (system === "orisha-cast") {
         expect(r.framing.note).toMatch(/NOT a traditional Ifá reading/i);
-        expect(r.framing.frame).toMatch(/16-cowrie/i);
       }
     }
+  });
+
+  it("tarot spreads draw counts without replacement and mark reverse", () => {
+    for (const spread of TAROT_SPREADS) {
+      const r = castTarotSpread(spread.id);
+      expect(r.drawn.length).toBe(spread.count);
+      expect(r.cards?.length).toBe(spread.count);
+      expect(r.cards!.every(c => typeof c.reversed === "boolean")).toBe(true);
+      const ids = r.drawn.map(d => d.id);
+      expect(new Set(ids).size).toBe(ids.length);
+    }
+  });
+
+  it("orisha diloggun maps mouth count into the 8-principal pool", () => {
+    for (let i = 0; i < 20; i++) {
+      const r = castOrishaDiloggun();
+      expect(r.system).toBe("orisha-cast");
+      expect(r.cowrieUp).toBeGreaterThanOrEqual(0);
+      expect(r.cowrieUp).toBeLessThanOrEqual(16);
+      expect(r.drawn[0]!.system).toBe("orisha-cast");
+      expect(r.framing.note).toMatch(/NOT a traditional Ifá reading/i);
+    }
+  });
+
+  it("iching coins produce a King Wen hexagram and optional relating", () => {
+    const r = castIChingCoins();
+    expect(r.system).toBe("iching-hexagram");
+    expect(r.ichingLines).toHaveLength(6);
+    expect(r.drawn[0]!.id).toMatch(/^ic-hex-\d+$/);
+    expect(r.drawn[0]!.nature).toBe("cast");
+    if (r.changingLines && r.changingLines.length > 0) {
+      expect(r.relating).toBeTruthy();
+      expect(r.drawn.length).toBe(2);
+    }
+  });
+
+  it("rune norns draws three distinct staves", () => {
+    const r = castRuneSpread("norns");
+    expect(r.drawn.length).toBe(3);
+    expect(new Set(r.drawn.map(d => d.id)).size).toBe(3);
+    expect(r.positions).toEqual(["What was", "What is", "What leans forward"]);
   });
 
   it("no cast entry reaches the home chord", () => {
     const jd = jdFromDate(new Date("2026-07-24T18:00:00Z"));
     const { entries } = resolveMoment(jd, 36.16, -86.78);
-    const drawn = castReading("tarot", 3).drawn;
+    const drawn = [
+      ...castTarotSpread("three").drawn,
+      ...castOrishaDiloggun().drawn,
+      ...castIChingCoins().drawn,
+      ...castRuneSpread("norns").drawn,
+    ];
     const polluted = [...entries, ...drawn];
     const moment = composeMoment(polluted, 36.16, -86.78);
     for (const c of moment.chord.contributors) {

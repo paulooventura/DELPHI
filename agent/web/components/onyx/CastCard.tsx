@@ -8,16 +8,21 @@ export function CastCard({
   entry,
   system,
   frame,
+  reversed = false,
 }: {
   entry: QualiaEntry;
   system: string;
   frame: string;
+  reversed?: boolean;
 }) {
   const spec = symbolForCastEntry(system, entry.id, entry.glyph);
   const title = entry.name.toUpperCase();
 
   return (
-    <article className="onyx-cast-card" aria-label={`${entry.name} — ${frame}`}>
+    <article
+      className={`onyx-cast-card${reversed ? " reversed" : ""}`}
+      aria-label={`${entry.name}${reversed ? " reversed" : ""} — ${frame}`}
+    >
       <div className="onyx-cast-card-face">
         <div className="onyx-cast-card-aura" aria-hidden />
         <div className="onyx-cast-card-symbol-wrap">
@@ -25,6 +30,7 @@ export function CastCard({
         </div>
         <div className="onyx-cast-card-band">
           <p className="onyx-cast-card-title">{title}</p>
+          {reversed && <p className="onyx-cast-card-orient">Reversed</p>}
         </div>
       </div>
       {entry.qualities.length > 0 && (

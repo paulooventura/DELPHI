@@ -17,6 +17,9 @@
   --onyx-ink-soft: #8f8ca3;
   --onyx-ink-quiet: #5a5770;
   --onyx-ink-faint: #37343f;
+  --onyx-gem-green: #3d9b6a;
+  --onyx-gem-yellow: #c9a227;
+  --onyx-gem-red: #b54a4a;
   --onyx-lift: 280ms cubic-bezier(0.2, 0, 0.1, 1);
   --onyx-settle: 660ms cubic-bezier(0.16, 1, 0.3, 1);
   --onyx-deep-settle: 980ms cubic-bezier(0.22, 1, 0.28, 1);
@@ -993,6 +996,34 @@
   margin: 4px 0 14px;
   text-align: center;
 }
+.onyx-cast-spreads {
+  margin-top: 18px;
+  padding-top: 4px;
+  width: 100%;
+}
+.onyx-cast-spread-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 18px;
+  margin: 14px 0 10px;
+  width: 100%;
+}
+.onyx-cast-spread-slot {
+  min-width: 0;
+}
+.onyx-cast-position {
+  margin: 0 0 8px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+  text-align: center;
+}
+@media (min-width: 360px) {
+  .onyx-cast-spread-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
 .onyx-cast-drawing {
   margin: 28px 0 8px;
   text-align: center;
@@ -1056,6 +1087,16 @@
   background: rgba(12, 8, 24, 0.82);
   border-top: 1px solid rgba(233, 214, 168, 0.45);
 }
+.onyx-cast-card.reversed .onyx-cast-card-symbol-wrap {
+  transform: rotate(180deg);
+}
+.onyx-cast-card-orient {
+  margin: 4px 0 0;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
 .onyx-cast-card-title {
   margin: 0;
   text-align: center;
@@ -1084,6 +1125,81 @@
 .onyx-tool-btn.on {
   border-color: rgba(233, 214, 168, 0.45);
   color: #e9d6a8;
+}
+
+/* Cast gemstones — embrace / change / reject */
+.onyx-cast-gems {
+  display: flex;
+  justify-content: center;
+  gap: 18px;
+  margin-top: 22px;
+  width: 100%;
+}
+.onyx-gem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  border: none;
+  background: transparent;
+  color: var(--onyx-ink-soft);
+  font-family: inherit;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  padding: 6px;
+  transition: transform var(--onyx-lift), color var(--onyx-lift);
+}
+.onyx-gem:disabled { opacity: 0.4; cursor: default; }
+.onyx-gem:not(:disabled):active { transform: scale(0.94); }
+.onyx-gem-svg {
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.45));
+}
+.onyx-gem-green { color: #7dcea0; }
+.onyx-gem-yellow { color: #e0c56a; }
+.onyx-gem-red { color: #d48a8a; }
+.onyx-cast-gem-hint {
+  margin: 12px 0 0;
+  text-align: center;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--onyx-ink-quiet);
+  max-width: 22rem;
+}
+
+/* Held casts under home moment — labeled, never mixed into the sky chord */
+.onyx-held {
+  margin-top: 14px;
+  width: 100%;
+  text-align: left;
+}
+.onyx-held-eyebrow {
+  margin: 0 0 6px;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-held-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.onyx-held-chip {
+  border: 0.5px solid rgba(61, 155, 106, 0.45);
+  background: rgba(61, 155, 106, 0.1);
+  color: var(--onyx-ink);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  padding: 6px 10px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+.onyx-held-chip b {
+  color: #7dcea0;
+  font-weight: 600;
 }
 
 /* Cast ritual — tradition film, then reveal */

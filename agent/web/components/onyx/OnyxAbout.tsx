@@ -14,8 +14,10 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
           <div className="onyx-about-block">
             <p>
               Calendar readings are computed from real astronomical positions to the arcminute.
-              Tarot, Orisha, I Ching, and rune draws are genuine cryptographic-random casts. Nothing
-              here predicts the future — it is offered as a mirror for reflection.
+              Tarot (majors, upright/reversed spreads), Orisha (mérìndílógún cowrie count — not a
+              babalawo Ifá reading), I Ching (three-coin hexagrams with changing lines), and Elder
+              Futhark rune casts are genuine cryptographic-random draws. Nothing here predicts the
+              future — it is offered as a mirror for reflection.
             </p>
             <p style={{ marginTop: 12 }}>
               The home sentence names the standing wave across the whole chorus — the single

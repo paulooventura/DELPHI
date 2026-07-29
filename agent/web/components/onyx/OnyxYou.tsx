@@ -190,6 +190,7 @@ export function OnyxYou({
     setBirth(next);
     setError(null);
     onBirthSaved?.(next);
+    // Parent returns to home so the moment retunes immediately.
   }
 
   function wipe() {

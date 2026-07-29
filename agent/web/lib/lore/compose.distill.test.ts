@@ -47,4 +47,21 @@ describe("chorus distillation — no tradition names on the home phrase", () => 
     expect(user).not.toMatch(/\bRed\b/);
     expect(user).toMatch(/Do not name any color/);
   });
+
+  it("cast lean soft-admits held qualities without naming the draw", () => {
+    const chord = compose(active);
+    const lean = distillTemplate(chord, { castLean: ["still", "threshold"] });
+    expect(lean.endsWith(".")).toBe(true);
+    expect(lean).not.toMatch(/tarot|odu|hexagram|rune|the fool|cast/i);
+    // Held words may surface as weather texture when chorus is thin on them.
+    expect(lean.toLowerCase()).toMatch(/still|threshold|radiant|warm|active/);
+  });
+
+  it("buildPrompt cast lean hints without tradition names", () => {
+    const chord = compose(active);
+    const { user } = buildPrompt(chord, { castLean: ["still", "threshold"] });
+    expect(user).toMatch(/Held cast|undercurrent/i);
+    expect(user).toMatch(/still|threshold/);
+    expect(user).not.toMatch(/tarot|the fool/i);
+  });
 });

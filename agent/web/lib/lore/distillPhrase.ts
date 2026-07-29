@@ -16,12 +16,13 @@ export function phraseCacheKey(
   lat: number,
   lon: number,
   colorLean?: TribeColor | null,
+  castLeanKey = "none",
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v3: optional natal color lean (local only) — separate cache per register.
+  // v4: natal color lean + embraced-cast fingerprint (local only).
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v3:${civilYmd}:${rLat}:${rLon}:${lean}`;
+  return `delphi-phrase:v4:${civilYmd}:${rLat}:${rLon}:${lean}:${castLeanKey}`;
 }
 
 /** Accept only a single grounded sentence with no banned lexicon. */
@@ -97,7 +98,8 @@ export function phraseForMoment(
   lon: number,
   opts?: DistillOptions,
 ): PhraseResult {
-  const key = phraseCacheKey(civilYmd, lat, lon, opts?.colorLean);
+  const castKey = (opts?.castLean ?? []).slice(0, 6).join("+") || "none";
+  const key = phraseCacheKey(civilYmd, lat, lon, opts?.colorLean, castKey);
   const cached = readCachedPhrase(key);
   if (cached && acceptPhrase(cached)) {
     return { phrase: cached, source: "cache" };

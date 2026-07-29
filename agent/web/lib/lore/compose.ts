@@ -31,7 +31,14 @@ import {
 export type DistillOptions = {
   /** Natal tribe color lean — reweights qualities already in the chorus. */
   colorLean?: TribeColor;
+  /**
+   * Qualities from an embraced cast (local). Soft-boosts / admits them into the
+   * street phrase lean — never as chord contributors to composeMoment.
+   */
+  castLean?: string[];
 };
+
+const CAST_LEAN_BOOST = 1.35;
 
 export type AxisReading = {
   axis: string;
@@ -166,8 +173,13 @@ function poleWord(axis: string, value: number): string {
  *
  * Optional `colorLean` (natal Dreamspell tribe color) boosts matching quality
  * words already present — never inserts the color name itself.
+ * Optional `castLean` (embraced draw qualities) soft-boosts overlap and may
+ * admit held qualities into the lead weather.
  */
 export function distillTemplate(c: Composition, opts?: DistillOptions): string {
+  const castLean = new Set(
+    (opts?.castLean ?? []).map(q => q.trim().toLowerCase()).filter(Boolean),
+  );
   // Score mainframe quality words by how many chorus voices carry them.
   const qualityWeights = new Map<string, number>();
   for (const entry of c.contributors) {
@@ -178,8 +190,13 @@ export function distillTemplate(c: Composition, opts?: DistillOptions): string {
       if (opts?.colorLean && colorLeanMatches(w, opts.colorLean)) {
         score += COLOR_LEAN_BOOST;
       }
+      if (castLean.has(w)) score += CAST_LEAN_BOOST;
       qualityWeights.set(w, score);
     }
+  }
+  // Held cast qualities not already in the chorus — soft admit (below a full voice).
+  for (const w of castLean) {
+    if (!qualityWeights.has(w)) qualityWeights.set(w, 0.9);
   }
   const byShare = [...qualityWeights.entries()].sort(
     (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
@@ -283,6 +300,15 @@ export function buildPrompt(c: Composition, opts?: DistillOptions): { system: st
       ]
     : [];
 
+  const castHint =
+    opts?.castLean && opts.castLean.length > 0
+      ? [
+          "",
+          "Held cast (user embraced — fold as undercurrent weather, never name the card/rune/system):",
+          `  ${opts.castLean.slice(0, 8).join(", ")}`,
+        ]
+      : [];
+
   const user = [
     `${n} traditions observe this moment. Their combined shape:`,
     "",
@@ -298,6 +324,7 @@ export function buildPrompt(c: Composition, opts?: DistillOptions): { system: st
     "All the qualities in play (already deduped across every tradition):",
     `  ${c.activeQualities.join(", ")}`,
     ...leanHint,
+    ...castHint,
     "",
     "Distill ALL of this into ONE sentence naming the moment's single emergent character. Name no tradition.",
   ].join("\n");

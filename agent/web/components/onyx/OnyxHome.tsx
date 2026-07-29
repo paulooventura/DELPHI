@@ -56,6 +56,13 @@ function MoonSvg() {
   );
 }
 
+export type HeldCastChip = {
+  id: string;
+  label: string;
+  names: string[];
+  spreadLabel?: string;
+};
+
 export type OnyxHomeProps = {
   now: Date;
   phaseFraction: number;
@@ -69,6 +76,8 @@ export type OnyxHomeProps = {
   landCalendarLine?: string | null;
   /** Land acknowledgment at the location fix — first-class, not a footnote. */
   landAcknowledgment?: { text: string; people: string; pointTo?: string } | null;
+  /** Embraced casts — labeled strip; never mixed into the sky chord. */
+  heldCasts?: HeldCastChip[];
   onOpenSky: () => void;
   onOpenRings: () => void;
   onOpenTools: () => void;
@@ -90,6 +99,7 @@ export function OnyxHome({
   calendarReadings,
   landCalendarLine,
   landAcknowledgment,
+  heldCasts = [],
   onOpenSky,
   onOpenRings,
   onOpenTools,
@@ -601,6 +611,30 @@ export function OnyxHome({
             <p className="sub">
               The moon is {moon.verb}, {moon.detail} Lift your phone to the sky.
             </p>
+            {heldCasts.length > 0 && (
+              <div className="onyx-held">
+                <p className="onyx-held-eyebrow">Held · embraced cast</p>
+                <div className="onyx-held-row">
+                  {heldCasts.map(h => (
+                    <button
+                      key={h.id}
+                      type="button"
+                      className="onyx-held-chip"
+                      onClick={e => {
+                        e.stopPropagation();
+                        buzz("tick");
+                        onOpenCast?.();
+                      }}
+                    >
+                      <b>{h.label}</b>
+                      {" · "}
+                      {h.names.slice(0, 2).join(" · ")}
+                      {h.names.length > 2 ? "…" : ""}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
@@ -633,6 +667,30 @@ export function OnyxHome({
             </p>
           )}
           <p className="now">{momentLine}</p>
+          {heldCasts.length > 0 && (
+            <div className="onyx-held">
+              <p className="onyx-held-eyebrow">Held · not the sky clock</p>
+              <div className="onyx-held-row">
+                {heldCasts.map(h => (
+                  <button
+                    key={h.id}
+                    type="button"
+                    className="onyx-held-chip"
+                    onClick={e => {
+                      e.stopPropagation();
+                      buzz("tick");
+                      onOpenCast?.();
+                    }}
+                  >
+                    <b>{h.label}</b>
+                    {" · "}
+                    {h.names.slice(0, 2).join(" · ")}
+                    {h.names.length > 2 ? "…" : ""}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           {onOpenWhy && (
             <button
               type="button"
