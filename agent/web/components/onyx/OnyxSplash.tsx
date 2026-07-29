@@ -8,17 +8,28 @@ const FADE_MS = 720;
  * Boot: pure black → intro film → fade to black → home.
  * Nothing on screen except the film and centered DELPHI. No corners, tagline,
  * coords, land ack, enter chrome, or seeds.
+ *
+ * Tap primes device access on the user-gesture path (required on iOS).
+ * Auto-end of the film does not prime — the access gate covers that case.
  */
-export function OnyxSplash({ onEnter }: { onEnter: () => void }) {
+export function OnyxSplash({
+  onEnter,
+  onPrimeAccess,
+}: {
+  onEnter: () => void;
+  /** Sync call from the tap handler — must not be deferred past the gesture. */
+  onPrimeAccess?: () => void;
+}) {
   const entered = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
   const [markOn, setMarkOn] = useState(false);
 
-  const finish = () => {
+  const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
+    if (fromGesture) onPrimeAccess?.();
     setMarkOn(false);
     setVeilOn(true);
     window.setTimeout(() => onEnter(), FADE_MS);
@@ -52,7 +63,7 @@ export function OnyxSplash({ onEnter }: { onEnter: () => void }) {
       className="onyx-root"
       role="dialog"
       aria-label="Delphi splash"
-      onClick={finish}
+      onClick={() => finish(true)}
     >
       <div className="onyx-device onyx-splash-only">
         <div className="onyx-film">
@@ -65,7 +76,7 @@ export function OnyxSplash({ onEnter }: { onEnter: () => void }) {
             className={videoReady ? "onyx-film-ready" : undefined}
             onLoadedData={() => setVideoReady(true)}
             onPlaying={() => setVideoReady(true)}
-            onEnded={finish}
+            onEnded={() => finish(false)}
           >
             <source src="/delphi-intro.mp4" type="video/mp4" />
           </video>

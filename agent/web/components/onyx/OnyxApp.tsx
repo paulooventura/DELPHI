@@ -36,6 +36,7 @@ import { OnyxYou } from "./OnyxYou";
 import { OnyxCast } from "./OnyxCast";
 import { OnyxAbout } from "./OnyxAbout";
 import { OnyxDecompose } from "./OnyxDecompose";
+import { DeviceAccessGate } from "./DeviceAccessGate";
 import "./onyx.css";
 
 export type OnyxMode =
@@ -54,6 +55,9 @@ export type OnyxMode =
 export function OnyxApp({
   showSplash,
   onSplashDone,
+  onPrimeAccess,
+  showAccessGate = false,
+  onAllowAccess,
   now,
   lat,
   lon,
@@ -85,6 +89,11 @@ export function OnyxApp({
 }: {
   showSplash: boolean;
   onSplashDone: () => void;
+  /** Sync from splash tap — iOS sensor permission must stay on the gesture. */
+  onPrimeAccess?: () => void;
+  /** Fallback when splash was skipped / auto-ended before priming. */
+  showAccessGate?: boolean;
+  onAllowAccess?: () => void;
   now: Date;
   lat: number;
   lon: number;
@@ -224,8 +233,12 @@ export function OnyxApp({
 
   if (showSplash) {
     return (
-      <OnyxSplash onEnter={onSplashDone} />
+      <OnyxSplash onEnter={onSplashDone} onPrimeAccess={onPrimeAccess} />
     );
+  }
+
+  if (showAccessGate && onAllowAccess) {
+    return <DeviceAccessGate onAllow={onAllowAccess} />;
   }
 
   const openSky = () => {

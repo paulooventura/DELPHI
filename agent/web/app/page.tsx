@@ -1,12 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
+import { hasPrimedDeviceAccess, requestDeviceAccessPermissions } from "../lib/deviceAccess";
 import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
@@ -275,7 +276,16 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
   const [showLaunch, completeLaunch] = useShowLaunch();
+  /** True until the one-time location/sensor ask has run (splash tap or gate). */
+  const [needsAccessGate, setNeedsAccessGate] = useState(false);
+  const primingAccessRef = useRef(false);
   useScreenWakeLock(true);
+
+  useLayoutEffect(() => {
+    // After splash skip (session already launched), surface the gate if we
+    // never primed sensors — avoids silent iOS denial from a mount effect.
+    setNeedsAccessGate(!hasPrimedDeviceAccess());
+  }, []);
 
   // ── Tabbed app shell (Clock · Sky · Moment · Atlas · Senses · Oracle)
   const isAppTab = (v: string | null): v is AppTab =>
@@ -713,6 +723,24 @@ export default function Home() {
     }
   }
 
+  /**
+   * One-time permission ask. Must stay on a user-gesture call stack (splash
+   * tap or Allow button) so iOS shows orientation/motion dialogs.
+   */
+  async function primeDeviceAccess() {
+    if (primingAccessRef.current) return;
+    primingAccessRef.current = true;
+    try {
+      await requestDeviceAccessPermissions();
+      setNeedsAccessGate(false);
+      // Geolocation prompt rides along with the first position read.
+      void captureSensors();
+      void startOrientationWatch();
+    } finally {
+      primingAccessRef.current = false;
+    }
+  }
+
   useEffect(() => {
     installHapticLifecycle();
     let initial = { ...DEFAULT_TOGGLES };
@@ -721,8 +749,12 @@ export default function Home() {
       if (raw) initial = { ...DEFAULT_TOGGLES, ...JSON.parse(raw) };
     } catch { /* fresh session — all senses on */ }
     setToggles(initial);
-    void captureSensors(initial);
-    void startOrientationWatch();
+    // Only auto-start watches if we already asked once — never requestPermission
+    // from a mount effect (iOS ignores / denies that path).
+    if (hasPrimedDeviceAccess()) {
+      void captureSensors(initial);
+      void startOrientationWatch();
+    }
     return () => {
       muteHaptics();
       cancelHaptic();
@@ -1055,6 +1087,13 @@ export default function Home() {
         completeLaunch();
         if (clockSfxOn) void enableSfx();
       }}
+      onPrimeAccess={() => {
+        void primeDeviceAccess();
+      }}
+      showAccessGate={!showLaunch && needsAccessGate}
+      onAllowAccess={() => {
+        void primeDeviceAccess();
+      }}
       now={cosmic?.now ?? animNow}
       lat={mapLat}
       lon={mapLon}
@@ -1068,6 +1107,7 @@ export default function Home() {
       skyWeather={skyWeatherSlot}
       skyWarmth={spectrumWarmth}
       onEnterSky={() => {
+        // Retry watches if already primed; do not re-prompt from here.
         if (toggles.heading || toggles.location) void startOrientationWatch();
         void captureSensors();
       }}
