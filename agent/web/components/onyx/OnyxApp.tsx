@@ -164,11 +164,16 @@ export function OnyxApp({
     });
   }, [now, lat, lon]);
 
-  // First paint: cache or deterministic template (never blocks on network).
-  // Birth color + embraced cast qualities retune the street phrase locally.
+  // Birth color + embraced casts retune the street phrase locally.
+  // When personal lean is active, the deterministic template wins — the model
+  // must not overwrite a leaned phrase with a generic sky-only sentence.
   useEffect(() => {
     const { phrase } = phraseForMoment(momentBundle.chord, civilYmd, lat, lon, distillOpts);
     setDistilled(phrase);
+    const hasPersonalLean = Boolean(
+      distillOpts?.colorLean || (distillOpts?.castLean && distillOpts.castLean.length > 0),
+    );
+    if (hasPersonalLean) return;
     const key = phraseCacheKey(civilYmd, lat, lon, distillOpts?.colorLean, leanCacheKey);
     let cancelled = false;
     void (async () => {

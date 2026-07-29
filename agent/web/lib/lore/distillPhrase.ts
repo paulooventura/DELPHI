@@ -20,9 +20,9 @@ export function phraseCacheKey(
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v4: natal color lean + embraced-cast fingerprint (local only).
+  // v5: natal color lean + held-cast fingerprint (local only; retunes street line).
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v4:${civilYmd}:${rLat}:${rLon}:${lean}:${castLeanKey}`;
+  return `delphi-phrase:v5:${civilYmd}:${rLat}:${rLon}:${lean}:${castLeanKey}`;
 }
 
 /** Accept only a single grounded sentence with no banned lexicon. */

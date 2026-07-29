@@ -74,18 +74,57 @@ export function rejectLatestEmbraced(): EmbracedCast[] {
   return list;
 }
 
-/** Qualities from the most recent embrace (for distill lean). */
-export function latestCastLean(list?: EmbracedCast[]): string[] {
-  const items = list ?? loadEmbraced();
-  const top = items[0];
-  if (!top) return [];
-  return [...new Set(top.qualities.map(q => q.trim().toLowerCase()).filter(Boolean))].slice(0, 8);
+/** Tradition scaffolding — never leans the street phrase. */
+const LEAN_STOP = new Set([
+  "odu",
+  "cowrie",
+  "tarot",
+  "rune",
+  "hexagram",
+  "trigram",
+  "orisha",
+  "card",
+  "major",
+  "minor",
+  "arcana",
+  "cast",
+  "diloggun",
+  "reflection",
+]);
+
+function leanable(q: string): boolean {
+  const w = q.trim().toLowerCase();
+  if (!w || w.length < 3) return false;
+  if (LEAN_STOP.has(w)) return false;
+  return true;
 }
 
-/** Stable cache fingerprint for phrase keys. */
+/**
+ * Qualities from recent embraced casts (newest first, up to 3).
+ * Union — so several held draws can retune the moment together.
+ */
+export function latestCastLean(list?: EmbracedCast[]): string[] {
+  const items = (list ?? loadEmbraced()).slice(0, 3);
+  const out: string[] = [];
+  const seen = new Set<string>();
+  for (const item of items) {
+    for (const q of item.qualities) {
+      const w = q.trim().toLowerCase();
+      if (!leanable(w) || seen.has(w)) continue;
+      seen.add(w);
+      out.push(w);
+      if (out.length >= 8) return out;
+    }
+  }
+  return out;
+}
+
+/** Stable cache fingerprint for phrase keys — all held draws that lean. */
 export function castLeanKey(list?: EmbracedCast[]): string {
-  const items = list ?? loadEmbraced();
-  const top = items[0];
-  if (!top) return "none";
-  return `${top.entryIds.join("+") || top.names.join("+")}`.slice(0, 64);
+  const items = (list ?? loadEmbraced()).slice(0, 3);
+  if (items.length === 0) return "none";
+  return items
+    .map(t => t.entryIds.join("+") || t.names.join("+"))
+    .join("|")
+    .slice(0, 96);
 }

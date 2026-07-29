@@ -38,7 +38,12 @@ export type DistillOptions = {
   castLean?: string[];
 };
 
-const CAST_LEAN_BOOST = 1.35;
+/** Boost when a chorus quality overlaps an embraced cast quality. */
+const CAST_LEAN_BOOST = 2.2;
+/** Admit held cast qualities that the sky chorus never said — must compete. */
+const CAST_LEAN_ADMIT = 2.6;
+/** Soft-admit natal color register words so birth always retunes the lead. */
+const COLOR_LEAN_ADMIT = 1.9;
 
 export type AxisReading = {
   axis: string;
@@ -168,19 +173,31 @@ function poleWord(axis: string, value: number): string {
  * Deterministic distilled phrase — the offline / fallback reading.
  * Distills QUALITY WORDS from the mainframe chorus (how often they co-occur),
  * with axis poles as backup texture. Names NO system, sign, planet, animal,
- * or card — only the emergent weather. The character is the sum of all
- * contributors, not a report of which calendars are lit.
+ * or card — only the emergent weather.
  *
- * Optional `colorLean` (natal Dreamspell tribe color) boosts matching quality
- * words already present — never inserts the color name itself.
- * Optional `castLean` (embraced draw qualities) soft-boosts overlap and may
- * admit held qualities into the lead weather.
+ * Optional `colorLean` / `castLean` retune the lead. When personal lean is
+ * present we do NOT gate on "shared by 2+ voices" alone — that swallowed
+ * birth and embraced-cast retunes.
  */
 export function distillTemplate(c: Composition, opts?: DistillOptions): string {
-  const castLean = new Set(
-    (opts?.castLean ?? []).map(q => q.trim().toLowerCase()).filter(Boolean),
-  );
-  // Score mainframe quality words by how many chorus voices carry them.
+  const castLeanList = (opts?.castLean ?? [])
+    .map(q => q.trim().toLowerCase())
+    .filter(Boolean);
+  const castLean = new Set(castLeanList);
+  const colorWords = opts?.colorLean
+    ? new Set(COLOR_QUALITY_LEAN[opts.colorLean].map(w => w.toLowerCase()))
+    : new Set<string>();
+  const hasPersonalLean = Boolean(opts?.colorLean || castLean.size);
+
+  const rawCounts = new Map<string, number>();
+  for (const entry of c.contributors) {
+    for (const q of entry.qualities) {
+      const w = q.trim().toLowerCase();
+      if (!w) continue;
+      rawCounts.set(w, (rawCounts.get(w) ?? 0) + 1);
+    }
+  }
+
   const qualityWeights = new Map<string, number>();
   for (const entry of c.contributors) {
     for (const q of entry.qualities) {
@@ -194,40 +211,64 @@ export function distillTemplate(c: Composition, opts?: DistillOptions): string {
       qualityWeights.set(w, score);
     }
   }
-  // Held cast qualities not already in the chorus — soft admit (below a full voice).
-  for (const w of castLean) {
-    if (!qualityWeights.has(w)) qualityWeights.set(w, 0.9);
+
+  // Natal color register — admit so birth always shifts the lead weather.
+  if (opts?.colorLean) {
+    for (const w of COLOR_QUALITY_LEAN[opts.colorLean].slice(0, 6)) {
+      const prev = qualityWeights.get(w) ?? 0;
+      qualityWeights.set(w, prev > 0 ? prev + COLOR_LEAN_BOOST * 0.5 : COLOR_LEAN_ADMIT);
+    }
   }
+
+  // Held cast qualities — admit at competitive weight (was 0.9, lost to shared gate).
+  for (const w of castLean) {
+    const prev = qualityWeights.get(w) ?? 0;
+    qualityWeights.set(w, prev > 0 ? prev + CAST_LEAN_BOOST : CAST_LEAN_ADMIT);
+  }
+
   const byShare = [...qualityWeights.entries()].sort(
     (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
   );
-  // Shared = carried by 2+ voices (raw count before color boost).
-  const rawCounts = new Map<string, number>();
-  for (const entry of c.contributors) {
-    for (const q of entry.qualities) {
-      const w = q.trim().toLowerCase();
-      if (!w) continue;
-      rawCounts.set(w, (rawCounts.get(w) ?? 0) + 1);
-    }
-  }
   const shared = byShare.filter(([w]) => (rawCounts.get(w) ?? 0) >= 2).map(([w]) => w);
-  const fromQualities = (shared.length >= 2 ? shared : byShare.map(([w]) => w)).slice(0, 3);
 
-  // Axis poles as secondary texture when qualities are thin.
   const leaning = c.axes
-    .filter((a) => Math.abs(a.mean) > 0.25)
-    .map((a) => ({ word: poleWord(a.axis, a.mean), weight: a.coherence * Math.abs(a.mean) }))
-    .filter((x) => x.word)
+    .filter(a => Math.abs(a.mean) > 0.25)
+    .map(a => ({ word: poleWord(a.axis, a.mean), weight: a.coherence * Math.abs(a.mean) }))
+    .filter(x => x.word)
     .sort((x, y) => y.weight - x.weight);
 
   const lead: string[] = [];
-  for (const w of fromQualities) {
-    if (!lead.includes(w)) lead.push(w);
-    if (lead.length >= 3) break;
+  const push = (w: string | undefined) => {
+    if (!w || lead.includes(w)) return;
+    lead.push(w);
+  };
+
+  if (hasPersonalLean) {
+    // One sky note, then personal register — birth/cast must be audible.
+    for (const w of shared) {
+      push(w);
+      if (lead.length >= 1) break;
+    }
+    for (const w of castLeanList) {
+      push(w);
+      if (lead.length >= 3) break;
+    }
+    for (const w of colorWords) {
+      push(w);
+      if (lead.length >= 3) break;
+    }
+    for (const [w] of byShare) {
+      push(w);
+      if (lead.length >= 3) break;
+    }
+  } else {
+    const fromQualities = (shared.length >= 2 ? shared : byShare.map(([w]) => w)).slice(0, 3);
+    for (const w of fromQualities) push(w);
   }
+
   if (lead.length < 2) {
     for (const x of leaning) {
-      if (!lead.includes(x.word)) lead.push(x.word);
+      push(x.word);
       if (lead.length >= 3) break;
     }
   }
@@ -236,18 +277,24 @@ export function distillTemplate(c: Composition, opts?: DistillOptions): string {
     lead.length >= 2
       ? `A ${lead[0]}, ${lead[1]} quality`
       : lead.length === 1
-      ? `A ${lead[0]} quality`
-      : "A quiet, in-between quality";
+        ? `A ${lead[0]} quality`
+        : "A quiet, in-between quality";
   if (lead[2]) phrase += ` and ${lead[2]}`;
 
-  // Counter-current = strongest tension, as felt weather — never which systems pull.
   const ten = c.tensions[0];
   if (ten && ten.strength > 0.4) {
-    const hi = Math.max(...ten.poles.map((p) => p.value));
-    const lo = Math.min(...ten.poles.map((p) => p.value));
+    const hi = Math.max(...ten.poles.map(p => p.value));
+    const lo = Math.min(...ten.poles.map(p => p.value));
     const pull = poleWord(ten.axis, hi);
     const counter = poleWord(ten.axis, lo);
     phrase += ` — ${pull} with a ${counter} current beneath`;
+  }
+  // Held casts always leave a visible undercurrent — even alongside sky tension.
+  if (castLeanList.length > 0) {
+    const held = castLeanList.slice(0, 2);
+    const glue = phrase.includes(" — ") ? "; " : " — ";
+    if (held.length === 2) phrase += `${glue}with ${held[0]} and ${held[1]} held beneath`;
+    else phrase += `${glue}with ${held[0]} held beneath`;
   }
 
   return phrase.replace(/ quality,/, ",").replace(/ quality and/, " and") + ".";
@@ -294,9 +341,9 @@ export function buildPrompt(c: Composition, opts?: DistillOptions): { system: st
   const leanHint = opts?.colorLean
     ? [
         "",
-        "Personal register (optional lean — only when these qualities are already in the chorus):",
-        `  Prefer registers like: ${COLOR_QUALITY_LEAN[opts.colorLean].slice(0, 8).join(", ")}.`,
-        "  Do not invent them if absent. Do not name any color.",
+        "Personal register (natal — MUST color the weather; never name the color itself):",
+        `  Lean the sentence toward: ${COLOR_QUALITY_LEAN[opts.colorLean].slice(0, 8).join(", ")}.`,
+        "  Do not name any color or kin label.",
       ]
     : [];
 
@@ -304,8 +351,8 @@ export function buildPrompt(c: Composition, opts?: DistillOptions): { system: st
     opts?.castLean && opts.castLean.length > 0
       ? [
           "",
-          "Held cast (user embraced — fold as undercurrent weather, never name the card/rune/system):",
-          `  ${opts.castLean.slice(0, 8).join(", ")}`,
+          "Held cast (user embraced — MUST fold as undercurrent weather, never name the card/rune/system):",
+          `  Weave in: ${opts.castLean.slice(0, 8).join(", ")}.`,
         ]
       : [];
 

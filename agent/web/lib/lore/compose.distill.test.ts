@@ -29,14 +29,19 @@ describe("chorus distillation — no tradition names on the home phrase", () => 
     expect(user).toMatch(/Name no tradition/);
   });
 
-  it("color lean boosts matching qualities without naming the color", () => {
+  it("color lean retunes the phrase without naming the color", () => {
     const chord = compose(active);
+    const base = distillTemplate(chord);
     const yellow = distillTemplate(chord, { colorLean: "Yellow" });
     const blue = distillTemplate(chord, { colorLean: "Blue" });
     expect(yellow).not.toMatch(/\byellow\b|\bred\b|\bblue\b|\bwhite\b/i);
     expect(blue).not.toMatch(/\byellow\b|\bred\b|\bblue\b|\bwhite\b/i);
-    // Yellow lean should keep radiant/light-facing weather in a fire-heavy chorus.
-    expect(yellow.toLowerCase()).toMatch(/radiant|warm|active|light|outward|charged/);
+    // Different natal colors must produce different street weather.
+    expect(yellow).not.toBe(blue);
+    expect(yellow).not.toBe(base);
+    expect(blue).not.toBe(base);
+    expect(yellow.toLowerCase()).toMatch(/radiant|warm|active|light|outward|charged|bright|flowering/);
+    expect(blue.toLowerCase()).toMatch(/deep|dreaming|intuitive|expansive|transformative|healing|playful/);
   });
 
   it("buildPrompt color lean never asks the model to name Red/White/Blue/Yellow", () => {
@@ -48,13 +53,16 @@ describe("chorus distillation — no tradition names on the home phrase", () => 
     expect(user).toMatch(/Do not name any color/);
   });
 
-  it("cast lean soft-admits held qualities without naming the draw", () => {
+  it("cast lean visibly admits held qualities without naming the draw", () => {
     const chord = compose(active);
+    const base = distillTemplate(chord);
     const lean = distillTemplate(chord, { castLean: ["still", "threshold"] });
     expect(lean.endsWith(".")).toBe(true);
     expect(lean).not.toMatch(/tarot|odu|hexagram|rune|the fool|cast/i);
-    // Held words may surface as weather texture when chorus is thin on them.
-    expect(lean.toLowerCase()).toMatch(/still|threshold|radiant|warm|active/);
+    expect(lean).not.toBe(base);
+    // Held words must surface in the street phrase (lead or undercurrent).
+    expect(lean.toLowerCase()).toMatch(/still/);
+    expect(lean.toLowerCase()).toMatch(/threshold/);
   });
 
   it("buildPrompt cast lean hints without tradition names", () => {
