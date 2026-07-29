@@ -11,7 +11,8 @@ import { watchDeviceOrientation } from "../../lib/localSignals";
 
 type Pose = { rx: number; ry: number; tx: number; ty: number; hx: number; hy: number };
 
-const IDLE: Pose = { rx: 8, ry: -6, tx: 0, ty: 0, hx: 42, hy: 36 };
+/** Resting pose — slight yaw so the profile reads as volume, not a flat card. */
+const IDLE: Pose = { rx: 4, ry: -12, tx: 0, ty: 0, hx: 38, hy: 32 };
 
 function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
@@ -62,12 +63,12 @@ export function OnyxCrystal() {
 
     const applyDelta = (db: number, dg: number) => {
       target.current = {
-        rx: clamp(-db * 0.55 + 6, -18, 22),
-        ry: clamp(dg * 0.7, -24, 24),
-        tx: dg * 0.55,
-        ty: -db * 0.35,
-        hx: clamp(50 + dg * 0.9, 28, 72),
-        hy: clamp(42 - db * 0.7, 24, 62),
+        rx: clamp(-db * 0.45 + 4, -14, 16),
+        ry: clamp(dg * 0.75 - 12, -28, 18),
+        tx: dg * 0.5,
+        ty: -db * 0.3,
+        hx: clamp(38 + dg * 0.7, 24, 58),
+        hy: clamp(32 - db * 0.55, 18, 52),
       };
     };
 
@@ -117,93 +118,143 @@ export function OnyxCrystal() {
     <div className="onyx-crystal-stage" ref={stageRef} aria-hidden>
       <div className="onyx-crystal" ref={bodyRef}>
         <div className="onyx-crystal-glow" />
-        <svg className="onyx-crystal-svg" viewBox="0 0 100 100" fill="none">
+        {/*
+          Profile / elevation of an octagonal crystal — tip, crown, girdle, pavilion.
+          Not a top-down flat octagon (those radial spokes read as looking down the axis).
+        */}
+        <svg className="onyx-crystal-svg" viewBox="0 0 100 140" fill="none">
           <defs>
-            <linearGradient id="onyx-xtal-body" x1="18%" y1="8%" x2="86%" y2="94%">
-              <stop offset="0%" stopColor="#2a2438" />
-              <stop offset="38%" stopColor="#0e0c14" />
-              <stop offset="72%" stopColor="#06050a" />
-              <stop offset="100%" stopColor="#1a1528" />
+            <linearGradient id="onyx-xtal-body" x1="22%" y1="6%" x2="78%" y2="96%">
+              <stop offset="0%" stopColor="#322848" />
+              <stop offset="32%" stopColor="#12101c" />
+              <stop offset="68%" stopColor="#07060c" />
+              <stop offset="100%" stopColor="#1c1630" />
             </linearGradient>
-            <linearGradient id="onyx-xtal-edge" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#c4ae80" stopOpacity="0.75" />
-              <stop offset="45%" stopColor="#8a7bff" stopOpacity="0.35" />
+            <linearGradient id="onyx-xtal-left" x1="0" y1="0.2" x2="1" y2="0.8">
+              <stop offset="0%" stopColor="#3a3058" stopOpacity="0.55" />
+              <stop offset="100%" stopColor="#0a0810" stopOpacity="0.15" />
+            </linearGradient>
+            <linearGradient id="onyx-xtal-right" x1="1" y1="0.15" x2="0" y2="0.9">
+              <stop offset="0%" stopColor="#1a1428" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="#000" stopOpacity="0.55" />
+            </linearGradient>
+            <linearGradient id="onyx-xtal-edge" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#c4ae80" stopOpacity="0.8" />
+              <stop offset="50%" stopColor="#8a7bff" stopOpacity="0.4" />
               <stop offset="100%" stopColor="#c4ae80" stopOpacity="0.55" />
             </linearGradient>
-            <radialGradient id="onyx-xtal-core" cx="42%" cy="36%" r="55%">
-              <stop offset="0%" stopColor="#6a5cff" stopOpacity="0.28" />
-              <stop offset="55%" stopColor="#2a2048" stopOpacity="0.12" />
+            <radialGradient id="onyx-xtal-core" cx="40%" cy="38%" r="50%">
+              <stop offset="0%" stopColor="#6a5cff" stopOpacity="0.32" />
+              <stop offset="55%" stopColor="#2a2048" stopOpacity="0.1" />
               <stop offset="100%" stopColor="#000" stopOpacity="0" />
             </radialGradient>
             <radialGradient id="onyx-xtal-gloss" cx="50%" cy="50%" r="50%">
               <stop offset="0%" stopColor="#efe6ff" stopOpacity="0.55" />
-              <stop offset="45%" stopColor="#b8a6ff" stopOpacity="0.12" />
+              <stop offset="45%" stopColor="#b8a6ff" stopOpacity="0.14" />
               <stop offset="100%" stopColor="#fff" stopOpacity="0" />
             </radialGradient>
-            <filter id="onyx-xtal-soft" x="-20%" y="-20%" width="140%" height="140%">
-              <feGaussianBlur stdDeviation="0.6" />
-            </filter>
           </defs>
 
-          {/* Outer octagon */}
+          {/* Full silhouette — double-terminated octagonal crystal in profile */}
           <polygon
-            points="30,6 70,6 94,30 94,70 70,94 30,94 6,70 6,30"
+            points="
+              50,6
+              62,22
+              74,34
+              78,52
+              74,70
+              62,88
+              50,134
+              38,88
+              26,70
+              22,52
+              26,34
+              38,22
+            "
             fill="url(#onyx-xtal-body)"
             stroke="url(#onyx-xtal-edge)"
-            strokeWidth="1.1"
+            strokeWidth="1.05"
+            strokeLinejoin="round"
           />
+
+          {/* Left face (lit) */}
           <polygon
-            points="30,6 70,6 94,30 94,70 70,94 30,94 6,70 6,30"
+            points="50,6 38,22 26,34 22,52 26,70 38,88 50,134 50,70 50,52 50,34 50,22"
+            fill="url(#onyx-xtal-left)"
+          />
+          {/* Right face (shadow) */}
+          <polygon
+            points="50,6 62,22 74,34 78,52 74,70 62,88 50,134 50,70 50,52 50,34 50,22"
+            fill="url(#onyx-xtal-right)"
+          />
+
+          <polygon
+            points="
+              50,6
+              62,22
+              74,34
+              78,52
+              74,70
+              62,88
+              50,134
+              38,88
+              26,70
+              22,52
+              26,34
+              38,22
+            "
             fill="url(#onyx-xtal-core)"
           />
 
-          {/* Inner facet cage */}
-          <polygon
-            points="36,18 64,18 82,36 82,64 64,82 36,82 18,64 18,36"
-            fill="rgba(120,108,200,0.04)"
-            stroke="rgba(196,174,128,0.28)"
-            strokeWidth="0.6"
-          />
-
-          {/* Crystal cuts */}
-          <g stroke="rgba(180,166,255,0.18)" strokeWidth="0.45" filter="url(#onyx-xtal-soft)">
-            <line x1="50" y1="6" x2="50" y2="94" />
-            <line x1="6" y1="50" x2="94" y2="50" />
-            <line x1="30" y1="6" x2="70" y2="94" />
-            <line x1="70" y1="6" x2="30" y2="94" />
-            <line x1="6" y1="30" x2="94" y2="70" />
-            <line x1="94" y1="30" x2="6" y2="70" />
+          {/* Crown / girdle / pavilion facet lines — vertical structure of an octagon in elevation */}
+          <g stroke="rgba(196,174,128,0.28)" strokeWidth="0.55" strokeLinecap="round">
+            {/* Center spine */}
+            <line x1="50" y1="6" x2="50" y2="134" />
+            {/* Near-vertical side ridges (octagon flats seen in profile) */}
+            <line x1="38" y1="22" x2="38" y2="88" />
+            <line x1="62" y1="22" x2="62" y2="88" />
+            <line x1="30" y1="38" x2="30" y2="72" opacity="0.7" />
+            <line x1="70" y1="38" x2="70" y2="72" opacity="0.7" />
+            {/* Girdle belt */}
+            <line x1="22" y1="52" x2="78" y2="52" stroke="rgba(180,166,255,0.22)" />
+            {/* Crown breaks */}
+            <line x1="38" y1="22" x2="62" y2="22" stroke="rgba(230,220,255,0.2)" />
+            <line x1="26" y1="34" x2="74" y2="34" stroke="rgba(180,166,255,0.14)" />
+            {/* Pavilion breaks */}
+            <line x1="26" y1="70" x2="74" y2="70" stroke="rgba(180,166,255,0.14)" />
+            <line x1="38" y1="88" x2="62" y2="88" stroke="rgba(196,174,128,0.18)" />
           </g>
 
-          {/* Bevel highlights */}
+          {/* Lit bevel on the near-left crown */}
           <polyline
-            points="32,8 68,8 90,32"
+            points="50,8 39,22 28,34 24,48"
             fill="none"
-            stroke="rgba(230,220,255,0.28)"
-            strokeWidth="0.7"
+            stroke="rgba(230,220,255,0.32)"
+            strokeWidth="0.75"
             strokeLinecap="round"
+            strokeLinejoin="round"
           />
           <polyline
-            points="10,68 10,34 32,10"
+            points="50,8 61,22 72,34"
             fill="none"
-            stroke="rgba(196,174,128,0.22)"
+            stroke="rgba(196,174,128,0.18)"
             strokeWidth="0.55"
             strokeLinecap="round"
           />
 
-          {/* Moving specular */}
+          {/* Moving specular on the crown face */}
           <ellipse
             ref={glossRef}
-            cx="42"
-            cy="36"
-            rx="14"
-            ry="9"
+            cx="38"
+            cy="32"
+            rx="9"
+            ry="11"
             fill="url(#onyx-xtal-gloss)"
-            opacity="0.9"
+            opacity="0.85"
           />
 
-          {/* Tiny core spark */}
-          <circle cx="50" cy="50" r="1.6" fill="rgba(220,210,255,0.45)" />
+          {/* Core spark near girdle */}
+          <circle cx="50" cy="52" r="1.4" fill="rgba(220,210,255,0.4)" />
         </svg>
       </div>
     </div>

@@ -209,16 +209,17 @@
 }
 .onyx-crystal {
   position: relative;
-  width: 148px;
-  height: 148px;
+  /* Portrait frame — profile crystal is taller than wide (viewBox 100×140). */
+  width: 118px;
+  height: 165px;
   transform-style: preserve-3d;
   will-change: transform;
-  filter: drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(120, 108, 220, 0.18));
+  filter: drop-shadow(0 22px 40px rgba(0, 0, 0, 0.55)) drop-shadow(0 0 22px rgba(120, 108, 220, 0.18));
 }
 .onyx-crystal-glow {
   position: absolute;
-  inset: 8% 12%;
-  border-radius: 28%;
+  inset: 10% 18%;
+  border-radius: 40% / 28%;
   background: radial-gradient(circle at 42% 38%, rgba(120, 108, 220, 0.28), transparent 68%);
   filter: blur(10px);
   opacity: 0.85;
@@ -232,11 +233,11 @@
 
 /* Depths: 0 Street, 1 Moment, 2 Self — crystal recedes, never balloons. */
 .onyx-device[data-depth="0"] .onyx-crystal-stage { opacity: 0.72; }
-.onyx-device[data-depth="0"] .onyx-crystal { width: 148px; height: 148px; }
+.onyx-device[data-depth="0"] .onyx-crystal { width: 118px; height: 165px; }
 .onyx-device[data-depth="1"] .onyx-crystal-stage { opacity: 0.34; }
-.onyx-device[data-depth="1"] .onyx-crystal { width: 128px; height: 128px; }
+.onyx-device[data-depth="1"] .onyx-crystal { width: 102px; height: 143px; }
 .onyx-device[data-depth="2"] .onyx-crystal-stage { opacity: 0.14; }
-.onyx-device[data-depth="2"] .onyx-crystal { width: 112px; height: 112px; }
+.onyx-device[data-depth="2"] .onyx-crystal { width: 90px; height: 126px; }
 .onyx-device[data-depth="0"] .onyx-vignette { opacity: 0.46; }
 .onyx-device[data-depth="1"] .onyx-vignette {
   opacity: 0.8;
