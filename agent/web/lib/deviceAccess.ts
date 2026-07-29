@@ -1,13 +1,14 @@
 /**
  * One-time device access — location + orientation + motion.
- * iOS requires orientation/motion requestPermission from a user gesture;
- * geolocation prompts when getCurrentPosition/watchPosition first run.
+ * Must run from a user gesture (Allow button). iOS will not show
+ * DeviceOrientation/Motion dialogs from a mount effect.
  */
 
 import { requestOrientationPermission } from "./localSignals";
 import { requestMotionPermission } from "./deviceSensors";
 
-const STORAGE_KEY = "delphi-device-access-v1";
+/** Bump when the prime flow changes so stale "asked" flags re-prompt. */
+const STORAGE_KEY = "delphi-device-access-v2";
 
 export function hasPrimedDeviceAccess(): boolean {
   try {
@@ -28,19 +29,37 @@ export function markDeviceAccessPrimed(): void {
 }
 
 export type DeviceAccessGrants = {
+  location: boolean;
   orientation: boolean;
   motion: boolean;
 };
 
+/** Kick geolocation on the gesture stack — do not await this before sensor asks. */
+function requestLocationAccess(): Promise<boolean> {
+  if (typeof navigator === "undefined" || !("geolocation" in navigator)) {
+    return Promise.resolve(false);
+  }
+  return new Promise(resolve => {
+    navigator.geolocation.getCurrentPosition(
+      () => resolve(true),
+      () => resolve(false),
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 },
+    );
+  });
+}
+
 /**
- * Ask for sensor permissions. Must be invoked from a click/tap handler
- * (not a setTimeout or mount effect) so iOS will show the dialogs.
- * Marks the ask as done either way — we only prompt once.
+ * Ask for location + sensors. Call from a click/tap handler only.
+ * Location is started synchronously before any await so iOS/Android
+ * still treat it as user-gesture prompted.
  */
 export async function requestDeviceAccessPermissions(): Promise<DeviceAccessGrants> {
-  // One dialog at a time — iOS stacks poorly if both fire together.
+  // 1) Start location immediately (gesture still live).
+  const locationPromise = requestLocationAccess();
+  // 2) Orientation then motion — one dialog at a time on iOS.
   const orientation = await requestOrientationPermission();
   const motion = await requestMotionPermission();
+  const location = await locationPromise;
   markDeviceAccessPrimed();
-  return { orientation, motion };
+  return { location, orientation, motion };
 }

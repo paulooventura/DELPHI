@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
@@ -276,16 +276,11 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
   const [showLaunch, completeLaunch] = useShowLaunch();
-  /** True until the one-time location/sensor ask has run (splash tap or gate). */
-  const [needsAccessGate, setNeedsAccessGate] = useState(false);
+  /** Blocks splash/home until the one-time location + sensor ask runs. */
+  const [needsAccessGate, setNeedsAccessGate] = useState(() => !hasPrimedDeviceAccess());
+  const [accessBusy, setAccessBusy] = useState(false);
   const primingAccessRef = useRef(false);
   useScreenWakeLock(true);
-
-  useLayoutEffect(() => {
-    // After splash skip (session already launched), surface the gate if we
-    // never primed sensors — avoids silent iOS denial from a mount effect.
-    setNeedsAccessGate(!hasPrimedDeviceAccess());
-  }, []);
 
   // ── Tabbed app shell (Clock · Sky · Moment · Atlas · Senses · Oracle)
   const isAppTab = (v: string | null): v is AppTab =>
@@ -724,20 +719,21 @@ export default function Home() {
   }
 
   /**
-   * One-time permission ask. Must stay on a user-gesture call stack (splash
-   * tap or Allow button) so iOS shows orientation/motion dialogs.
+   * One-time permission ask from the Allow button (user gesture).
+   * Location starts inside requestDeviceAccessPermissions before awaits.
    */
   async function primeDeviceAccess() {
     if (primingAccessRef.current) return;
     primingAccessRef.current = true;
+    setAccessBusy(true);
     try {
       await requestDeviceAccessPermissions();
       setNeedsAccessGate(false);
-      // Geolocation prompt rides along with the first position read.
       void captureSensors();
       void startOrientationWatch();
     } finally {
       primingAccessRef.current = false;
+      setAccessBusy(false);
     }
   }
 
@@ -1090,10 +1086,11 @@ export default function Home() {
       onPrimeAccess={() => {
         void primeDeviceAccess();
       }}
-      showAccessGate={!showLaunch && needsAccessGate}
+      showAccessGate={needsAccessGate}
       onAllowAccess={() => {
         void primeDeviceAccess();
       }}
+      accessBusy={accessBusy}
       now={cosmic?.now ?? animNow}
       lat={mapLat}
       lon={mapLon}

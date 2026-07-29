@@ -1,10 +1,16 @@
 "use client";
 
 /**
- * Shown only when splash was skipped and we have not yet asked for
- * location / orientation / motion. One tap primes access for the session.
+ * First screen when device access has not been primed.
+ * One tap → location + orientation + motion prompts, then the app continues.
  */
-export function DeviceAccessGate({ onAllow }: { onAllow: () => void }) {
+export function DeviceAccessGate({
+  onAllow,
+  busy = false,
+}: {
+  onAllow: () => void;
+  busy?: boolean;
+}) {
   return (
     <div className="onyx-root" role="dialog" aria-label="Allow location and sensors">
       <div className="onyx-device" style={{ overflow: "auto" }}>
@@ -17,8 +23,13 @@ export function DeviceAccessGate({ onAllow }: { onAllow: () => void }) {
             Allow location and device sensors once — then the compass, sky map, and
             moment stay live without asking again.
           </p>
-          <button type="button" className="onyx-tool-btn" onClick={onAllow}>
-            Allow access
+          <button
+            type="button"
+            className="onyx-tool-btn"
+            disabled={busy}
+            onClick={onAllow}
+          >
+            {busy ? "Requesting…" : "Allow access"}
             <span>Location · orientation · motion</span>
           </button>
         </div>

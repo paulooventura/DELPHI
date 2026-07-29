@@ -21,9 +21,33 @@ function installMemoryStorage() {
   return memory;
 }
 
-describe("deviceAccess — ask once", () => {
+describe("deviceAccess — ask once on open", () => {
   beforeEach(() => {
     installMemoryStorage();
+    vi.stubGlobal("navigator", {
+      geolocation: {
+        getCurrentPosition: (ok: PositionCallback) => {
+          ok({
+            coords: {
+              latitude: 36.16,
+              longitude: -86.78,
+              accuracy: 10,
+              altitude: null,
+              altitudeAccuracy: null,
+              heading: null,
+              speed: null,
+              toJSON() {
+                return this;
+              },
+            },
+            timestamp: Date.now(),
+            toJSON() {
+              return this;
+            },
+          } as GeolocationPosition);
+        },
+      },
+    });
   });
 
   afterEach(() => {
@@ -31,11 +55,13 @@ describe("deviceAccess — ask once", () => {
     vi.restoreAllMocks();
   });
 
-  it("marks primed after requestDeviceAccessPermissions", async () => {
+  it("marks primed after location + sensor ask", async () => {
     expect(hasPrimedDeviceAccess()).toBe(false);
     const grants = await requestDeviceAccessPermissions();
+    expect(typeof grants.location).toBe("boolean");
     expect(typeof grants.orientation).toBe("boolean");
     expect(typeof grants.motion).toBe("boolean");
+    expect(grants.location).toBe(true);
     expect(hasPrimedDeviceAccess()).toBe(true);
     markDeviceAccessPrimed();
     expect(hasPrimedDeviceAccess()).toBe(true);

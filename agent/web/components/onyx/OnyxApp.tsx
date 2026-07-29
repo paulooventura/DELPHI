@@ -58,6 +58,7 @@ export function OnyxApp({
   onPrimeAccess,
   showAccessGate = false,
   onAllowAccess,
+  accessBusy = false,
   now,
   lat,
   lon,
@@ -94,6 +95,7 @@ export function OnyxApp({
   /** Fallback when splash was skipped / auto-ended before priming. */
   showAccessGate?: boolean;
   onAllowAccess?: () => void;
+  accessBusy?: boolean;
   now: Date;
   lat: number;
   lon: number;
@@ -236,14 +238,15 @@ export function OnyxApp({
     <>Hold still. The sky is still reading you.</>
   );
 
+  // Access gate is first — before splash — so permissions land on open.
+  if (showAccessGate && onAllowAccess) {
+    return <DeviceAccessGate onAllow={onAllowAccess} busy={accessBusy} />;
+  }
+
   if (showSplash) {
     return (
       <OnyxSplash onEnter={onSplashDone} onPrimeAccess={onPrimeAccess} />
     );
-  }
-
-  if (showAccessGate && onAllowAccess) {
-    return <DeviceAccessGate onAllow={onAllowAccess} />;
   }
 
   const openSky = () => {
