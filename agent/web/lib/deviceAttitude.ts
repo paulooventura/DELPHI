@@ -56,21 +56,30 @@ export function mat3MulVec(m: Mat3, [x, y, z]: Vec3): Vec3 {
   ];
 }
 
-/** Damp device roll (γ) when the camera sight line is near the horizon — reduces azimuth twitch. */
+/**
+ * Legacy damp curve — kept for tests / callers that still want a soft fade.
+ * Look-vector construction no longer uses γ at all (see deviceCameraVectorEnu).
+ */
 export function horizonGammaFactor(betaDeg: number): number {
   const d = Math.abs(betaDeg - 90);
   if (d >= 22) return 1;
   return clamp(d / 22, 0, 1);
 }
 
-/** Unit vector in ENU along the camera axis after attitude rotation. */
+/**
+ * Unit look vector in ENU along the camera axis.
+ *
+ * γ (device roll) is intentionally ignored: the sky screen basis is rebuilt
+ * roll-free from WORLD_UP, and even a horizon-damped γ still yanks azimuth as
+ * you pitch through alt≈0 — the residual "horizon glitch." Diagonal tilt is
+ * avoided by never feeding roll into buildStableViewBasis.
+ */
 export function deviceCameraVectorEnu(
   alphaDeg: number,
   betaDeg: number,
-  gammaDeg: number,
+  _gammaDeg: number,
 ): Vec3 {
-  const g = gammaDeg * horizonGammaFactor(betaDeg);
-  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, g);
+  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, 0);
   return normalize(mat3MulVec(R, DEVICE_CAMERA_AXIS));
 }
 

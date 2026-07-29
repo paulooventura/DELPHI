@@ -134,9 +134,11 @@ export function smoothViewAzAlt(
 
 export function smoothViewAzAltAdaptive(prev: Vec3, target: Vec3): Vec3 {
   const { alt } = enuToAltAz(target);
+  // Near the horizon keep az/alt rates close so pitch doesn't lag behind
+  // and read as a sideways "snap." Slightly softer than open sky, not sticky.
   const nearHorizon = Math.abs(alt) < 18;
-  const tAz = nearHorizon ? 0.22 : 0.34;
-  const tAlt = nearHorizon ? 0.18 : 0.28;
+  const tAz = nearHorizon ? 0.30 : 0.36;
+  const tAlt = nearHorizon ? 0.28 : 0.34;
   return smoothViewAzAlt(prev, target, tAz, tAlt);
 }
 

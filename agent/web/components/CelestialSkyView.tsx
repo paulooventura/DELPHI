@@ -44,6 +44,8 @@ import {
 } from "../lib/cosmic/skyIcons";
 import { CONSTELLATION_FIGURES } from "../lib/constellationLines";
 import { DEEP_SKY_OBJECTS } from "../lib/deepSkyCatalog";
+import { BRIGHT_STARS } from "../lib/brightStars";
+import { milkyWayBand } from "../lib/milkyWay";
 import { raDecToAltAz } from "../lib/skyPositions";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
 import { smoothViewAzAltAdaptive } from "../lib/sensorSmoothing";
@@ -660,6 +662,58 @@ function projectRaDecToScreen(
   return { x, y, az, alt };
 }
 
+/** Soft galactic-plane ribbon — center glow + north/south edge haze. */
+function drawMilkyWayBand(
+  ctx: CanvasRenderingContext2D,
+  date: Date,
+  lat: number,
+  lon: number,
+  altM: number,
+  project: SkyProjector,
+  w: number,
+  h: number,
+  alpha: number,
+) {
+  if (alpha < 0.04) return;
+  const band = milkyWayBand();
+  const strokePoly = (
+    pts: Array<{ ra: number; dec: number }>,
+    width: number,
+    color: string,
+    a: number,
+  ) => {
+    ctx.save();
+    ctx.globalAlpha = a;
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    ctx.shadowColor = "rgba(180, 170, 255, 0.35)";
+    ctx.shadowBlur = width * 1.4;
+    ctx.beginPath();
+    let started = false;
+    for (const p of pts) {
+      const scr = projectRaDecToScreen(p.ra, p.dec, date, lat, lon, altM, project.toXY);
+      if (!scr || !project.inView(scr.x, scr.y, w, h, 80)) {
+        started = false;
+        continue;
+      }
+      if (!started) {
+        ctx.moveTo(scr.x, scr.y);
+        started = true;
+      } else {
+        ctx.lineTo(scr.x, scr.y);
+      }
+    }
+    ctx.stroke();
+    ctx.restore();
+  };
+  strokePoly(band.north, 18, "rgba(140, 130, 220, 0.14)", alpha * 0.55);
+  strokePoly(band.south, 18, "rgba(140, 130, 220, 0.14)", alpha * 0.55);
+  strokePoly(band.center, 28, "rgba(200, 190, 255, 0.22)", alpha * 0.85);
+  strokePoly(band.center, 10, "rgba(230, 225, 255, 0.28)", alpha);
+}
+
 function drawWarmCrosshair(
   ctx: CanvasRenderingContext2D,
   cx: number,
@@ -1020,6 +1074,22 @@ export function CelestialSkyView({
         skyWarmth > 0.5 ? OBS.night.glow : OBS.day.glow,
       );
 
+      // Milky Way + constellations + bright field at every zoom (night-weighted).
+      const nightWayfinding = sky.isDay ? 0.18 : 1;
+      if (starAlpha > 0.06) {
+        drawMilkyWayBand(
+          ctx,
+          observationTime,
+          lat,
+          lon,
+          observerAltM,
+          project,
+          w,
+          h,
+          starAlpha * nightWayfinding * 0.85,
+        );
+      }
+
       if (detail === "wide") {
         drawPath(
           ctx,
@@ -1164,7 +1234,39 @@ export function CelestialSkyView({
         ctx.globalAlpha = 1;
       }
 
-      if (detail !== "wide" && starAlpha > 0.12) {
+      // Bright navigational field — seats constellation figures (not distance-ranked).
+      if (starAlpha > 0.06) {
+        for (let bi = 0; bi < BRIGHT_STARS.length; bi++) {
+          const star = BRIGHT_STARS[bi]!;
+          const pt = projectRaDecToScreen(
+            star.ra, star.dec, observationTime, lat, lon, observerAltM, project.toXY,
+          );
+          if (!pt || !project.inView(pt.x, pt.y, w, h)) continue;
+          const below = pt.alt < 0;
+          const r = Math.max(1.1, (3.8 - star.mag) * 1.15);
+          ctx.globalAlpha =
+            starAlpha * nightWayfinding * (below ? 0.3 : Math.min(1, 0.55 + (2.8 - star.mag) / 4));
+          drawStarGlyph(
+            ctx,
+            pt.x,
+            pt.y,
+            r,
+            below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
+            !below && star.mag < 1.6,
+            pulseRef.current + bi * 0.29,
+          );
+          if (!below && star.mag <= 1.15 && scale >= 0.9) {
+            ctx.font = `500 8px ${MICRO}`;
+            ctx.textAlign = "center";
+            ctx.fillStyle = "rgba(238, 236, 251, 0.7)";
+            ctx.fillText(star.name, pt.x, pt.y - r - 6);
+          }
+          ctx.globalAlpha = 1;
+        }
+      }
+
+      // Wayfinding layer — visible at wide zoom (was telephoto-only before).
+      if (starAlpha > 0.08) {
         for (const fig of CONSTELLATION_FIGURES) {
           const segments: Array<[[number, number], [number, number]]> = [];
           let visibleLines = 0;
@@ -1175,13 +1277,20 @@ export function CelestialSkyView({
             segments.push([[p0.x, p0.y], [p1.x, p1.y]]);
             visibleLines++;
           }
-          if (visibleLines < 2) continue;
+          if (visibleLines < 1) continue;
+          const lineAlpha = nightWayfinding * (detail === "wide" ? 1 : 0.85);
+          ctx.save();
+          ctx.globalAlpha = lineAlpha;
           drawConstellationLines(ctx, segments, fig.color, fig.glow, pulseRef.current);
+          ctx.restore();
           const labelPt = projectRaDecToScreen(
             fig.label.ra, fig.label.dec, observationTime, lat, lon, observerAltM, project.toXY,
           );
-          if (labelPt && labelPt.alt > 5) {
+          if (labelPt && labelPt.alt > -2) {
+            ctx.save();
+            ctx.globalAlpha = lineAlpha;
             drawConstellationLabel(ctx, labelPt.x, labelPt.y - 8, fig.name, fig.color);
+            ctx.restore();
           }
         }
 
@@ -1189,15 +1298,16 @@ export function CelestialSkyView({
           const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
           if (!pt || !project.inView(pt.x, pt.y, w, h, 20)) continue;
           const size = Math.max(5, 9 - dso.mag * 0.35);
+          ctx.save();
+          ctx.globalAlpha = nightWayfinding * (sky.isDay ? 0.55 : 1);
           drawDeepSkyGlyph(ctx, dso.kind, pt.x, pt.y, size, dso.color, pulseRef.current);
-          if (scale >= 0.85) {
-            ctx.save();
+          if (scale >= 0.85 || dso.mag <= 5.5) {
             ctx.font = `500 8px ${MICRO}`;
             ctx.textAlign = "center";
             ctx.fillStyle = "rgba(226, 232, 240, 0.72)";
             ctx.fillText(dso.name, pt.x, pt.y + size + 10);
-            ctx.restore();
           }
+          ctx.restore();
           const tr = trackables.find(t => t.id === dso.id);
           if (tr) {
             hits.push({ id: dso.id, x: pt.x, y: pt.y, radius: 14, trackable: tr });

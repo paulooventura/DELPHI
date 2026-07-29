@@ -68,4 +68,15 @@ describe("horizonGammaFactor", () => {
     expect(withGamma.az).toBeCloseTo(ref.az, 0);
     expect(withGamma.alt).toBeCloseTo(ref.alt, 0);
   });
+
+  it("ignores γ entirely — pitching through the horizon does not yank azimuth", () => {
+    // Phone rolled 12° while pitching from +12° to −12° altitude (β 102→78).
+    let prevAz = cameraAzimuthAltitude(40, 102, 12).az;
+    for (const beta of [100, 96, 92, 90, 88, 84, 80, 78]) {
+      const { az } = cameraAzimuthAltitude(40, beta, 12);
+      const dAz = Math.abs(((az - prevAz + 540) % 360) - 180);
+      expect(dAz).toBeLessThan(0.5);
+      prevAz = az;
+    }
+  });
 });
