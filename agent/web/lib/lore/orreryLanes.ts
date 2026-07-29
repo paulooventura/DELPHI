@@ -7,7 +7,7 @@
  */
 
 import { computeSolarDayEvents } from "../cosmic/astronomy";
-import { muhurtaPhase } from "../cosmic/math";
+import { MUHURTA_COUNT, MUHURTA_MINUTES } from "../cosmic/math";
 import { jdFromDate } from "../phase/timeResolution";
 import { QUALIA, byId } from "./qualia";
 import { resolveMoment } from "./resolveMoment";
@@ -16,11 +16,13 @@ import { resolveMoment } from "./resolveMoment";
 export const GHATI_MS = 24 * 60 * 1000;
 
 /**
- * Horizontal scroll origin for a continuous lane strip (cells move left).
- * Phase at the fixed now-line:
- *   progress 0   → active left edge on the line (unit just began)
- *   progress 0.5 → active cell centered (halfway)
- *   progress 1   → active right edge on the line (about to end)
+ * Horizontal scroll origin — every lane uses this with true cell-phase progress.
+ * Cells move left through a fixed now-line; offset IS the reading:
+ *   progress 0   → left edge on the line (cell mostly right — just began / young)
+ *   progress 0.5 → cell centered (halfway)
+ *   progress 1   → right edge on the line (about to tick)
+ *
+ * Formula: activeLeft = nowX − progress·cellW
  */
 export function laneScrollStartX(
   nowX: number,
@@ -28,24 +30,14 @@ export function laneScrollStartX(
   progress: number,
   cellW: number,
 ): number {
-  return nowX - (index + progress) * cellW;
-}
-
-/**
- * Scroll origin while a discrete-tick lane holds (or springs) at unwrapped index.
- * Settled: active left edge on the now-line — cell in force until the next tick.
- */
-export function discreteScrollStartX(
-  nowX: number,
-  unwrappedIndex: number,
-  cellW: number,
-): number {
-  return nowX - unwrappedIndex * cellW;
+  const p = Math.max(0, Math.min(1, progress));
+  return nowX - (index + p) * cellW;
 }
 
 /** Center X of the active cell for a given progress (phase helper, not a layout goal). */
 export function activeCellCenterX(nowX: number, progress: number, cellW: number): number {
-  return nowX + (0.5 - progress) * cellW;
+  const p = Math.max(0, Math.min(1, progress));
+  return nowX + (0.5 - p) * cellW;
 }
 
 export type LaneTier = "measured" | "celebrated" | "display";
@@ -65,13 +57,12 @@ export type OrreryLaneId =
   | "season";
 
 /**
- * Motion class for a lane.
- * - continuous: smooth leftward glide at true rate (time flowing)
- * - discrete-tick: hold cell, spring-snap on cycle tick (escapement)
+ * Escapement haptic class — all lanes scroll by true phase; discrete-tick
+ * lanes also fire a settle tick when their index advances.
  */
 export type OrreryMotion = "continuous" | "discrete-tick";
 
-/** Time-flowing lanes — uninterrupted glide through the now-line. */
+/** Civil / clock subdivisions — no escapement haptic (pure glide). */
 export const CONTINUOUS_LANE_IDS: readonly OrreryLaneId[] = [
   "ms",
   "sec",
@@ -199,14 +190,28 @@ export function computeOrreryState(
     return { id, label: e?.name ?? id, glyph: e?.glyph };
   });
 
-  const muh = muhurtaPhase(date);
+  // Muhūrta — 30 × 48 min from local midnight in the site timezone (not host TZ).
+  const muhTotal =
+    (hour * 60 + minute + second / 60 + ms / 60_000) / MUHURTA_MINUTES;
+  const muhIndex = Math.floor(mod(muhTotal, MUHURTA_COUNT));
+  const muhProg = mod(muhTotal, 1);
+
+  // Shí — 2 h cells; Zi straddles 23:00–01:00.
   const shiIndex = Math.floor(((hour + 1) % 24) / 2) % 12;
-  const shiProg = mod((hour + 1) % 24, 2) / 2 + minute / 120 + second / 7200;
+  const shiProg = mod((hour + 1) % 24, 2) / 2
+    + (minute + second / 60 + ms / 60_000) / 120;
+
+  // Planetary hour — equal civil hours (matches resolveMoment Chaldean cascade).
   const phIndex = CHALDEAN.indexOf(meta.planetaryHour as (typeof CHALDEAN)[number]);
-  const phProg = (minute + second / 60) / 60;
+  const phProg = (minute + second / 60 + ms / 60_000) / 60;
+
+  // Moon phase — 8 equal synodic sectors, named phase at sector center.
+  // progress = fraction elapsed through the current sector's true boundaries.
   const moonFloat = (((meta.moonPhase * 360) + 22.5) % 360) / 45;
   const moonIndex = Math.floor(moonFloat) % 8;
   const moonProg = moonFloat - Math.floor(moonFloat);
+
+  // Solar season — 30° tropical-longitude cells (true ecliptic boundaries).
   const seasonIndex = Math.floor(meta.sunTropicalDeg / 30) % 12;
   const seasonProg = (meta.sunTropicalDeg % 30) / 30;
   const wukuIndex = Math.max(0, meta.wuku - 1);
@@ -322,11 +327,11 @@ export function computeOrreryState(
       cycle: "~48 min",
       tier: "celebrated",
       speedT: 0.36,
-      index: muh.index,
-      progress: mod(muh.angleDeg / (360 / 30), 1),
+      index: muhIndex,
+      progress: muhProg,
       cells: muhCells,
-      activeLabel: muhCells[muh.index]?.label ?? `Muhūrta ${muh.index + 1}`,
-      source: byId(`muh-${String(muh.index + 1).padStart(2, "0")}`)?.source,
+      activeLabel: muhCells[muhIndex]?.label ?? `Muhūrta ${muhIndex + 1}`,
+      source: byId(`muh-${String(muhIndex + 1).padStart(2, "0")}`)?.source,
     },
     {
       id: "ghati",

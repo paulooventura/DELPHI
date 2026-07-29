@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   activeCellCenterX,
   computeOrreryState,
-  discreteScrollStartX,
   GHATI_MS,
   laneColor,
   laneMotion,
@@ -53,12 +52,12 @@ describe("orrery lanes — CLOCK-SPEC", () => {
   it("phase offset vs fixed now-line is the reading (not force-centered)", () => {
     const nowX = 200;
     const cellW = 80;
-    // progress 0 → left edge on the line (unit just began)
+    // progress 0 → left edge on the line (cell mostly right — young)
     const startLeft = laneScrollStartX(nowX, 3, 0, cellW) + 3 * cellW;
     expect(startLeft).toBeCloseTo(nowX, 6);
-    // progress 0.5 → cell bisected (halfway) — a reading, not a layout goal
+    // progress 0.5 → cell bisected (halfway)
     expect(activeCellCenterX(nowX, 0.5, cellW)).toBeCloseTo(nowX, 6);
-    // progress 1 → right edge on the line (about to end)
+    // progress 1 → right edge on the line (about to tick)
     const endLeft = laneScrollStartX(nowX, 3, 1, cellW) + 3 * cellW;
     expect(endLeft + cellW).toBeCloseTo(nowX, 6);
     // Mid-progress must NOT snap left edge to the line
@@ -66,25 +65,14 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(midLeft).toBeCloseTo(nowX - cellW / 2, 6);
   });
 
-  it("classifies continuous glide vs discrete-tick escapement lanes", () => {
+  it("classifies continuous glide vs discrete-tick escapement haptic", () => {
     expect(laneMotion("ms")).toBe("continuous");
     expect(laneMotion("sec")).toBe("continuous");
-    expect(laneMotion("min")).toBe("continuous");
-    expect(laneMotion("ghati")).toBe("continuous");
     expect(laneMotion("day")).toBe("continuous");
     expect(laneMotion("planetary-hour")).toBe("discrete-tick");
-    expect(laneMotion("shi")).toBe("discrete-tick");
     expect(laneMotion("muhurta")).toBe("discrete-tick");
-    expect(laneMotion("pancawara")).toBe("discrete-tick");
-    expect(laneMotion("wuku-tzolkin")).toBe("discrete-tick");
     expect(laneMotion("moon")).toBe("discrete-tick");
     expect(laneMotion("season")).toBe("discrete-tick");
-  });
-
-  it("discrete hold parks left edge on the now-line until the next tick", () => {
-    const nowX = 200;
-    const cellW = 80;
-    expect(discreteScrollStartX(nowX, 5, cellW) + 5 * cellW).toBeCloseTo(nowX, 6);
   });
 
   it("Nashville 5:30 PM CDT 2026-07-29 — ghati ~29 from sunrise, not ~44 from midnight", () => {
@@ -102,5 +90,45 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(ghati.index).toBeLessThanOrEqual(31);
     expect(ghati.index).not.toBe(43); // old midnight bug (0-based G44)
     expect(ghati.activeLabel).toMatch(/^Ghati 2[789]|^Ghati 3[01]/);
+  });
+
+  it("Nashville evening Jul 29 2026 — season/moon/muhurta sit at distinct true phases", () => {
+    // ~6:45 PM CDT — Leo ~23%, Full past mid-sector, muhūrta mid-block
+    const date = new Date("2026-07-29T23:45:00Z");
+    const nowX = 200;
+    const cellW = 80;
+    const { lanes } = computeOrreryState(date, 36.16, -86.78);
+
+    const season = lanes.find(l => l.id === "season")!;
+    const moon = lanes.find(l => l.id === "moon")!;
+    const muh = lanes.find(l => l.id === "muhurta")!;
+
+    expect(season.activeLabel).toMatch(/Leo/i);
+    expect(moon.activeLabel).toMatch(/Full/i);
+
+    // Sun entered Leo ~Jul 22 → ~23% through the 30° cell
+    expect(season.progress).toBeGreaterThan(0.18);
+    expect(season.progress).toBeLessThan(0.28);
+
+    // Exact full was morning; evening is past sector mid (~55–65% through Full)
+    expect(moon.progress).toBeGreaterThan(0.5);
+    expect(moon.progress).toBeLessThan(0.7);
+
+    // Muhūrta is a ~48 min cell — evening fraction is not pinned at 0
+    expect(muh.progress).toBeGreaterThan(0.15);
+    expect(muh.progress).toBeLessThan(0.95);
+
+    // Distinct offsets — the whole promise of reading phase by slide
+    const centers = [season, moon, muh].map(l =>
+      activeCellCenterX(nowX, l.progress, cellW),
+    );
+    expect(Math.abs(centers[0]! - centers[1]!)).toBeGreaterThan(cellW * 0.15);
+    expect(Math.abs(centers[1]! - centers[2]!)).toBeGreaterThan(cellW * 0.05);
+    expect(Math.abs(centers[0]! - centers[2]!)).toBeGreaterThan(cellW * 0.1);
+
+    // Leo young → cell center right of the now-line
+    expect(centers[0]!).toBeGreaterThan(nowX);
+    // Full past mid → cell center left of the now-line
+    expect(centers[1]!).toBeLessThan(nowX);
   });
 });

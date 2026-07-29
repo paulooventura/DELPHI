@@ -1,30 +1,23 @@
 "use client";
 
 /**
- * Live stacked-lanes orrery — fixed now-line, phase-through-the-line motion.
+ * Live stacked-lanes orrery — fixed now-line, true cycle-phase offsets.
  *
- * Continuous lanes (ms/sec/min/ghati/day): smooth leftward glide at true rate.
- * Discrete-tick lanes: hold, then spring-snap on cycle tick (escapement).
- * The offset of a cell vs the line is the reading — never force-center.
+ * Every lane scrolls by (now − cellStart) / (cellEnd − cellStart). The offset
+ * of a cell vs the line is the reading. Escapement haptic fires when a
+ * discrete-tick lane's index advances — it does not pin position to cell-start.
  */
 
 import { useEffect, useRef, useState } from "react";
 import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
 import {
   computeOrreryState,
-  discreteScrollStartX,
   laneColor,
   laneMotion,
   laneScrollStartX,
   type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
-import {
-  createLaneSpring,
-  retargetSpring,
-  stepSpring,
-  type LaneSpring,
-} from "../../lib/lore/orrerySpring";
 
 export function OnyxOrrery({
   lat,
@@ -46,7 +39,7 @@ export function OnyxOrrery({
   const [expanded, setExpanded] = useState<OrreryLaneState | null>(null);
   const lanesRef = useRef<OrreryLaneState[]>([]);
   const hitRef = useRef<{ y0: number; y1: number; id: string }[]>([]);
-  const springsRef = useRef<Map<OrreryLaneId, LaneSpring>>(new Map());
+  const lastIndexRef = useRef<Map<OrreryLaneId, number>>(new Map());
   const nowPulseRef = useRef(0);
   const lastTsRef = useRef(0);
 
@@ -61,7 +54,7 @@ export function OnyxOrrery({
 
     let raf = 0;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    const springs = springsRef.current;
+    const lastIndex = lastIndexRef.current;
 
     const resize = () => {
       const w = wrap.clientWidth;
@@ -91,7 +84,6 @@ export function OnyxOrrery({
       const { lanes, slowSky } = computeOrreryState(new Date(), lat, lon);
       lanesRef.current = lanes;
 
-      // Decay stored-tension cue on the now-line
       nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
 
       ctx.clearRect(0, 0, w, h);
@@ -108,7 +100,6 @@ export function OnyxOrrery({
       const laneH = Math.max(18, (avail - laneGap * (lanes.length - 1)) / lanes.length);
       const hits: { y0: number; y1: number; id: string }[] = [];
 
-      // Slow sky cluster (north)
       ctx.fillStyle = "rgba(40, 55, 140, 0.22)";
       ctx.fillRect(padX, padTop, w - padX * 2, slowH - 4);
       ctx.strokeStyle = "rgba(90, 120, 220, 0.35)";
@@ -136,9 +127,9 @@ export function OnyxOrrery({
         const y1 = y + laneH;
         hits.push({ y0, y1, id: lane.id });
 
-        const motion = laneMotion(lane.id);
         const isMs = lane.id === "ms";
         const isFast = lane.speedT < 0.25;
+        const discrete = laneMotion(lane.id) === "discrete-tick";
         const band = laneColor(lane.speedT, lane.tier === "measured" ? 0.2 : 0.14);
         ctx.fillStyle = band;
         ctx.fillRect(padX, y0, w - padX * 2, laneH);
@@ -146,37 +137,25 @@ export function OnyxOrrery({
         const cellW = isFast ? 28 : Math.max(52, Math.min(88, (w - padX * 2) / 5.5));
         const n = lane.cells.length || 1;
 
-        let startX: number;
-        if (motion === "continuous") {
-          // True-rate glide — phase offset is the reading
-          startX = laneScrollStartX(nowX, lane.index, lane.progress, cellW);
-        } else {
-          // Hold until tick, then spring-snap one cell (escapement)
-          let spring = springs.get(lane.id);
-          if (!spring || spring.n !== n) {
-            spring = createLaneSpring(lane.index, n);
-            springs.set(lane.id, spring);
-          }
-          retargetSpring(spring, lane.index, n);
+        // True phase offset — never hold at cell-start.
+        const startX = laneScrollStartX(nowX, lane.index, lane.progress, cellW);
 
-          // Restraint cue: faint now-line brighten just before a discrete release
-          if (lane.progress > 0.9) {
+        if (discrete) {
+          const prevIdx = lastIndex.get(lane.id);
+          if (prevIdx !== undefined && prevIdx !== lane.index) {
+            if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
+            nowPulseRef.current = Math.max(nowPulseRef.current, 0.7);
+          } else if (lane.progress > 0.92) {
             nowPulseRef.current = Math.max(
               nowPulseRef.current,
-              0.45 + lane.progress * 0.4,
+              0.35 + (lane.progress - 0.92) * 4,
             );
           }
-
-          const justSettled = stepSpring(spring, lane.speedT, dt);
-          if (justSettled && hapticsRef.current && !hapticsMuted()) {
-            void pulseHaptic("tick");
-          }
-          startX = discreteScrollStartX(nowX, spring.pos, cellW);
+          lastIndex.set(lane.id, lane.index);
         }
 
         const first = Math.floor((-startX - cellW) / cellW);
         const last = Math.ceil((w - startX) / cellW) + 1;
-        // Cell geometrically under the fixed now-line
         const underLine = mod(Math.floor((nowX - startX) / cellW), n);
 
         for (let k = first; k <= last; k++) {
@@ -246,7 +225,6 @@ export function OnyxOrrery({
       }
       hitRef.current = hits;
 
-      // Fixed now-line — shared centerline; faint pulse as discrete tension cue
       const pulse = nowPulseRef.current;
       const lineA = 0.75 + pulse * 0.25;
       ctx.strokeStyle = `rgba(200, 190, 255, ${lineA})`;
@@ -281,7 +259,7 @@ export function OnyxOrrery({
       cancelAnimationFrame(raf);
       ro.disconnect();
       document.removeEventListener("visibilitychange", onVis);
-      springs.clear();
+      lastIndex.clear();
     };
   }, [lat, lon]);
 
