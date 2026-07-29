@@ -663,7 +663,7 @@ export function OnyxHome({
             </p>
           )}
           {readingLayers.length > 1 && (
-            <div className="onyx-layers" style={{ alignSelf: "flex-start", width: "100%" }}>
+            <div className="onyx-layers">
               <div className="onyx-held-row">
                 {readingLayers.map(l => (
                   <button
