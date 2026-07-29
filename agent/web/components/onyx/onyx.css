@@ -1664,3 +1664,64 @@
   color: var(--onyx-ink-quiet);
   margin: 4px 0 0;
 }
+
+/* Stacked-lanes orrery (CLOCK-SPEC) */
+.onyx-orrery-device {
+  display: flex;
+  flex-direction: column;
+  background: #000;
+  overflow: hidden;
+}
+.onyx-orrery-title {
+  position: absolute;
+  top: 26px;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  text-align: center;
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.42em;
+  color: var(--onyx-ink-quiet);
+  font-weight: 300;
+  pointer-events: none;
+}
+.onyx-orrery-sub {
+  position: absolute;
+  top: 46px;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  text-align: center;
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--onyx-ink-faint);
+  pointer-events: none;
+}
+.onyx-orrery-wrap {
+  flex: 1;
+  min-height: 0;
+  margin-top: 64px;
+  margin-bottom: 8px;
+  position: relative;
+}
+.onyx-orrery-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.onyx-orrery-teach {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 24px;
+  z-index: 12;
+  padding: 16px 18px;
+  background: rgba(6, 5, 14, 0.94);
+  border: 0.5px solid rgba(140, 124, 255, 0.35);
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}

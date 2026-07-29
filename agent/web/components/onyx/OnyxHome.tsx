@@ -757,7 +757,7 @@ export function OnyxHome({
                 onOpenRings();
               }}
             >
-              <span>The rings</span>
+              <span>Orrery</span>
               <span className="onyx-row-r">open wheel ▾</span>
             </button>
             <button

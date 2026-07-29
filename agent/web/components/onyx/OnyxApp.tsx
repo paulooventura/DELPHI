@@ -29,7 +29,6 @@ import {
 } from "../../lib/lore/castStore";
 import { natalGalactic, resolvePerson } from "../../lib/lore/resolvePerson";
 import { byId } from "../../lib/lore/qualia";
-import { DashboardContainer } from "../DashboardContainer";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import type { LiveAttitude } from "../CelestialSkyView";
 import { AtlasPanel } from "../AtlasPanel";
@@ -43,6 +42,7 @@ import { OnyxYou } from "./OnyxYou";
 import { OnyxCast } from "./OnyxCast";
 import { OnyxAbout } from "./OnyxAbout";
 import { OnyxDecompose } from "./OnyxDecompose";
+import { OnyxOrrery } from "./OnyxOrrery";
 import { DeviceAccessGate } from "./DeviceAccessGate";
 import "./onyx.css";
 
@@ -155,6 +155,7 @@ export function OnyxApp({
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
   const homeReady = !showAccessGate && !showSplash;
+  void onRingSelect;
 
   // Snapshot locks when home opens or when the user returns — not on the clock tick.
   useEffect(() => {
@@ -347,52 +348,8 @@ export function OnyxApp({
     );
   }
 
-  if (mode === "rings" && cosmic) {
-    return (
-      <div className="onyx-root">
-        <div className="onyx-device onyx-device-scroll" style={{ background: "#000" }}>
-          <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            close
-          </button>
-          <div style={{ paddingTop: 48 }}>
-            <DashboardContainer
-              lat={lat}
-              lon={lon}
-              cosmic={cosmic}
-              onRingSelect={onRingSelect}
-              weather={
-                cycles?.weather
-                  ? {
-                      emoji: cycles.weather.emoji,
-                      condition: cycles.weather.condition,
-                      tempC: cycles.weather.tempC ?? null,
-                    }
-                  : null
-              }
-              atlasReadings={stripReadings.filter(r =>
-                ["hijri", "hebrew", "persian", "ethiopian", "chinese_lunisolar"].includes(r.systemId),
-              )}
-              showAtlasOnWheel={true}
-              liveCoords
-              usingFallback={false}
-              locationDenied={false}
-              locationEnabled
-              accuracyM={null}
-              altM={altM}
-              altAccuracyM={null}
-              speedMps={null}
-              gpsHeading={null}
-              locationAtMs={null}
-              compassHeading={headingDeg}
-              compassOffsetDeg={0}
-              declinationDeg={0}
-              pitchDeg={pitchDeg}
-              emfUt={emfUt ?? null}
-            />
-          </div>
-        </div>
-      </div>
-    );
+  if (mode === "rings") {
+    return <OnyxOrrery lat={lat} lon={lon} onBack={() => setMode("home")} />;
   }
 
   if (mode === "tools") {
@@ -408,8 +365,8 @@ export function OnyxApp({
             </p>
             <div className="onyx-tools-grid">
               <button type="button" className="onyx-tool-btn" onClick={() => setMode("rings")}>
-                The rings
-                <span>Cosmic clock wheel</span>
+                Orrery
+                <span>Stacked lanes · read the now-line</span>
               </button>
               <button type="button" className="onyx-tool-btn" onClick={() => setMode("atlas")}>
                 Atlas
