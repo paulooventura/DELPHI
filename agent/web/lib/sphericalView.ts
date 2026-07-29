@@ -74,19 +74,21 @@ const WORLD_NORTH: Vec3 = [0, 1, 0];
 /**
  * Roll-free projection basis with frame-to-frame continuity.
  *
- * When a previous basis exists, parallel-transport its `right` onto the new
- * view plane — never re-cross WORLD_UP and fight continuity near the horizon
- * (that hard flip at view.z ≈ −0.05 was the sky "freak out").
- * World-up alignment is cold-start only. Near zenith/nadir, freeze transport.
+ * Away from zenith/nadir: rebuild from WORLD_UP × view every frame and pick the
+ * upright sign (screen-up toward world-up). That construction is continuous
+ * through the horizon by itself — no prev-right matching (which reintroduced
+ * phone roll / diagonal sky) and no second flip fight (old 180° snap).
+ * Near the poles, parallel-transport the previous basis.
  */
 export function buildStableViewBasis(viewEnu: Vec3, prev?: ViewBasis | null): ViewBasis {
   const view = normalize(viewEnu);
-  const nearPole = Math.abs(view[2]) > 0.98;
+  // ~10° of zenith/nadir — WORLD_UP × view collapses here.
+  const nearPole = Math.abs(view[2]) > 0.985;
 
   let right: Vec3;
+  let up: Vec3;
 
-  if (prev) {
-    // Project previous right onto the plane orthogonal to the new view.
+  if (nearPole && prev) {
     const along = dot(prev.right, view);
     let transported: Vec3 = [
       prev.right[0] - view[0] * along,
@@ -94,20 +96,24 @@ export function buildStableViewBasis(viewEnu: Vec3, prev?: ViewBasis | null): Vi
       prev.right[2] - view[2] * along,
     ];
     let tLen = Math.hypot(transported[0], transported[1], transported[2]);
-
-    if (tLen < 1e-4 && !nearPole) {
-      transported = cross(WORLD_UP, view);
-      tLen = Math.hypot(transported[0], transported[1], transported[2]);
-      if (tLen < 1e-3) {
-        transported = cross(WORLD_NORTH, view);
-        tLen = Math.hypot(transported[0], transported[1], transported[2]);
-      }
-    }
-
     if (tLen < 1e-4) {
-      right = prev.right;
+      transported = cross(WORLD_NORTH, view);
+      tLen = Math.hypot(transported[0], transported[1], transported[2]);
+    }
+    right =
+      tLen < 1e-4
+        ? prev.right
+        : [transported[0] / tLen, transported[1] / tLen, transported[2] / tLen];
+    up = cross(view, right);
+    let uLen = Math.hypot(up[0], up[1], up[2]);
+    if (uLen < 1e-6) {
+      up = prev.up;
     } else {
-      right = [transported[0] / tLen, transported[1] / tLen, transported[2] / tLen];
+      up = [up[0] / uLen, up[1] / uLen, up[2] / uLen];
+    }
+    if (dot(up, prev.up) < 0) {
+      up = [-up[0], -up[1], -up[2]];
+      right = [-right[0], -right[1], -right[2]];
     }
   } else {
     right = cross(WORLD_UP, view);
@@ -116,31 +122,25 @@ export function buildStableViewBasis(viewEnu: Vec3, prev?: ViewBasis | null): Vi
       right = cross(WORLD_NORTH, view);
       rLen = Math.hypot(right[0], right[1], right[2]);
     }
-    if (rLen < 1e-3) {
+    if (rLen < 1e-3 && prev) {
+      right = prev.right;
+    } else if (rLen < 1e-3) {
       right = [1, 0, 0];
     } else {
       right = [right[0] / rLen, right[1] / rLen, right[2] / rLen];
     }
-  }
-
-  let up = cross(view, right);
-  let uLen = Math.hypot(up[0], up[1], up[2]);
-  if (uLen < 1e-6) {
-    up = prev?.up ?? WORLD_UP;
-  } else {
-    up = [up[0] / uLen, up[1] / uLen, up[2] / uLen];
-  }
-
-  // Cold start only: prefer world-up on the screen when looking near the horizon.
-  if (!prev && view[2] > -0.05 && dot(up, WORLD_UP) < 0) {
-    up = [-up[0], -up[1], -up[2]];
-    right = [-right[0], -right[1], -right[2]];
-  }
-
-  // Continuity safety — one unflip if transport somehow inverted.
-  if (prev && dot(up, prev.up) < 0) {
-    up = [-up[0], -up[1], -up[2]];
-    right = [-right[0], -right[1], -right[2]];
+    up = cross(view, right);
+    let uLen = Math.hypot(up[0], up[1], up[2]);
+    if (uLen < 1e-6) {
+      up = WORLD_UP;
+    } else {
+      up = [up[0] / uLen, up[1] / uLen, up[2] / uLen];
+    }
+    // Unique upright — kills diagonal tilt without consulting a rolled prev.
+    if (dot(up, WORLD_UP) < 0) {
+      up = [-up[0], -up[1], -up[2]];
+      right = [-right[0], -right[1], -right[2]];
+    }
   }
 
   return { view, right, up };
