@@ -437,11 +437,6 @@ export function OnyxApp({
     );
   }
 
-  function resetHeldDivinations() {
-    setEmbraced(clearEmbraced());
-    setActiveLayerChoice(prev => (prev === "with-drawn" ? undefined : prev));
-  }
-
   if (mode === "cast") {
     return (
       <OnyxCast
