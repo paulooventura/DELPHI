@@ -88,9 +88,9 @@ export const CAST_FRAMING: Record<
 
 /** Ritual film played when that tradition is cast (public/ assets). */
 export const CAST_RITUAL_VIDEO: Record<string, string> = {
-  "tarot-major": "/cast-tarot.mp4",
+  tarot: "/cast-tarot.mp4",
   "orisha-cast": "/cast-orisha.mp4",
-  "iching-trigram": "/cast-iching.mp4",
+  "iching-hexagram": "/cast-iching.mp4",
   "rune-cast": "/cast-runes.mp4",
 };
 
