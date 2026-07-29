@@ -1,6 +1,9 @@
 let sharedCtx: AudioContext | null = null;
 let sharedNoise: AudioBuffer | null = null;
 let sharedMaster: GainNode | null = null;
+/** Bumps on each mute so delayed teardowns/suspends don't race a later unmute. */
+let muteEpoch = 0;
+let audioSilenced = false;
 
 export function getClockAudio(): AudioContext | null {
   if (typeof window === "undefined") return null;
@@ -69,8 +72,13 @@ function createEcho(
   return input;
 }
 
+export function isClockAudioSilenced(): boolean {
+  return audioSilenced;
+}
+
 /** Clear woody knock — tick / tock on each second. */
 export function playSecondTick(ctx: AudioContext, second: number) {
+  if (audioSilenced) return;
   if (ctx.state !== "running") void ctx.resume();
   const t = ctx.currentTime;
   const tock = second % 2 === 1;
@@ -186,12 +194,14 @@ function playGongStrike(
 
 /** Minute gong — deep, single strike. */
 export function playMinuteBell(ctx: AudioContext) {
+  if (audioSilenced) return;
   if (ctx.state !== "running") void ctx.resume();
   playGongStrike(ctx, ctx.currentTime, 72, 0.38, 3.2);
 }
 
 /** Hour gong — deeper bowl, one strike per hour count. */
 export function playHourBell(ctx: AudioContext, hour24: number) {
+  if (audioSilenced) return;
   if (ctx.state !== "running") void ctx.resume();
   const strikes = (hour24 % 12) || 12;
   const gap = 1.55;
@@ -220,6 +230,7 @@ const SCHUMANN_FUND = 7.83;
  * Occasional harmonic blooms from the Schumann series add texture without crowding the pad.
  */
 export function startSchumannAtmosphere(ctx: AudioContext): void {
+  if (audioSilenced) return;
   if (schumannBed) return;
   if (ctx.state !== "running") void ctx.resume();
 
@@ -358,19 +369,19 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   schumannBed = { master, sources, nodes, timers };
 }
 
-export function stopSchumannAtmosphere(opts?: { immediate?: boolean }): void {
+export function stopSchumannAtmosphere(opts?: { fadeSec?: number }): void {
   if (!schumannBed) return;
-  const { master, sources, timers } = schumannBed;
+  const bed = schumannBed;
+  const { master, sources, timers } = bed;
   for (const id of timers) window.clearTimeout(id);
   timers.length = 0;
   const ctx = master.context;
   const t = ctx.currentTime;
-  const immediate = opts?.immediate === true;
+  const fadeSec = Math.max(0.05, opts?.fadeSec ?? 0.16);
   try {
     master.gain.cancelScheduledValues(t);
     master.gain.setValueAtTime(Math.max(0.0001, master.gain.value), t);
-    // Immediate mute on tab/app close — a long ramp was audible as a buzz/pop.
-    master.gain.exponentialRampToValueAtTime(0.0001, t + (immediate ? 0.04 : 0.35));
+    master.gain.exponentialRampToValueAtTime(0.0001, t + fadeSec);
   } catch {
     try {
       master.gain.value = 0.0001;
@@ -378,13 +389,18 @@ export function stopSchumannAtmosphere(opts?: { immediate?: boolean }): void {
       /* ignore */
     }
   }
+  // Schedule stops in the audio graph (survives pagehide better than setTimeout alone).
+  const stopAt = t + fadeSec + 0.02;
+  for (const s of sources) {
+    try {
+      s.stop(stopAt);
+    } catch {
+      /* already stopped / not started */
+    }
+  }
   const tearDown = () => {
+    if (schumannBed !== bed) return;
     for (const s of sources) {
-      try {
-        s.stop();
-      } catch {
-        /* already stopped */
-      }
       try {
         s.disconnect();
       } catch {
@@ -398,18 +414,50 @@ export function stopSchumannAtmosphere(opts?: { immediate?: boolean }): void {
     }
     schumannBed = null;
   };
-  if (immediate) tearDown();
-  else window.setTimeout(tearDown, 400);
+  window.setTimeout(tearDown, Math.ceil(fadeSec * 1000) + 60);
 }
 
-/** Hard-silence the clock bus (close / background). No buzz, no leftover ticks. */
-export function muteClockAudio(): void {
-  stopSchumannAtmosphere({ immediate: true });
-  if (sharedMaster) {
+/** Pause any HTML media so cast ritual films don't click on close. */
+function silenceHtmlMedia(): void {
+  if (typeof document === "undefined") return;
+  for (const el of document.querySelectorAll("video, audio")) {
+    const media = el as HTMLMediaElement;
     try {
-      const t = sharedMaster.context.currentTime;
+      media.pause();
+      media.muted = true;
+      media.volume = 0;
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Fade the clock bus out, then stop oscillators / suspend context.
+ * Hard-cutting gain or stopping sources mid-wave was the close-app buzz.
+ */
+export function muteClockAudio(opts?: { fadeMs?: number }): void {
+  const fadeMs = opts?.fadeMs ?? 160;
+  const fadeSec = fadeMs / 1000;
+  const epoch = ++muteEpoch;
+  audioSilenced = true;
+
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    try {
+      navigator.vibrate(0);
+    } catch {
+      /* ignore */
+    }
+  }
+  silenceHtmlMedia();
+
+  const ctx = sharedCtx;
+  const t = ctx?.currentTime ?? 0;
+  if (sharedMaster && ctx) {
+    try {
       sharedMaster.gain.cancelScheduledValues(t);
-      sharedMaster.gain.setValueAtTime(0.0001, t);
+      sharedMaster.gain.setValueAtTime(Math.max(0.0001, sharedMaster.gain.value), t);
+      sharedMaster.gain.exponentialRampToValueAtTime(0.0001, t + fadeSec);
     } catch {
       try {
         sharedMaster.gain.value = 0.0001;
@@ -418,23 +466,35 @@ export function muteClockAudio(): void {
       }
     }
   }
-  if (typeof navigator !== "undefined" && navigator.vibrate) {
-    try {
-      navigator.vibrate(0);
-    } catch {
-      /* ignore */
-    }
+
+  stopSchumannAtmosphere({ fadeSec });
+
+  if (ctx) {
+    window.setTimeout(() => {
+      if (epoch !== muteEpoch || !audioSilenced) return;
+      try {
+        void ctx.suspend();
+      } catch {
+        /* ignore */
+      }
+    }, fadeMs + 40);
   }
 }
 
-/** Restore master bus level after an intentional mute (stone back on). */
+/** Restore master bus level after an intentional mute (stone back on / foreground). */
 export function unmuteClockAudio(): void {
+  muteEpoch += 1;
+  audioSilenced = false;
+  const ctx = sharedCtx;
+  if (ctx && ctx.state === "suspended") {
+    void ctx.resume();
+  }
   if (!sharedMaster) return;
   try {
     const t = sharedMaster.context.currentTime;
     sharedMaster.gain.cancelScheduledValues(t);
     sharedMaster.gain.setValueAtTime(0.0001, t);
-    sharedMaster.gain.exponentialRampToValueAtTime(1, t + 0.2);
+    sharedMaster.gain.exponentialRampToValueAtTime(1, t + 0.25);
   } catch {
     try {
       sharedMaster.gain.value = 1;
