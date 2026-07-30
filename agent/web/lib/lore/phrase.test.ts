@@ -82,7 +82,25 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
 
     expect(orchestrate(bright).tone.register).toBe("warm-witness");
     expect(orchestrate(dark).tone.register).toBe("trickster-challenge");
-    expect(speak(dark).toLowerCase()).toMatch(/what will you|your move|what now/);
+    expect(speak(dark).toLowerCase()).toMatch(
+      /what will you|your move|which hand|walk through|act like|dealt this/,
+    );
+  });
+
+  it("live phrases name weather and turn toward the reader — never tradition labels", () => {
+    const snap = takeSnapshot(
+      resolveMoment(jdFromDate(new Date("2026-07-29T23:45:00Z")), 36.16, -86.78)
+        .entries,
+      36.16,
+      -86.78,
+    );
+    const phrase = speak(snap.chord);
+    expect(phrase.length).toBeGreaterThan(40);
+    expect(phrase).not.toMatch(/\b(Leo|Mars|Saturn|Horse|nakshatra|wuku)\b/i);
+    // Oracle turn: think or act
+    expect(phrase.toLowerCase()).toMatch(
+      /\byou\b|\byour\b|choose|name which|see the split|sit with|turn it|stay with|let it land|meet it|decide|plant one/,
+    );
   });
 
   it("phraseForMoment works with network mocked offline and no API key", () => {

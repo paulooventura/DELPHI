@@ -17,9 +17,9 @@ export function phraseCacheKey(
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v8: local speak() — cache per layer + personal fingerprints.
+  // v9: oracle speak() — weather + hinge + dare.
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v8:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  return `delphi-phrase:v9:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 export function readCachedPhrase(key: string): string | null {

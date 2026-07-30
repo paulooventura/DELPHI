@@ -1,199 +1,337 @@
 /**
- * PHRASE — the local distillation voice. NO API. NO third-party dependency.
+ * PHRASE — Delphi's local oracle voice. No API. No third-party dependency.
  * ----------------------------------------------------------------------------
- * This turns the orchestration (root · tension · inflection · tone) into one
- * spoken sentence, entirely on-device, for free, forever. It is NOT a fallback
- * anymore — it is THE voice of Delphi.
+ * Turns orchestration (root · tension · inflection · tone) into ONE sentence
+ * that names the field and turns it toward the reader — to think, and often
+ * to act. This is what the old model path was for; we own it on-device.
  *
- * It reads intelligently because it reads STRUCTURE, not a word-list:
- *   - the ROOT axis picks a grounding NOUN (the subject — "a warmth", "a hush")
- *   - supporting axes pick ADJECTIVES that agree with the root's pole
- *   - the TENSION becomes the sentence's TURN (the em-dash hinge), never smoothed
- *   - the REGISTER (from tone) picks the sentence SHAPE and whether it dares you
- *   - the INFLECTION adds a fast-cycle texture clause when present
+ * Grammar (structure, not mush):
+ *   WEATHER  — root axis → subject (the standing character of the moment)
+ *   HINGE    — tension → the contradiction (never smoothed into positivity)
+ *   HOUR     — fast-cycle inflection → how it shows up right now (optional)
+ *   DARE     — register → the turn to the reader (think / choose / move)
  *
- * Variety is real, not random: the inputs (which of 478 entries are active, in
- * which combination, at what strengths) change constantly, so the same grammar
- * yields a different true sentence each moment. A seeded shuffle over synonym
- * pools keeps it fresh without ever being arbitrary — the seed is the moment
- * itself, so the same moment always reads the same (honest), different moments
- * read differently (alive).
+ * Seeded from the moment's structure: same instant → same line; different
+ * fields → different lines. Vocabulary pools below are authored — expand them
+ * anytime for more variety; no regeneration needed.
  */
 
 import type { Composition, Orchestration, Tone } from "./compose";
 import { orchestrate } from "./compose";
 
-type Axis = "active" | "rising" | "steady" | "warm" | "outward" | "binding" | "gentle" | "light";
+type Axis =
+  | "active"
+  | "rising"
+  | "steady"
+  | "warm"
+  | "outward"
+  | "binding"
+  | "gentle"
+  | "light";
 
-/* ---- Vocabulary, keyed by axis and pole. Authored, not generated. --------- */
-/* Each axis pole offers NOUNS (for when it's the root/subject) and ADJECTIVES
-   (for when it's a supporting quality). Multiple options → variety.            */
+const POS = 1;
+const NEG = -1;
+const AXES: Axis[] = [
+  "active", "rising", "steady", "warm", "outward", "binding", "gentle", "light",
+];
 
-const POS = 1, NEG = -1;
+function isAxis(s: string): s is Axis {
+  return (AXES as string[]).includes(s);
+}
 
-const NOUNS: Record<Axis, Record<number, string[]>> = {
-  warm:    { [POS]: ["warmth", "glow", "heat"], [NEG]: ["coolness", "chill", "cold clarity"] },
-  light:   { [POS]: ["brightness", "clarity", "light"], [NEG]: ["dimness", "dusk", "shadow"] },
-  active:  { [POS]: ["drive", "momentum", "surge"], [NEG]: ["stillness", "quiet", "hush"] },
-  rising:  { [POS]: ["ascent", "rising", "swell"], [NEG]: ["settling", "descent", "ebb"] },
-  steady:  { [POS]: ["steadiness", "poise", "hold"], [NEG]: ["restlessness", "flux", "unrest"] },
-  outward: { [POS]: ["openness", "reaching", "outward pull"], [NEG]: ["inwardness", "turning-in", "withdrawal"] },
-  binding: { [POS]: ["structure", "gathering", "binding"], [NEG]: ["dissolution", "loosening", "release"] },
-  gentle:  { [POS]: ["tenderness", "softness", "grace"], [NEG]: ["sharpness", "edge", "bite"] },
+/* ---- Authored vocabulary ------------------------------------------------- */
+
+/** Root weather — full noun-phrases that already sound like a reading. */
+const WEATHER: Record<Axis, Record<number, string[]>> = {
+  warm: {
+    [POS]: [
+      "a warmth asking to be met",
+      "a living heat in the field",
+      "a glow that wants company",
+    ],
+    [NEG]: [
+      "a cool distance in the air",
+      "a chill that clears the noise",
+      "a cold clarity settling in",
+    ],
+  },
+  light: {
+    [POS]: [
+      "a brightness with nowhere to hide",
+      "a clear light on what is",
+      "an openness that leaves little shade",
+    ],
+    [NEG]: [
+      "a dimming that won't name itself",
+      "a veil over what seemed settled",
+      "a shadow gathering at the edge",
+    ],
+  },
+  active: {
+    [POS]: [
+      "a drive that won't sit still",
+      "a surge pressing for a decision",
+      "a momentum already under way",
+    ],
+    [NEG]: [
+      "a hush that could tip either way",
+      "a stillness holding its breath",
+      "a quiet that is not empty",
+    ],
+  },
+  rising: {
+    [POS]: [
+      "a swell building under the surface",
+      "an ascent you can feel in the chest",
+      "a crest forming whether you watch or not",
+    ],
+    [NEG]: [
+      "a settling after something spent",
+      "an ebb that asks what remains",
+      "a descent into quieter ground",
+    ],
+  },
+  steady: {
+    [POS]: [
+      "a hold that could become a stand",
+      "a poise waiting for your weight",
+      "a steadiness that will not argue",
+    ],
+    [NEG]: [
+      "a restlessness under the calm",
+      "a flux that refuses a neat story",
+      "an unrest looking for a door",
+    ],
+  },
+  outward: {
+    [POS]: [
+      "an outward pull toward contact",
+      "a reaching that wants an answer",
+      "an openness aimed at the world",
+    ],
+    [NEG]: [
+      "a turning inward that needs listening",
+      "a withdrawal with work still in it",
+      "an inward lean asking for honesty",
+    ],
+  },
+  binding: {
+    [POS]: [
+      "a gathering of loose ends",
+      "a binding that wants a vow or a cut",
+      "a structure pressing into form",
+    ],
+    [NEG]: [
+      "a loosening of what was tight",
+      "a release already under way",
+      "a dissolution that frees a hand",
+    ],
+  },
+  gentle: {
+    [POS]: [
+      "a tenderness that is still a force",
+      "a soft pressure against the hard parts",
+      "a grace that does not excuse you",
+    ],
+    [NEG]: [
+      "a sharp edge asking for courage",
+      "a fierceness that will not soften first",
+      "a bite behind the polite face of the hour",
+    ],
+  },
 };
 
-const ADJ: Record<Axis, Record<number, string[]>> = {
-  warm:    { [POS]: ["warm", "glowing", "sunlit"], [NEG]: ["cool", "cold", "clear"] },
-  light:   { [POS]: ["bright", "lit", "luminous"], [NEG]: ["dim", "darkening", "veiled"] },
-  active:  { [POS]: ["driving", "restless", "quickening"], [NEG]: ["still", "quiet", "slow"] },
-  rising:  { [POS]: ["rising", "gathering", "cresting"], [NEG]: ["settling", "waning", "sinking"] },
-  steady:  { [POS]: ["steady", "holding", "rooted"], [NEG]: ["restless", "shifting", "unsettled"] },
-  outward: { [POS]: ["open", "outward", "reaching"], [NEG]: ["inward", "quiet", "withdrawn"] },
-  binding: { [POS]: ["gathering", "binding", "consolidating"], [NEG]: ["loosening", "dissolving", "unbinding"] },
-  gentle:  { [POS]: ["tender", "gentle", "soft"], [NEG]: ["sharp", "fierce", "cutting"] },
+/** Single-word colors for blending a support axis into the weather. */
+const TINT: Record<Axis, Record<number, string[]>> = {
+  warm:    { [POS]: ["warm", "sunlit"], [NEG]: ["cool", "austere"] },
+  light:   { [POS]: ["bright", "lucid"], [NEG]: ["veiled", "dim"] },
+  active:  { [POS]: ["urgent", "quickening"], [NEG]: ["slow", "held"] },
+  rising:  { [POS]: ["rising", "cresting"], [NEG]: ["waning", "settling"] },
+  steady:  { [POS]: ["steady", "rooted"], [NEG]: ["shifting", "unsettled"] },
+  outward: { [POS]: ["open", "reaching"], [NEG]: ["inward", "withdrawn"] },
+  binding: { [POS]: ["binding", "gathering"], [NEG]: ["loosening", "dissolving"] },
+  gentle:  { [POS]: ["tender", "soft"], [NEG]: ["fierce", "cutting"] },
 };
 
-/* Tension phrasings — the TURN. Keyed loosely by register so the hinge matches
-   the voice. {a} = the assertive pole word, {b} = the counter pole word.       */
-const TURNS: Record<Tone["register"], string[]> = {
+/** Tension hinge — {a}/{b} are opposing pole tints. The contradiction is the point. */
+const HINGE: Record<Tone["register"], string[]> = {
   "warm-witness": [
-    "{a} and yet {b} underneath",
-    "{a}, with something {b} resting beneath it",
-    "mostly {a}, though a {b} thread runs through",
+    ", {a} on the face of it and {b} underneath",
+    " — {a}, yet a {b} thread still runs",
+    ", holding {a} without denying what is {b}",
   ],
   "plain-reading": [
-    "{a}, with a {b} current beneath",
-    "{a} on the surface, {b} below",
-    "{a} — and quietly {b} at the same time",
+    " — {a} on the surface, {b} below",
+    ", {a} and quietly {b} at once",
+    " — a live split between {a} and {b}",
   ],
   "quiet-riddle": [
-    "{a}, though something {b} waits under it",
-    "{a} — and what's {b} beneath has not yet spoken",
-    "{a}, hiding a {b} turn",
+    " — {a}, while something {b} has not spoken yet",
+    ", {a} in plain sight, {b} in the unsaid",
+    " — {a}, hiding a {b} turn",
   ],
   "trickster-challenge": [
-    "{a} — but already pulling toward {b}",
-    "{a}, and just as surely {b}; it won't stay put",
-    "{a} while something {b} strains against it",
+    " — dealt as {a}, already leaning toward {b}",
+    ", {a} in one hand and {b} in the other",
+    " — {a} while {b} strains against it; it will not stay put",
   ],
 };
 
-/* Register frames — how the whole sentence is shaped and whether it turns to
-   the user. {S} = the core reading (subject + turn + inflection).              */
-const FRAMES: Record<Tone["register"], string[]> = {
+/** Fast-hour texture — words that work after "is" / "already" / "leans". */
+const HOUR_FEEL: Record<Axis, Record<number, string[]>> = {
+  warm:    { [POS]: ["warm", "heated"], [NEG]: ["cool", "austere"] },
+  light:   { [POS]: ["lucid", "exposed"], [NEG]: ["veiled", "dim"] },
+  active:  { [POS]: ["urgent", "restless"], [NEG]: ["slow", "hushed"] },
+  rising:  { [POS]: ["rising", "cresting"], [NEG]: ["waning", "settling"] },
+  steady:  { [POS]: ["steady", "planted"], [NEG]: ["unsettled", "mobile"] },
+  outward: { [POS]: ["outward", "reaching"], [NEG]: ["inward", "withdrawn"] },
+  binding: { [POS]: ["tightening", "gathering"], [NEG]: ["loosening", "releasing"] },
+  gentle:  { [POS]: ["tender", "soft"], [NEG]: ["fierce", "sharp"] },
+};
+
+/** Fast-hour texture. */
+const HOUR: string[] = [
+  ", and the hour itself feels {tint}",
+  ", leaning {tint} in the near cycles",
+  ", the immediate sky already {tint}",
+];
+
+/**
+ * The turn to the reader — think and (by register) act.
+ * This is the oracle's job: the field names itself, then asks something of you.
+ */
+const DARE: Record<Tone["register"], string[]> = {
   "warm-witness": [
-    "{S}.",
-    "There's {s} — {rest}.",
-    "{S} — a moment worth resting in.",
+    " Stay with it long enough to notice what softens.",
+    " Let it land before you reach for the next thing.",
+    " Meet it without rushing to improve it.",
   ],
   "plain-reading": [
-    "{S}.",
-    "The moment is {s} — {rest}.",
-    "{S}, as things stand.",
+    " Name which side you are feeding — then choose on purpose.",
+    " Don't pretend both poles can lead; pick the one you will answer.",
+    " See the split cleanly, then take one honest step.",
   ],
   "quiet-riddle": [
-    "{S}.",
-    "{S} — make of it what you will.",
-    "Something in the hour is {s}; {rest}.",
+    " Sit with what stays unsaid until it points.",
+    " The answer is not missing — it is waiting for your attention.",
+    " Turn it over once more before you move.",
   ],
   "trickster-challenge": [
-    "{S}. So — what will you do with it?",
-    "{S}. The moment's on the table; your move.",
-    "You've got {s} — {rest}. What now?",
+    " So — which hand do you play?",
+    " The moment is on the table. Your move.",
+    " What will you do with a field that will not sit still?",
+    " Don't watch both doors; walk through one.",
+    " You've been dealt this. Act like it matters.",
   ],
 };
 
-/* ---- Deterministic-but-varied choice: seed from the moment itself. -------- */
+const EMPTY: string[] = [
+  "An even field — nothing pulling hard. Ask what you were avoiding while it was quiet.",
+  "A still point between currents. Use it: decide before the next surge arrives.",
+  "No strong lean either way. That is rare — plant one clear intention while you can.",
+];
+
+/* ---- Seeded pick (deterministic per moment) ------------------------------ */
 
 function seedFrom(o: Orchestration): number {
-  // A stable seed from the structure — same moment → same phrase, different
-  // moment → different phrase. Uses root axis/pole + tension + fieldSize.
-  const r = o.root ? o.root.axis.length * 7 + Math.round(o.root.pole * 100) : 0;
-  const t = o.tension ? o.tension.axis.length * 13 + Math.round(o.tension.strength * 100) : 0;
-  return Math.abs((r * 31 + t * 17 + o.fieldSize * 5)) % 997;
+  const r = o.root
+    ? o.root.axis.charCodeAt(0) * 7 + Math.round(o.root.pole * 100) + o.root.axis.length * 3
+    : 0;
+  const t = o.tension
+    ? o.tension.axis.charCodeAt(0) * 13 + Math.round(o.tension.strength * 100)
+    : 0;
+  const i = o.inflection[0]
+    ? o.inflection[0].axis.length * 11 + Math.round(o.inflection[0].pole * 50)
+    : 0;
+  const tone =
+    Math.round(o.tone.warmth * 40) +
+    Math.round(o.tone.clarity * 40) +
+    Math.round(o.tone.charge * 60);
+  return Math.abs(r * 31 + t * 17 + i * 23 + tone * 5 + o.fieldSize * 9) % 9973;
 }
-function pick<T>(arr: T[], seed: number, salt: number): T {
-  return arr[(seed + salt) % arr.length];
-}
-const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-const withArticle = (w: string) => (/^[aeiou]/i.test(w) ? "an " : "a ") + w;
 
-/* ---- The engine ----------------------------------------------------------- */
+function pick<T>(arr: T[], seed: number, salt: number): T {
+  return arr[Math.abs(seed + salt * 17) % arr.length]!;
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+function poleOf(n: number): number {
+  return n >= 0 ? POS : NEG;
+}
+
+/* ---- Assembly ------------------------------------------------------------ */
+
+function weatherLine(o: Orchestration, c: Composition, seed: number): string {
+  if (!o.root || !isAxis(o.root.axis)) {
+    return pick(EMPTY, seed, 0).split(".")[0]!.toLowerCase();
+  }
+  const pole = poleOf(o.root.pole);
+  let weather = pick(WEATHER[o.root.axis][pole], seed, 1);
+
+  // Tint with one supporting axis if it is strong and distinct.
+  const support = c.axes
+    .filter(a => a.axis !== o.root!.axis && isAxis(a.axis) && Math.abs(a.mean) > 0.35)
+    .sort((a, b) => Math.abs(b.mean) * b.coherence - Math.abs(a.mean) * a.coherence)[0];
+
+  if (support && isAxis(support.axis) && seed % 2 === 0) {
+    const tint = pick(TINT[support.axis][poleOf(support.mean)], seed, 2);
+    // Weave tint without stacking into "a rising, bright warmth" mush.
+    if (!weather.includes(tint)) {
+      weather = weather.replace(/^an? /, m => `${m}${tint} `);
+    }
+  }
+  return weather;
+}
+
+function hingeClause(o: Orchestration, seed: number): string {
+  if (!o.tension || o.tension.strength < 0.4 || !isAxis(o.tension.axis)) return "";
+  const axis = o.tension.axis;
+  const a = pick(TINT[axis][POS], seed, 3);
+  const b = pick(TINT[axis][NEG], seed, 5);
+  return pick(HINGE[o.tone.register], seed, 4)
+    .replace("{a}", a)
+    .replace("{b}", b);
+}
+
+function hourClause(o: Orchestration, seed: number): string {
+  // Always include inflection when present and charge is mid/high — the "now."
+  if (!o.inflection.length) return "";
+  if (o.tone.charge < 0.35 && seed % 3 !== 0) return "";
+  const inf = o.inflection[0]!;
+  if (!isAxis(inf.axis)) return "";
+  const tint = pick(HOUR_FEEL[inf.axis][poleOf(inf.pole)], seed, 8);
+  return pick(HOUR, seed, 9).replace("{tint}", tint);
+}
+
+function dareLine(reg: Tone["register"], seed: number): string {
+  return pick(DARE[reg], seed, 11);
+}
 
 /**
  * Produce the distilled sentence from a composition — locally, no API.
- * This is the primary voice of Delphi.
+ * Names the chord, honors the tension, turns to the reader.
  */
 export function speak(c: Composition): string {
   const o = orchestrate(c);
   const seed = seedFrom(o);
-  const reg = o.tone.register;
 
-  // 1. SUBJECT from the root.
   if (!o.root) {
-    return pick(
-      ["A quiet, in-between moment, poised between currents.",
-       "A still point, waiting to tip one way or another.",
-       "An even moment — nothing pulling hard in any direction."],
-      seed, 0,
-    );
-  }
-  const rootPole = o.root.pole >= 0 ? POS : NEG;
-  const rootAxis = o.root.axis as Axis;
-  const noun = pick(NOUNS[rootAxis][rootPole], seed, 1);
-
-  // 2. One or two supporting ADJECTIVES from the next-strongest axes (not root).
-  const supports = c.axes
-    .filter((a) => a.axis !== o.root!.axis && Math.abs(a.mean) > 0.3)
-    .sort((a, b) => Math.abs(b.mean) * b.coherence - Math.abs(a.mean) * a.coherence)
-    .slice(0, 2)
-    .map((a) => {
-      const pole = a.mean >= 0 ? POS : NEG;
-      return pick(ADJ[a.axis as Axis][pole], seed, a.axis.length);
-    });
-
-  // subject: "a bright, gathering warmth"
-  let subject: string;
-  if (supports.length === 2) subject = `${withArticle(supports[0])}, ${supports[1]} ${noun}`;
-  else if (supports.length === 1) subject = `${withArticle(supports[0])} ${noun}`;
-  else subject = withArticle(noun);
-
-  // 3. The TURN from the tension (the hinge). Skip if no real tension.
-  let core = subject;
-  if (o.tension && o.tension.strength > 0.4) {
-    const tAxis = o.tension.axis as Axis;
-    const aWord = pick(ADJ[tAxis][POS], seed, 3);
-    const bWord = pick(ADJ[tAxis][NEG], seed, 5);
-    const turn = pick(TURNS[reg], seed, 2).replace("{a}", aWord).replace("{b}", bWord);
-    core = `${subject}, ${turn}`;
+    return pick(EMPTY, seed, 0);
   }
 
-  // 4. INFLECTION — a fast-cycle texture clause, occasionally, when present.
-  if (o.inflection.length && (seed % 3 === 0)) {
-    const inf = o.inflection[0];
-    const infWord = pick(ADJ[inf.axis as Axis][inf.pole >= 0 ? POS : NEG], seed, 8);
-    core = `${core}, ${infWord} in this hour`;
-  }
+  const weather = weatherLine(o, c, seed);
+  const hinge = hingeClause(o, seed);
+  const hour = hourClause(o, seed);
+  const dare = dareLine(o.tone.register, seed);
 
-  // 5. FRAME by register. If the core already carries a tension-turn, use a
-  //    PLAIN frame (no {rest} clause) to avoid a double "and…" collision.
-  //    Only the turn-less cores get the {rest}-style frames.
-  const hasTurn = !!(o.tension && o.tension.strength > 0.4);
-  const plainFrames: Record<Tone["register"], string[]> = {
-    "warm-witness": ["{S}.", "{S} — a moment worth resting in."],
-    "plain-reading": ["{S}.", "{S}, as things stand."],
-    "quiet-riddle": ["{S}.", "{S} — make of it what you will."],
-    "trickster-challenge": ["{S}. So — what will you do with it?", "{S}. Your move."],
-  };
-  const restFrames: Record<Tone["register"], string[]> = {
-    "warm-witness": ["There's {s} — settled, clear for now.", "{S}. Nothing pulling hard — rest in it."],
-    "plain-reading": ["The moment is {s} — clear, for now.", "{S}, and steady with it."],
-    "quiet-riddle": ["Something in the hour is {s}; the rest stays unsaid.", "{S} — quiet, and holding."],
-    "trickster-challenge": ["You've got {s} — clear and open. What will you make of it?", "{S}. The moment's yours; move."],
-  };
-  const framePool = hasTurn ? plainFrames[reg] : restFrames[reg];
-  const frame = pick(framePool, seed, 4);
-  const sentence = frame.replace("{S}", cap(core)).replace("{s}", core);
+  // One breathing sentence: weather + hinge + hour, then the dare as its own beat.
+  // Avoid double periods / awkward "a a" from templates.
+  const body = `${cap(weather)}${hinge}${hour}.`.replace(/\.\./g, ".");
+  const line = `${body}${dare}`.replace(/\s+/g, " ").trim();
 
-  return sentence;
+  // Guarantee a terminal mark on the dare (templates include it).
+  return /[.!?]$/.test(line) ? line : `${line}.`;
 }
