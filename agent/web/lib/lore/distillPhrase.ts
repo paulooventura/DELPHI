@@ -1,6 +1,6 @@
 /**
- * Distilled moment phrase — model path with strict offline fallback.
- * Home must never block on the network.
+ * Distilled moment phrase — model path with loud, never-silent fallback.
+ * Home paints the template immediately; upgrades when the model returns.
  */
 
 import type { Composition, DistillOptions } from "./compose";
@@ -61,28 +61,109 @@ export function writeCachedPhrase(key: string, phrase: string): void {
   }
 }
 
+export type DistillAttempt = {
+  /** Model sentence when the call succeeded and passed gates. */
+  phrase: string | null;
+  /** True only when the Anthropic path returned an accepted sentence. */
+  ok: boolean;
+  /** Human-readable reason when falling back — always set on failure. */
+  reason: string;
+  httpStatus?: number;
+  responseBody?: string;
+};
+
+function logFallback(attempt: DistillAttempt): void {
+  // Loud by design — never silent. Production console + optional on-screen.
+  console.error(
+    `DISTILL FALLBACK: ${attempt.reason}`,
+    {
+      httpStatus: attempt.httpStatus,
+      responseBody: attempt.responseBody,
+    },
+  );
+}
+
 /**
- * Resolve the day's phrase: cache → optional model → template fallback.
- * Always returns immediately with the template; upgrades via onUpdate when
- * a model sentence arrives and passes the gates.
+ * Call /api/lore/distill with orchestratedPrompt(chord).
+ * Never swallows errors — every failure returns a typed reason and logs loud.
  */
 export async function fetchModelPhrase(
   chord: Composition,
   opts?: DistillOptions,
-): Promise<string | null> {
+): Promise<DistillAttempt> {
   // Primary path: orchestratedPrompt(snapshot.chord) — root/tension/register.
-  const { system, user } = orchestratedPrompt(chord, opts);
+  let system: string;
+  let user: string;
+  try {
+    ({ system, user } = orchestratedPrompt(chord, opts));
+  } catch (err) {
+    const attempt: DistillAttempt = {
+      phrase: null,
+      ok: false,
+      reason: `orchestratedPrompt threw: ${err instanceof Error ? err.message : String(err)}`,
+    };
+    logFallback(attempt);
+    return attempt;
+  }
+
   try {
     const res = await fetch("/api/lore/distill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ system, user, chord, opts }),
+      body: JSON.stringify({ chord, opts, system, user }),
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { phrase?: string };
-    return acceptPhrase(data.phrase ?? "");
-  } catch {
-    return null;
+    const rawText = await res.text();
+    let data: {
+      phrase?: string;
+      error?: string;
+      reason?: string;
+      body?: string;
+      raw?: string;
+    } = {};
+    try {
+      data = JSON.parse(rawText) as typeof data;
+    } catch {
+      data = {};
+    }
+
+    if (!res.ok) {
+      const attempt: DistillAttempt = {
+        phrase: null,
+        ok: false,
+        reason:
+          data.reason ||
+          data.error ||
+          `HTTP ${res.status} from /api/lore/distill`,
+        httpStatus: res.status,
+        responseBody: (data.body || data.raw || rawText).slice(0, 800),
+      };
+      logFallback(attempt);
+      return attempt;
+    }
+
+    const accepted = acceptPhrase(data.phrase ?? "");
+    if (!accepted) {
+      const attempt: DistillAttempt = {
+        phrase: null,
+        ok: false,
+        reason: `model returned but acceptPhrase rejected: ${JSON.stringify(data.phrase ?? "").slice(0, 200)}`,
+        httpStatus: res.status,
+        responseBody: rawText.slice(0, 800),
+      };
+      logFallback(attempt);
+      return attempt;
+    }
+
+    console.info("DISTILL OK: model phrase accepted", accepted.slice(0, 80));
+    return { phrase: accepted, ok: true, reason: "ok" };
+  } catch (err) {
+    const attempt: DistillAttempt = {
+      phrase: null,
+      ok: false,
+      reason: `fetch threw: ${err instanceof Error ? err.message : String(err)}`,
+    };
+    logFallback(attempt);
+    return attempt;
   }
 }
 

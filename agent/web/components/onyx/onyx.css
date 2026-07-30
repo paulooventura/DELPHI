@@ -457,6 +457,16 @@
   line-height: 1.45;
   color: var(--onyx-ink-quiet);
 }
+/* Temporary — loud distill failure surface until the model path is green. */
+.onyx-distill-debug {
+  margin: 10px 0 0;
+  max-width: 22rem;
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  color: rgba(255, 160, 120, 0.85);
+  word-break: break-word;
+}
 .onyx-p2 {
   padding: 110px 30px 40px; justify-content: flex-start; gap: 20px; overflow-y: auto;
 }

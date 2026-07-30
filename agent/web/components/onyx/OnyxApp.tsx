@@ -144,6 +144,8 @@ export function OnyxApp({
   const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
   /** Clock-entry film — plays each time the user swipes into the orrery. */
   const [orreryIntro, setOrreryIntro] = useState(true);
+  /** Loud distill failure reason — set when model path falls back to template. */
+  const [distillDebug, setDistillDebug] = useState<string | null>(null);
 
   // Local-only natal + embraced casts — never sent; fold into labeled layers.
   useEffect(() => {
@@ -237,18 +239,47 @@ export function OnyxApp({
   useEffect(() => {
     if (!homeSnap || lockedMomentEntries.length === 0) return;
     const chord = activeReading.chord;
-    const { phrase } = phraseForMoment(chord, civilYmd, lat, lon, undefined, layerCacheKey);
+    const { phrase, source } = phraseForMoment(
+      chord,
+      civilYmd,
+      lat,
+      lon,
+      undefined,
+      layerCacheKey,
+    );
     setDistilled(phrase);
     // Personal layers keep the deterministic template so the model cannot
     // overwrite a natal/cast chord with a generic sky-only sentence.
-    if (layered.active !== "moment") return;
+    if (layered.active !== "moment") {
+      setDistillDebug(null);
+      return;
+    }
+    if (source === "cache") {
+      setDistillDebug(null);
+    } else {
+      setDistillDebug("awaiting model…");
+    }
     const key = phraseCacheKey(civilYmd, lat, lon, null, "none", layerCacheKey);
     let cancelled = false;
     void (async () => {
-      const model = await fetchModelPhrase(chord);
-      if (cancelled || !model) return;
-      writeCachedPhrase(key, model);
-      setDistilled(model);
+      const attempt = await fetchModelPhrase(chord);
+      if (cancelled) return;
+      if (attempt.ok && attempt.phrase) {
+        writeCachedPhrase(key, attempt.phrase);
+        setDistilled(attempt.phrase);
+        setDistillDebug(null);
+        return;
+      }
+      // Loud — never silent. Template stays on screen; reason is visible.
+      const detail = [
+        attempt.reason,
+        attempt.httpStatus != null ? `HTTP ${attempt.httpStatus}` : null,
+        attempt.responseBody ? attempt.responseBody.slice(0, 160) : null,
+      ]
+        .filter(Boolean)
+        .join(" · ");
+      console.error("DISTILL FALLBACK:", detail);
+      setDistillDebug(detail);
     })();
     return () => {
       cancelled = true;
@@ -534,6 +565,7 @@ export function OnyxApp({
       zodiacSign={zodiacSign}
       momentLine={momentLine}
       provenanceLine={snapProvenance?.line}
+      distillDebug={distillDebug}
       readingLayerLabel={activeReading.label}
       readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}
       activeLayerId={layered.active}
