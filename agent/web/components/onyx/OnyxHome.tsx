@@ -50,11 +50,6 @@ export type OnyxHomeProps = {
   momentLine: string;
   /** Tier-honest provenance for the locked snapshot (measured vs celebrated). */
   provenanceLine?: string | null;
-  /**
-   * Temporary: when the model path falls back, show the reason on-screen
-   * (also always logged as DISTILL FALLBACK in the console).
-   */
-  distillDebug?: string | null;
   /** Active layer label — names exactly what's folded in. */
   readingLayerLabel?: string;
   /** Available layers for one-tap switch (Layer 0 always first). */
@@ -91,7 +86,6 @@ export function OnyxHome({
   zodiacSign,
   momentLine,
   provenanceLine,
-  distillDebug = null,
   readingLayerLabel,
   readingLayers = [],
   activeLayerId = "moment",
@@ -604,11 +598,6 @@ export function OnyxHome({
             <p className="sub">Lift your phone to the sky.</p>
             {provenanceLine && (
               <p className="onyx-provenance">{provenanceLine}</p>
-            )}
-            {distillDebug && (
-              <p className="onyx-distill-debug" role="status">
-                DISTILL FALLBACK: {distillDebug}
-              </p>
             )}
             {readingLayers.length > 1 && (
               <div className="onyx-layers">

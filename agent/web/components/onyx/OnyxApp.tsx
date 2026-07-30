@@ -14,12 +14,7 @@ import {
   type MomentSnapshot,
 } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
-import {
-  fetchModelPhrase,
-  phraseCacheKey,
-  phraseForMoment,
-  writeCachedPhrase,
-} from "../../lib/lore/distillPhrase";
+import { phraseForMoment } from "../../lib/lore/distillPhrase";
 import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
 import {
   clearEmbraced,
@@ -144,8 +139,6 @@ export function OnyxApp({
   const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
   /** Clock-entry film — plays each time the user swipes into the orrery. */
   const [orreryIntro, setOrreryIntro] = useState(true);
-  /** Loud distill failure reason — set when model path falls back to template. */
-  const [distillDebug, setDistillDebug] = useState<string | null>(null);
 
   // Local-only natal + embraced casts — never sent; fold into labeled layers.
   useEffect(() => {
@@ -235,12 +228,11 @@ export function OnyxApp({
     return `${layered.active}:${snapFp}:${natalFp}:${drawnFp}`;
   }, [layered.active, natalEntries, drawnEntries, homeSnap?.takenAt]);
 
-  // Distill the ACTIVE layer only. Layer 0 chord comes from the locked snapshot.
+  // Local speak() on the ACTIVE layer chord — no fetch, no API key (Addendum 5).
   useEffect(() => {
     if (!homeSnap || lockedMomentEntries.length === 0) return;
-    const chord = activeReading.chord;
-    const { phrase, source } = phraseForMoment(
-      chord,
+    const { phrase } = phraseForMoment(
+      activeReading.chord,
       civilYmd,
       lat,
       lon,
@@ -248,42 +240,6 @@ export function OnyxApp({
       layerCacheKey,
     );
     setDistilled(phrase);
-    // Personal layers keep the deterministic template so the model cannot
-    // overwrite a natal/cast chord with a generic sky-only sentence.
-    if (layered.active !== "moment") {
-      setDistillDebug(null);
-      return;
-    }
-    if (source === "cache") {
-      setDistillDebug(null);
-    } else {
-      setDistillDebug("awaiting model…");
-    }
-    const key = phraseCacheKey(civilYmd, lat, lon, null, "none", layerCacheKey);
-    let cancelled = false;
-    void (async () => {
-      const attempt = await fetchModelPhrase(chord);
-      if (cancelled) return;
-      if (attempt.ok && attempt.phrase) {
-        writeCachedPhrase(key, attempt.phrase);
-        setDistilled(attempt.phrase);
-        setDistillDebug(null);
-        return;
-      }
-      // Loud — never silent. Template stays on screen; reason is visible.
-      const detail = [
-        attempt.reason,
-        attempt.httpStatus != null ? `HTTP ${attempt.httpStatus}` : null,
-        attempt.responseBody ? attempt.responseBody.slice(0, 160) : null,
-      ]
-        .filter(Boolean)
-        .join(" · ");
-      console.error("DISTILL FALLBACK:", detail);
-      setDistillDebug(detail);
-    })();
-    return () => {
-      cancelled = true;
-    };
   }, [
     homeSnap,
     lockedMomentEntries.length,
@@ -565,7 +521,6 @@ export function OnyxApp({
       zodiacSign={zodiacSign}
       momentLine={momentLine}
       provenanceLine={snapProvenance?.line}
-      distillDebug={distillDebug}
       readingLayerLabel={activeReading.label}
       readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}
       activeLayerId={layered.active}
