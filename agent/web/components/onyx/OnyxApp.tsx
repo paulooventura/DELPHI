@@ -43,6 +43,7 @@ import { OnyxCast } from "./OnyxCast";
 import { OnyxAbout } from "./OnyxAbout";
 import { OnyxDecompose } from "./OnyxDecompose";
 import { OnyxOrrery } from "./OnyxOrrery";
+import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
 import { DeviceAccessGate } from "./DeviceAccessGate";
 import "./onyx.css";
 
@@ -141,6 +142,8 @@ export function OnyxApp({
   const [activeLayerChoice, setActiveLayerChoice] = useState<LayerId | undefined>();
   /** Locked Layer-0 reading — taken on home open / return, never per-tick. */
   const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
+  /** Clock-entry film — plays each time the user swipes into the orrery. */
+  const [orreryIntro, setOrreryIntro] = useState(true);
 
   // Local-only natal + embraced casts — never sent; fold into labeled layers.
   useEffect(() => {
@@ -349,11 +352,17 @@ export function OnyxApp({
   }
 
   if (mode === "rings") {
+    if (orreryIntro) {
+      return <OnyxOrrerySplash onEnter={() => setOrreryIntro(false)} />;
+    }
     return (
       <OnyxOrrery
         lat={lat}
         lon={lon}
-        onBack={() => setMode("home")}
+        onBack={() => {
+          setOrreryIntro(true);
+          setMode("home");
+        }}
         hapticsEnabled={pulseEnabled}
       />
     );
