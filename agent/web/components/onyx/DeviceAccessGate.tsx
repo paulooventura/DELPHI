@@ -1,9 +1,12 @@
 "use client";
 
 /**
- * First screen on every load until Allow is tapped.
+ * First screen on every load until the crystal is tapped.
  * One tap → location + orientation + motion prompts, then splash/home.
  */
+
+import { OnyxCrystal } from "./OnyxCrystal";
+
 export function DeviceAccessGate({
   onAllow,
   busy = false,
@@ -13,28 +16,35 @@ export function DeviceAccessGate({
 }) {
   return (
     <div className="onyx-root" role="dialog" aria-label="Allow location and sensors">
-      <div className="onyx-device" style={{ overflow: "auto" }}>
-        <div className="onyx-overlay" style={{ justifyContent: "center", gap: 20 }}>
-          <p className="onyx-eyebrow">HERE</p>
-          <p className="onyx-layer-phrase" style={{ textAlign: "left" }}>
+      <div className="onyx-device onyx-access-gate">
+        <div className="onyx-access-copy">
+          <p className="onyx-access-phrase">
             Delphi reads the sky from where you are.
           </p>
-          <p className="onyx-layer-lead" style={{ margin: 0 }}>
+          <p className="onyx-access-lead">
             Allow location and device sensors so the compass, sky map, and moment
-            stay live. This screen opens every time you load Delphi — tap once to
-            continue.
+            stay live. This screen opens every time you load Delphi — tap the
+            crystal once to continue.
           </p>
-          <button
-            type="button"
-            className="onyx-tool-btn"
-            disabled={busy}
-            onClick={onAllow}
-            autoFocus
-          >
-            {busy ? "Requesting…" : "Allow access"}
-            <span>Location · orientation · motion</span>
-          </button>
         </div>
+
+        <button
+          type="button"
+          className={`onyx-access-cta${busy ? " busy" : ""}`}
+          disabled={busy}
+          onClick={onAllow}
+          autoFocus
+        >
+          <span className="onyx-access-cta-gem" aria-hidden>
+            <OnyxCrystal />
+          </span>
+          <span className="onyx-access-cta-label">
+            {busy ? "Requesting…" : "Allow access"}
+          </span>
+          <span className="onyx-access-cta-sub">
+            Location · orientation · motion
+          </span>
+        </button>
       </div>
     </div>
   );

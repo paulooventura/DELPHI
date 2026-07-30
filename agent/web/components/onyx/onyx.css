@@ -92,6 +92,107 @@
   }
 }
 
+/* ── Device access gate ─────────────────────────────────────────────────── */
+.onyx-access-gate {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 28px;
+  padding: 48px 28px calc(32px + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  overflow: hidden;
+}
+.onyx-access-copy {
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+.onyx-access-phrase {
+  font-family: var(--font-voice);
+  font-size: 24px;
+  line-height: 1.3;
+  color: var(--onyx-ink-bright);
+  margin: 0;
+  text-wrap: balance;
+}
+.onyx-access-lead {
+  font-family: var(--font-voice);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--onyx-ink-soft);
+  margin: 0;
+  text-wrap: pretty;
+}
+.onyx-access-cta {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: inherit;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+.onyx-access-cta:disabled {
+  cursor: progress;
+  opacity: 0.72;
+}
+.onyx-access-cta-gem {
+  position: relative;
+  width: 168px;
+  height: 236px;
+  display: grid;
+  place-items: center;
+  transition: transform 320ms ease, filter 320ms ease;
+}
+.onyx-access-cta:not(:disabled):hover .onyx-access-cta-gem,
+.onyx-access-cta:not(:disabled):focus-visible .onyx-access-cta-gem {
+  transform: scale(1.04);
+  filter: drop-shadow(0 0 22px rgba(140, 120, 255, 0.35));
+}
+.onyx-access-cta:not(:disabled):active .onyx-access-cta-gem {
+  transform: scale(0.97);
+}
+.onyx-access-cta.busy .onyx-access-cta-gem {
+  animation: onyx-access-pulse 1.4s ease-in-out infinite;
+}
+@keyframes onyx-access-pulse {
+  0%, 100% { filter: drop-shadow(0 0 10px rgba(120, 108, 200, 0.25)); }
+  50% { filter: drop-shadow(0 0 28px rgba(160, 140, 255, 0.55)); }
+}
+/* Crystal is normally a full-bleed home stage — nest it as the CTA gem. */
+.onyx-access-cta-gem .onyx-crystal-stage {
+  position: relative;
+  inset: auto;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  pointer-events: none;
+}
+.onyx-access-cta-gem .onyx-crystal {
+  width: 148px;
+  height: 208px;
+}
+.onyx-access-cta-label {
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-bright);
+}
+.onyx-access-cta-sub {
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--onyx-ink-quiet);
+}
+
 /* ── Splash ──────────────────────────────────────────────────────────────── */
 .onyx-film {
   position: absolute; inset: 0; z-index: 1; overflow: hidden;
