@@ -1,6 +1,6 @@
 /**
  * Constellation stick figures — RA (hours) / Dec (degrees) at J2000.
- * Warm gold palette for inviting night-sky wayfinding.
+ * Quiet violet-white scaffold — onyx restraint, not multi-color loud.
  */
 
 export type ConstellationFigure = {
@@ -12,6 +12,10 @@ export type ConstellationFigure = {
   color: string;
   glow: string;
 };
+
+/** Shared quiet violet — present when looked at, near-invisible otherwise. */
+const QUIET_LINE = "rgba(200, 190, 255, 0.28)";
+const QUIET_GLOW = "rgba(169, 156, 255, 0.08)";
 
 export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
   {
@@ -26,8 +30,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[5.92, 7.41], [5.24, -8.20]],   // Betelgeuse — Rigel (body)
     ],
     label: { ra: 5.55, dec: 0.5 },
-    color: "rgba(201, 162, 39, 0.55)",
-    glow: "rgba(251, 191, 36, 0.25)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "ursa-major",
@@ -43,8 +47,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[12.90, 55.96], [11.03, 56.38]], // Megrez — Merak
     ],
     label: { ra: 12.5, dec: 55 },
-    color: "rgba(147, 197, 253, 0.5)",
-    glow: "rgba(96, 165, 250, 0.2)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "cassiopeia",
@@ -56,8 +60,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[1.43, 60.24], [1.91, 63.67]],
     ],
     label: { ra: 0.95, dec: 61 },
-    color: "rgba(216, 180, 254, 0.52)",
-    glow: "rgba(167, 139, 250, 0.22)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "scorpius",
@@ -70,8 +74,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[16.01, -22.62], [15.74, -29.30]],
     ],
     label: { ra: 16.5, dec: -30 },
-    color: "rgba(248, 113, 113, 0.48)",
-    glow: "rgba(239, 68, 68, 0.18)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "leo",
@@ -83,8 +87,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[10.14, 11.97], [9.88, 23.77]],   // Regulus — Denebola tail
     ],
     label: { ra: 10.5, dec: 16 },
-    color: "rgba(251, 191, 36, 0.48)",
-    glow: "rgba(245, 158, 11, 0.2)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "cygnus",
@@ -96,8 +100,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[20.37, 40.26], [19.51, 40.26]],  // Sadr — wing
     ],
     label: { ra: 20.4, dec: 40 },
-    color: "rgba(186, 230, 253, 0.5)",
-    glow: "rgba(125, 211, 252, 0.22)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "taurus",
@@ -108,8 +112,8 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[3.79, 24.11], [5.44, 28.61]],
     ],
     label: { ra: 4.5, dec: 20 },
-    color: "rgba(253, 186, 116, 0.5)",
-    glow: "rgba(251, 146, 60, 0.2)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
   {
     id: "crux",
@@ -120,7 +124,7 @@ export const CONSTELLATION_FIGURES: ConstellationFigure[] = [
       [[12.44, -63.10], [12.52, -57.11]],
     ],
     label: { ra: 12.6, dec: -60 },
-    color: "rgba(201, 162, 39, 0.55)",
-    glow: "rgba(251, 191, 36, 0.22)",
+    color: QUIET_LINE,
+    glow: QUIET_GLOW,
   },
 ];

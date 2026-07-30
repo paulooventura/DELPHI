@@ -54,9 +54,10 @@ export const OBS = {
     targetLock: "#a99cff",
     targetGlow: "rgba(169, 156, 255, 0.4)",
     crosshair: "rgba(140, 124, 255, 0.75)",
-    horizon: "rgba(140, 124, 255, 0.22)",
-    ecliptic: "rgba(140, 124, 255, 0.35)",
-    meridian: "rgba(140, 124, 255, 0.16)",
+    /** Faint dashed celestial references — intentional, not UI seams. */
+    horizon: "rgba(200, 190, 255, 0.11)",
+    ecliptic: "rgba(200, 190, 255, 0.13)",
+    meridian: "rgba(200, 190, 255, 0.07)",
     starAbove: "#eeecfb",
     starBelow: "rgba(108, 92, 255, 0.45)",
     subterraneanTop: "#0c0c11",

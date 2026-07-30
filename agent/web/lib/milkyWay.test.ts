@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { galacticToEquatorial, sampleMilkyWayBand } from "./milkyWay";
+import { galacticToEquatorial, sampleMilkyWayBand, sampleMilkyWayCloud } from "./milkyWay";
 
 describe("milkyWay band", () => {
   it("places the galactic center near Sagittarius (RA ~17.8h, Dec ~−29°)", () => {
@@ -16,5 +16,11 @@ describe("milkyWay band", () => {
     expect(band.center.length).toBeGreaterThan(30);
     expect(band.north.length).toBe(band.center.length);
     expect(band.south.length).toBe(band.center.length);
+  });
+
+  it("samples an irregular cloud without parallel banding edges", () => {
+    const cloud = sampleMilkyWayCloud(10);
+    expect(cloud.length).toBeGreaterThan(100);
+    expect(cloud.every(p => p.size > 10 && p.opacity > 0 && p.opacity < 0.2)).toBe(true);
   });
 });

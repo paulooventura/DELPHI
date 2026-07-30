@@ -32,44 +32,51 @@ export function drawStarGlyph(
   const bloom = glow ? 1.35 + Math.sin(twinkle) * 0.12 : 1;
   const coreR = r * bloom;
 
-  if (glow || r > 1.8) {
-    const halo = ctx.createRadialGradient(x, y, 0, x, y, coreR * 3.2);
-    halo.addColorStop(0, "rgba(220, 235, 255, 0.35)");
-    halo.addColorStop(0.35, "rgba(200, 220, 255, 0.12)");
+  if (glow || r > 2.2) {
+    const haloA = glow ? 0.28 : 0.1;
+    const halo = ctx.createRadialGradient(x, y, 0, x, y, coreR * (glow ? 3.2 : 2.2));
+    halo.addColorStop(0, `rgba(220, 235, 255, ${haloA})`);
+    halo.addColorStop(0.35, `rgba(200, 220, 255, ${haloA * 0.35})`);
     halo.addColorStop(1, "transparent");
     ctx.fillStyle = halo;
     ctx.beginPath();
-    ctx.arc(x, y, coreR * 3.2, 0, Math.PI * 2);
+    ctx.arc(x, y, coreR * (glow ? 3.2 : 2.2), 0, Math.PI * 2);
     ctx.fill();
   }
 
   ctx.fillStyle = color;
   if (glow) {
     ctx.shadowColor = color;
-    ctx.shadowBlur = coreR * 3.8;
+    ctx.shadowBlur = coreR * 3.2;
   }
 
-  const spikes = 4;
-  ctx.beginPath();
-  for (let i = 0; i < spikes * 2; i++) {
-    const a = (i * Math.PI) / spikes - Math.PI / 2;
-    const rad = i % 2 === 0 ? coreR : coreR * 0.42;
-    const px = x + Math.cos(a) * rad;
-    const py = y + Math.sin(a) * rad;
-    if (i === 0) ctx.moveTo(px, py);
-    else ctx.lineTo(px, py);
-  }
-  ctx.closePath();
-  ctx.fill();
-
-  if (glow) {
-    ctx.globalAlpha = 0.45;
+  if (r < 1.1 && !glow) {
     ctx.beginPath();
-    ctx.moveTo(x - coreR * 2.2, y);
-    ctx.lineTo(x + coreR * 2.2, y);
-    ctx.moveTo(x, y - coreR * 2.2);
-    ctx.lineTo(x, y + coreR * 2.2);
-    ctx.lineWidth = Math.max(0.4, coreR * 0.22);
+    ctx.arc(x, y, Math.max(0.35, coreR * 0.85), 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    const spikes = 4;
+    ctx.beginPath();
+    for (let i = 0; i < spikes * 2; i++) {
+      const a = (i * Math.PI) / spikes - Math.PI / 2;
+      const rad = i % 2 === 0 ? coreR : coreR * 0.42;
+      const px = x + Math.cos(a) * rad;
+      const py = y + Math.sin(a) * rad;
+      if (i === 0) ctx.moveTo(px, py);
+      else ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  if (glow && r > 2.4) {
+    ctx.globalAlpha = 0.35;
+    ctx.beginPath();
+    ctx.moveTo(x - coreR * 2.0, y);
+    ctx.lineTo(x + coreR * 2.0, y);
+    ctx.moveTo(x, y - coreR * 2.0);
+    ctx.lineTo(x, y + coreR * 2.0);
+    ctx.lineWidth = Math.max(0.35, coreR * 0.18);
     ctx.strokeStyle = color;
     ctx.stroke();
   }
@@ -465,13 +472,13 @@ export function drawConstellationLines(
 ) {
   if (segments.length === 0) return;
   ctx.save();
-  const breathe = 0.88 + Math.sin(pulse * 0.7) * 0.06;
+  const breathe = 0.82 + Math.sin(pulse * 0.55) * 0.04;
   ctx.globalAlpha = breathe;
   ctx.strokeStyle = color;
-  ctx.lineWidth = 1.15;
+  ctx.lineWidth = 0.55;
   ctx.lineCap = "round";
   ctx.shadowColor = glow;
-  ctx.shadowBlur = 6;
+  ctx.shadowBlur = 2;
   for (const [[x0, y0], [x1, y1]] of segments) {
     if (x0 < -5000 || x1 < -5000) continue;
     ctx.beginPath();
@@ -491,11 +498,11 @@ export function drawConstellationLabel(
   color: string,
 ) {
   ctx.save();
-  ctx.font = `600 9px ${OBS.typography.micro}`;
+  ctx.font = `500 8px ${OBS.typography.micro}`;
   ctx.textAlign = "center";
   ctx.fillStyle = color;
-  ctx.shadowColor = "rgba(201, 162, 39, 0.35)";
-  ctx.shadowBlur = 4;
+  ctx.shadowColor = "rgba(169, 156, 255, 0.18)";
+  ctx.shadowBlur = 3;
   ctx.fillText(name, x, y);
   ctx.restore();
 }
@@ -510,21 +517,22 @@ export function drawDeepSkyGlyph(
   pulse: number,
 ) {
   ctx.save();
-  const breathe = 0.9 + Math.sin(pulse * 0.5) * 0.08;
-  const halo = ctx.createRadialGradient(x, y, 0, x, y, size * 3.2);
-  halo.addColorStop(0, `${color}44`);
-  halo.addColorStop(0.5, `${color}18`);
+  const breathe = 0.94 + Math.sin(pulse * 0.4) * 0.04;
+  // Faint colored smudge — no headline glow.
+  const halo = ctx.createRadialGradient(x, y, 0, x, y, size * 2.6);
+  halo.addColorStop(0, `${color}22`);
+  halo.addColorStop(0.45, `${color}0c`);
   halo.addColorStop(1, "transparent");
   ctx.fillStyle = halo;
   ctx.beginPath();
-  ctx.arc(x, y, size * 3.2 * breathe, 0, Math.PI * 2);
+  ctx.arc(x, y, size * 2.6 * breathe, 0, Math.PI * 2);
   ctx.fill();
 
-  ctx.strokeStyle = color;
-  ctx.fillStyle = `${color}88`;
-  ctx.lineWidth = 0.7;
-  ctx.shadowColor = color;
-  ctx.shadowBlur = 8;
+  ctx.strokeStyle = `${color}55`;
+  ctx.fillStyle = `${color}33`;
+  ctx.lineWidth = 0.45;
+  ctx.shadowColor = `${color}40`;
+  ctx.shadowBlur = 3;
 
   if (kind === "galaxy") {
     ctx.save();
@@ -532,12 +540,8 @@ export function drawDeepSkyGlyph(
     ctx.rotate(0.4 + Math.sin(pulse * 0.3) * 0.05);
     ctx.scale(1, 0.42);
     ctx.beginPath();
-    ctx.ellipse(0, 0, size * 1.6, size * 0.9, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 0, size * 1.35, size * 0.75, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.ellipse(0, 0, size * 0.55, size * 0.3, 0, 0, Math.PI * 2);
-    ctx.strokeStyle = "rgba(255,255,255,0.35)";
     ctx.stroke();
     ctx.restore();
   } else if (kind === "nebula") {
@@ -545,29 +549,31 @@ export function drawDeepSkyGlyph(
       const a = pulse * 0.2 + i * 2.1;
       ctx.beginPath();
       ctx.ellipse(
-        x + Math.cos(a) * size * 0.3,
-        y + Math.sin(a) * size * 0.2,
-        size * (1.1 + i * 0.15),
-        size * (0.65 + i * 0.1),
+        x + Math.cos(a) * size * 0.25,
+        y + Math.sin(a) * size * 0.18,
+        size * (0.95 + i * 0.12),
+        size * (0.55 + i * 0.08),
         a * 0.5,
         0,
         Math.PI * 2,
       );
-      ctx.globalAlpha = 0.35 - i * 0.08;
+      ctx.globalAlpha = 0.18 - i * 0.04;
       ctx.fill();
     }
   } else {
     for (let i = 0; i < 5; i++) {
       const a = (i / 5) * Math.PI * 2 + pulse * 0.15;
-      const sx = x + Math.cos(a) * size * 0.9;
-      const sy = y + Math.sin(a) * size * 0.65;
+      const sx = x + Math.cos(a) * size * 0.75;
+      const sy = y + Math.sin(a) * size * 0.55;
       ctx.beginPath();
-      ctx.arc(sx, sy, size * 0.22, 0, Math.PI * 2);
+      ctx.arc(sx, sy, size * 0.16, 0, Math.PI * 2);
+      ctx.globalAlpha = 0.35;
       ctx.fill();
     }
+    ctx.globalAlpha = 0.4;
     ctx.beginPath();
-    ctx.arc(x, y, size * 0.35, 0, Math.PI * 2);
-    ctx.fillStyle = "#fff8e7";
+    ctx.arc(x, y, size * 0.28, 0, Math.PI * 2);
+    ctx.fillStyle = "rgba(255, 248, 231, 0.35)";
     ctx.fill();
   }
 

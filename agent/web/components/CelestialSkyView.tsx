@@ -45,7 +45,7 @@ import {
 import { CONSTELLATION_FIGURES } from "../lib/constellationLines";
 import { DEEP_SKY_OBJECTS } from "../lib/deepSkyCatalog";
 import { BRIGHT_STARS } from "../lib/brightStars";
-import { milkyWayBand } from "../lib/milkyWay";
+import { milkyWayCloud } from "../lib/milkyWay";
 import { raDecToAltAz } from "../lib/skyPositions";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
 import { smoothViewAzAltAdaptive } from "../lib/sensorSmoothing";
@@ -232,7 +232,7 @@ const MICRO = OBS.typography.micro;
 const TARGET_ENTER = 1.5;
 const TARGET_EXIT = 2.8;
 
-/** Horizon great-circle — single source, no screen overlay. */
+/** Horizon great-circle — faint dashed reference, not a UI seam. */
 function drawHorizonRing(
   ctx: CanvasRenderingContext2D,
   project: (az: number, alt: number) => [number, number],
@@ -240,16 +240,13 @@ function drawHorizonRing(
   h: number,
   stroke: string,
   width: number,
-  glow?: string,
+  _glow?: string,
 ) {
   ctx.save();
-  if (glow) {
-    ctx.shadowColor = glow;
-    ctx.shadowBlur = 6;
-  }
   ctx.strokeStyle = stroke;
-  ctx.lineWidth = width;
+  ctx.lineWidth = Math.min(width, 0.7);
   ctx.lineCap = "round";
+  ctx.setLineDash([4, 7]);
   ctx.beginPath();
   let started = false;
   for (let az = 0; az <= 360; az += 3) {
@@ -267,7 +264,29 @@ function drawHorizonRing(
     }
   }
   ctx.stroke();
+  ctx.setLineDash([]);
   ctx.restore();
+}
+
+/**
+ * Steep magnitude → size + opacity. Mag −1.5 dominant; mag ≥4 barely a whisper.
+ * Widens brightness range so depth reads on an onyx field.
+ */
+function starVisual(mag: number): { r: number; alpha: number; glow: boolean } {
+  const t = Math.max(0, Math.min(1, (4.6 - mag) / 6.1));
+  const steep = Math.pow(t, 2.65);
+  return {
+    r: 0.28 + steep * 4.3,
+    alpha: 0.05 + steep * 0.95,
+    glow: mag < 1.15,
+  };
+}
+
+/** Soft presence for constellation scaffold near aim center (0.1 far → 1 near). */
+function aimPresence(x: number, y: number, cx: number, cy: number, w: number, h: number): number {
+  const dist = Math.hypot(x - cx, y - cy);
+  const reach = Math.min(w, h) * 0.42;
+  return 0.1 + 0.9 * Math.max(0, 1 - dist / reach);
 }
 
 function drawPath(
@@ -393,6 +412,7 @@ function drawBody(
   belowHorizon: boolean,
   locked: boolean,
   texBlend: number,
+  showLabel = false,
 ) {
   const baseR = body.id === "sun" ? 9.5 : body.id === "moon" ? 7.5 : 5.5;
   const alpha = belowHorizon ? 0.3 : 1;
@@ -447,15 +467,17 @@ function drawBody(
     ctx.globalAlpha = 1;
   }
 
-  const label = body.id === "moon" || locked
-    ? `${body.name} · ${Math.round(body.az)}° · ${Math.round(body.alt)}°`
-    : body.name;
-  ctx.font = locked ? `600 10px ${MICRO}` : `500 9px ${MICRO}`;
-  ctx.fillStyle = locked
-    ? OBS.celestial.targetLock
-    : `rgba(238, 236, 251, ${belowHorizon ? 0.38 : 0.72})`;
-  ctx.textAlign = "center";
-  ctx.fillText(label, x, y - baseR - (locked ? 14 : 7));
+  if (showLabel) {
+    const label = locked
+      ? `${body.name} · ${Math.round(body.az)}° · ${Math.round(body.alt)}°`
+      : body.name;
+    ctx.font = locked ? `600 10px ${MICRO}` : `500 8px ${MICRO}`;
+    ctx.fillStyle = locked
+      ? OBS.celestial.targetLock
+      : `rgba(238, 236, 251, ${belowHorizon ? 0.32 : 0.58})`;
+    ctx.textAlign = "center";
+    ctx.fillText(label, x, y - baseR - (locked ? 14 : 7));
+  }
   ctx.restore();
 }
 
@@ -467,10 +489,10 @@ function drawMinorBody(
   belowHorizon: boolean,
   locked: boolean,
   scale: number,
+  showLabel = false,
 ) {
   const baseR = body.kind === "comet" ? 4.8 : 4;
   const alpha = belowHorizon ? 0.32 : 1;
-  const showLabel = true;
 
   ctx.save();
   if (locked) {
@@ -542,16 +564,14 @@ function drawAircraft(
 
   ctx.restore();
 
+  if (!locked) return;
   const altStr = track.baroAltFt >= 1000
     ? `${Math.round(track.baroAltFt / 1000)},${String(Math.round(track.baroAltFt % 1000)).padStart(3, "0").slice(0, 1)}00ft`
     : `${Math.round(track.baroAltFt)}ft`;
-  const label = locked
-    ? `${track.callsign} · ${Math.round(track.az)}° az · ${Math.round(track.alt)}° alt · ${track.gsKnots}kt`
-    : track.depIata && track.arrIata
-      ? `${track.callsign} · ${track.depIata}→${track.arrIata}`
-      : `${track.callsign} | ${altStr.replace(",", ",")}`;
+  const label =
+    `${track.callsign} · ${Math.round(track.az)}° az · ${Math.round(track.alt)}° alt · ${track.gsKnots}kt`;
   ctx.font = `500 7px ${MICRO}`;
-  ctx.fillStyle = locked ? OBS.celestial.targetLock : "rgba(211, 208, 226, 0.72)";
+  ctx.fillStyle = OBS.celestial.targetLock;
   ctx.textAlign = "center";
   ctx.fillText(label, x, y - size - 5);
 }
@@ -590,14 +610,13 @@ function drawSatellite(
   }
   ctx.restore();
 
+  if (!locked) return;
   const shortName = track.name.includes("STARLINK")
     ? track.name.replace("STARLINK-", "SL-")
     : track.name.includes("ISS") ? "ISS TRACK" : track.name.slice(0, 12);
-  const label = locked
-    ? `${shortName} · ${Math.round(track.az)}° az · ${Math.round(track.alt)}° alt`
-    : shortName;
+  const label = `${shortName} · ${Math.round(track.az)}° az · ${Math.round(track.alt)}° alt`;
   ctx.font = `500 7px ${MICRO}`;
-  ctx.fillStyle = locked ? OBS.celestial.targetLock : "rgba(211, 208, 226, 0.68)";
+  ctx.fillStyle = OBS.celestial.targetLock;
   ctx.textAlign = "center";
   ctx.fillText(label, x, y - size - 4);
 }
@@ -607,10 +626,12 @@ function drawSatelliteCluster(
   cluster: SatelliteCluster,
   x: number,
   y: number,
+  showLabel = false,
 ) {
   drawSatelliteClusterGlyph(ctx, x, y, cluster.count);
-  ctx.font = `600 7px ${MICRO}`;
-  ctx.fillStyle = "rgba(169, 156, 255, 0.8)";
+  if (!showLabel) return;
+  ctx.font = `500 7px ${MICRO}`;
+  ctx.fillStyle = "rgba(169, 156, 255, 0.55)";
   ctx.textAlign = "center";
   ctx.fillText(`${cluster.count} SATS`, x, y - 10);
 }
@@ -662,7 +683,7 @@ function projectRaDecToScreen(
   return { x, y, az, alt };
 }
 
-/** Soft galactic-plane ribbon — center glow + north/south edge haze. */
+/** Diffuse galactic-plane cloud — feathered blobs, no hard edges or banding. */
 function drawMilkyWayBand(
   ctx: CanvasRenderingContext2D,
   date: Date,
@@ -674,44 +695,25 @@ function drawMilkyWayBand(
   h: number,
   alpha: number,
 ) {
-  if (alpha < 0.04) return;
-  const band = milkyWayBand();
-  const strokePoly = (
-    pts: Array<{ ra: number; dec: number }>,
-    width: number,
-    color: string,
-    a: number,
-  ) => {
-    ctx.save();
-    ctx.globalAlpha = a;
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    ctx.shadowColor = "rgba(180, 170, 255, 0.35)";
-    ctx.shadowBlur = width * 1.4;
+  if (alpha < 0.03) return;
+  const cloud = milkyWayCloud();
+  ctx.save();
+  for (const p of cloud) {
+    const scr = projectRaDecToScreen(p.ra, p.dec, date, lat, lon, altM, project.toXY);
+    if (!scr || !project.inView(scr.x, scr.y, w, h, p.size + 40)) continue;
+    const a = alpha * p.opacity;
+    if (a < 0.006) continue;
+    const g = ctx.createRadialGradient(scr.x, scr.y, 0, scr.x, scr.y, p.size);
+    g.addColorStop(0, `rgba(210, 200, 255, ${a})`);
+    g.addColorStop(0.32, `rgba(165, 155, 235, ${a * 0.42})`);
+    g.addColorStop(0.65, `rgba(120, 110, 200, ${a * 0.12})`);
+    g.addColorStop(1, "transparent");
+    ctx.fillStyle = g;
     ctx.beginPath();
-    let started = false;
-    for (const p of pts) {
-      const scr = projectRaDecToScreen(p.ra, p.dec, date, lat, lon, altM, project.toXY);
-      if (!scr || !project.inView(scr.x, scr.y, w, h, 80)) {
-        started = false;
-        continue;
-      }
-      if (!started) {
-        ctx.moveTo(scr.x, scr.y);
-        started = true;
-      } else {
-        ctx.lineTo(scr.x, scr.y);
-      }
-    }
-    ctx.stroke();
-    ctx.restore();
-  };
-  strokePoly(band.north, 18, "rgba(140, 130, 220, 0.14)", alpha * 0.55);
-  strokePoly(band.south, 18, "rgba(140, 130, 220, 0.14)", alpha * 0.55);
-  strokePoly(band.center, 28, "rgba(200, 190, 255, 0.22)", alpha * 0.85);
-  strokePoly(band.center, 10, "rgba(230, 225, 255, 0.28)", alpha);
+    ctx.arc(scr.x, scr.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
 }
 
 function drawWarmCrosshair(
@@ -1070,8 +1072,7 @@ export function CelestialSkyView({
         w,
         h,
         OBS.celestial.horizon,
-        OBS.vector.strokeMax,
-        skyWarmth > 0.5 ? OBS.night.glow : OBS.day.glow,
+        OBS.vector.strokeMin,
       );
 
       // Milky Way + constellations + bright field at every zoom (night-weighted).
@@ -1086,7 +1087,7 @@ export function CelestialSkyView({
           project,
           w,
           h,
-          starAlpha * nightWayfinding * 0.85,
+          starAlpha * nightWayfinding * 0.55,
         );
       }
 
@@ -1098,9 +1099,10 @@ export function CelestialSkyView({
           w,
           h,
           OBS.celestial.ecliptic,
-          OBS.vector.strokeMin,
-          [5, 6],
-          OBS.night.glow,
+          0.45,
+          [5, 8],
+          undefined,
+          0.85,
         );
 
         for (const arc of sampleMeridianArcs()) {
@@ -1111,8 +1113,10 @@ export function CelestialSkyView({
             w,
             h,
             OBS.celestial.meridian,
-            OBS.vector.strokeMin,
-            [3, 7],
+            0.4,
+            [2, 8],
+            undefined,
+            0.7,
           );
         }
       }
@@ -1215,20 +1219,59 @@ export function CelestialSkyView({
         }
       }
 
+      const locked = arPoseReady
+        ? findTargetLock(viewHeading, viewPitch, trackables, lockRef.current)
+        : null;
+      lockRef.current = locked?.id ?? null;
+      lockGlowRef.current += ((locked ? 1 : 0) - lockGlowRef.current) * 0.06;
+
+      // Labels only on attention: aim lock + at most 1–2 brightest celestial in view.
+      const labelCands: Array<{ id: string; brightness: number }> = [];
+      for (const star of BRIGHT_STARS) {
+        const pt = projectRaDecToScreen(
+          star.ra, star.dec, observationTime, lat, lon, observerAltM, project.toXY,
+        );
+        if (!pt || pt.alt < 0 || !project.inView(pt.x, pt.y, w, h)) continue;
+        labelCands.push({ id: `star:${star.id}`, brightness: -star.mag });
+      }
+      for (const dso of DEEP_SKY_OBJECTS) {
+        const pt = projectRaDecToScreen(
+          dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY,
+        );
+        if (!pt || pt.alt < 0 || !project.inView(pt.x, pt.y, w, h)) continue;
+        // Slightly demote DSOs so they don't shout over 1st-mag stars.
+        labelCands.push({ id: dso.id, brightness: -dso.mag - 2.2 });
+      }
+      for (const body of liveBodies) {
+        const [bx, by] = project.toXY(body.az, body.alt);
+        if (body.alt < 0 || !project.inView(bx, by, w, h, 24)) continue;
+        labelCands.push({ id: body.id, brightness: -body.magnitude });
+      }
+      labelCands.sort((a, b) => b.brightness - a.brightness);
+      const labelIds = new Set<string>();
+      if (locked) labelIds.add(locked.id);
+      let brightSlots = 0;
+      for (const c of labelCands) {
+        if (brightSlots >= 2) break;
+        if (labelIds.has(c.id)) continue;
+        labelIds.add(c.id);
+        brightSlots++;
+      }
+
       for (let si = 0; si < stars.length; si++) {
         const star = stars[si]!;
         const [x, y] = project.toXY(star.az, star.alt);
         if (!project.inView(x, y, w, h)) continue;
         const below = star.alt < 0;
-        const r = Math.max(0.65, (3.6 - star.mag) * 0.95);
-        ctx.globalAlpha = starAlpha * (below ? 0.35 : Math.min(1, 0.5 + (3.4 - star.mag) / 5));
+        const vis = starVisual(star.mag);
+        ctx.globalAlpha = starAlpha * (below ? 0.22 : 1) * vis.alpha;
         drawStarGlyph(
           ctx,
           x,
           y,
-          r,
+          vis.r,
           below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
-          !below && star.mag < 2.4,
+          !below && vis.glow,
           pulseRef.current + si * 0.37,
         );
         ctx.globalAlpha = 1;
@@ -1243,33 +1286,36 @@ export function CelestialSkyView({
           );
           if (!pt || !project.inView(pt.x, pt.y, w, h)) continue;
           const below = pt.alt < 0;
-          const r = Math.max(1.1, (3.8 - star.mag) * 1.15);
+          const vis = starVisual(star.mag);
           ctx.globalAlpha =
-            starAlpha * nightWayfinding * (below ? 0.3 : Math.min(1, 0.55 + (2.8 - star.mag) / 4));
+            starAlpha * nightWayfinding * (below ? 0.2 : 1) * vis.alpha;
           drawStarGlyph(
             ctx,
             pt.x,
             pt.y,
-            r,
+            vis.r,
             below ? OBS.celestial.starBelow : OBS.celestial.starAbove,
-            !below && star.mag < 1.6,
+            !below && vis.glow,
             pulseRef.current + bi * 0.29,
           );
-          if (!below && star.mag <= 1.15 && scale >= 0.9) {
+          if (!below && labelIds.has(`star:${star.id}`)) {
             ctx.font = `500 8px ${MICRO}`;
             ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(238, 236, 251, 0.7)";
-            ctx.fillText(star.name, pt.x, pt.y - r - 6);
+            ctx.fillStyle = "rgba(238, 236, 251, 0.55)";
+            ctx.fillText(star.name, pt.x, pt.y - vis.r - 6);
           }
           ctx.globalAlpha = 1;
         }
       }
 
-      // Wayfinding layer — visible at wide zoom (was telephoto-only before).
+      // Wayfinding layer — quiet scaffold; labels only on attention.
       if (starAlpha > 0.08) {
+        const cxAim = w / 2;
+        const cyAim = h / 2;
         for (const fig of CONSTELLATION_FIGURES) {
           const segments: Array<[[number, number], [number, number]]> = [];
           let visibleLines = 0;
+          let labelPt: { x: number; y: number; alt: number } | null = null;
           for (const [a, b] of fig.lines) {
             const p0 = projectRaDecToScreen(a[0], a[1], observationTime, lat, lon, observerAltM, project.toXY);
             const p1 = projectRaDecToScreen(b[0], b[1], observationTime, lat, lon, observerAltM, project.toXY);
@@ -1278,18 +1324,22 @@ export function CelestialSkyView({
             visibleLines++;
           }
           if (visibleLines < 1) continue;
-          const lineAlpha = nightWayfinding * (detail === "wide" ? 1 : 0.85);
+          const lp = projectRaDecToScreen(
+            fig.label.ra, fig.label.dec, observationTime, lat, lon, observerAltM, project.toXY,
+          );
+          if (lp) labelPt = lp;
+          const presence = labelPt
+            ? aimPresence(labelPt.x, labelPt.y, cxAim, cyAim, w, h)
+            : 0.12;
+          const lineAlpha = nightWayfinding * presence * (detail === "wide" ? 0.85 : 0.65);
           ctx.save();
           ctx.globalAlpha = lineAlpha;
           drawConstellationLines(ctx, segments, fig.color, fig.glow, pulseRef.current);
           ctx.restore();
-          const labelPt = projectRaDecToScreen(
-            fig.label.ra, fig.label.dec, observationTime, lat, lon, observerAltM, project.toXY,
-          );
-          if (labelPt && labelPt.alt > -2) {
+          if (labelPt && labelPt.alt > -2 && presence > 0.55) {
             ctx.save();
-            ctx.globalAlpha = lineAlpha;
-            drawConstellationLabel(ctx, labelPt.x, labelPt.y - 8, fig.name, fig.color);
+            ctx.globalAlpha = lineAlpha * 0.9;
+            drawConstellationLabel(ctx, labelPt.x, labelPt.y - 8, fig.name, "rgba(200, 190, 255, 0.45)");
             ctx.restore();
           }
         }
@@ -1297,14 +1347,17 @@ export function CelestialSkyView({
         for (const dso of DEEP_SKY_OBJECTS) {
           const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
           if (!pt || !project.inView(pt.x, pt.y, w, h, 20)) continue;
-          const size = Math.max(5, 9 - dso.mag * 0.35);
+          const dsoT = Math.max(0, Math.min(1, (9.5 - dso.mag) / 9.5));
+          const dsoSteep = Math.pow(dsoT, 2.4);
+          const size = Math.max(2.2, 2.4 + dsoSteep * 5.5);
           ctx.save();
-          ctx.globalAlpha = nightWayfinding * (sky.isDay ? 0.55 : 1);
+          ctx.globalAlpha =
+            nightWayfinding * (sky.isDay ? 0.35 : 1) * (0.1 + dsoSteep * 0.42);
           drawDeepSkyGlyph(ctx, dso.kind, pt.x, pt.y, size, dso.color, pulseRef.current);
-          if (scale >= 0.85 || dso.mag <= 5.5) {
+          if (labelIds.has(dso.id)) {
             ctx.font = `500 8px ${MICRO}`;
             ctx.textAlign = "center";
-            ctx.fillStyle = "rgba(226, 232, 240, 0.72)";
+            ctx.fillStyle = "rgba(226, 232, 240, 0.5)";
             ctx.fillText(dso.name, pt.x, pt.y + size + 10);
           }
           ctx.restore();
@@ -1314,12 +1367,6 @@ export function CelestialSkyView({
           }
         }
       }
-
-      const locked = arPoseReady
-        ? findTargetLock(viewHeading, viewPitch, trackables, lockRef.current)
-        : null;
-      lockRef.current = locked?.id ?? null;
-      lockGlowRef.current += ((locked ? 1 : 0) - lockGlowRef.current) * 0.06;
 
       if (hapticsEnabled) {
         hapticsRef.current.update(viewHeading, viewPitch, locked?.id ?? null, {
@@ -1357,7 +1404,7 @@ export function CelestialSkyView({
           const [x, y] = project.toXY(item.az, item.alt);
           if (!project.inView(x, y, w, h, 16)) continue;
           if ("count" in item) {
-            drawSatelliteCluster(ctx, item, x, y);
+            drawSatelliteCluster(ctx, item, x, y, locked?.id === item.id);
             hits.push({
               id: item.id,
               x,
@@ -1394,7 +1441,16 @@ export function CelestialSkyView({
       for (const body of liveBodies) {
         const [x, y] = project.toXY(body.az, body.alt);
         if (!project.inView(x, y, w, h, 24)) continue;
-        drawBody(ctx, body, x, y, body.alt < 0, locked?.id === body.id, texBlend);
+        drawBody(
+          ctx,
+          body,
+          x,
+          y,
+          body.alt < 0,
+          locked?.id === body.id,
+          texBlend,
+          locked?.id === body.id || labelIds.has(body.id),
+        );
         hits.push({
           id: body.id,
           x,
@@ -1407,7 +1463,16 @@ export function CelestialSkyView({
       for (const mb of liveMinorBodies) {
         const [x, y] = project.toXY(mb.az, mb.alt);
         if (!project.inView(x, y, w, h, 16)) continue;
-        drawMinorBody(ctx, mb, x, y, mb.alt < 0, locked?.id === mb.id, scale);
+        drawMinorBody(
+          ctx,
+          mb,
+          x,
+          y,
+          mb.alt < 0,
+          locked?.id === mb.id,
+          scale,
+          locked?.id === mb.id,
+        );
         hits.push({
           id: mb.id,
           x,
