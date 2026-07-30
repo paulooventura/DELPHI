@@ -38,12 +38,8 @@ export type DistillOptions = {
   castLean?: string[];
 };
 
-/** Boost when a chorus quality overlaps an embraced cast quality. */
-const CAST_LEAN_BOOST = 2.2;
-/** Admit held cast qualities that the sky chorus never said — must compete. */
-const CAST_LEAN_ADMIT = 2.6;
-/** Soft-admit natal color register words so birth always retunes the lead. */
-const COLOR_LEAN_ADMIT = 1.9;
+/** Soft natal bias on axis ranking for the offline template. */
+const COLOR_LEAN_BIAS = 0.35;
 
 export type AxisReading = {
   axis: string;
@@ -140,15 +136,11 @@ export function compose(active: QualiaEntry[]): Composition {
 }
 
 /* ----------------------------------------------------------------------------
-   DISTILLATION — two paths, as discussed.
+   DISTILLATION — two paths (Addendum 4 / ORCHESTRATION.md).
 
-   TEMPLATE path (below): deterministic, always tasteful, finite. Builds a phrase
-   from the strongest resonance + strongest tension. Ships as the fallback and as
-   the offline reading.
-
-   MODEL path (buildPrompt): feed the composition to Claude for an infinite,
-   responsive sentence. The system prompt is tight so tone never drifts; the
-   template is the fallback if the call fails or the model returns a clunker.
+   TEMPLATE path (distillTemplate): deterministic noun-based offline fallback.
+   MODEL path (orchestratedPrompt): root / tension / inflection / register —
+   the primary home-phrase call. buildPrompt remains for lean-hint tooling.
    ---------------------------------------------------------------------------- */
 
 const POLE_WORDS: Record<string, [string, string]> = {
@@ -171,133 +163,106 @@ function poleWord(axis: string, value: number): string {
 
 /**
  * Deterministic distilled phrase — the offline / fallback reading.
- * Distills QUALITY WORDS from the mainframe chorus (how often they co-occur),
- * with axis poles as backup texture. Names NO system, sign, planet, animal,
- * or card — only the emergent weather.
+ * Names the moment as a NOUN with 1–2 adjectives (grammatical article agreement).
+ * Names NO system, sign, planet, animal, or card — only emergent weather.
  *
- * Optional `colorLean` / `castLean` retune the lead. When personal lean is
- * present we do NOT gate on "shared by 2+ voices" alone — that swallowed
- * birth and embraced-cast retunes.
+ * Optional `colorLean` / `castLean` retune which axes lead / add an undercurrent.
  */
 export function distillTemplate(c: Composition, opts?: DistillOptions): string {
   const castLeanList = (opts?.castLean ?? [])
     .map(q => q.trim().toLowerCase())
     .filter(Boolean);
-  const castLean = new Set(castLeanList);
-  const colorWords = opts?.colorLean
-    ? new Set(COLOR_QUALITY_LEAN[opts.colorLean].map(w => w.toLowerCase()))
-    : new Set<string>();
-  const hasPersonalLean = Boolean(opts?.colorLean || castLean.size);
 
-  const rawCounts = new Map<string, number>();
-  for (const entry of c.contributors) {
-    for (const q of entry.qualities) {
-      const w = q.trim().toLowerCase();
-      if (!w) continue;
-      rawCounts.set(w, (rawCounts.get(w) ?? 0) + 1);
-    }
-  }
-
-  const qualityWeights = new Map<string, number>();
-  for (const entry of c.contributors) {
-    for (const q of entry.qualities) {
-      const w = q.trim().toLowerCase();
-      if (!w) continue;
-      let score = (qualityWeights.get(w) ?? 0) + 1;
-      if (opts?.colorLean && colorLeanMatches(w, opts.colorLean)) {
-        score += COLOR_LEAN_BOOST;
-      }
-      if (castLean.has(w)) score += CAST_LEAN_BOOST;
-      qualityWeights.set(w, score);
-    }
-  }
-
-  // Natal color register — admit so birth always shifts the lead weather.
+  // Soft natal bias: nudge axes whose pole words sit in the color register.
+  const colorBoost = new Map<string, number>();
   if (opts?.colorLean) {
-    for (const w of COLOR_QUALITY_LEAN[opts.colorLean].slice(0, 6)) {
-      const prev = qualityWeights.get(w) ?? 0;
-      qualityWeights.set(w, prev > 0 ? prev + COLOR_LEAN_BOOST * 0.5 : COLOR_LEAN_ADMIT);
+    const words = new Set(COLOR_QUALITY_LEAN[opts.colorLean].map(w => w.toLowerCase()));
+    for (const axis of Object.keys(POLE_WORDS)) {
+      const [neg, pos] = POLE_WORDS[axis]!;
+      if (words.has(pos)) colorBoost.set(axis, COLOR_LEAN_BIAS);
+      else if (words.has(neg)) colorBoost.set(axis, -COLOR_LEAN_BIAS);
+      else if ([...words].some(w => colorLeanMatches(w, opts.colorLean!))) {
+        // Quality-register overlap without exact pole word — slight positive nudge.
+        if (axis === "warm" || axis === "light" || axis === "active") {
+          colorBoost.set(axis, COLOR_LEAN_BIAS * 0.5);
+        }
+      }
     }
   }
-
-  // Held cast qualities — admit at competitive weight (was 0.9, lost to shared gate).
-  for (const w of castLean) {
-    const prev = qualityWeights.get(w) ?? 0;
-    qualityWeights.set(w, prev > 0 ? prev + CAST_LEAN_BOOST : CAST_LEAN_ADMIT);
-  }
-
-  const byShare = [...qualityWeights.entries()].sort(
-    (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-  );
-  const shared = byShare.filter(([w]) => (rawCounts.get(w) ?? 0) >= 2).map(([w]) => w);
 
   const leaning = c.axes
     .filter(a => Math.abs(a.mean) > 0.25)
-    .map(a => ({ word: poleWord(a.axis, a.mean), weight: a.coherence * Math.abs(a.mean) }))
+    .map(a => {
+      const bias = colorBoost.get(a.axis) ?? 0;
+      const mean = a.mean + bias;
+      return {
+        axis: a.axis,
+        word: poleWord(a.axis, mean),
+        mean,
+        weight: a.coherence * Math.abs(mean) + Math.abs(bias),
+      };
+    })
     .filter(x => x.word)
     .sort((x, y) => y.weight - x.weight);
 
-  const lead: string[] = [];
-  const push = (w: string | undefined) => {
-    if (!w || lead.includes(w)) return;
-    lead.push(w);
+  const NOUN: Record<string, string> = {
+    warm: "warmth", light: "brightness", active: "drive", rising: "ascent",
+    steady: "steadiness", outward: "openness", binding: "structure", gentle: "tenderness",
+  };
+  const NOUN_NEG: Record<string, string> = {
+    warm: "coolness", light: "dimness", active: "stillness", rising: "settling",
+    steady: "restlessness", outward: "inwardness", binding: "dissolution", gentle: "sharpness",
   };
 
-  if (hasPersonalLean) {
-    // One sky note, then personal register — birth/cast must be audible.
-    for (const w of shared) {
-      push(w);
-      if (lead.length >= 1) break;
+  if (leaning.length === 0) {
+    let quiet = "A quiet, in-between moment, poised between currents.";
+    if (castLeanList.length > 0) {
+      const held = castLeanList.slice(0, 2);
+      quiet = quiet.replace(/\.$/, held.length === 2
+        ? `, with ${held[0]} and ${held[1]} held beneath.`
+        : `, with ${held[0]} held beneath.`);
     }
-    for (const w of castLeanList) {
-      push(w);
-      if (lead.length >= 3) break;
-    }
-    for (const w of colorWords) {
-      push(w);
-      if (lead.length >= 3) break;
-    }
-    for (const [w] of byShare) {
-      push(w);
-      if (lead.length >= 3) break;
-    }
+    return quiet;
+  }
+
+  const top = leaning[0]!;
+  const noun = (top.mean >= 0 ? NOUN : NOUN_NEG)[top.axis] ?? "quality";
+  const adjs = leaning.slice(1, 3).map(x => x.word);
+  const withArticle = (w: string) => (/^[aeiou]/i.test(w) ? `an ${w}` : `a ${w}`);
+
+  let phrase: string;
+  if (adjs.length === 2) {
+    phrase = `${cap(withArticle(adjs[0]!))}, ${adjs[1]} ${noun}`;
+  } else if (adjs.length === 1) {
+    phrase = `${cap(withArticle(adjs[0]!))} ${noun}`;
   } else {
-    const fromQualities = (shared.length >= 2 ? shared : byShare.map(([w]) => w)).slice(0, 3);
-    for (const w of fromQualities) push(w);
+    phrase = `${cap(withArticle(top.word))} ${noun}`;
   }
-
-  if (lead.length < 2) {
-    for (const x of leaning) {
-      push(x.word);
-      if (lead.length >= 3) break;
-    }
-  }
-
-  let phrase =
-    lead.length >= 2
-      ? `A ${lead[0]}, ${lead[1]} quality`
-      : lead.length === 1
-        ? `A ${lead[0]} quality`
-        : "A quiet, in-between quality";
-  if (lead[2]) phrase += ` and ${lead[2]}`;
 
   const ten = c.tensions[0];
-  if (ten && ten.strength > 0.4) {
-    const hi = Math.max(...ten.poles.map(p => p.value));
+  if (ten && ten.strength > 0.45) {
     const lo = Math.min(...ten.poles.map(p => p.value));
-    const pull = poleWord(ten.axis, hi);
     const counter = poleWord(ten.axis, lo);
-    phrase += ` — ${pull} with a ${counter} current beneath`;
-  }
-  // Held casts always leave a visible undercurrent — even alongside sky tension.
-  if (castLeanList.length > 0) {
-    const held = castLeanList.slice(0, 2);
-    const glue = phrase.includes(" — ") ? "; " : " — ";
-    if (held.length === 2) phrase += `${glue}with ${held[0]} and ${held[1]} held beneath`;
-    else phrase += `${glue}with ${held[0]} held beneath`;
+    phrase += `, with a ${counter} current beneath`;
   }
 
-  return phrase.replace(/ quality,/, ",").replace(/ quality and/, " and") + ".";
+  if (castLeanList.length > 0) {
+    const held = castLeanList.slice(0, 2);
+    const glue = phrase.includes(", with a ") ? "; " : ", ";
+    if (held.length === 2) phrase += `${glue}with ${held[0]} and ${held[1]} held beneath`;
+    else phrase += `${glue}with ${held[0]} held beneath`;
+  } else if (opts?.colorLean) {
+    const tint = COLOR_QUALITY_LEAN[opts.colorLean]
+      .map(w => w.toLowerCase())
+      .find(w => !phrase.toLowerCase().includes(w));
+    if (tint) phrase += `, tinged with ${tint}`;
+  }
+
+  return `${phrase}.`;
+}
+
+function cap(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
 /**
@@ -519,11 +484,10 @@ export function composeLayers(
   return { layers, active };
 }
 
-/** The phrase for whichever layer is active. Distill with the same chorus-wide
- *  voice used everywhere (name the character, never the systems). */
+/** The phrase for whichever layer is active — orchestrated voice (Addendum 4). */
 export function layerPrompt(reading: LayeredReading): { system: string; user: string } {
   const layer = reading.layers.find((l) => l.id === reading.active)!;
-  return buildPrompt(layer.chord);
+  return orchestratedPrompt(layer.chord);
 }
 
 
@@ -603,4 +567,198 @@ export function provenance(snap: MomentSnapshot): {
     `Computed from ${measured.length} measured position${measured.length === 1 ? "" : "s"}, ` +
     `celebrated through ${celebrated.length} cultural tradition${celebrated.length === 1 ? "" : "s"}.`;
   return { measured, celebrated, line };
+}
+
+
+/* ============================================================================
+   ORCHESTRATION — the definitive moment reading (Addendum 4 / ORCHESTRATION.md).
+   ============================================================================
+   ROOT = depth-weighted whole-field consensus (slow cycles key).
+   TENSION = deepest genuine split (the turn).
+   INFLECTION = fast cycles only (texture).
+   TONE/REGISTER = computed from the same field — voice is a reading, not a setting.
+*/
+
+/** Approximate cycle length in seconds — slow keys the reading; fast inflects. */
+const CYCLE_SECONDS: Record<string, number> = {
+  "vedic-sidereal": 365 * 86400,
+  "western-zodiac": 30 * 86400,
+  "egyptian-decan": 10 * 86400,
+  "chinese-animal": 365 * 86400,
+  wuxing: 365 * 86400,
+  nakshatra: 86400,
+  "tzolkin-daysign": 20 * 86400,
+  "tzolkin-tone": 13 * 86400,
+  "pawukon-wuku": 7 * 86400,
+  "anwa-manzil": 86400,
+  "cherokee-moon": 30 * 86400,
+  "moon-phase": (29.53 * 86400) / 8,
+  element: 365 * 86400,
+  pancawara: 5 * 86400,
+  "planetary-day": 86400,
+  numerology: 86400,
+  "planetary-hour": 3600,
+  "chinese-shi": 7200,
+  muhurta: 2880,
+};
+
+function depthWeight(system: string): number {
+  const secs = CYCLE_SECONDS[system] ?? 86400;
+  return Math.log10(secs + 10);
+}
+
+function isFast(system: string): boolean {
+  return (CYCLE_SECONDS[system] ?? 86400) <= 7200;
+}
+
+export type Tone = {
+  gentleness: number;
+  clarity: number;
+  warmth: number;
+  charge: number;
+  register: "warm-witness" | "plain-reading" | "quiet-riddle" | "trickster-challenge";
+};
+
+export type Orchestration = {
+  root: { axis: string; pole: number; strength: number } | null;
+  tension: { axis: string; strength: number } | null;
+  inflection: { axis: string; pole: number }[];
+  tone: Tone;
+  fieldSize: number;
+};
+
+/**
+ * Derive root, tension, inflection, and tone from the whole-field composition.
+ * Every active system votes; nothing is cherry-picked.
+ */
+export function orchestrate(c: Composition): Orchestration {
+  const rooted = c.axes
+    .map(a => {
+      let wsum = 0;
+      let w = 0;
+      for (const contrib of a.contributors) {
+        const dw = depthWeight(contrib.system);
+        wsum += contrib.value * dw;
+        w += dw;
+      }
+      const weightedMean = w ? wsum / w : 0;
+      return {
+        axis: a.axis,
+        pole: weightedMean,
+        strength: a.coherence * Math.abs(weightedMean),
+      };
+    })
+    .filter(x => Math.abs(x.pole) > 0.2)
+    .sort((x, y) => y.strength - x.strength);
+  const root = rooted[0] ?? null;
+
+  const t = c.tensions[0];
+  const tension = t ? { axis: t.axis, strength: t.strength } : null;
+
+  const fastAxis = new Map<string, number[]>();
+  for (const a of c.axes) {
+    for (const contrib of a.contributors) {
+      if (!isFast(contrib.system)) continue;
+      if (!fastAxis.has(a.axis)) fastAxis.set(a.axis, []);
+      fastAxis.get(a.axis)!.push(contrib.value);
+    }
+  }
+  const inflection = [...fastAxis.entries()]
+    .map(([axis, vals]) => ({
+      axis,
+      pole: vals.reduce((s, v) => s + v, 0) / vals.length,
+    }))
+    .filter(x => Math.abs(x.pole) > 0.3)
+    .sort((x, y) => Math.abs(y.pole) - Math.abs(x.pole))
+    .slice(0, 2);
+
+  const axisMean = (name: string) => c.axes.find(a => a.axis === name)?.mean ?? 0;
+  const gentleness = axisMean("gentle");
+  const clarity = axisMean("light");
+  const warmth = axisMean("warm");
+  const charge = tension ? Math.min(1, tension.strength) : 0;
+
+  let register: Tone["register"];
+  if (charge > 0.6 && clarity < 0) register = "trickster-challenge";
+  else if (clarity < -0.2) register = "quiet-riddle";
+  else if (charge < 0.35 && warmth > 0.2) register = "warm-witness";
+  else register = "plain-reading";
+
+  return {
+    root,
+    tension,
+    inflection,
+    tone: { gentleness, clarity, warmth, charge, register },
+    fieldSize: c.contributors.length,
+  };
+}
+
+/**
+ * Primary model prompt for the home phrase — structure + register from the field.
+ * Optional lean hints (natal / cast) fold as weather, never as system names.
+ */
+export function orchestratedPrompt(
+  c: Composition,
+  opts?: DistillOptions,
+): { system: string; user: string } {
+  const o = orchestrate(c);
+  const toneGuide: Record<Tone["register"], string> = {
+    "warm-witness":
+      "The field is bright and settled. Speak as a warm witness — intimate, affirming, no need to provoke. Simply name what is.",
+    "plain-reading":
+      "The field is mixed. Speak plainly and evenly — a clear reading, a light turn toward the person at the end if it earns it.",
+    "quiet-riddle":
+      "The field is shadowed. Speak more veiled, a touch riddling — leave something unsaid for the person to turn over.",
+    "trickster-challenge":
+      "The field is charged and shadowed. Speak as a trickster who has dealt the user a hand and dares them to play it — provoke, turn to them, make it their move. Earn it; don't just bark.",
+  };
+
+  const system = [
+    `This instant is read by ${o.fieldSize} independent traditions at once — many cultures, many timescales, all passing through one moment. You speak for the whole field, not any one voice.`,
+    "Write ONE sentence naming the single character that emerges from all of them together.",
+    "Structure: the ROOT (where the whole field agrees) is your subject; the TENSION (its deepest split) is the turn — let the contradiction be the point, never resolve it into vague positivity; the INFLECTION (what the fast cycles add) is texture on how it shows up right now.",
+    "Name NO system, sign, planet, animal, card, number, or tradition. Name the quality, never its sources.",
+    `TONE — the voice is itself a reading of this field: ${toneGuide[o.tone.register]}`,
+    "Never use: energy, vibes, universe, manifest, align, journey, cosmic. Write like a poet or an oracle, never a horoscope.",
+    "Never name colors (red, white, blue, yellow) or kin labels — only felt weather.",
+  ].join(" ");
+
+  const rootWord = o.root ? poleWord(o.root.axis, o.root.pole) : "poised";
+  const tenWords = o.tension
+    ? `${poleWord(o.tension.axis, 1)} against ${poleWord(o.tension.axis, -1)}`
+    : "no strong split";
+  const inflWords = o.inflection.length
+    ? o.inflection.map(i => poleWord(i.axis, i.pole)).join(", ")
+    : "steady";
+
+  const leanHint = opts?.colorLean
+    ? [
+        "",
+        "Personal register (natal — MUST color the weather; never name the color itself):",
+        `  Lean the sentence toward: ${COLOR_QUALITY_LEAN[opts.colorLean].slice(0, 8).join(", ")}.`,
+        "  Do not name any color or kin label.",
+      ]
+    : [];
+
+  const castHint =
+    opts?.castLean && opts.castLean.length > 0
+      ? [
+          "",
+          "Held cast (user embraced — MUST fold as undercurrent weather, never name the card/rune/system):",
+          `  Weave in: ${opts.castLean.slice(0, 8).join(", ")}.`,
+        ]
+      : [];
+
+  const user = [
+    `ROOT (the key, weighted toward the slow/deep cycles — your subject): ${rootWord}.`,
+    `TENSION (the live edge — the turn of the sentence): ${tenWords}${o.tension ? ` (strength ${o.tension.strength.toFixed(2)})` : ""}.`,
+    `INFLECTION (fast cycles, right now — texture only): ${inflWords}.`,
+    `REGISTER: ${o.tone.register}.`,
+    ...leanHint,
+    ...castHint,
+    "",
+    "Voice the one sentence this chord is signaling, in this register, naming nothing.",
+  ].join("\n");
+
+  return { system, user };
 }

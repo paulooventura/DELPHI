@@ -74,7 +74,9 @@ describe("layered reading — invariants 9–10", () => {
   it("layerPrompt distills the active layer with the chorus voice", () => {
     const reading = composeLayers(moment, { natal, drawn, active: "moment" });
     const { system, user } = layerPrompt(reading);
-    expect(system).toMatch(/standing wave|chorus/i);
+    expect(system).toMatch(/whole field|independent traditions/i);
+    expect(system).toMatch(/Name NO system/i);
+    expect(user).toMatch(/REGISTER:/);
     expect(user).not.toMatch(/\bLeo\b/);
     expect(reading.active).toBe("moment");
 

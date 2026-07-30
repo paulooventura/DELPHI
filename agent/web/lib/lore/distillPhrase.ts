@@ -4,7 +4,7 @@
  */
 
 import type { Composition, DistillOptions } from "./compose";
-import { buildPrompt, distillTemplate } from "./compose";
+import { distillTemplate, orchestratedPrompt } from "./compose";
 import type { TribeColor } from "./colorLean";
 
 // Horoscope filler + calendar/tradition name-drops must never reach the street line.
@@ -22,9 +22,9 @@ export function phraseCacheKey(
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v6: layered reading — cache per layer + personal fingerprints.
+  // v7: orchestrated prompt (Addendum 4) — cache per layer + personal fingerprints.
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v6:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  return `delphi-phrase:v7:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 /** Accept only a single grounded sentence with no banned lexicon. */
@@ -70,16 +70,17 @@ export async function fetchModelPhrase(
   chord: Composition,
   opts?: DistillOptions,
 ): Promise<string | null> {
-  const { system, user } = buildPrompt(chord, opts);
+  // Primary path: orchestratedPrompt(snapshot.chord) — root/tension/register.
+  const { system, user } = orchestratedPrompt(chord, opts);
   try {
     const res = await fetch("/api/lore/distill", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ system, user }),
+      body: JSON.stringify({ system, user, chord, opts }),
     });
     if (!res.ok) return null;
     const data = (await res.json()) as { phrase?: string };
-    return acceptPhrase(data.phrase ?? "") ;
+    return acceptPhrase(data.phrase ?? "");
   } catch {
     return null;
   }

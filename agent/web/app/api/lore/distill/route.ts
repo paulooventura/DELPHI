@@ -1,17 +1,40 @@
 import { NextResponse } from "next/server";
+import {
+  orchestratedPrompt,
+  type Composition,
+  type DistillOptions,
+} from "../../../../lib/lore/compose";
 import { acceptPhrase } from "../../../../lib/lore/distillPhrase";
 
 /**
  * Model distillation endpoint (Sonnet when keyed).
- * Returns { phrase } or 503 so the client falls back to distillTemplate.
+ * Prefers orchestratedPrompt(chord) when a composition is posted (Addendum 4);
+ * accepts prebuilt system/user as a fallback. Returns { phrase } or 503 so the
+ * client falls back to distillTemplate.
  */
 export async function POST(req: Request) {
   try {
-    const body = (await req.json()) as { system?: string; user?: string };
-    const system = body.system?.trim();
-    const user = body.user?.trim();
+    const body = (await req.json()) as {
+      system?: string;
+      user?: string;
+      chord?: Composition;
+      opts?: DistillOptions;
+    };
+
+    let system = body.system?.trim();
+    let user = body.user?.trim();
+
+    if (body.chord && Array.isArray(body.chord.axes)) {
+      const prompt = orchestratedPrompt(body.chord, body.opts);
+      system = prompt.system;
+      user = prompt.user;
+    }
+
     if (!system || !user) {
-      return NextResponse.json({ error: "system and user required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "chord or system+user required" },
+        { status: 400 },
+      );
     }
 
     const key = process.env.ANTHROPIC_API_KEY;
