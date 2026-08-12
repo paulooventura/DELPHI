@@ -33,6 +33,21 @@ npm run dev
 
 Open `http://localhost:3000` for the same local UI and intelligence.
 
+### Mobile (App Store + Google Play)
+
+DELPHI’s store shells are Capacitor apps under `agent/web/ios` and `agent/web/android`.
+They load the live web app (`https://delphi.pauloventura.org`) inside a native WebView.
+
+```bash
+cd agent/web
+npm ci
+npx cap sync
+npx cap open ios       # Xcode (Mac)
+npx cap open android   # Android Studio
+```
+
+Full setup, LAN debug, TestFlight, and Play upload steps: [native/ios/CAPACITOR.md](native/ios/CAPACITOR.md).
+
 No external credit-based or API-token-based services are required by default. The Research Console scavenges only free, no-key sources (Crossref, PubMed, arXiv, OpenAlex, Semantic Scholar, Wikipedia, Wikidata, DuckDuckGo, OpenLibrary, Stack Exchange, HackerNews, Reddit) and cross-references them with local logic, so it stays free and lightweight by default.
 
 Optional: AI cross-check

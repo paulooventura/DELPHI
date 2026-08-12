@@ -22,6 +22,10 @@ const config: CapacitorConfig = {
     contentInset: "automatic",
     preferredContentMode: "mobile",
   },
+  android: {
+    allowMixedContent: serverUrl.startsWith("http://"),
+    backgroundColor: "#000000",
+  },
 };
 
 export default config;
