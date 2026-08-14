@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   computeAircraftTracks,
+  fetchAirplanesLive,
   fetchLiveAircraft,
   generateMockAircraft,
 } from "../../../../lib/cosmic/aircraftTracking";
@@ -18,12 +19,27 @@ export async function GET(req: Request) {
     const provider = getAirLabsApiKey() ? "airlabs" as const : "aviationstack" as const;
 
     let source: "live" | "mock" = "mock";
+    let usedProvider: "airlabs" | "aviationstack" | "airplanes-live" | "mock" = "mock";
     let reports;
     try {
-      reports = await fetchLiveAircraft(observer, apiKey, provider);
-      source = apiKey ? "live" : "mock";
+      if (apiKey) {
+        reports = await fetchLiveAircraft(observer, apiKey, provider);
+        usedProvider = provider;
+      } else {
+        reports = await fetchAirplanesLive(observer);
+        usedProvider = "airplanes-live";
+      }
+      source = "live";
     } catch {
-      reports = generateMockAircraft(observer, Math.floor(Date.now() / 60000));
+      try {
+        reports = await fetchAirplanesLive(observer);
+        usedProvider = "airplanes-live";
+        source = "live";
+      } catch {
+        reports = generateMockAircraft(observer, Math.floor(Date.now() / 60000));
+        usedProvider = "mock";
+        source = "mock";
+      }
     }
 
     const now = new Date();
@@ -41,7 +57,7 @@ export async function GET(req: Request) {
     return NextResponse.json({
       updatedAt: now.toISOString(),
       source,
-      provider: getAirLabsApiKey() ? "airlabs" : apiKey ? "aviationstack" : "mock",
+      provider: usedProvider,
       observer: { lat, lon, altM },
       count: tracks.length,
       aircraft: tracks,

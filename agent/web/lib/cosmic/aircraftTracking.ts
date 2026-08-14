@@ -231,6 +231,61 @@ export function parseAirLabsResponse(json: AirLabsResponse): AircraftReport[] {
   });
 }
 
+/** airplanes.live / readsb-style point-radius response — free, keyless, no signup. */
+export type AirplanesLiveResponse = {
+  ac?: Array<{
+    hex?: string;
+    flight?: string;
+    r?: string;
+    t?: string;
+    lat?: number;
+    lon?: number;
+    alt_baro?: number | "ground";
+    gs?: number;
+    track?: number;
+    baro_rate?: number;
+    squawk?: string;
+  }>;
+};
+
+export function parseAirplanesLiveResponse(json: AirplanesLiveResponse): AircraftReport[] {
+  return (json.ac ?? []).flatMap(item => {
+    if (item.lat == null || item.lon == null) return [];
+    const baroAltFt = typeof item.alt_baro === "number" ? item.alt_baro : 0;
+    return [{
+      icao24: item.hex ?? "unknown",
+      callsign: (item.flight ?? item.hex ?? "UNKN").trim(),
+      latDeg: item.lat,
+      lonDeg: item.lon,
+      baroAltFt,
+      headingDeg: item.track ?? 0,
+      gsKnots: item.gs ?? 0,
+      verticalRateMps: item.baro_rate != null ? item.baro_rate * 0.00508 : undefined,
+      regNumber: item.r,
+      aircraftIcao: item.t,
+      status: item.alt_baro === "ground" ? "ground" : undefined,
+    }];
+  });
+}
+
+/**
+ * Free, keyless live ADS-B — airplanes.live's point-radius endpoint (readsb/
+ * dump1090-style JSON, no API key, no signup). Preferred fallback whenever no
+ * AirLabs/Aviationstack key is configured, so recon traffic is real by default
+ * instead of mock.
+ */
+export async function fetchAirplanesLive(
+  observer: GeoPosition,
+  radiusNm = 200,
+): Promise<AircraftReport[]> {
+  const res = await fetch(
+    `https://api.airplanes.live/v2/point/${observer.latDeg}/${observer.lonDeg}/${radiusNm}`,
+    { signal: AbortSignal.timeout(8000), next: { revalidate: 30 } },
+  );
+  if (!res.ok) throw new Error(`airplanes.live: HTTP ${res.status}`);
+  return parseAirplanesLiveResponse(await res.json());
+}
+
 export async function fetchLiveAircraft(
   observer: GeoPosition,
   apiKey?: string,

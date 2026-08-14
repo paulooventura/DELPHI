@@ -97,7 +97,7 @@ export type CelestialSkyViewProps = {
 
 type Trackable = {
   id: string;
-  kind: "planet" | "satellite" | "satellite-cluster" | "aircraft" | "asteroid" | "comet" | "deepsky";
+  kind: "planet" | "satellite" | "satellite-cluster" | "aircraft" | "asteroid" | "comet" | "deepsky" | "star";
   name: string;
   az: number;
   alt: number;
@@ -133,6 +133,7 @@ const KIND_META: Record<Trackable["kind"], { label: string; emoji: string; accen
   asteroid: { label: "Asteroid", emoji: "◇", accent: "#d6d3d1" },
   comet: { label: "Comet", emoji: "☄", accent: "#bae6fd" },
   deepsky: { label: "Deep sky", emoji: "✦", accent: "#c4b5fd" },
+  star: { label: "Star", emoji: "★", accent: "#fde68a" },
 };
 
 function buildObjectDetail(
@@ -204,6 +205,21 @@ function buildObjectDetail(
   if (trackable.kind === "deepsky") {
     const dso = DEEP_SKY_OBJECTS.find(d => d.id === trackable.id);
     if (dso?.subtitle) lines.push({ label: "Catalog", value: dso.subtitle });
+  }
+
+  if (trackable.kind === "star") {
+    const star = BRIGHT_STARS.find(s => `star:${s.id}` === trackable.id);
+    if (star) {
+      lines.push({ label: "Constellation", value: star.constellation });
+      lines.push({ label: "Magnitude", value: star.mag.toFixed(2) });
+      if (star.spectralType) lines.push({ label: "Spectral type", value: star.spectralType });
+      if (star.distanceLy != null) {
+        lines.push({
+          label: "Distance",
+          value: `~${star.distanceLy.toLocaleString()} ly`,
+        });
+      }
+    }
   }
 
   const lore = loreForSkyObject({
@@ -1305,6 +1321,24 @@ export function CelestialSkyView({
             ctx.fillText(star.name, pt.x, pt.y - vis.r - 6);
           }
           ctx.globalAlpha = 1;
+
+          if (!below) {
+            const starTrackable: Trackable = {
+              id: `star:${star.id}`,
+              kind: "star",
+              name: star.name,
+              az: pt.az,
+              alt: pt.alt,
+              magnitude: star.mag,
+            };
+            hits.push({
+              id: starTrackable.id,
+              x: pt.x,
+              y: pt.y,
+              radius: Math.max(14, vis.r + 10),
+              trackable: starTrackable,
+            });
+          }
         }
       }
 
