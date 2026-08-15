@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">DELPHI</string>
+    <string name="title_activity_main">DELPHI</string>
+    <string name="package_name">org.pauloventura.delphi</string>
+    <string name="custom_url_scheme">org.pauloventura.delphi</string>
+</resources>
