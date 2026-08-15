@@ -87,7 +87,7 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
     );
   });
 
-  it("live phrases name weather and turn toward the reader — never tradition labels", () => {
+  it("live phrases name weather and challenge the reader — never tradition labels", () => {
     const snap = takeSnapshot(
       resolveMoment(jdFromDate(new Date("2026-07-29T23:45:00Z")), 36.16, -86.78)
         .entries,
@@ -97,10 +97,43 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
     const phrase = speak(snap.chord);
     expect(phrase.length).toBeGreaterThan(40);
     expect(phrase).not.toMatch(/\b(Leo|Mars|Saturn|Horse|nakshatra|wuku)\b/i);
-    // Oracle turn: think or act
+    // Challenge turn: second-person dare
     expect(phrase.toLowerCase()).toMatch(
-      /\byou\b|\byour\b|choose|name which|see the split|sit with|turn it|stay with|let it land|meet it|decide|plant one/,
+      /\byou\b|\byour\b|choose|name which|see the split|sit with|turn it|stay with|don't|will you|prove|challenge|decide|plant one|your move|which hand|walk through|act like|what will you|what were you/,
     );
+  });
+
+  it("every register ends as a challenge to the user", () => {
+    const chords = [
+      compose([
+        mk("Bright", "western-zodiac", {
+          light: 0.85, warm: 0.7, gentle: 0.5, steady: 0.55,
+        }),
+        mk("Settled", "moon-phase", {
+          light: 0.75, warm: 0.55, gentle: 0.4, steady: 0.6,
+        }),
+      ]),
+      compose([
+        mk("Dark", "moon-phase", {
+          light: -0.8, warm: -0.5, gentle: -0.6, binding: 0.7,
+        }),
+        mk("Fierce", "western-zodiac", {
+          light: -0.5, warm: -0.3, gentle: -0.7, binding: -0.75, active: 0.6,
+        }),
+        mk("Cool", "element", {
+          light: -0.55, warm: -0.65, gentle: -0.4, binding: 0.55,
+        }),
+        mk("MarsHour", "planetary-hour", {
+          light: -0.4, gentle: -0.7, active: 0.8,
+        }),
+      ]),
+    ];
+    for (const chord of chords) {
+      const phrase = speak(chord);
+      expect(phrase.toLowerCase()).toMatch(
+        /\byou\b|\byour\b|will you|don't |choose|pick |prove|challenge|your move|which hand|walk through|act like|what will you|decide|plant |name which|see the split|sit with|turn it|stay with|meet it/,
+      );
+    }
   });
 
   it("phraseForMoment works with network mocked offline and no API key", () => {

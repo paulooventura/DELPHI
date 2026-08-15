@@ -10,6 +10,8 @@ const IOS_OFFSET_KEY = "cp-ios-alpha-offset";
 
 /** iOS: webkitCompassHeading is only valid near portrait-upright; store alpha offset there. */
 let iosAlphaOffset: number | null = null;
+/** Last β used while refreshing the α offset — skips updates during pitch sweeps. */
+let iosOffsetLastBeta: number | null = null;
 /** East-positive magnetic declination for non-absolute / magnetic compass paths. */
 let magneticDeclinationDeg = 0;
 /** User fine-tune after sun / landmark alignment (degrees, shortest-path east positive). */
@@ -38,6 +40,7 @@ export function restoreOrientationCalibration(): void {
 
 export function resetOrientationCalibration(): void {
   iosAlphaOffset = null;
+  iosOffsetLastBeta = null;
   try {
     sessionStorage.removeItem(IOS_OFFSET_KEY);
   } catch {
@@ -98,8 +101,22 @@ export function isUprightPortrait(beta: number | null, gamma: number | null): bo
 }
 
 /**
+ * Softest shortest-path blend toward a new compass sample (degrees).
+ * Keeps α-offset from jumping when webkit briefly spikes near the horizon.
+ */
+function blendHeadingToward(from: number, to: number, t: number): number {
+  const delta = ((to - from + 540) % 360) - 180;
+  return normalizeHeading(from + delta * t);
+}
+
+/**
  * Resolve compass azimuth for decoupled pan/tilt sky view.
- * iOS webkitCompassHeading drifts ~180° when the phone is tilted toward the sky — never use it tilted.
+ *
+ * iOS webkitCompassHeading is only trustworthy for calibrating α↔north while
+ * roughly upright — and even then it drifts while you pitch through β≈90°
+ * (the horizon). Never feed live webkit into the look vector after calibration:
+ * update the α offset only when upright and pitch is steady, always drive
+ * heading from α + offset.
  */
 export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
   const beta = event.beta;
@@ -111,13 +128,27 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
       : null;
 
   if (webkit != null && typeof alpha === "number" && Number.isFinite(alpha)) {
-    if (isUprightPortrait(beta, gamma)) {
-      iosAlphaOffset = normalizeHeading(webkit - alpha);
-      persistIosAlphaOffset();
-      // webkitCompassHeading is magnetic north — convert to true north for ephemeris.
-      return finalizeTrueHeading(webkit, true);
+    if (isUprightPortrait(beta, gamma) && beta != null) {
+      const sample = normalizeHeading(webkit - alpha);
+      if (iosAlphaOffset == null) {
+        iosAlphaOffset = sample;
+        persistIosAlphaOffset();
+      } else {
+        // Skip offset refresh while pitching — horizon sweeps fire β≈90 with
+        // lying webkit samples and used to yank the sky sideways.
+        const pitchSteady =
+          iosOffsetLastBeta != null && Math.abs(beta - iosOffsetLastBeta) < 1.25;
+        if (pitchSteady && Math.abs(gamma) < 12) {
+          iosAlphaOffset = blendHeadingToward(iosAlphaOffset, sample, 0.06);
+          persistIosAlphaOffset();
+        }
+      }
+      iosOffsetLastBeta = beta;
+    } else if (beta != null && Number.isFinite(beta)) {
+      iosOffsetLastBeta = beta;
     }
     if (iosAlphaOffset != null) {
+      // α is gyro-stable through the horizon; offset carries true-north lock.
       return finalizeTrueHeading(normalizeHeading(alpha + iosAlphaOffset), true);
     }
     // Before portrait calibration: alpha-only track (no declination yet).

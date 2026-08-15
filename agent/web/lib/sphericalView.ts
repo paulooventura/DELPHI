@@ -272,7 +272,7 @@ export function deviceBackVectorEnu(
   return normalize(mat3MulVec(R, [0, 0, 1]));
 }
 
-/** Physical camera axis in ENU — uses full attitude matrix with horizon-damped roll. */
+/** Physical camera axis in ENU — roll (γ) is ignored in the look vector. */
 export function deviceOrientationToCameraViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
@@ -285,7 +285,7 @@ export function deviceOrientationToCameraViewEnu(
 }
 
 /**
- * Topocentric look vector — camera attitude matrix (gamma already horizon-damped).
+ * Topocentric look vector — camera attitude matrix with γ forced to 0.
  * Do not blend compass heading near alt≈0: mismatched az yanked the sky sideways
  * through the horizon. Compass path is fallback only when camera is unavailable.
  */

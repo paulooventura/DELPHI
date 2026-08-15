@@ -17,9 +17,9 @@ export function phraseCacheKey(
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v9: oracle speak() — weather + hinge + dare.
+  // v10: home phrase dare is always a challenge to the user.
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v9:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  return `delphi-phrase:v10:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 export function readCachedPhrase(key: string): string | null {

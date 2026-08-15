@@ -2,14 +2,14 @@
  * PHRASE — Delphi's local oracle voice. No API. No third-party dependency.
  * ----------------------------------------------------------------------------
  * Turns orchestration (root · tension · inflection · tone) into ONE sentence
- * that names the field and turns it toward the reader — to think, and often
- * to act. This is what the old model path was for; we own it on-device.
+ * that names the field and challenges the reader — every home phrase ends as
+ * a dare. This is what the old model path was for; we own it on-device.
  *
  * Grammar (structure, not mush):
  *   WEATHER  — root axis → subject (the standing character of the moment)
  *   HINGE    — tension → the contradiction (never smoothed into positivity)
  *   HOUR     — fast-cycle inflection → how it shows up right now (optional)
- *   DARE     — register → the turn to the reader (think / choose / move)
+ *   DARE     — register → the challenge to the reader (always second-person)
  *
  * Seeded from the moment's structure: same instant → same line; different
  * fields → different lines. Vocabulary pools below are authored — expand them
@@ -197,24 +197,24 @@ const HOUR: string[] = [
 ];
 
 /**
- * The turn to the reader — think and (by register) act.
- * This is the oracle's job: the field names itself, then asks something of you.
+ * The turn to the reader — always a challenge (imperative, second-person).
+ * Weather names the field; the dare makes it the user's move.
  */
 const DARE: Record<Tone["register"], string[]> = {
   "warm-witness": [
-    " Stay with it long enough to notice what softens.",
-    " Let it land before you reach for the next thing.",
-    " Meet it without rushing to improve it.",
+    " Stay with it — will you notice what softens before you leave?",
+    " Don't reach for the next thing. Let this land. Prove you can.",
+    " Meet it without improving it. That is the challenge.",
   ],
   "plain-reading": [
     " Name which side you are feeding — then choose on purpose.",
-    " Don't pretend both poles can lead; pick the one you will answer.",
-    " See the split cleanly, then take one honest step.",
+    " Don't pretend both poles can lead. Pick the one you will answer.",
+    " See the split cleanly, then take one honest step. Now.",
   ],
   "quiet-riddle": [
-    " Sit with what stays unsaid until it points.",
-    " The answer is not missing — it is waiting for your attention.",
-    " Turn it over once more before you move.",
+    " Sit with what stays unsaid until it points — don't look away.",
+    " The answer is waiting for your attention. Will you give it?",
+    " Turn it over once more before you move. That is your task.",
   ],
   "trickster-challenge": [
     " So — which hand do you play?",
@@ -226,9 +226,9 @@ const DARE: Record<Tone["register"], string[]> = {
 };
 
 const EMPTY: string[] = [
-  "An even field — nothing pulling hard. Ask what you were avoiding while it was quiet.",
-  "A still point between currents. Use it: decide before the next surge arrives.",
-  "No strong lean either way. That is rare — plant one clear intention while you can.",
+  "An even field — nothing pulling hard. What were you avoiding while it was quiet?",
+  "A still point between currents. Decide before the next surge arrives — that is the dare.",
+  "No strong lean either way. Rare. Plant one clear intention while you can.",
 ];
 
 /* ---- Seeded pick (deterministic per moment) ------------------------------ */

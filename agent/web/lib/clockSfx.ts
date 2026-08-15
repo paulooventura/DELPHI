@@ -5,10 +5,16 @@ let sharedMaster: GainNode | null = null;
 let muteEpoch = 0;
 let audioSilenced = false;
 
+type AudioContextCtor = typeof AudioContext;
+
 export function getClockAudio(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!sharedCtx) {
-    sharedCtx = new AudioContext();
+    const Ctor =
+      window.AudioContext ||
+      (window as unknown as { webkitAudioContext?: AudioContextCtor }).webkitAudioContext;
+    if (!Ctor) return null;
+    sharedCtx = new Ctor();
   }
   return sharedCtx;
 }

@@ -60,23 +60,29 @@ export function useClockSfx(enabled: boolean) {
       setActive(false);
     };
 
+    const restore = () => {
+      if (!enabledRef.current || document.visibilityState === "hidden") return;
+      void resumeClockAudio().then(ctx => {
+        if (!ctx || !alive || !enabledRef.current || document.visibilityState === "hidden") return;
+        unmuteClockAudio();
+        startSchumannAtmosphere(ctx);
+        setActive(true);
+      });
+    };
+
     const onVis = () => {
       if (document.visibilityState === "hidden") {
         silence();
         return;
       }
-      if (enabledRef.current) {
-        void resumeClockAudio().then(ctx => {
-          if (!ctx || !enabledRef.current || document.visibilityState === "hidden") return;
-          unmuteClockAudio();
-          startSchumannAtmosphere(ctx);
-          setActive(true);
-        });
-      }
+      restore();
     };
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", silence);
+    // iOS Capacitor often fires blur (Control Center, app switcher peek). Mute
+    // like haptics — but always restore on focus so silence does not stick.
     window.addEventListener("blur", silence);
+    window.addEventListener("focus", restore);
 
     const existing = getClockAudio();
     if (
@@ -139,6 +145,7 @@ export function useClockSfx(enabled: boolean) {
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pagehide", silence);
       window.removeEventListener("blur", silence);
+      window.removeEventListener("focus", restore);
       muteClockAudio({ fadeMs: 120 });
     };
   }, [enabled]);
