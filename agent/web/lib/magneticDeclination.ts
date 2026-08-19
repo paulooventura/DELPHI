@@ -1,7 +1,10 @@
 /**
  * Magnetic declination (east-positive degrees) for compass → true-north correction.
- * Fetches NOAA WMM when online; falls back to a latitude/longitude regression.
+ * Fetches NOAA WMM when online; falls back to a latitude/longitude regression,
+ * or the WMM-era home value when the observer is in Nashville.
  */
+
+import { HOME_DECLINATION_DEG, isNearHome } from "./observerHome";
 
 let cachedKey: string | null = null;
 let cachedDeclinationDeg: number | null = null;
@@ -55,7 +58,9 @@ export async function fetchDeclinationDeg(latDeg: number, lonDeg: number): Promi
     /* offline */
   }
 
-  const est = estimateDeclinationDeg(latDeg, lonDeg);
+  const est = isNearHome(latDeg, lonDeg)
+    ? HOME_DECLINATION_DEG
+    : estimateDeclinationDeg(latDeg, lonDeg);
   cachedKey = key;
   cachedDeclinationDeg = est;
   return est;

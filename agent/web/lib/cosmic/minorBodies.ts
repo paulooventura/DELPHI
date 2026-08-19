@@ -195,7 +195,7 @@ export function computeMinorBodies(
     const helio = helioEclipticAu(jd, el);
     const geo = geoEquatorialAu(date, helio);
     const eq = equatorialToRaDec(...geo);
-    const hor = raDecToAltAz(date, latDeg, lonDeg, eq.raHours, eq.decDeg, altM);
+    const hor = raDecToAltAz(date, latDeg, lonDeg, eq.raHours, eq.decDeg, altM, "ofdate");
     out.push({
       id: el.id,
       name: el.name,

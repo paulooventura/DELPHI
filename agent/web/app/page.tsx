@@ -8,7 +8,7 @@ import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, Confide
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
 import { requestDeviceAccessPermissions } from "../lib/deviceAccess";
-import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, type SkyPoseHint } from "../lib/sphericalView";
+import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, compassNeedsPortraitLock, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
@@ -28,6 +28,7 @@ import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
 import { useShowLaunch } from "../components/LaunchScreen";
 import { OnyxApp } from "../components/onyx/OnyxApp";
 import { installHapticLifecycle, muteHaptics, cancelHaptic } from "../lib/haptics";
+import { HOME_LAT as FALLBACK_LAT, HOME_LON as FALLBACK_LON } from "../lib/observerHome";
 import { OracleLogo } from "../components/oracle/OracleLogo";
 import { AmbientPulse } from "../components/AmbientPulse";
 import { ClockAmbience } from "../components/ClockAmbience";
@@ -105,8 +106,6 @@ const PROVIDER_TIER_META: Record<1 | 2 | 3 | 4, { label: string; color: string }
   3: { label: "T3 · web", color: "#a78bfa" },
   4: { label: "T4 · signal", color: "#94a3b8" },
 };
-const FALLBACK_LAT = 36.1627;
-const FALLBACK_LON = -86.7816;
 
 function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;
@@ -636,7 +635,7 @@ export default function Home() {
       if (h != null && (t.heading || t.location)) {
         setHeadingLive(true);
         if (p != null) setPitchLive(true);
-        setCompassCalibrated(getIosAlphaOffset() != null);
+        setCompassCalibrated(getIosAlphaOffset() != null && !compassNeedsPortraitLock());
         setSignals(prev =>
           prev
             ? { ...prev, heading: h, pitch: p ?? prev.pitch }
@@ -900,7 +899,7 @@ export default function Home() {
   const magneticDeclination = declinationDeg;
   const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
   const activePitch = signals?.pitch ?? 0;
-  const skyArPoseReady = skyPose === "ready";
+  const skyArPoseReady = skyPose === "ready" && !compassNeedsPortraitLock();
   const skyPoseHint = skyPoseHintMessage(skyPose);
   const spectrumWarmth = cosmic?.ui.warmth ?? cosmic?.sensors.lightSpectrum ?? 0.55;
   const atmosphericBreath = cosmic?.sensors.atmosphericBreath ?? 0;

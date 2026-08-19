@@ -12,6 +12,7 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
+    "sky:accuracy": "vitest run lib/skyAccuracy.test.ts",
     "cap:sync": "npx cap sync ios",
     "cap:open": "npx cap open ios"
   },

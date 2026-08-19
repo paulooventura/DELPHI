@@ -12,6 +12,8 @@ const IOS_OFFSET_KEY = "cp-ios-alpha-offset";
 let iosAlphaOffset: number | null = null;
 /** Last β used while refreshing the α offset — skips updates during pitch sweeps. */
 let iosOffsetLastBeta: number | null = null;
+/** Whether iOS webkit heading has been seen (needs a portrait lock). */
+let iosWebkitSeen = false;
 /** East-positive magnetic declination for non-absolute / magnetic compass paths. */
 let magneticDeclinationDeg = 0;
 /** User fine-tune after sun / landmark alignment (degrees, shortest-path east positive). */
@@ -41,11 +43,16 @@ export function restoreOrientationCalibration(): void {
 export function resetOrientationCalibration(): void {
   iosAlphaOffset = null;
   iosOffsetLastBeta = null;
+  iosWebkitSeen = false;
   try {
     sessionStorage.removeItem(IOS_OFFSET_KEY);
   } catch {
     /* ignore */
   }
+}
+
+export function compassNeedsPortraitLock(): boolean {
+  return iosWebkitSeen && iosAlphaOffset == null;
 }
 
 export type CompassReadyState = "ready" | "needs-portrait" | "no-sensor";
@@ -128,6 +135,7 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
       : null;
 
   if (webkit != null && typeof alpha === "number" && Number.isFinite(alpha)) {
+    iosWebkitSeen = true;
     if (isUprightPortrait(beta, gamma) && beta != null) {
       const sample = normalizeHeading(webkit - alpha);
       if (iosAlphaOffset == null) {

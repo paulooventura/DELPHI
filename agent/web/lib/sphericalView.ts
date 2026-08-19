@@ -248,6 +248,7 @@ export {
   setMagneticDeclinationDeg,
   getMagneticDeclinationDeg,
   getIosAlphaOffset,
+  compassNeedsPortraitLock,
   type SkyPoseHint,
   type CompassReadyState,
 } from "./orientationCalibration";

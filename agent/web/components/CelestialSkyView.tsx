@@ -243,7 +243,8 @@ function buildObjectDetail(
 }
 
 const FOV_AZ = 90;
-const FOV_ALT_HALF = 60;
+/** ~84° vertical — phone-camera class, not the old 120° fish-eye that shrank the sky. */
+const FOV_ALT_HALF = 42;
 const MICRO = OBS.typography.micro;
 const TARGET_ENTER = 1.5;
 const TARGET_EXIT = 2.8;

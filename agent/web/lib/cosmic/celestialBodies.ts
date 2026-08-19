@@ -60,7 +60,7 @@ export function sampleEclipticPath(
   const pts: Array<{ alt: number; az: number }> = [];
   for (let lon = 0; lon <= 360; lon += stepDeg) {
     const eq = eclipticToEquatorial(lon, 0, jd);
-    pts.push(raDecToAltAz(date, latDeg, lonDeg, eq.raHours, eq.decDeg, altM));
+    pts.push(raDecToAltAz(date, latDeg, lonDeg, eq.raHours, eq.decDeg, altM, "ofdate"));
   }
   return pts;
 }

@@ -199,24 +199,29 @@ export function watchDeviceOrientation(
   const filter = new OrientationFilter(onReading);
   const onOrientation = (event: Event) => {
     const e = event as DeviceOrientationEventWithCompass;
+    // Android fires both absolute + relative; skip relative unless it carries webkit
+    // (iOS). Losing webkit was dropping the only true-north lock on iPhone.
+    const hasWebkit =
+      typeof e.webkitCompassHeading === "number" && Number.isFinite(e.webkitCompassHeading);
+    if (event.type === "deviceorientation" && hasAbsoluteListener && !hasWebkit) {
+      return;
+    }
     const view = deviceViewEnu(e);
     if (!view) return;
     const beta = typeof e.beta === "number" && Number.isFinite(e.beta) ? e.beta : null;
     const gamma = typeof e.gamma === "number" && Number.isFinite(e.gamma) ? e.gamma : null;
     filter.push({ view, roll: 0, beta, gamma });
   };
-  const absoluteOk = "ondeviceorientationabsolute" in window;
-  if (absoluteOk) {
+  const hasAbsoluteListener = typeof window !== "undefined" && "ondeviceorientationabsolute" in window;
+  window.addEventListener("deviceorientation", onOrientation, true);
+  if (hasAbsoluteListener) {
     window.addEventListener("deviceorientationabsolute", onOrientation, true);
-  } else {
-    window.addEventListener("deviceorientation", onOrientation, true);
   }
   return () => {
     filter.destroy();
-    if (absoluteOk) {
+    window.removeEventListener("deviceorientation", onOrientation, true);
+    if (hasAbsoluteListener) {
       window.removeEventListener("deviceorientationabsolute", onOrientation, true);
-    } else {
-      window.removeEventListener("deviceorientation", onOrientation, true);
     }
   };
 }

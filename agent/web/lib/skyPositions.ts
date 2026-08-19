@@ -1,6 +1,9 @@
 /**
  * Topocentric alt/az via astronomy-engine (cosinekitty/astronomy).
  * Sub-arcminute accuracy for Moon, Sun, and planets at a GPS fix.
+ *
+ * Horizon() expects equatorial-of-date (EQD). Star catalogs are J2000 (EQJ)
+ * and must be precessed first — otherwise the field is ~0.4° off in 2026.
  */
 import {
   Body,
@@ -8,6 +11,11 @@ import {
   Horizon,
   MakeTime,
   Observer,
+  RotateVector,
+  Rotation_EQJ_EQD,
+  SphereFromVector,
+  Spherical,
+  VectorFromSphere,
   type FlexibleDateTime,
 } from "astronomy-engine";
 
@@ -18,12 +26,28 @@ export type EquatorialHorizon = HorizonCoords & {
   decDeg: number;
 };
 
+export type EquatorialFrame = "j2000" | "ofdate";
+
 function makeObserver(latDeg: number, lonDeg: number, altM = 0): Observer {
   return new Observer(latDeg, lonDeg, Math.max(0, altM));
 }
 
 function makeTime(date: Date): FlexibleDateTime {
   return MakeTime(date);
+}
+
+/** J2000 RA/Dec → equatorial of date (hours / degrees). */
+export function j2000ToOfDateRaDec(
+  date: Date,
+  raHours: number,
+  decDeg: number,
+): { raHours: number; decDeg: number } {
+  const time = MakeTime(date);
+  const eqj = VectorFromSphere(new Spherical(decDeg, raHours * 15, 1), time);
+  const ofdate = SphereFromVector(RotateVector(Rotation_EQJ_EQD(time), eqj));
+  let lon = ofdate.lon;
+  if (lon < 0) lon += 360;
+  return { raHours: lon / 15, decDeg: ofdate.lat };
 }
 
 /** RA (hours) + Dec (degrees) → altitude/azimuth at observer. */
@@ -34,10 +58,13 @@ export function raDecToAltAz(
   raHours: number,
   decDeg: number,
   altM = 0,
+  frame: EquatorialFrame = "j2000",
 ): HorizonCoords {
   const time = makeTime(date);
   const observer = makeObserver(latDeg, lonDeg, altM);
-  const hor = Horizon(time, observer, raHours, decDeg, "normal");
+  const eq =
+    frame === "j2000" ? j2000ToOfDateRaDec(date, raHours, decDeg) : { raHours, decDeg };
+  const hor = Horizon(time, observer, eq.raHours, eq.decDeg, "normal");
   return { alt: hor.altitude, az: hor.azimuth };
 }
 
