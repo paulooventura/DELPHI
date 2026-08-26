@@ -398,6 +398,14 @@ export function OnyxApp({
                 Cast
                 <span>Draw — colours a labeled reading layer</span>
               </button>
+              <button type="button" className="onyx-tool-btn" onClick={() => { window.location.href = "/studies"; }}>
+                Studies
+                <span>Polarity · Materia · Medica</span>
+              </button>
+              <button type="button" className="onyx-tool-btn" onClick={() => { window.location.href = "/tonal"; }}>
+                Tonal
+                <span>Covenant · roles · the ground</span>
+              </button>
               <button type="button" className="onyx-tool-btn" onClick={() => setMode("about")}>
                 About
                 <span>Honesty tiers & integrity</span>
