@@ -1,0 +1,10 @@
+{
+  "name": "Delphi (Cosmos Prowler) web",
+  "install": "npm --prefix agent/web ci",
+  "terminals": [
+    {
+      "name": "web-dev",
+      "command": "npm --prefix agent/web run dev"
+    }
+  ]
+}
