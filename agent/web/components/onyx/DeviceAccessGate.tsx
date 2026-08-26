@@ -5,6 +5,7 @@
  * One tap → location + orientation + motion prompts, then splash/home.
  */
 
+import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { OnyxCrystal } from "./OnyxCrystal";
 
 export function DeviceAccessGate({
@@ -45,6 +46,10 @@ export function DeviceAccessGate({
             Location · orientation · motion
           </span>
         </button>
+
+        <p className="onyx-access-build" aria-hidden>
+          build {DELPHI_BUILD}
+        </p>
       </div>
     </div>
   );

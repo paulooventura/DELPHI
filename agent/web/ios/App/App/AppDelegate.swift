@@ -1,6 +1,7 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -17,6 +18,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         } catch {
             // Best-effort — Web Audio still works when the session is available.
         }
+
+        // Drop stale WKWebView website data when the shell build bumps so the
+        // app refetches delphi.pauloventura.org instead of a frozen HTML shell.
+        // Keep this string in sync with agent/web/lib/buildStamp.ts.
+        let shellBuild = "2026-08-26c"
+        let buildKey = "delphi.shellBuild"
+        let previous = UserDefaults.standard.string(forKey: buildKey)
+        if previous != shellBuild {
+            let types = WKWebsiteDataStore.allWebsiteDataTypes()
+            let since = Date(timeIntervalSince1970: 0)
+            WKWebsiteDataStore.default().removeData(ofTypes: types, modifiedSince: since) { }
+            UserDefaults.standard.set(shellBuild, forKey: buildKey)
+        }
+
         return true
     }
 
