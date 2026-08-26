@@ -62,6 +62,7 @@ export function OnyxApp({
   showAccessGate = false,
   onAllowAccess,
   accessBusy = false,
+  sensorsUnlocked = false,
   now,
   lat,
   lon,
@@ -99,6 +100,8 @@ export function OnyxApp({
   showAccessGate?: boolean;
   onAllowAccess?: () => void;
   accessBusy?: boolean;
+  /** True after Allow access — crystal + sky can bind to DeviceOrientation. */
+  sensorsUnlocked?: boolean;
   now: Date;
   lat: number;
   lon: number;
@@ -549,6 +552,7 @@ export function OnyxApp({
       onOpenCast={() => setMode("cast")}
       pulseEnabled={pulseEnabled}
       onPulseEnabledChange={onPulseEnabledChange}
+      sensorsUnlocked={sensorsUnlocked}
     />
   );
 }

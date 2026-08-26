@@ -43,7 +43,7 @@ export function OnyxSky({
   weather?: SkyWeatherSlot | null;
   onBack: () => void;
 }) {
-  const live = liveHeading || livePitch;
+  const live = liveHeading || livePitch || Boolean(liveAttitudeRef);
   const look = cardinalFromHeading(headingDeg);
   const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const pitchLabel = Number.isFinite(pitchDeg) ? Math.round(pitchDeg) : 0;
@@ -170,7 +170,7 @@ export function OnyxSky({
             observerAltM={altM}
             headingDeg={headingDeg}
             pitchDeg={pitchDeg}
-            liveAttitudeRef={live ? liveAttitudeRef : undefined}
+            liveAttitudeRef={liveAttitudeRef}
             observationTime={now}
             liveHeading={liveHeading}
             livePitch={livePitch}

@@ -22,7 +22,7 @@ function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * t;
 }
 
-export function OnyxCrystal() {
+export function OnyxCrystal({ sensorsUnlocked = false }: { sensorsUnlocked?: boolean }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const glossRef = useRef<SVGEllipseElement>(null);
@@ -33,6 +33,7 @@ export function OnyxCrystal() {
   const raf = useRef(0);
 
   useEffect(() => {
+    if (!sensorsUnlocked) return;
     const body = bodyRef.current;
     const stage = stageRef.current;
     if (!body || !stage) return;
@@ -110,7 +111,7 @@ export function OnyxCrystal() {
       stopOrient();
       host.removeEventListener("pointermove", onPointer);
     };
-  }, []);
+  }, [sensorsUnlocked]);
 
   return (
     <div className="onyx-crystal-stage" ref={stageRef} aria-hidden>

@@ -10,7 +10,7 @@ import type { CapacitorConfig } from "@capacitor/cli";
  * Keep `BUILD` in sync with agent/web/lib/buildStamp.ts — it busts WKWebView
  * document cache that otherwise keeps serving a stale shell forever.
  */
-const BUILD = "2026-08-26d";
+const BUILD = "2026-08-26e";
 const baseUrl =
   process.env.CAP_SERVER_URL?.trim() || "https://delphi.pauloventura.org";
 const serverUrl = baseUrl.includes("?")

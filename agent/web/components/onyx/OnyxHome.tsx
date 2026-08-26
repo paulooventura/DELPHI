@@ -78,6 +78,7 @@ export type OnyxHomeProps = {
   /** Stone switch: sound + haptic pulse master. */
   pulseEnabled?: boolean;
   onPulseEnabledChange?: (on: boolean) => void;
+  sensorsUnlocked?: boolean;
 };
 
 export function OnyxHome({
@@ -106,6 +107,7 @@ export function OnyxHome({
   onOpenCast,
   pulseEnabled = true,
   onPulseEnabledChange,
+  sensorsUnlocked = false,
 }: OnyxHomeProps) {
   const [depth, setDepth] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
@@ -524,7 +526,7 @@ export function OnyxHome({
               />
             ))}
           </div>
-          <OnyxCrystal />
+          <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />
         </div>
 
         <div className="onyx-vignette" />

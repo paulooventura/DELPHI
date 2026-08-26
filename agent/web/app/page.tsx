@@ -601,17 +601,20 @@ export default function Home() {
   }
 
   async function startOrientationWatch(options?: { resetCalibration?: boolean }) {
+    const allowed = await requestOrientationPermission();
+    if (!allowed) {
+      stopOrientationWatch();
+      setHeadingLive(false);
+      setPitchLive(false);
+      setSkyPose("too-flat");
+      return;
+    }
     stopOrientationWatch();
     if (options?.resetCalibration) {
       resetOrientationCalibration();
     } else {
       restoreOrientationCalibration();
     }
-    setHeadingLive(false);
-    setPitchLive(false);
-    setSkyPose("too-flat");
-    const allowed = await requestOrientationPermission();
-    if (!allowed) return;
     const lat = signals?.lat ?? FALLBACK_LAT;
     const lon = signals?.lon ?? FALLBACK_LON;
     const d = await fetchDeclinationDeg(lat, lon);
@@ -829,8 +832,9 @@ export default function Home() {
 
   // ── Wheel data
 
-  const hasLiveHeading = headingLive && signals?.heading != null && toggles.heading;
+  const hasLiveHeading = headingLive && signals?.heading != null && (toggles.heading || toggles.location);
   const hasLivePitch = pitchLive && toggles.location;
+  const orientationStreaming = headingLive || pitchLive;
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
@@ -897,8 +901,12 @@ export default function Home() {
   }, [cosmic?.now, animNow, mapLat, mapLon, signals?.altM]);
 
   const magneticDeclination = declinationDeg;
-  const activeHeading = hasLiveHeading ? signals!.heading! : manualHeading;
-  const activePitch = signals?.pitch ?? 0;
+  const activeHeading = orientationStreaming
+    ? (signals?.heading ?? enuToAltAz(liveAttitudeRef.current.view).az)
+    : manualHeading;
+  const activePitch = orientationStreaming
+    ? (signals?.pitch ?? enuToAltAz(liveAttitudeRef.current.view).alt)
+    : (signals?.pitch ?? 0);
   const skyArPoseReady = skyPose === "ready" && !compassNeedsPortraitLock();
   const skyPoseHint = skyPoseHintMessage(skyPose);
   const spectrumWarmth = cosmic?.ui.warmth ?? cosmic?.sensors.lightSpectrum ?? 0.55;
@@ -1082,6 +1090,7 @@ export default function Home() {
         void primeDeviceAccess();
       }}
       showAccessGate={needsAccessGate}
+      sensorsUnlocked={!needsAccessGate}
       onAllowAccess={() => {
         void primeDeviceAccess();
       }}
@@ -1093,8 +1102,8 @@ export default function Home() {
       headingDeg={activeHeading}
       pitchDeg={activePitch}
       liveAttitudeRef={liveAttitudeRef}
-      liveHeading={hasLiveHeading}
-      livePitch={hasLivePitch}
+      liveHeading={hasLiveHeading || orientationStreaming}
+      livePitch={hasLivePitch || orientationStreaming}
       arPoseReady={skyArPoseReady}
       skyWeather={skyWeatherSlot}
       skyWarmth={spectrumWarmth}
