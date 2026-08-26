@@ -1,3 +1,5 @@
+import { hapticsGestureUnlocked, installHapticLifecycle } from "../haptics";
+
 export type SkyHapticKind = "cardinal" | "horizon" | "zenith" | "targetLock";
 
 const CARDINALS = [0, 90, 180, 270] as const;
@@ -22,6 +24,8 @@ type GateState = {
 function vibrate(pattern: number | number[]) {
   if (typeof navigator === "undefined" || !navigator.vibrate) return;
   if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
+  installHapticLifecycle();
+  if (!hapticsGestureUnlocked()) return;
   try {
     navigator.vibrate(pattern);
   } catch {

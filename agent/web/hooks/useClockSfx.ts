@@ -111,7 +111,8 @@ export function useClockSfx(enabled: boolean) {
       const ctx = getClockAudio();
       if (ctx) {
         if (ctx.state === "suspended") {
-          void ctx.resume();
+          // Don't spam resume() before a user gesture — browser console floods.
+          // Unlock / focus / enable() paths call resumeClockAudio explicitly.
         } else if (ctx.state === "running") {
           const d = new Date();
           const sec = d.getSeconds();

@@ -13,6 +13,8 @@ let muted = false;
 /** Bumps whenever we mute so in-flight async pulses abort mid-sequence. */
 let epoch = 0;
 let lifecycleInstalled = false;
+/** Chrome blocks vibrate until a user gesture — wait for one. */
+let userGestureUnlocked = false;
 
 function canUseCapacitor(): boolean {
   try {
@@ -22,8 +24,20 @@ function canUseCapacitor(): boolean {
   }
 }
 
+function unlockFromUserGesture(): void {
+  userGestureUnlocked = true;
+}
+
+/** True after the first pointer/key gesture (web Vibration API requires it). */
+export function hapticsGestureUnlocked(): boolean {
+  return userGestureUnlocked || canUseCapacitor();
+}
+
 function vibrateWeb(pattern: number | number[]): void {
   if (typeof navigator === "undefined" || !navigator.vibrate) return;
+  // Desktop Chrome: calling vibrate before a gesture floods the console and
+  // never actually vibrates. Skip until the user has touched/keyed once.
+  if (!hapticsGestureUnlocked()) return;
   try {
     navigator.vibrate(pattern);
   } catch {
@@ -78,6 +92,8 @@ export function installHapticLifecycle(): void {
   // iOS Capacitor often fires blur as the shell is dismissed.
   window.addEventListener("blur", onHide);
   window.addEventListener("focus", () => unmuteHaptics());
+  window.addEventListener("pointerdown", unlockFromUserGesture, { once: true, capture: true });
+  window.addEventListener("keydown", unlockFromUserGesture, { once: true, capture: true });
 
   syncMuteFromVisibility();
 }

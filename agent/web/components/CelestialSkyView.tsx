@@ -900,22 +900,29 @@ export function CelestialSkyView({
     propsAttitudeRef.current = { view: altAzToEnu(headingDeg, pitchDeg), roll: 0 };
   }, [headingDeg, pitchDeg]);
 
+  const tleCatalog = useMemo(() => parseTLECatalog(DEFAULT_TLE_CATALOG), []);
+
+  // Cosmic clock ticks ~60fps with a fresh Date each frame. Ephemeris + network
+  // must key off whole seconds or we refetch / remount the RAF loop to death.
+  const observationSec = Math.floor(observationTime.getTime() / 1000);
+  const observationTimeRef = useRef(observationTime);
+  observationTimeRef.current = observationTime;
+  const skyEpoch = useMemo(() => new Date(observationSec * 1000), [observationSec]);
+
   const bodies = useMemo(
-    () => computeCelestialBodies(observationTime, lat, lon, observerAltM),
-    [observationTime, lat, lon, observerAltM],
+    () => computeCelestialBodies(skyEpoch, lat, lon, observerAltM),
+    [skyEpoch, lat, lon, observerAltM],
   );
 
   const minorBodies = useMemo(
-    () => computeMinorBodies(observationTime, lat, lon, observerAltM),
-    [observationTime, lat, lon, observerAltM],
+    () => computeMinorBodies(skyEpoch, lat, lon, observerAltM),
+    [skyEpoch, lat, lon, observerAltM],
   );
 
   const stars = useMemo(
-    () => skyObjectsInView(lat, lon, 0, 0, observationTime, 360, 180, distanceRank).stars,
-    [lat, lon, observationTime, distanceRank],
+    () => skyObjectsInView(lat, lon, 0, 0, skyEpoch, 360, 180, distanceRank).stars,
+    [lat, lon, skyEpoch, distanceRank],
   );
-
-  const tleCatalog = useMemo(() => parseTLECatalog(DEFAULT_TLE_CATALOG), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -944,7 +951,7 @@ export function CelestialSkyView({
         }
       }
       if (best) {
-        setSelectedDetail(buildObjectDetail(best.trackable, bodies, minorBodies, observationTime));
+        setSelectedDetail(buildObjectDetail(best.trackable, bodies, minorBodies, skyEpoch));
         if (hapticsEnabled) {
           try { navigator.vibrate?.([4, 36, 8]); } catch { /* ignore */ }
         }
@@ -961,11 +968,15 @@ export function CelestialSkyView({
       canvas.removeEventListener("pointerup", onPointerUp);
       canvas.removeEventListener("pointercancel", onPointerCancel);
     };
-  }, [bodies, minorBodies, hapticsEnabled, observationTime]);
+  }, [bodies, minorBodies, hapticsEnabled, skyEpoch]);
 
   useEffect(() => {
     let cancelled = false;
+    let inFlight = false;
     const load = async () => {
+      if (inFlight || cancelled) return;
+      inFlight = true;
+      const obsTime = observationTimeRef.current;
       try {
         const altM = Math.max(0, observerAltM ?? 0);
         const obs = { latDeg: lat, lonDeg: lon, altM };
@@ -977,7 +988,7 @@ export function CelestialSkyView({
         const mockSatellites = computeSatelliteTracks(
           tleCatalog,
           obs,
-          observationTime,
+          obsTime,
         );
         const [acRes, satRes] = await Promise.all([
           fetch(`/api/sky/aircraft?${q}`).then(r => r.ok ? r.json() : null),
@@ -1011,15 +1022,17 @@ export function CelestialSkyView({
           satellitesRef.current = computeSatelliteTracks(
             tleCatalog,
             obs,
-            observationTime,
+            observationTimeRef.current,
           );
         }
+      } finally {
+        inFlight = false;
       }
     };
     void load();
     const id = setInterval(load, 45000);
     return () => { cancelled = true; clearInterval(id); };
-  }, [lat, lon, observerAltM, tleCatalog, observationTime]);
+  }, [lat, lon, observerAltM, tleCatalog]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -1094,10 +1107,15 @@ export function CelestialSkyView({
 
       // Milky Way + constellations + bright field at every zoom (night-weighted).
       const nightWayfinding = sky.isDay ? 0.18 : 1;
+      // Recompute ephemeris every frame — wall clock + GPS fix, not stale React memo.
+      const skyTime = observationTimeRef.current;
+      const liveBodies = computeCelestialBodies(skyTime, lat, lon, observerAltM);
+      const liveMinorBodies = computeMinorBodies(skyTime, lat, lon, observerAltM);
+
       if (starAlpha > 0.06) {
         drawMilkyWayBand(
           ctx,
-          observationTime,
+          skyTime,
           lat,
           lon,
           observerAltM,
@@ -1111,7 +1129,7 @@ export function CelestialSkyView({
       if (detail === "wide") {
         drawPath(
           ctx,
-          sampleEclipticPath(observationTime, lat, lon, 8, observerAltM),
+          sampleEclipticPath(skyTime, lat, lon, 8, observerAltM),
           project.toXY,
           w,
           h,
@@ -1141,13 +1159,8 @@ export function CelestialSkyView({
       const hits: HitTarget[] = [];
       const trackables: Trackable[] = [];
 
-      // Recompute ephemeris every frame — wall clock + GPS fix, not stale React memo.
-      const skyTime = new Date();
-      const liveBodies = computeCelestialBodies(skyTime, lat, lon, observerAltM);
-      const liveMinorBodies = computeMinorBodies(skyTime, lat, lon, observerAltM);
-
       for (const dso of DEEP_SKY_OBJECTS) {
-        const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
+        const pt = projectRaDecToScreen(dso.ra, dso.dec, skyTime, lat, lon, observerAltM, project.toXY);
         if (!pt || pt.alt < 8) continue;
         trackables.push({
           id: dso.id,
@@ -1246,14 +1259,14 @@ export function CelestialSkyView({
       const labelCands: Array<{ id: string; brightness: number }> = [];
       for (const star of BRIGHT_STARS) {
         const pt = projectRaDecToScreen(
-          star.ra, star.dec, observationTime, lat, lon, observerAltM, project.toXY,
+          star.ra, star.dec, skyTime, lat, lon, observerAltM, project.toXY,
         );
         if (!pt || pt.alt < 0 || !project.inView(pt.x, pt.y, w, h)) continue;
         labelCands.push({ id: `star:${star.id}`, brightness: -star.mag });
       }
       for (const dso of DEEP_SKY_OBJECTS) {
         const pt = projectRaDecToScreen(
-          dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY,
+          dso.ra, dso.dec, skyTime, lat, lon, observerAltM, project.toXY,
         );
         if (!pt || pt.alt < 0 || !project.inView(pt.x, pt.y, w, h)) continue;
         // Slightly demote DSOs so they don't shout over 1st-mag stars.
@@ -1299,7 +1312,7 @@ export function CelestialSkyView({
         for (let bi = 0; bi < BRIGHT_STARS.length; bi++) {
           const star = BRIGHT_STARS[bi]!;
           const pt = projectRaDecToScreen(
-            star.ra, star.dec, observationTime, lat, lon, observerAltM, project.toXY,
+            star.ra, star.dec, skyTime, lat, lon, observerAltM, project.toXY,
           );
           if (!pt || !project.inView(pt.x, pt.y, w, h)) continue;
           const below = pt.alt < 0;
@@ -1352,15 +1365,15 @@ export function CelestialSkyView({
           let visibleLines = 0;
           let labelPt: { x: number; y: number; alt: number } | null = null;
           for (const [a, b] of fig.lines) {
-            const p0 = projectRaDecToScreen(a[0], a[1], observationTime, lat, lon, observerAltM, project.toXY);
-            const p1 = projectRaDecToScreen(b[0], b[1], observationTime, lat, lon, observerAltM, project.toXY);
+            const p0 = projectRaDecToScreen(a[0], a[1], skyTime, lat, lon, observerAltM, project.toXY);
+            const p1 = projectRaDecToScreen(b[0], b[1], skyTime, lat, lon, observerAltM, project.toXY);
             if (!p0 || !p1) continue;
             segments.push([[p0.x, p0.y], [p1.x, p1.y]]);
             visibleLines++;
           }
           if (visibleLines < 1) continue;
           const lp = projectRaDecToScreen(
-            fig.label.ra, fig.label.dec, observationTime, lat, lon, observerAltM, project.toXY,
+            fig.label.ra, fig.label.dec, skyTime, lat, lon, observerAltM, project.toXY,
           );
           if (lp) labelPt = lp;
           const presence = labelPt
@@ -1380,7 +1393,7 @@ export function CelestialSkyView({
         }
 
         for (const dso of DEEP_SKY_OBJECTS) {
-          const pt = projectRaDecToScreen(dso.ra, dso.dec, observationTime, lat, lon, observerAltM, project.toXY);
+          const pt = projectRaDecToScreen(dso.ra, dso.dec, skyTime, lat, lon, observerAltM, project.toXY);
           if (!pt || !project.inView(pt.x, pt.y, w, h, 20)) continue;
           const dsoT = Math.max(0, Math.min(1, (9.5 - dso.mag) / 9.5));
           const dsoSteep = Math.pow(dsoT, 2.4);
@@ -1544,7 +1557,7 @@ export function CelestialSkyView({
       ctx.fillStyle = skyWarmth > 0.5 ? "rgba(245, 158, 11, 0.88)" : "rgba(226, 232, 240, 0.88)";
       ctx.textAlign = "left";
       ctx.fillText(
-        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${observationTime.toLocaleTimeString()} · ${hudZoomRef.current}${weather?.condition ? ` · ${weather.condition}` : ""}`,
+        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${skyTime.toLocaleTimeString()} · ${hudZoomRef.current}${weather?.condition ? ` · ${weather.condition}` : ""}`,
         10,
         15,
       );
@@ -1627,7 +1640,7 @@ export function CelestialSkyView({
   }, [
     lat,
     lon,
-    observationTime,
+    skyEpoch,
     bodies,
     minorBodies,
     stars,

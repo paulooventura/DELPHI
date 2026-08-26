@@ -280,7 +280,8 @@ function weatherLine(o: Orchestration, c: Composition, seed: number): string {
     const tint = pick(TINT[support.axis][poleOf(support.mean)], seed, 2);
     // Weave tint without stacking into "a rising, bright warmth" mush.
     if (!weather.includes(tint)) {
-      weather = weather.replace(/^an? /, m => `${m}${tint} `);
+      const article = /^[aeiou]/i.test(tint) ? "an " : "a ";
+      weather = weather.replace(/^an? /, `${article}${tint} `);
     }
   }
   return weather;
