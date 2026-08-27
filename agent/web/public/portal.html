@@ -327,6 +327,61 @@
   .door button:hover{background:rgba(232,160,79,.2)}
   .door .stub{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--fogd);margin-top:10px}
   .doornote{text-align:center;margin-top:24px;font-size:12px;color:var(--fogd);max-width:56ch;margin-left:auto;margin-right:auto}
+
+  .pgwrap{max-width:1000px;margin:0 auto}
+  .pghero{text-align:center;padding:22px 18px 34px;border-bottom:1px solid var(--lsoft);margin-bottom:34px}
+  .pghero .pgeye,.pgpromise .pgeye{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin:0 0 14px}
+  .pghero h2{font-family:var(--serif);font-weight:500;font-size:clamp(26px,5vw,44px);margin:0;letter-spacing:.01em;line-height:1.1}
+  .pghero .pglede{color:var(--fog);max-width:60ch;margin:15px auto 0;font-size:14px;line-height:1.6}
+  .pgcta{margin-top:26px;font:inherit;font-size:13.5px;font-weight:700;padding:13px 26px;border-radius:12px;cursor:pointer;border:1px solid rgba(232,160,79,.42);background:rgba(232,160,79,.13);color:var(--amber);transition:.15s}
+  .pgcta:hover{background:rgba(232,160,79,.22);transform:translateY(-1px)}
+  .pgsec{margin-bottom:38px}
+  .pgseclabel{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--fogd);text-align:center;margin:0 0 20px}
+  /* arc of a night */
+  .pgarc{max-width:720px;margin:0 auto;position:relative}
+  .pgarc::before{content:"";position:absolute;left:23px;top:12px;bottom:12px;width:2px;background:linear-gradient(180deg,rgba(232,160,79,.5),rgba(124,240,208,.35),rgba(90,169,255,.3))}
+  .pgphase{display:flex;gap:18px;align-items:flex-start;padding:12px 0;position:relative}
+  .pgphase .pgn{flex-shrink:0;width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:ui-monospace,monospace;font-size:13px;font-weight:700;color:var(--amber);background:var(--ink);border:1px solid rgba(232,160,79,.35);position:relative;z-index:1}
+  .pgphase .pgpbody{padding-top:4px}
+  .pgphase h4{margin:0 0 4px;font-size:15px;font-weight:750;font-family:var(--serif);letter-spacing:.01em}
+  .pgphase p{margin:0;color:var(--fog);font-size:13px;line-height:1.5}
+  /* prep cards */
+  .pgprep{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;max-width:820px;margin:0 auto}
+  @media(max-width:620px){.pgprep{grid-template-columns:1fr}}
+  .pgcard{border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:linear-gradient(180deg,var(--card),var(--ink));text-align:center}
+  .pgcard .pgico{font-size:26px;margin-bottom:12px}
+  .pgcard h4{margin:0 0 7px;font-size:14.5px;font-weight:750}
+  .pgcard p{margin:0;color:var(--fog);font-size:12.8px;line-height:1.5}
+  /* the promise */
+  .pgpromise{border:1px solid rgba(232,160,79,.28);border-radius:18px;padding:28px 26px;background:linear-gradient(180deg,rgba(232,160,79,.06),var(--ink));max-width:820px;margin:0 auto;text-align:center}
+  .pgpromise h3{font-family:var(--serif);font-weight:500;font-size:clamp(22px,4vw,32px);margin:0 0 20px;color:var(--paper)}
+  .pgvows{list-style:none;padding:0;margin:0;text-align:left;max-width:600px;margin:0 auto}
+  .pgvows li{position:relative;padding:13px 0 13px 34px;font-size:13.5px;color:var(--paper);line-height:1.5;border-bottom:1px solid var(--lsoft)}
+  .pgvows li:last-child{border-bottom:none}
+  .pgvows li::before{content:"△";position:absolute;left:4px;top:13px;color:var(--amber);font-size:13px}
+
+  /* ===== fork: choose your path ===== */
+  .tfork{max-width:900px;margin:0 auto;padding:30px 20px 10px;text-align:center}
+  .forkcards{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:34px auto 18px;max-width:820px}
+  @media(max-width:680px){.forkcards{grid-template-columns:1fr}}
+  .forkcard{text-align:left;border:1px solid var(--line);border-radius:18px;padding:26px 24px;background:linear-gradient(180deg,var(--card),var(--ink));cursor:pointer;font:inherit;color:var(--paper);transition:.18s;display:flex;flex-direction:column}
+  .forkcard:hover{transform:translateY(-3px);border-color:rgba(232,160,79,.45);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+  .forkcard .fkico{font-size:30px;margin-bottom:14px;color:var(--amber)}
+  .forkcard.guest .fkico{color:var(--node)}
+  .forkcard h3{margin:0 0 9px;font-size:18px;font-weight:750;font-family:var(--serif);letter-spacing:.01em}
+  .forkcard p{margin:0 0 18px;color:var(--fog);font-size:13px;line-height:1.55;flex:1}
+  .forkcard .fkgo{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.08em;color:var(--amber);font-weight:700}
+  .forkcard.guest .fkgo{color:var(--node)}
+  .forknote{color:var(--fogd);font-size:12px;max-width:52ch;margin:8px auto 0}
+
+  /* ===== path views + switch bar ===== */
+  .tview{max-width:1120px;margin:0 auto;padding:0 22px}
+  .viewbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 0 22px;margin-bottom:8px;border-bottom:1px solid var(--lsoft);flex-wrap:wrap}
+  .vbtag{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;padding:6px 12px;border-radius:999px;border:1px solid var(--line)}
+  .vbtag.guest{color:var(--node);border-color:rgba(124,240,208,.3);background:rgba(124,240,208,.06)}
+  .vbtag.builder{color:var(--amber);border-color:rgba(232,160,79,.3);background:rgba(232,160,79,.06)}
+  .switchpath{font:inherit;font-size:12px;font-weight:650;padding:8px 15px;border-radius:999px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--fog);transition:.15s}
+  .switchpath:hover{color:var(--paper);border-color:var(--fog)}
 </style>
 
 </head>
@@ -516,8 +571,34 @@ window.toggleLedge=(id)=>{const el=document.getElementById("ledge-"+id);if(el)el
 
 /* ===== TONAL — the ground: covenant, roles, economics, doors ===== */
 let _tonalMounted=false;
+let _tonalPath=null; // guest | builder | null(fork) — resets on portal reload = visit-only memory
 function ensureTonal(){if(_tonalMounted)return;_tonalMounted=true;
 const TD={
+  welcome:{
+    hero:{eye:"For you, arriving",h:"You're invited up &amp; in",p:"This isn't a show you watch — it's a room you join. What follows is what the night asks of you and what it promises back: how to arrive, what to expect, and the care that holds you the whole way through."},
+    expect:[
+      {n:"01",ph:"The Threshold",p:"You cross in. There's a moment at the door — a breath, a wristband, a chosen yes. You're not a ticket-holder anymore; you're part of the room."},
+      {n:"02",ph:"The Rise",p:"The night builds. Sound gathers, the crowd finds its pulse, and the intention set at the door starts to move through everyone at once."},
+      {n:"03",ph:"The Peak",p:"Full resonance — the moment the whole room is breathing together. This is what the gathering is for. You'll feel when it arrives."},
+      {n:"04",ph:"The Return",p:"The come-down is designed, not abandoned. Softer sound, space to land, water and a quiet corner. You leave whole, not wrung out."}
+    ],
+    arrive:[
+      {ico:"💧",h:"Come watered &amp; fed",p:"Eat before. Hydrate before. The night is long and the body is the instrument — treat it like one."},
+      {ico:"🫂",h:"Come with your people",p:"Arrive with someone who knows you, or make a pact with someone once you're in. Nobody floats alone here."},
+      {ico:"🧭",h:"Come with an intention",p:"Not a rule — a reason. What are you here to feel, release, or find? The night moves better when you've named it."},
+      {ico:"🌙",h:"Leave room to land",p:"Don't schedule your morning tight. Give the return its time — the night doesn't really end at the door."}
+    ],
+    promise:{
+      eye:"The promise made to you",
+      h:"You are held, and you are free",
+      vows:[
+        "Every intensity is yours to choose — sound, closeness, contact. 'No' is complete and costs nothing.",
+        "Care is staffed, not hoped for: water, quiet space, sober support, and people whose only job is you.",
+        "There are always clear exits and clear signals. You never have to earn your way out of a moment.",
+        "If the supply is part of your night, harm-reduction is here — testing where lawful, and no judgment at the door."
+      ]
+    }
+  },
   covenant:{
     lead:{cn:"The first principle",h:"Resonance is the root; the gathering is the vessel.",p:"Everything below serves the experience above. The covenant is the promise the builders make so the partygoers can float up and in without fear — that the ground holding them is sound, honest, and safe."},
     cards:[
@@ -567,19 +648,74 @@ const TD={
 const troot=document.getElementById("tonal-root");
 troot.innerHTML=`
   <div class="twrap">
-    <p class="kicker">Tonal · The Ground</p>
-    <h1 class="ttitle">How it gets built &amp; kept safe</h1>
-    <p class="tsub">The infrastructure beneath the gathering — the covenant the builders keep, the roles that hold the night, the honest economics, and the doors where value crosses. This is the <em>down</em> direction: partygoers float up &amp; in; builders dig down.</p>
-    <div class="updown"><span class="u">▲ Cosmos</span><span class="barv"></span><span class="d">▼ Infrastructure</span></div>
 
-    <div class="ttabs" role="tablist">
-      <button class="ttab" role="tab" data-ttab="covenant" aria-selected="true">▽ The Covenant</button>
-      <button class="ttab" role="tab" data-ttab="roles" aria-selected="false">◇ Role Dashboards</button>
-      <button class="ttab" role="tab" data-ttab="econ" aria-selected="false">▽ Venue &amp; Backers</button>
-      <button class="ttab" role="tab" data-ttab="doors" aria-selected="false">◇ Commerce Doors</button>
+    <!-- FORK: choose your path -->
+    <div class="tfork" id="tfork">
+      <p class="kicker">Tonal · The Gathering</p>
+      <h1 class="ttitle">Why are you here tonight?</h1>
+      <p class="tsub">Two ways in — choose the one that matches your intention. You can switch paths anytime.</p>
+      <div class="forkcards">
+        <button class="forkcard guest" onclick="tonalPath('guest')">
+          <div class="fkico">△</div>
+          <h3>I'm coming to the gathering</h3>
+          <p>The invitation, what to expect, how to arrive, and the care that holds you. The guest's way up &amp; in.</p>
+          <span class="fkgo">Enter as a guest →</span>
+        </button>
+        <button class="forkcard builder" onclick="tonalPath('builder')">
+          <div class="fkico">▽</div>
+          <h3>I'm building or backing it</h3>
+          <p>The covenant, the roles, the venue &amp; investor picture, the commerce doors. The builder's way down.</p>
+          <span class="fkgo">Enter as promoter · venue · backer →</span>
+        </button>
+      </div>
+      <p class="forknote">Guests see the guest world; the build details open only if you choose the builder path.</p>
     </div>
 
-    <div class="tpanel active" id="tpanel-covenant">
+    <!-- GUEST VIEW -->
+    <div class="tview" id="tview-guest">
+      <div class="viewbar"><span class="vbtag guest">△ Guest · coming to the gathering</span><button class="switchpath" onclick="tonalPath(null)">↔ Switch path</button></div>
+      <div class="pgwrap">
+        <div class="pghero">
+          <p class="pgeye">${esc(TD.welcome.hero.eye)}</p>
+          <h2>${TD.welcome.hero.h}</h2>
+          <p class="pglede">${esc(TD.welcome.hero.p)}</p>
+          <button class="pgcta" onclick="tonalDoor('Ticketing')">Find the way in ↓</button>
+        </div>
+        <div class="pgsec">
+          <p class="pgseclabel">The arc of a night</p>
+          <div class="pgarc">
+            ${TD.welcome.expect.map(e=>`<div class="pgphase"><div class="pgn">${esc(e.n)}</div><div class="pgpbody"><h4>${esc(e.ph)}</h4><p>${esc(e.p)}</p></div></div>`).join("")}
+          </div>
+        </div>
+        <div class="pgsec">
+          <p class="pgseclabel">How to arrive ready</p>
+          <div class="pgprep">
+            ${TD.welcome.arrive.map(a=>`<div class="pgcard"><div class="pgico">${a.ico}</div><h4>${a.h}</h4><p>${esc(a.p)}</p></div>`).join("")}
+          </div>
+        </div>
+        <div class="pgpromise">
+          <p class="pgeye">${esc(TD.welcome.promise.eye)}</p>
+          <h3>${esc(TD.welcome.promise.h)}</h3>
+          <ul class="pgvows">${TD.welcome.promise.vows.map(v=>`<li>${esc(v)}</li>`).join("")}</ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUILDER VIEW -->
+    <div class="tview" id="tview-builder">
+      <div class="viewbar"><span class="vbtag builder">▽ Builder · promoter · venue · backer</span><button class="switchpath" onclick="tonalPath(null)">↔ Switch path</button></div>
+      <p class="kicker">Tonal · The Ground</p>
+      <h1 class="ttitle">How it gets built &amp; kept safe</h1>
+      <p class="tsub">The infrastructure beneath the gathering — the covenant the builders keep, the roles that hold the night, the honest economics, and the doors where value crosses.</p>
+
+      <div class="ttabs" role="tablist">
+        <button class="ttab" role="tab" data-ttab="covenant" aria-selected="true">▽ The Covenant</button>
+        <button class="ttab" role="tab" data-ttab="roles" aria-selected="false">◇ Role Dashboards</button>
+        <button class="ttab" role="tab" data-ttab="econ" aria-selected="false">▽ Venue &amp; Backers</button>
+        <button class="ttab" role="tab" data-ttab="doors" aria-selected="false">◇ Commerce Doors</button>
+      </div>
+
+      <div class="tpanel active" id="tpanel-covenant">
       <div class="covgrid">
         <div class="covcard lead"><p class="cn">${TD.covenant.lead.cn}</p><h3>${esc(TD.covenant.lead.h)}</h3><p>${esc(TD.covenant.lead.p)}</p></div>
         ${TD.covenant.cards.map(c=>`<div class="covcard"><p class="cn">${esc(c.cn)}</p><h3>${esc(c.h)}</h3><p>${esc(c.p)}</p></div>`).join("")}
@@ -625,7 +761,18 @@ troot.innerHTML=`
         <p class="doornote">When these go live, they'll open through the same outbound gate the rest of DELPHI uses — a clear "you're leaving to an external site" step before any payment page.</p>
       </div>
     </div>
+    </div><!-- /tview-builder -->
   </div>`;
+
+// path selection (guest / builder / null=fork). Remembered for this visit only.
+function tonalRender(){
+  const fork=troot.querySelector("#tfork"), g=troot.querySelector("#tview-guest"), b=troot.querySelector("#tview-builder");
+  fork.style.display = _tonalPath?"none":"block";
+  g.style.display = _tonalPath==="guest"?"block":"none";
+  b.style.display = _tonalPath==="builder"?"block":"none";
+  document.getElementById("screen-tonal").scrollTo(0,0);
+}
+window.tonalPath=(p)=>{_tonalPath=p;tonalRender();};
 
 troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
   const id=t.dataset.ttab;
@@ -633,6 +780,8 @@ troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
   troot.querySelectorAll(".tpanel").forEach(p=>p.classList.toggle("active",p.id==="tpanel-"+id));
   document.getElementById("screen-tonal").scrollTo(0,0);
 }));
+
+tonalRender();
 }
 window.tonalDoor=(name)=>{modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">🚧</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:40ch;margin-left:auto;margin-right:auto">This door isn't wired to live payment yet. When it opens, it'll route through DELPHI's outbound gate to the real ${esc(name)==="Ticketing"?"Ticket Fairy":"Stripe"} flow.</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
 
