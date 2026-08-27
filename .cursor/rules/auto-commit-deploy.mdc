@@ -22,6 +22,7 @@ Pushing `main` to GitHub triggers the Vercel production deploy for **https://del
 3. `git add` → `git commit` → `git pull --rebase origin main` if needed → `git push origin HEAD`
 4. Confirm the GitHub deployment for the new SHA (or that push reached `main`)
 5. Tell the user: commit hash, that push succeeded, and that **delphi.pauloventura.org** is deploying via Vercel
+6. Also do the app/game closeout: update Homebase `projects/delphi.md`, rebuild `python scripts/build_index.py`, reply with test URLs, and a pasteable Claude prompt. Do not wait to be asked.
 
 ## Remote
 
