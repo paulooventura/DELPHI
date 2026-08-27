@@ -289,6 +289,71 @@
   .rolecard .rmeta .k{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--fogd)}
   .rolecard .rmeta .v{font-family:ui-monospace,monospace;font-size:12px;color:var(--amber);font-weight:700}
 
+  /* ===== roles explorer (department tabs + scale filter) ===== */
+  .rolesx{max-width:1060px;margin:0 auto}
+  .rxintro{text-align:center;max-width:64ch;margin:0 auto 22px}
+  .rxintro p{color:var(--fog);font-size:13.5px;line-height:1.55;margin:0}
+  .rxintro strong{color:var(--paper);font-weight:700}
+  .scalefilter{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
+  .scalefilter .sflabel{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--fogd)}
+  .sfbtns{display:inline-flex;gap:6px;flex-wrap:wrap;background:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px}
+  .sfbtn{font:inherit;font-size:12px;font-weight:650;padding:7px 14px;border-radius:999px;cursor:pointer;border:none;background:transparent;color:var(--fog);transition:.14s;white-space:nowrap}
+  .sfbtn:hover{color:var(--paper)}
+  .sfbtn.active{background:rgba(232,160,79,.16);color:var(--amber)}
+  .deptbar{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;padding:0 0 18px;margin-bottom:20px;border-bottom:1px solid var(--line)}
+  .depttab{display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--card);color:var(--fog);font:inherit;font-size:12.5px;font-weight:650;padding:10px 13px;border-radius:11px;cursor:pointer;transition:.14s;text-align:left;min-width:0}
+  .depttab:hover{color:var(--paper);border-color:var(--fog)}
+  .depttab.active{background:var(--ink);color:var(--paper);border-color:rgba(232,160,79,.4)}
+  .depttab .di{font-size:15px;flex-shrink:0}
+  .depttab .dn{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .depttab .dc{flex-shrink:0;font-family:ui-monospace,monospace;font-size:10px;font-weight:700;color:var(--amber);background:rgba(232,160,79,.12);border-radius:999px;padding:1px 7px;min-width:18px;text-align:center}
+  .rxdhead{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+  .rxdico{font-size:24px}
+  .rxdhead h3{margin:0;font-size:18px;font-weight:750;font-family:var(--serif);letter-spacing:.01em}
+  .rxdcount{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fogd);margin-left:auto}
+  .rxempty{color:var(--fog);font-size:13px;text-align:center;padding:30px 20px;border:1px dashed var(--line);border-radius:14px;background:var(--card)}
+  .rxlist{display:flex;flex-direction:column;gap:8px}
+  .rxrow{border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--card),var(--ink));overflow:hidden;transition:border-color .15s}
+  .rxrow:hover{border-color:rgba(232,160,79,.32)}
+  .rxrow.open{border-color:rgba(232,160,79,.42)}
+  .rxrhead{display:flex;align-items:center;gap:16px;padding:13px 16px;cursor:pointer}
+  .rxrmain{flex:1;min-width:0}
+  .rxrtitle{display:flex;align-items:center;gap:9px}
+  .rxrdept{font-size:15px;flex-shrink:0}
+  .rxrn{font-size:14.5px;font-weight:750;letter-spacing:.01em}
+  .rxrchev{font-size:11px;color:var(--fogd);transition:transform .2s;margin-left:2px}
+  .rxrow.open .rxrchev{transform:rotate(180deg)}
+  .rxrd{margin:3px 0 0;color:var(--fog);font-size:12.3px;line-height:1.4}
+  .rxrmeta{display:flex;align-items:center;gap:8px;flex-shrink:0}
+  @media(max-width:620px){.rxrhead{flex-direction:column;align-items:flex-start;gap:9px}.rxrmeta{flex-wrap:wrap}}
+  .rxdetail{max-height:0;overflow:hidden;transition:max-height .3s ease}
+  .rxrow.open .rxdetail{max-height:900px}
+  .rxphases{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:4px 16px 0}
+  @media(max-width:620px){.rxphases{grid-template-columns:1fr}}
+  .rxphase{border:1px solid var(--lsoft);border-radius:10px;padding:12px 13px;background:var(--ink)}
+  .rxpk{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);display:block;margin-bottom:6px}
+  .rxphase p{margin:0;color:var(--fog);font-size:12px;line-height:1.45}
+  .rxcues{display:flex;flex-direction:column;gap:7px;padding:14px 16px 0}
+  .rxcue{display:flex;gap:10px;align-items:flex-start}
+  .rxcue .rxcd{width:10px;height:10px;border-radius:50%;flex-shrink:0;margin-top:3px}
+  .rxcue.g .rxcd{background:#4fd1a1}.rxcue.y .rxcd{background:#e8c24f}.rxcue.r .rxcd{background:#ff5b5b}
+  .rxcue p{margin:0;font-size:12px;line-height:1.45;color:var(--paper)}
+  .rxground{margin:14px 16px 16px;padding:11px 13px;border-left:2px solid var(--amber);background:rgba(232,160,79,.05);color:var(--fog);font-size:11.5px;line-height:1.5;border-radius:0 8px 8px 0}
+  .rxtier{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
+  .rxt1{color:#7cf0d0;background:rgba(124,240,208,.1);border:1px solid rgba(124,240,208,.25)}
+  .rxt2{color:#5aa9ff;background:rgba(90,169,255,.1);border:1px solid rgba(90,169,255,.25)}
+  .rxt3{color:#a78bfa;background:rgba(167,139,250,.1);border:1px solid rgba(167,139,250,.25)}
+  .rxt4{color:#e8a04f;background:rgba(232,160,79,.1);border:1px solid rgba(232,160,79,.28)}
+  .rxcert{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.06em;text-transform:uppercase;color:var(--fogd);padding:3px 8px;border-radius:999px;border:1px solid var(--lsoft);background:var(--ink);white-space:nowrap}
+  .rxrate{font-family:ui-monospace,monospace;font-size:13px;font-weight:700;color:var(--node);letter-spacing:.02em;min-width:34px;text-align:right}
+  /* grouped all view */
+  .rxgroup{margin-bottom:22px}
+  .rxgroup:last-child{margin-bottom:0}
+  .rxgrouphead{display:flex;align-items:center;gap:10px;margin:0 0 10px;padding-bottom:7px;border-bottom:1px solid var(--lsoft)}
+  .rxgico{font-size:16px}
+  .rxgrouphead h4{margin:0;font-size:12.5px;font-weight:750;letter-spacing:.03em;text-transform:uppercase;color:var(--fog)}
+  .rxgcount{font-family:ui-monospace,monospace;font-size:10px;font-weight:700;color:var(--amber);background:rgba(232,160,79,.12);border-radius:999px;padding:1px 7px;margin-left:auto}
+
   /* venue / economics */
   .econrow{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;max-width:960px;margin:0 auto 20px}
   @media(max-width:720px){.econrow{grid-template-columns:repeat(2,1fr)}}
@@ -608,14 +673,83 @@ const TD={
       {cn:"Vow IV · Reciprocity",h:"Value flows both ways.",p:"Backers, crew, venue, and city each leave better than they arrived. The event is not extraction dressed as celebration — it is an exchange everyone would choose again."}
     ]
   },
-  roles:[
-    {ico:"🎛️",h:"Conductor",tag:"Not idol · steward",desc:"Holds the arc of the night without becoming its center. Sets tempo, reads the room, hands off gracefully.",duties:["Owns the emotional through-line","Cues transitions between phases","Protects the intention from drift"],k:"Answers to",v:"The covenant"},
-    {ico:"🛟",h:"Care Lead",tag:"Harm reduction",desc:"Runs the safety layer end to end — the priesthood of the ground. First and last word on wellbeing.",duties:["Staffs quiet / recovery space","Coordinates sober support + water","Holds testing + emergency protocol"],k:"Veto power",v:"Absolute"},
-    {ico:"🔊",h:"Sound & Space",tag:"Build crew",desc:"Translates the cosmology into a physical room — rig, acoustics, light, flow, and the load-in/out that nobody sees.",duties:["Designs signal + stage plot","Owns load-in / strike timeline","Keeps levels within venue + safety limits"],k:"Reports to",v:"Conductor"},
-    {ico:"🚪",h:"Threshold",tag:"Door & flow",desc:"Guards the boundary between outside and in — entry, capacity, re-entry, and the felt sense of crossing over.",duties:["Manages capacity + count","Runs consent + wristband ritual","Watches crowd density all night"],k:"Owns",v:"The count"},
-    {ico:"📒",h:"Steward",tag:"Books & backers",desc:"Keeps the money honest and the backers informed. The clear-eyed half of the sacred/spreadsheet pair.",duties:["Maintains the per-event ledger","Reports P&L to the syndicate","Closes out payouts + reconciliation"],k:"Discloses",v:"Everything"},
-    {ico:"🤝",h:"Host / Venue",tag:"Local anchor",desc:"The relationship with the room and the city — permits, neighbors, the goodwill that lets it happen again.",duties:["Secures venue + permits","Manages neighbor + city relations","Ensures the city leaves better"],k:"Protects",v:"The next event"}
-  ],
+  roles:{
+    tiers:["Bar ≤150","Club night","Concert","Festival 5k+"],
+    depts:[
+      {id:"lead",name:"Leadership &amp; Production",ico:"🎬",roles:[
+        {n:"Promoter / Organizer",t:1,rate:"—",cert:"",d:"Owns the endeavor: books, budgets, and carries the risk."},
+        {n:"Event Producer / PM",t:1,rate:"$$$",cert:"",d:"Runs the night end to end: plan, schedule, and the point person when something breaks. Even a bar night needs one."},
+        {n:"Production Manager",t:3,rate:"$$$",cert:"",d:"Runs the technical build across all departments."},
+        {n:"Stage Manager",t:2,rate:"$$",cert:"",d:"Runs the show clock; cues transitions and set changes."},
+        {n:"Show Caller",t:4,rate:"$$$",cert:"",d:"Calls live cues across audio/light/video in real time."},
+        {n:"Site / Event Manager",t:4,rate:"$$$",cert:"",d:"Owns the whole grounds and multi-stage coordination."}
+      ]},
+      {id:"audio",name:"Audio",ico:"🔊",roles:[
+        {n:"FOH Engineer",t:1,rate:"$$",cert:"",d:"Mixes what the crowd hears out front."},
+        {n:"Monitor Engineer",t:2,rate:"$$",cert:"",d:"Mixes what performers hear on stage / in-ears."},
+        {n:"Systems (PA) Engineer",t:3,rate:"$$$",cert:"",d:"Tunes and time-aligns the speaker system to the room."},
+        {n:"Audio Tech / A2",t:2,rate:"$",cert:"",d:"Patches, mics, line-checks, and stage audio support."},
+        {n:"RF / Comms Coordinator",t:4,rate:"$$",cert:"RF",d:"Manages wireless mics, IEMs, and radio frequencies."},
+        {n:"DJ Tech",t:1,rate:"$",cert:"",d:"Sets up and troubleshoots booth, decks, and CDJs."}
+      ]},
+      {id:"light",name:"Lighting &amp; Electrical",ico:"💡",roles:[
+        {n:"Lighting Designer (LD)",t:2,rate:"$$$",cert:"",d:"Designs the light show and its looks."},
+        {n:"Lighting Operator",t:2,rate:"$$",cert:"",d:"Runs the console live to the music."},
+        {n:"Lighting Tech",t:2,rate:"$",cert:"",d:"Rigs, addresses, and focuses fixtures."},
+        {n:"Master Electrician",t:3,rate:"$$$",cert:"ELEC",d:"Owns power distribution and electrical safety."},
+        {n:"Power / Generator Tech",t:4,rate:"$$",cert:"ELEC",d:"Runs distro and generators for a whole site."},
+        {n:"Laser / SFX Operator",t:3,rate:"$$",cert:"LASER",d:"Operates lasers, haze, CO2, and pyro-adjacent FX."}
+      ]},
+      {id:"video",name:"Video &amp; Broadcast",ico:"📹",roles:[
+        {n:"Video Director",t:3,rate:"$$$",cert:"",d:"Calls the live cut across all camera sources."},
+        {n:"Vision Mixer / TD",t:3,rate:"$$$",cert:"",d:"Switches the program feed at the desk."},
+        {n:"Camera Operator",t:3,rate:"$$",cert:"",d:"Shoots a live camera position."},
+        {n:"LED / Screen Tech",t:2,rate:"$$",cert:"",d:"Builds and feeds the LED walls and content."},
+        {n:"VJ / Content Op",t:2,rate:"$$",cert:"",d:"Runs visuals and video content to the music."},
+        {n:"Drone Operator",t:4,rate:"$$",cert:"FAA",d:"Flies aerial cameras under airspace rules."},
+        {n:"Streaming / Broadcast Eng",t:4,rate:"$$$",cert:"",d:"Encodes and delivers the live stream / broadcast."}
+      ]},
+      {id:"stage",name:"Stage &amp; Rigging",ico:"🏗️",roles:[
+        {n:"Rigger (Up/Ground)",t:3,rate:"$$$",cert:"RIG",d:"Hangs points and load-bearing structure overhead."},
+        {n:"Stagehand",t:1,rate:"$",cert:"",d:"Load-in, load-out, and set changes."},
+        {n:"Deck Crew",t:2,rate:"$",cert:"",d:"Moves gear and set pieces during the show."},
+        {n:"Automation Op",t:4,rate:"$$$",cert:"",d:"Runs moving stage elements and kinetic scenery."},
+        {n:"Scaffold / Structure Crew",t:4,rate:"$$",cert:"RIG",d:"Builds stage, towers, and roof structure."}
+      ]},
+      {id:"foh",name:"Front of House &amp; Guest",ico:"🎟️",roles:[
+        {n:"Door / Cashier",t:1,rate:"$",cert:"",d:"Takes money at the door, wristbands, and keeps the entry count. The cashier of the night."},
+        {n:"Security",t:1,rate:"$",cert:"GUARD",d:"Crowd safety, conflict de-escalation, and doors."},
+        {n:"Bartender",t:1,rate:"$",cert:"ABC",d:"Serves drinks; owns the bar's pace and legality."},
+        {n:"Coat / Guest Services",t:2,rate:"$",cert:"",d:"Coat check, info, and guest wayfinding."},
+        {n:"Care / Harm-Reduction Lead",t:2,rate:"$$",cert:"CARE",d:"Runs the safety layer: water, quiet space, support."},
+        {n:"Medic / First Aid",t:3,rate:"$$",cert:"MED",d:"On-site medical response."}
+      ]},
+      {id:"talent",name:"Talent &amp; Artist Relations",ico:"🎤",roles:[
+        {n:"Headline DJ / Artist",t:1,rate:"—",cert:"",d:"The billed performer people came for."},
+        {n:"Support / Opener",t:1,rate:"$",cert:"",d:"Warms the room and holds the early slots."},
+        {n:"Live Performer",t:2,rate:"$$",cert:"",d:"Dancers, musicians, or acts beyond the decks."},
+        {n:"Artist Liaison",t:3,rate:"$$",cert:"",d:"Hospitality, timing, and needs for talent."},
+        {n:"Backline Tech",t:3,rate:"$$",cert:"",d:"Sets up and maintains performers' instruments/gear."},
+        {n:"MC / Host",t:2,rate:"$",cert:"",d:"Voice of the room; guides energy between sets."}
+      ]},
+      {id:"money",name:"Marketing &amp; Money",ico:"📈",roles:[
+        {n:"Marketing Lead",t:2,rate:"$$",cert:"",d:"Owns promotion, story, and audience growth."},
+        {n:"Social / Content Creator",t:1,rate:"$",cert:"",d:"Makes the flyers, clips, and channels."},
+        {n:"Ticketing Manager",t:2,rate:"$$",cert:"",d:"Runs tiers, waves, and the sales platform."},
+        {n:"Steward / Treasurer",t:2,rate:"$$",cert:"",d:"Keeps the ledger; reports to the syndicate."},
+        {n:"Photographer",t:1,rate:"$",cert:"",d:"Documents the night for people and promo."},
+        {n:"Videographer / Recap",t:2,rate:"$$",cert:"",d:"Cuts the aftermovie and highlight reels."}
+      ]},
+      {id:"site",name:"Site &amp; Operations",ico:"🧭",roles:[
+        {n:"Venue Owner / Host",t:1,rate:"—",cert:"",d:"Provides the room and local relationships."},
+        {n:"Ops / Logistics Coordinator",t:3,rate:"$$",cert:"",d:"Schedules load-in, vendors, and transport."},
+        {n:"Vendor / Catering",t:1,rate:"$$",cert:"FOOD",d:"Food, drink, or market vendor — from a single taco cart at a bar to a full market row at a festival."},
+        {n:"Parking / Transport",t:3,rate:"$",cert:"",d:"Ingress, egress, and shuttle flow."},
+        {n:"Permits / Compliance",t:3,rate:"$$",cert:"",d:"Licenses, noise, occupancy, and city relations."},
+        {n:"Water / Infrastructure",t:4,rate:"$$",cert:"",d:"Water points, fencing, power runs across a site."}
+      ]}
+    ]
+  },
   econ:{
     stats:[
       {num:"Per-event",lab:"Backing unit",note:"Each gathering is funded on its own, not as a fund"},
@@ -646,6 +780,7 @@ const TD={
 };
 
 const troot=document.getElementById("tonal-root");
+const rxDeptOrderStatic=["foh","talent","audio","site","money","light","stage","video","lead"].map(id=>TD.roles.depts.find(d=>d.id===id)).filter(Boolean);
 troot.innerHTML=`
   <div class="twrap">
 
@@ -723,13 +858,22 @@ troot.innerHTML=`
     </div>
 
     <div class="tpanel" id="tpanel-roles">
-      <div class="rolegrid">
-        ${TD.roles.map(r=>`<div class="rolecard">
-          <div class="rhead"><div class="rico">${r.ico}</div><div><h3>${esc(r.h)}</h3><div class="rtag">${esc(r.tag)}</div></div></div>
-          <p class="rdesc">${esc(r.desc)}</p>
-          <ul class="rduties">${r.duties.map(d=>`<li>${esc(d)}</li>`).join("")}</ul>
-          <div class="rmeta"><span class="k">${esc(r.k)}</span><span class="v">${esc(r.v)}</span></div>
-        </div>`).join("")}
+      <div class="rolesx">
+        <div class="rxintro">
+          <p>The full crew taxonomy — <strong>54 roles across 9 departments</strong>. An endeavor reveals more of them as it scales: a bar night needs a handful; a festival needs nearly all. Filter by scale, then browse each department.</p>
+        </div>
+        <div class="scalefilter">
+          <span class="sflabel">Show roles for:</span>
+          <div class="sfbtns">
+            <button class="sfbtn active" data-tier="0" onclick="rolesScale(0)">All</button>
+            ${TD.roles.tiers.map((t,i)=>`<button class="sfbtn" data-tier="${i+1}" onclick="rolesScale(${i+1})">${esc(t)}</button>`).join("")}
+          </div>
+        </div>
+        <div class="deptbar" role="tablist">
+          <button class="depttab active" data-dept="all" onclick="rolesDept('all')"><span class="di">✳</span><span class="dn">All departments</span><span class="dc" id="dc-all"></span></button>
+          ${rxDeptOrderStatic.map(d=>`<button class="depttab" data-dept="${d.id}" onclick="rolesDept('${d.id}')"><span class="di">${d.ico}</span><span class="dn">${d.name}</span><span class="dc" id="dc-${d.id}"></span></button>`).join("")}
+        </div>
+        <div id="roles-host"></div>
       </div>
     </div>
 
@@ -780,6 +924,103 @@ troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
   troot.querySelectorAll(".tpanel").forEach(p=>p.classList.toggle("active",p.id==="tpanel-"+id));
   document.getElementById("screen-tonal").scrollTo(0,0);
 }));
+
+// ---- roles explorer (department tabs + scale filter) ----
+let _rxDept="all", _rxTier=0;
+// department display order: ground-level (doors) -> high-level ops
+const rxDeptOrder=["foh","talent","audio","site","money","light","stage","video","lead"];
+function rxDeptsOrdered(){return rxDeptOrder.map(id=>TD.roles.depts.find(d=>d.id===id)).filter(Boolean);}
+const certLabel={RF:"RF cert",ELEC:"Electrical",LASER:"Laser safety",FAA:"FAA Part 107",RIG:"Rigging cert",GUARD:"Guard card",ABC:"Alcohol cert",CARE:"Harm-reduction",MED:"Medical",FOOD:"Food safety"};
+const rateOrder={"—":0,"$":1,"$$":2,"$$$":3};
+function rxRoleVisible(r){return _rxTier===0||r.t<=_rxTier;}
+// simplest -> most complex: by scale tier, then by pay/complexity, then name
+function rxSort(a,b){return (a.t-b.t)||((rateOrder[a.rate]||0)-(rateOrder[b.rate]||0))||a.n.localeCompare(b.n);}
+
+// ---- agreement generator: every role expands into a Before/During/After grounded in the framework ----
+// Templates keyed by department — the shape of the commitment for that kind of work.
+const rxAgreements={
+  foh:{before:"Arrive early, briefed on the night's intention and the care plan. Know your post, your relief, and who holds the Care veto.",during:"Hold the boundary with warmth. Watch crowd density and consent. A guest in trouble is the priority, not the count.",after:"Hand off a clean count and any incidents. Flag what strained the boundary so next time holds better."},
+  talent:{before:"Confirm set time, tech needs, and the room's intention. Arrive rested; the room rises with you.",during:"Read the room, serve the arc, hand off gracefully. You hold the energy — not your ego.",after:"Settle payment and files. Note what the room responded to for the next build."},
+  audio:{before:"Advance the technical rider, line-check, and tune the system to the actual room before doors.",during:"Keep levels within venue and safety limits. Protect ears and the mix; the body is the instrument.",after:"Strike cleanly, log gear state, and flag anything that needs repair or replacement."},
+  site:{before:"Lock permits, vendor slots, and load-in timing. Confirm the venue leaves better than we found it.",during:"Keep flow, waste, and neighbor relations under control. The city's goodwill is what lets us return.",after:"Close out vendors and grounds. Reconcile what the venue provided vs. what we brought."},
+  money:{before:"Set tiers, budget, and the transparent ledger. Backers see the plan before a dollar moves.",during:"Track spend live against the plan. Any deviation gets named, not hidden.",after:"Reconcile the ledger, run the recoup-first waterfall, and report P&L to the syndicate — everything disclosed."},
+  light:{before:"Design looks to the intention, rig and address fixtures, confirm power and electrical safety.",during:"Run the console to the music without overpowering it. Light serves the moment, not the other way.",after:"Strike safely, coil and log fixtures, report any electrical concern to the Master Electrician."},
+  stage:{before:"Confirm rigging points, load ratings, and the strike timeline before anything goes overhead.",during:"Every point load-rated and checked. No shortcuts over people's heads — the covenant is safety.",after:"Strike in sequence, inspect and log hardware, report any structural concern immediately."},
+  video:{before:"Confirm camera plot, signal path, and stream/broadcast delivery. Test the full chain before doors.",during:"Cut to serve the story, keep the feed stable, honor airspace and privacy rules.",after:"Deliver files/streams, back up footage, and log the technical package for the recap."},
+  lead:{before:"Hold the whole plan: the intention, the budget, the roles, the care ethic. Everyone briefed and resourced.",during:"Orchestrate without becoming the center. Cue the arc, protect the intention from drift, empower each department.",after:"Close out every thread, thank the team, and carry the lessons — and the seed — to the next endeavor."}
+};
+function rxCues(r){
+  const green="Rested, briefed, and clear on the intention. Consent and care come before the task.";
+  const yellow="Fatigue, friction, or a shortcut tempting you past the covenant. Name it early — that's not weakness, it's the job.";
+  let red="Anything unsafe, non-consensual, or dishonest. Stop, call the Care Lead, and hold the line.";
+  if(r.cert)red=`Working outside your certification (${esc(certLabel[r.cert]||r.cert)}), or being pushed to. This role is cert-gated for a reason — refuse and escalate.`;
+  return {green,yellow,red};
+}
+function rxRoleId(r){return "rx-"+r.n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
+function rxDetail(r,deptId){
+  const ag=rxAgreements[deptId]||rxAgreements.foh;
+  const cues=rxCues(r);
+  return `<div class="rxdetail" id="${rxRoleId(r)}">
+    <div class="rxphases">
+      <div class="rxphase"><span class="rxpk">Before</span><p>${esc(ag.before)}</p></div>
+      <div class="rxphase"><span class="rxpk">During</span><p>${esc(ag.during)}</p></div>
+      <div class="rxphase"><span class="rxpk">After</span><p>${esc(ag.after)}</p></div>
+    </div>
+    <div class="rxcues">
+      <div class="rxcue g"><span class="rxcd"></span><p>${esc(cues.green)}</p></div>
+      <div class="rxcue y"><span class="rxcd"></span><p>${esc(cues.yellow)}</p></div>
+      <div class="rxcue r"><span class="rxcd"></span><p>${cues.red}</p></div>
+    </div>
+    <p class="rxground">Grounded in the RESONANCE framework — the paper, the polarity scales, and the Resonant Consent curriculum — so everyone arrives ready, with guidance and enthusiasm.</p>
+  </div>`;
+}
+function rxRow(r,deptIco){
+  const tierTag=TD.roles.tiers[r.t-1];
+  const deptId=TD.roles.depts.find(d=>d.roles.includes(r))?.id||"foh";
+  return `<div class="rxrow" data-role="${rxRoleId(r)}" onclick="rolesToggle('${rxRoleId(r)}')">
+    <div class="rxrhead">
+      <div class="rxrmain">
+        <div class="rxrtitle">${deptIco?`<span class="rxrdept">${deptIco}</span>`:""}<span class="rxrn">${esc(r.n)}</span><span class="rxrchev">▾</span></div>
+        <p class="rxrd">${esc(r.d)}</p>
+      </div>
+      <div class="rxrmeta">
+        <span class="rxtier rxt${r.t}">${esc(tierTag)}+</span>
+        ${r.cert?`<span class="rxcert" title="Requires certification">✓ ${esc(certLabel[r.cert]||r.cert)}</span>`:""}
+        ${r.rate?`<span class="rxrate">${esc(r.rate)}</span>`:""}
+      </div>
+    </div>
+    ${rxDetail(r,deptId)}
+  </div>`;
+}
+function rolesRender(){
+  const host=troot.querySelector("#roles-host");if(!host)return;
+  let allShown=0;
+  TD.roles.depts.forEach(d=>{const n=d.roles.filter(rxRoleVisible).length;allShown+=n;const el=troot.querySelector("#dc-"+d.id);if(el)el.textContent=n;});
+  const elAll=troot.querySelector("#dc-all");if(elAll)elAll.textContent=allShown;
+  const tierName=_rxTier===0?"every scale":TD.roles.tiers[_rxTier-1];
+  let html="";
+  if(_rxDept==="all"){
+    const totalAll=TD.roles.depts.reduce((s,d)=>s+d.roles.length,0);
+    html+=`<div class="rxdhead"><span class="rxdico">✳</span><h3>All roles</h3><span class="rxdcount">${allShown} of ${totalAll} roles · ${esc(tierName)} · doors → high-level</span></div>`;
+    const groups=rxDeptsOrdered().map(d=>{
+      const shown=d.roles.filter(rxRoleVisible).slice().sort(rxSort);
+      if(!shown.length)return "";
+      return `<div class="rxgroup"><div class="rxgrouphead"><span class="rxgico">${d.ico}</span><h4>${d.name}</h4><span class="rxgcount">${shown.length}</span></div><div class="rxlist">${shown.map(r=>rxRow(r,"")).join("")}</div></div>`;
+    }).filter(Boolean).join("");
+    html+=groups||`<p class="rxempty">No roles at ${esc(tierName)}.</p>`;
+  } else {
+    const dept=TD.roles.depts.find(d=>d.id===_rxDept)||TD.roles.depts[0];
+    const shown=dept.roles.filter(rxRoleVisible).slice().sort(rxSort);
+    html+=`<div class="rxdhead"><span class="rxdico">${dept.ico}</span><h3>${dept.name}</h3><span class="rxdcount">${shown.length} of ${dept.roles.length} roles · ${esc(tierName)} · simplest first</span></div>`;
+    html+=shown.length?`<div class="rxlist">${shown.map(r=>rxRow(r,"")).join("")}</div>`:`<p class="rxempty">No roles from this department are needed at ${esc(tierName)}. They come in as the endeavor grows.</p>`;
+  }
+  host.innerHTML=html;
+}
+window.rolesDept=(id)=>{_rxDept=id;troot.querySelectorAll(".depttab").forEach(t=>t.classList.toggle("active",t.dataset.dept===id));rolesRender();};
+window.rolesScale=(tier)=>{_rxTier=tier;troot.querySelectorAll(".sfbtn").forEach(b=>b.classList.toggle("active",+b.dataset.tier===tier));rolesRender();};
+window.rolesToggle=(id)=>{const row=troot.querySelector('.rxrow[data-role="'+id+'"]');if(row)row.classList.toggle("open");};
+rolesRender();
+rolesRender();
 
 tonalRender();
 }
