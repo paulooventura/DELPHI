@@ -545,11 +545,11 @@ document.getElementById('momentPhrase').textContent=PHRASES[Math.floor(Math.rand
 const portal=document.getElementById('portal');
 function go(name,dir){portal.style.opacity='0';portal.style.pointerEvents='none';
   const s=document.getElementById('screen-'+name);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active','from-left','from-right','from-up','from-down','from-center'));
-  s.classList.add('active','from-'+dir);if(name==='studies')ensureStudies();if(name==='tonal')ensureTonal();window.scrollTo(0,0);}
+  s.classList.add('active','from-'+dir);if(name==='studies'&&typeof ensureStudies==='function')ensureStudies();if(name==='tonal'&&typeof ensureTonal==='function')ensureTonal();window.scrollTo(0,0);}
 function hostedDeepLink(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');return q==='studies'||q==='tonal'||path.endsWith('/studies')||path.endsWith('/tonal');}catch(e){return false;}}
 function goLiveOr(name,dir){if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href='/';return;}go(name,dir);}
 function home(){if(location.protocol!=='file:'&&hostedDeepLink()){location.href='/';return;}document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';}
-(function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);if(name==='studies'||name==='tonal')go(name,name==='studies'?'left':'down');}catch(e){}})();
+function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);if(name==='studies'||name==='tonal')go(name,name==='studies'?'left':'down');}catch(e){}}
 /* outbound gate pattern */
 let _url=null;
 function outbound(url,label){_url=url;document.getElementById('gate-msg').textContent='This opens '+(label||'an external site')+' in a new tab.';document.getElementById('gate').classList.add('open');}
@@ -850,6 +850,7 @@ function empty(){return `<p style="color:var(--fog);text-align:center;padding:40
 document.querySelectorAll("#screen-studies .tab").forEach(t=>t.addEventListener("click",()=>{document.querySelectorAll("#screen-studies .tab").forEach(x=>x.setAttribute("aria-selected","false"));t.setAttribute("aria-selected","true");document.querySelectorAll("#screen-studies .tabpanel").forEach(p=>p.classList.remove("active"));document.getElementById("panel-"+t.dataset.tab).classList.add("active");}));
 pRender();mRender();dRender();
 }
+bootPortal();
 </script>
 
 </body></html>
