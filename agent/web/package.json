@@ -14,7 +14,9 @@
     "test:watch": "vitest",
     "sky:accuracy": "vitest run lib/skyAccuracy.test.ts",
     "cap:sync": "npx cap sync ios",
-    "cap:open": "npx cap open ios"
+    "cap:open": "npx cap open ios",
+    "ios": "bash scripts/run-ios.sh",
+    "ios:local": "bash -c 'CAP_SERVER_URL=\"${CAP_SERVER_URL:-http://127.0.0.1:3000}\" bash scripts/run-ios.sh'"
   },
   "dependencies": {
     "@capacitor/core": "^8.4.2",
