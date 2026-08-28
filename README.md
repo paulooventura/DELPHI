@@ -1,66 +1,36 @@
-# Cosmos Prowler v7
+# DELPHI
 
-This repository contains the Cosmos Prowler backend and Next.js frontend.
+Oracle / sky / clock app, plus **Tonal** and **Studies** on the same domain.
 
-Quick dev
-
-```bash
-cd DELPHI/agent/web
-npm install
-npm run dev
-```
-
-Deploying to production
-
-**Live app:** [delphi.pauloventura.org](https://delphi.pauloventura.org)  
+**Live:** [delphi.pauloventura.org](https://delphi.pauloventura.org)  
+**Portal (Tonal · Studies):** [delphi.pauloventura.org/portal](https://delphi.pauloventura.org/portal)  
+**Stale icon on a phone?** [delphi.pauloventura.org/fresh](https://delphi.pauloventura.org/fresh)  
 **Artist hub (Wix):** [www.pauloventura.org](https://www.pauloventura.org)
 
-See [docs/DOMAIN.md](docs/DOMAIN.md) for DNS setup (CNAME `delphi` → Vercel).
+Canonical git branch is **`main`**. GitHub `master` is an empty Visual Studio skeleton — do not work there.
 
-Pushes to `main` deploy via Vercel Git integration or `.github/workflows/vercel-deploy.yml` (requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`).
+The map of *all* endeavors (this app, M&V2, stale copies, backup rules, Cursor ↔ Claude) is **[homebase/](homebase/MAP.md)**.
 
-In Vercel → project **delphi** → use **Mode A** in [docs/DOMAIN.md](docs/DOMAIN.md) (Root Directory empty, overrides off).
-
-`delphi-wine.vercel.app` redirects to the custom domain. Legacy Netlify (`palotino.netlify.app`) is unrelated.
-
-Local usage:
+## Dev
 
 ```bash
-cd DELPHI/agent/web
+cd agent/web
 npm install
 npm run dev
 ```
 
-Open `http://localhost:3000` for the same local UI and intelligence.
+Open http://localhost:3000. This repo is Delphi; there is no extra `DELPHI/` parent folder in git.
 
-No external credit-based or API-token-based services are required by default. The Research Console scavenges only free, no-key sources (Crossref, PubMed, arXiv, OpenAlex, Semantic Scholar, Wikipedia, Wikidata, DuckDuckGo, OpenLibrary, Stack Exchange, HackerNews, Reddit) and cross-references them with local logic, so it stays free and lightweight by default.
+## Deploy
 
-Optional: AI cross-check
+Pushes to `main` deploy Vercel production. Project settings: [docs/DOMAIN.md](docs/DOMAIN.md) (root directory empty, build overrides off). Alias `delphi-wine.vercel.app` follows the custom domain. Legacy Netlify (`palotino.netlify.app`) is unrelated.
 
-If you already have your own API key(s) for OpenAI, Anthropic, and/or Google Gemini, set any of the following in `agent/web/.env.local` to have the Research Console additionally cross-check its free-source findings against those models (every key you provide gets queried, not just one):
+Optional keys in `agent/web/.env.local` or Vercel (never commit them): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `AIRLABS_API_KEY`. Research Console stays free without them. Aircraft on Sky uses AirLabs when set, otherwise demo traffic.
 
-```
-OPENAI_API_KEY=...
-ANTHROPIC_API_KEY=...
-GEMINI_API_KEY=...
-```
+## Related
 
-These are entirely optional — with none set, zero paid calls are ever made. The app only spends a key's quota you've explicitly provided, and only on the final synthesis step (not every phase).
-
-### Optional: live aircraft (AirLabs)
-
-For real ADS-B traffic on the Sky tab, add your [AirLabs](https://airlabs.co/) API key to Vercel (or `agent/web/.env.local` locally):
-
-```
-AIRLABS_API_KEY=your_key_here
-```
-
-With the key set, the app uses AirLabs for:
-
-- **Live flights** within ~250 km of your GPS (`/api/v9/flights`)
-- **Nearest airport** context on the sky HUD and catalog (`/api/v9/nearby`)
-- Rich aircraft tap-details: route (dep→arr), airline, aircraft type, registration, status, vertical rate
-
-Without the key, demo traffic is shown so the sky layer still works offline.
-
-Other AirLabs endpoints (schedules, airlines DB, routes) can be wired later for departure boards and flight lookup.
+| | |
+|--|--|
+| Game (canonical) | [MV2](https://github.com/paulooventura/MV2) → [play](https://paulooventura.github.io/MV2/) |
+| Hub | [homebase/](homebase/) |
+| Agent rules | [AGENTS.md](AGENTS.md) |

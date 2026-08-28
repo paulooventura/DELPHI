@@ -1,0 +1,4 @@
+{
+  "install": "npm --prefix agent/web ci",
+  "start": "npm --prefix agent/web run dev"
+}

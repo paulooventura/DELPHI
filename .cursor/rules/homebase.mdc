@@ -1,0 +1,12 @@
+---
+description: Homebase hub, canonical main branch, no Cursor-Claude ferrying
+alwaysApply: true
+---
+
+# Homebase + canonical Delphi
+
+- This repo's real branch is **`main`**. If the checkout is empty besides `DELPHI.sln`, switch off `master` before editing.
+- Live app: https://delphi.pauloventura.org (Vercel). Not GitHub Pages `gh-pages`.
+- After substantive work: update `homebase/projects/delphi.md`, run `python homebase/scripts/build_index.py`, write `homebase/board/HANDOFF.md` for the other agent. Do not ask Paulo to paste prompts between Cursor and Claude.
+- Read `homebase/MAP.md` when the request is about “which repo / which link / backup / sync.”
+- Chorus is not this project.
