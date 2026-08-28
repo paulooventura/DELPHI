@@ -26,6 +26,7 @@ export function OnyxSky({
   hapticsEnabled = true,
   warmth = 0.55,
   weather = null,
+  sensorDiag,
   onBack,
 }: {
   now: Date;
@@ -41,6 +42,7 @@ export function OnyxSky({
   hapticsEnabled?: boolean;
   warmth?: number;
   weather?: SkyWeatherSlot | null;
+  sensorDiag?: { events: number; status: "none" | "ok" | "event-but-null" | "denied" };
   onBack: () => void;
 }) {
   const live = liveHeading || livePitch || Boolean(liveAttitudeRef);
@@ -242,6 +244,11 @@ export function OnyxSky({
               : "Hold the phone more upright to lock AR pose"
             : "Allow motion & location — then aim the phone at the sky"}
         </p>
+        {sensorDiag ? (
+          <p className="onyx-sky-sensor" aria-live="polite">
+            sensor: {sensorDiag.events} events · {sensorDiag.status}
+          </p>
+        ) : null}
       </div>
     </div>
   );

@@ -75,6 +75,7 @@ export function OnyxApp({
   arPoseReady = true,
   skyWeather = null,
   skyWarmth = 0.55,
+  sensorDiag,
   onEnterSky,
   cycles,
   cosmic,
@@ -114,6 +115,7 @@ export function OnyxApp({
   arPoseReady?: boolean;
   skyWeather?: SkyWeatherSlot | null;
   skyWarmth?: number;
+  sensorDiag?: { events: number; status: "none" | "ok" | "event-but-null" | "denied" };
   /** Start orientation/location watches from the sky-open gesture. */
   onEnterSky?: () => void;
   cycles: CycleSnapshot | null;
@@ -336,6 +338,7 @@ export function OnyxApp({
         hapticsEnabled={pulseEnabled}
         warmth={skyWarmth}
         weather={skyWeather}
+        sensorDiag={sensorDiag}
         onBack={() => setMode("home")}
       />
     );

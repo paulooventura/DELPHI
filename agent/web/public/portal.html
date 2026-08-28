@@ -20,16 +20,93 @@
   .ring.r1{width:min(52vmin,380px);height:min(52vmin,380px)}
   .ring.r2{width:min(68vmin,500px);height:min(68vmin,500px);border-color:rgba(167,139,250,.1)}
 
-  .compass{position:relative;z-index:3;text-align:center;width:min(92vw,640px);height:min(92vh,640px);display:flex;align-items:center;justify-content:center}
+  .compass{position:relative;z-index:3;text-align:center;width:min(92vw,640px);height:min(92vh,640px);display:flex;align-items:center;justify-content:center;user-select:none;-webkit-user-select:none}
   /* the still center — the phrase */
-  .phrase{cursor:pointer;max-width:min(64vw,420px);transition:transform .5s ease,opacity .5s}
-  .phrase .eye{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.42em;text-transform:uppercase;color:var(--fogd);margin:0 0 18px}
-  .phrase h1{font-family:var(--serif);font-weight:500;font-size:clamp(26px,5.6vw,44px);line-height:1.18;margin:0;letter-spacing:.005em;
+  .phrase{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);cursor:pointer;max-width:min(46vmin,320px);text-align:center;z-index:2;transition:transform .5s ease,opacity .5s;padding:18px 22px;border-radius:20px;background:radial-gradient(ellipse at center,rgba(9,11,18,.82) 0%,rgba(9,11,18,.72) 60%,rgba(9,11,18,0) 100%)}
+  .phrase .eye{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.38em;text-transform:uppercase;color:var(--fogd);margin:0 0 10px}
+  .phrase h1{font-family:var(--serif);font-weight:500;font-size:clamp(17px,3vw,24px);line-height:1.25;margin:0;letter-spacing:.005em;
     background:linear-gradient(180deg,#fdfdff,#c6cfe0);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
-  .phrase .tap{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--node);margin:22px 0 0;opacity:.0;animation:fadein 1.2s ease 1.4s forwards}
+  .phrase .tap{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--node);margin:14px 0 0;opacity:.0;animation:fadein 1.2s ease 1.4s forwards}
+  .yinyang{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:min(52vmin,380px);height:min(52vmin,380px);opacity:0;animation:fadein 1.6s ease .8s forwards;z-index:1}
+  .yinyang svg{width:100%;height:100%;overflow:visible}
+  .yynav{cursor:pointer;transform-origin:50% 50%}
+  #portal[class*="charge-"] .yynav{animation:yyspin .8s ease}
+  @keyframes yyspin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+  .yydot{cursor:pointer}
+  .yydot circle{transition:.15s}
+  .yydot .yyicon{font-size:8px;opacity:0;transition:.15s;pointer-events:none;font-family:ui-monospace,monospace;fill:var(--amber)}
+  .yydot:hover .yyicon{opacity:1}
+  .yyshare:hover circle{fill:var(--node)}
+  .yycopy:hover .yyeye{fill:var(--node)}
+  .yydot.done circle{fill:var(--node)}
+  .yydot.done .yyicon{opacity:1}
+  .sparkburst line{animation:sparkfly .55s ease-out forwards}
+  @keyframes sparkfly{0%{opacity:1;transform:translate(0,0)}100%{opacity:0;transform:translate(var(--dx),var(--dy))}}
+  #toast{position:fixed;left:50%;bottom:38px;transform:translateX(-50%) translateY(12px);background:rgba(12,15,22,.94);border:1px solid var(--amber);color:var(--paper);font-size:13px;font-weight:600;padding:11px 20px;border-radius:999px;z-index:200;opacity:0;pointer-events:none;transition:.28s;box-shadow:0 10px 30px rgba(0,0,0,.4);white-space:nowrap}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .shwrap{text-align:center}
+  .shttl{font-family:var(--serif);font-size:20px;margin:0 0 18px;color:var(--paper)}
+  .shgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media(max-width:480px){.shgrid{grid-template-columns:repeat(3,1fr)}}
+  .shopt{display:flex;flex-direction:column;align-items:center;gap:7px;padding:14px 8px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--paper);font:inherit;font-size:11.5px;font-weight:600;cursor:pointer;transition:.15s}
+  .shopt:hover{border-color:var(--amber);background:var(--ink);transform:translateY(-2px)}
+  .shic{font-size:24px;line-height:1}
+  /* role dashboard */
+  .dashwrap{text-align:left}
+  .dashhead{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .dashico{font-size:30px}
+  .dashname{margin:0;font-family:var(--serif);font-size:19px;font-weight:600;color:var(--paper)}
+  .dashsub{margin:2px 0 0;font-size:11.5px;color:var(--fog)}
+  .dashhead .evbadge{margin-left:auto;align-self:flex-start}
+  .dashlbl{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:0 0 8px}
+  .dashrole{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--ink);margin-bottom:12px}
+  .dashrolerow{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .dashrolerow h3{margin:0;font-size:16px;font-weight:750;color:var(--paper)}
+  .dashcall{margin:8px 0 0;font-size:12px;color:var(--cool);font-family:ui-monospace,monospace}
+  .dashgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+  .dashstat{text-align:center;padding:12px 6px;border:1px solid var(--line);border-radius:12px;background:var(--card)}
+  .dsn{display:block;font-family:var(--serif);font-size:18px;font-weight:600;color:var(--paper);line-height:1.1}
+  .dsn.ok{color:var(--node)}.dsn.pend{color:var(--amber)}
+  .dsl{display:block;font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fogd);margin-top:5px}
+  .dashagree{padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--ink);margin-bottom:14px}
+  .dashphase{display:flex;gap:10px;padding:7px 0;border-top:1px solid var(--lsoft)}
+  .dashphase:first-of-type{border-top:none}
+  .dashphase .dp{flex-shrink:0;width:52px;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--cool);padding-top:2px}
+  .dashphase p{margin:0;font-size:12px;line-height:1.5;color:var(--fog)}
+  .dashacts{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+  /* create-event wizard */
+  .wzwrap{text-align:left}
+  .wzsteps{display:flex;gap:4px;margin-bottom:18px}
+  .wzdot{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;font-family:ui-monospace,monospace;font-size:12px;font-weight:700;color:var(--fogd);cursor:pointer;padding:6px 2px;border-top:2px solid var(--line);transition:.15s}
+  .wzdot em{font-style:normal;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+  .wzdot.on{color:var(--amber);border-top-color:var(--amber)}
+  .wzdot.done{color:var(--node);border-top-color:var(--node)}
+  .wzbody{min-height:220px}
+  .wzh{font-family:var(--serif);font-size:20px;font-weight:600;color:var(--paper);margin:0 0 4px}
+  .wzsub{font-size:12px;color:var(--fog);margin:0 0 16px;line-height:1.5}
+  .wzf{display:block;margin-bottom:12px}
+  .wzf span{display:block;font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--fogd);margin-bottom:5px}
+  .wzin{width:100%;background:var(--ink);border:1px solid var(--line);border-radius:10px;padding:10px 13px;color:var(--paper);font:inherit;font-size:13.5px}
+  .wzin:focus{outline:2px solid var(--amber);outline-offset:1px}
+  .wztiers{display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:14px}
+  .wztier{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--paper);font:inherit;cursor:pointer;transition:.15s}
+  .wztier:hover{border-color:var(--fog)}
+  .wztier.on{border-color:var(--amber);background:rgba(232,160,79,.1)}
+  .wztn{font-size:14px;font-weight:700}
+  .wzdepts{display:flex;flex-direction:column;gap:8px}
+  .wzdept{display:flex;align-items:center;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:11px;background:var(--card);color:var(--paper);font:inherit;cursor:pointer;transition:.15s;text-align:left}
+  .wzdept.on{border-color:var(--node);background:rgba(124,240,208,.06)}
+  .wzdi{font-size:20px;flex-shrink:0}
+  .wzdn{flex:1;font-size:13.5px;font-weight:700}
+  .wzdc{font-family:ui-monospace,monospace;font-size:10px;color:var(--fogd)}
+  .wzck{width:18px;text-align:center;color:var(--node);font-weight:700}
+  .wzrev{display:flex;justify-content:space-between;gap:14px;padding:8px 0;border-bottom:1px solid var(--lsoft);font-size:13px}
+  .wzrk{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--fogd);flex-shrink:0;padding-top:2px}
+  .wzrv{color:var(--paper);text-align:right}.wzrv em{color:var(--fogd)}
+  .wznav{display:flex;gap:8px;margin-top:18px}
+  .wznav .evbtn{flex:1;justify-content:center;text-align:center}
   @keyframes fadein{to{opacity:.7}}
-  .phrase:hover{transform:scale(1.02)}
-  .phrase:hover .tap{opacity:1}
+  .phrase:hover h1{filter:drop-shadow(0 0 10px rgba(124,240,208,.35))}
 
   /* four/five direction cues around the center */
   .dir{position:absolute;z-index:4;background:none;border:none;color:var(--fog);cursor:pointer;font-family:ui-monospace,monospace;
@@ -42,8 +119,7 @@
   .dir.left{left:8px;top:50%;transform:translateY(-50%)}.dir.left:hover{transform:translateY(-50%) scale(1.08)}
   .dir.right{right:8px;top:50%;transform:translateY(-50%)}.dir.right:hover{transform:translateY(-50%) scale(1.08)}
   .dir.up .ic{color:var(--cool)}.dir.down .ic{color:var(--amber)}.dir.left .ic{color:var(--node)}.dir.right .ic{color:var(--violet)}
-  .dir .hint{position:absolute;font-size:8px;letter-spacing:.14em;color:var(--fogd);white-space:nowrap;opacity:0;transition:.28s}
-  .dir:hover .hint{opacity:.75}
+  .dir .hint{display:none}
   .dir.up .hint{top:38px}.dir.down .hint{bottom:38px}.dir.left .hint{left:44px;top:50%;transform:translateY(-50%)}.dir.right .hint{right:44px;top:50%;transform:translateY(-50%)}
   @media(max-width:560px){.dir .nm{display:none}.dir{opacity:.8}}
 
@@ -84,7 +160,28 @@
   .gate button{font:inherit;font-size:13px;font-weight:650;padding:10px 18px;border-radius:10px;cursor:pointer;border:1px solid var(--line);background:var(--card2);color:var(--paper)}
   .gate button.go{background:var(--node);color:#08221b;border-color:var(--node)}
 
-  @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+  @media(prefers-reduced-motion:reduce){*:not(#portal):not(.yynav){animation:none!important;transition:none!important}
+  #portal.charge-up,#portal.charge-down,#portal.charge-left,#portal.charge-right,#portal.charge-center,#portal.charging{animation-duration:.9s!important}}
+  /* hold-to-preview: blur + shake + zoom toward a direction */
+  #portal.charging{animation:portalshake .45s ease infinite}
+  #portal.charging .compass{filter:blur(1.5px)}
+  @keyframes portalshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-2px,1px)}40%{transform:translate(2px,-1px)}60%{transform:translate(-1px,-2px)}80%{transform:translate(1px,2px)}}
+  @keyframes portalpulse{0%,100%{filter:brightness(1)}50%{filter:brightness(1.12)}}
+  @keyframes portalshake{0%,100%{transform:translate(0,0)}20%{transform:translate(-1.5px,1px)}40%{transform:translate(1.5px,-1px)}60%{transform:translate(-1px,-1.5px)}80%{transform:translate(1px,1.5px)}}
+  #portal.charge-up{animation:chargeup .9s ease forwards}
+  #portal.charge-down{animation:chargedown .9s ease forwards}
+  #portal.charge-left{animation:chargeleft .9s ease forwards}
+  #portal.charge-right{animation:chargeright .9s ease forwards}
+  #portal.charge-center{animation:chargecenter .9s ease forwards}
+  @keyframes chargeup{to{transform:translateY(-24px) scale(1.14);filter:blur(3px);opacity:.5}}
+  @keyframes chargedown{to{transform:translateY(24px) scale(1.14);filter:blur(3px);opacity:.5}}
+  @keyframes chargeleft{to{transform:translateX(-24px) scale(1.14);filter:blur(3px);opacity:.5}}
+  @keyframes chargeright{to{transform:translateX(24px) scale(1.14);filter:blur(3px);opacity:.5}}
+  @keyframes chargecenter{0%{filter:brightness(1)}50%{filter:brightness(1.15) drop-shadow(0 0 24px rgba(124,240,208,.4))}to{opacity:.35;filter:brightness(1.1)}}
+  .dir.charging-target{color:var(--paper)!important;opacity:1!important}
+  .dir.charging-target .ic{animation:pulseglow .5s ease infinite}
+  @keyframes pulseglow{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
+  .phrase.charging-target{animation:pulseglow .5s ease infinite}
 </style>
 <style id="studies-css">
   #screen-studies .wrap{max-width:1200px;margin:0 auto;padding:64px 22px 80px}
@@ -97,22 +194,22 @@
   .tab[aria-selected=true]::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:2px;background:var(--node)}
   .tab .sub-n{font-family:ui-monospace,monospace;font-size:10px;color:var(--fogd)}
   /* ===== context ledge — slim top strip so the scales/cards are the hero ===== */
-  .ledge{max-width:1000px;margin:22px auto 0;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--card),var(--ink));overflow:hidden}
-  .ledge .lmain{display:flex;align-items:center;gap:18px;padding:15px 20px}
-  @media(max-width:680px){.ledge .lmain{flex-direction:column;align-items:stretch;gap:12px;text-align:center}}
+  .ledge{max-width:1000px;margin:16px auto 0;border:1px solid var(--line);border-radius:12px;background:linear-gradient(180deg,var(--card),var(--ink));overflow:hidden}
+  .ledge .lmain{display:flex;align-items:center;gap:14px;padding:8px 14px}
+  @media(max-width:680px){.ledge .lmain{flex-direction:column;align-items:stretch;gap:6px;text-align:center}}
   .ledge .lthesis{flex:1;min-width:0}
-  .ledge .lthesis h2{margin:0;font-size:15px;font-weight:750;letter-spacing:.01em;line-height:1.3}
+  .ledge .lthesis h2{margin:0;font-size:13px;font-weight:750;letter-spacing:.01em;line-height:1.2}
   .ledge .lthesis .nw{color:var(--node)}
-  .ledge .lthesis p{color:var(--fog);font-size:12.5px;margin:5px 0 0;line-height:1.45}
-  .ledge .laxis{flex-shrink:0;display:flex;align-items:center;gap:7px;font-size:10px;font-family:ui-monospace,monospace;letter-spacing:.05em;min-width:200px}
+  .ledge .lthesis p{color:var(--fog);font-size:11px;margin:1px 0 0;line-height:1.35}
+  .ledge .laxis{flex-shrink:0;display:flex;align-items:center;gap:6px;font-size:9.5px;font-family:ui-monospace,monospace;letter-spacing:.05em;min-width:170px}
   @media(max-width:680px){.ledge .laxis{justify-content:center}}
   .ledge .laxis .p{color:var(--cool)}.ledge .laxis .z{color:var(--node);font-weight:700}.ledge .laxis .r{color:var(--red)}
-  .ledge .laxis .bar{flex:1;min-width:44px;height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(90,169,255,.55),rgba(124,240,208,.85) 50%,rgba(255,91,91,.6))}
-  .ledge .lstat{flex-shrink:0;text-align:center;padding-left:18px;border-left:1px solid var(--lsoft)}
-  @media(max-width:680px){.ledge .lstat{border-left:none;border-top:1px solid var(--lsoft);padding:10px 0 0}}
-  .ledge .lstat .n{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--paper);line-height:1;display:block}
-  .ledge .lstat .l{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--fogd);margin-top:5px}
-  .ledge .lmore{width:100%;border:none;border-top:1px solid var(--lsoft);background:transparent;color:var(--fogd);font:inherit;font-size:10.5px;font-family:ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;padding:9px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px}
+  .ledge .laxis .bar{flex:1;min-width:36px;height:2px;border-radius:2px;background:linear-gradient(90deg,rgba(90,169,255,.55),rgba(124,240,208,.85) 50%,rgba(255,91,91,.6))}
+  .ledge .lstat{flex-shrink:0;display:flex;align-items:baseline;gap:6px;padding-left:14px;border-left:1px solid var(--lsoft)}
+  @media(max-width:680px){.ledge .lstat{justify-content:center;border-left:none;border-top:1px solid var(--lsoft);padding:6px 0 0}}
+  .ledge .lstat .n{font-family:var(--serif);font-size:15px;font-weight:600;color:var(--paper);line-height:1}
+  .ledge .lstat .l{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--fogd)}
+  .ledge .lmore{width:100%;border:none;border-top:1px solid var(--lsoft);background:transparent;color:var(--fogd);font:inherit;font-size:9.5px;font-family:ui-monospace,monospace;letter-spacing:.16em;text-transform:uppercase;padding:6px;cursor:pointer;transition:.15s;display:flex;align-items:center;justify-content:center;gap:8px}
   .ledge .lmore:hover{color:var(--fog);background:rgba(255,255,255,.02)}
   .ledge .lmore .chev{transition:transform .2s}
   .ledge.open .lmore .chev{transform:rotate(180deg)}
@@ -125,20 +222,25 @@
   .ledge .lnote p{color:var(--fog);font-size:12.5px;margin:0;line-height:1.5}
   .ledge .lnote .tel{color:#fff;font-family:ui-monospace,monospace;font-weight:700;font-size:12.5px}
   .ledge .lnote a{color:var(--cool);text-decoration:none;border-bottom:1px solid rgba(90,169,255,.34);cursor:pointer}
-  .controls{position:sticky;top:0;z-index:30;background:rgba(7,8,12,.93);backdrop-filter:blur(10px);padding:16px 0 14px;margin:22px 0 4px;border-bottom:1px solid var(--line);text-align:center}
-  .flabel{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--fogd)}
-  .ctl-band{display:flex;flex-direction:column;align-items:center;gap:8px}
-  .btnrow{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;max-width:1000px;margin:0 auto}
-  .searchwrap{display:flex;justify-content:center;margin:12px 0 0}
-  .search{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:9px 18px;color:var(--paper);font:inherit;font-size:13px;width:min(380px,92%);text-align:center}
+  .controls{position:sticky;top:0;z-index:30;background:rgba(7,8,12,.93);backdrop-filter:blur(10px);padding:10px 0 9px;margin:14px 0 4px;border-bottom:1px solid var(--line);text-align:center}
+  .flabel{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.16em;text-transform:uppercase;color:var(--fogd)}
+  .ctl-band{display:flex;flex-direction:column;align-items:center;gap:6px}
+  .btnrow{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;max-width:1000px;margin:0 auto}
+  .searchwrap{display:flex;justify-content:center;margin:9px 0 0}
+  .search{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 16px;color:var(--paper);font:inherit;font-size:12.5px;width:min(360px,92%);text-align:center}
   .search:focus{outline:2px solid var(--cool);outline-offset:1px;text-align:left}
-  .ctl-lin{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:14px auto 0;max-width:1040px}
-  .ctl-lin .flabel{width:100%;text-align:center;margin:0 0 2px}
-  .pill{border:1px solid var(--line);background:var(--card);color:var(--paper);font:inherit;font-size:12.5px;font-weight:600;padding:7px 13px;border-radius:999px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+  .ctl-lin{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:9px auto 0;max-width:1040px}
+  #p-domains{display:flex;flex-direction:column;align-items:center;gap:5px;max-width:920px;margin-left:auto;margin-right:auto}
+  #p-domains .flabel{text-align:center;margin-bottom:2px}
+  .pdrow{display:flex;flex-wrap:wrap;justify-content:center;gap:5px}
+  #p-domains .pill{justify-content:center;font-size:10px;padding:4px 8px;gap:4px}
+  #p-domains .pill .em{font-size:10px}
+  .ctl-lin .flabel{width:100%;text-align:center;margin:0 0 1px}
+  .pill{border:1px solid var(--line);background:var(--card);color:var(--paper);font:inherit;font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:999px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
   .pill:hover{border-color:#3b4457}.pill[aria-pressed=true]{background:var(--card2);border-color:#4a5568}
-  .pill .d{width:8px;height:8px;border-radius:50%}
+  .pill .d{width:7px;height:7px;border-radius:50%}
   .pill.g .d{background:var(--green)}.pill.y .d{background:var(--yellow)}.pill.r .d{background:var(--red)}
-  .pill .em{font-size:13px}
+  .pill .em{font-size:12px}
   .toolbar2{display:flex;justify-content:center;gap:10px;align-items:center;margin-top:14px;flex-wrap:wrap}
   .count-tag{font-family:ui-monospace,monospace;font-size:11px;color:var(--fogd)}
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;margin:20px auto 0;justify-content:center}
@@ -187,9 +289,14 @@
   .mcard .molmini{width:36px;height:36px;color:var(--violet);margin-bottom:4px}.mcard .molmini svg{width:100%;height:100%}
 
   /* modal (shared) */
-  .backdrop{position:fixed;inset:0;background:rgba(4,5,8,.74);backdrop-filter:blur(4px);z-index:100;display:none;align-items:flex-start;justify-content:center;padding:40px 18px;overflow-y:auto}
+  .backdrop{position:fixed;inset:0;background:rgba(4,5,8,.74);backdrop-filter:blur(4px);z-index:100;display:none;align-items:center;justify-content:center;padding:40px 18px;overflow-y:auto}
   .backdrop.open{display:flex;animation:fade .2s ease}@keyframes fade{from{opacity:0}to{opacity:1}}
   .modal{background:linear-gradient(180deg,var(--card),var(--ink));border:1px solid var(--line);border-radius:20px;max-width:660px;width:100%;box-shadow:0 30px 80px rgba(0,0,0,.6);animation:pop .26s cubic-bezier(.2,.9,.3,1.2);overflow:hidden;margin:auto}
+  .modal:has(.mhead){max-width:940px}
+  @media(min-width:900px){
+    .modal:has(.mhead) .mbody{column-count:2;column-gap:0}
+    .modal:has(.mhead) .mbody .sec{break-inside:avoid;-webkit-column-break-inside:avoid}
+  }
   @keyframes pop{from{opacity:0;transform:scale(.94) translateY(12px)}to{opacity:1;transform:none}}
   .modal .mhead{display:flex;gap:14px;align-items:center;padding:20px 22px;cursor:pointer;border-bottom:1px solid var(--lsoft);text-align:left}
   .modal .mhead:hover{background:var(--card2)}
@@ -294,6 +401,80 @@
   .rxintro{text-align:center;max-width:64ch;margin:0 auto 22px}
   .rxintro p{color:var(--fog);font-size:13.5px;line-height:1.55;margin:0}
   .rxintro strong{color:var(--paper);font-weight:700}
+  .rxhats{margin-top:12px !important;padding:11px 14px;border-left:2px solid var(--amber);background:rgba(232,160,79,.05);border-radius:0 8px 8px 0;font-size:12.5px !important}
+
+  /* endeavor picker */
+  .endgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin-top:22px}
+  .endcard{text-align:left;border:1px solid var(--line);border-radius:16px;padding:20px;background:linear-gradient(180deg,var(--card),var(--ink));cursor:pointer;font:inherit;color:var(--paper);transition:.16s;display:flex;flex-direction:column}
+  .endcard:hover{transform:translateY(-3px);border-color:rgba(232,160,79,.45);box-shadow:0 10px 26px rgba(0,0,0,.3)}
+  .endtop{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+  .endico{font-size:26px;flex-shrink:0}
+  .endtop h3{margin:0;font-size:16px;font-weight:750;font-family:var(--serif);letter-spacing:.01em}
+  .endkind{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--fogd)}
+  .endvibe{color:var(--fog);font-size:12.5px;line-height:1.5;margin:0 0 14px;flex:1}
+  .endgo{font-family:ui-monospace,monospace;font-size:10.5px;letter-spacing:.08em;color:var(--amber);font-weight:700}
+  /* events hub */
+  .evsection{margin-bottom:26px}
+  .evseclabel{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--fog);margin:0 0 14px}
+  .evgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .evcard{border:1px solid var(--line);border-radius:16px;padding:20px;background:linear-gradient(180deg,var(--card),var(--ink));display:flex;flex-direction:column}
+  .evtop{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+  .evico{font-size:26px;flex-shrink:0}
+  .evhead{flex:1;min-width:0}
+  .evhead h3{margin:0;font-size:16px;font-weight:750;font-family:var(--serif)}
+  .evmeta{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--fogd)}
+  .evbadge{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;font-weight:700;flex-shrink:0}
+  .evbadge.live{color:#ff5b5b;background:rgba(255,91,91,.1);border:1px solid rgba(255,91,91,.3)}
+  .evbadge.up{color:#e8c24f;background:rgba(232,194,79,.1);border:1px solid rgba(232,194,79,.3)}
+  .evwhen{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--cool);margin-bottom:10px;letter-spacing:.03em}
+  .evvibe{color:var(--fog);font-size:12.5px;line-height:1.5;margin:0 0 16px;flex:1}
+  .evacts{display:flex;gap:8px;flex-wrap:wrap}
+  .evbtn{font:inherit;font-size:12px;font-weight:700;padding:9px 15px;border-radius:10px;cursor:pointer;border:1px solid var(--line);background:var(--ink);color:var(--fog);transition:.15s}
+  .evbtn:hover{color:var(--paper);border-color:var(--fog)}
+  .evbtn.primary{border-color:rgba(232,160,79,.4);background:rgba(232,160,79,.12);color:var(--amber)}
+  .evbtn.primary:hover{background:rgba(232,160,79,.2)}
+  .evcreate{border-top:1px solid var(--line);padding-top:22px;margin-top:6px}
+  .evcintro{color:var(--fog);font-size:12.5px;margin:0 0 14px}
+  .evcgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+  .evccard{text-align:left;border:1px solid var(--line);border-radius:14px;padding:18px;background:var(--card);cursor:pointer;font:inherit;color:var(--paper);transition:.16s}
+  .evccard:hover{transform:translateY(-2px);border-color:rgba(232,160,79,.4)}
+  .evcico{font-size:24px}
+  .evccard h4{margin:8px 0 6px;font-size:15px;font-weight:750}
+  .evccard p{margin:0;color:var(--fog);font-size:12px;line-height:1.45}
+  /* endeavor bar (once picked) */
+  .endbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 16px;margin-bottom:20px;border:1px solid rgba(232,160,79,.3);border-radius:14px;background:rgba(232,160,79,.05)}
+  .endbarleft{display:flex;align-items:center;gap:13px;min-width:0}
+  .endbarico{font-size:24px;flex-shrink:0}
+  .endbarname{display:block;font-size:14.5px;font-weight:750;color:var(--paper)}
+  .endbarnote{display:block;font-size:11.5px;color:var(--fog);margin-top:2px}
+  /* sourcing badges */
+  .rxsrc{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
+  .rxsrc-direct{color:#7cf0d0;background:rgba(124,240,208,.1);border:1px solid rgba(124,240,208,.28)}
+  .rxsrc-agency{color:#5aa9ff;background:rgba(90,169,255,.1);border:1px solid rgba(90,169,255,.28)}
+  .rxsrc-licensed{color:#e8a04f;background:rgba(232,160,79,.1);border:1px solid rgba(232,160,79,.3)}
+  .rxsourcing{margin:14px 16px 0;padding:14px;border:1px solid var(--lsoft);border-radius:10px;background:var(--ink)}
+  .rxsk{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--amber);margin:0 0 10px}
+  .rxsbody{display:flex;gap:12px;align-items:flex-start}
+  .rxsbody p{margin:0;font-size:12px;line-height:1.5;color:var(--fog)}
+  .rxsbtn{margin-top:12px;font:inherit;font-size:12px;font-weight:700;padding:9px 16px;border-radius:9px;cursor:pointer;border:1px solid rgba(232,160,79,.38);background:rgba(232,160,79,.1);color:var(--amber);transition:.15s}
+  .rxsbtn:hover{background:rgba(232,160,79,.2)}
+  /* curated provider modal */
+  .pmwrap{text-align:left;max-width:100%}
+  .pmkick{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--amber);margin:0 0 8px}
+  .pmintro{color:var(--fog);font-size:13px;line-height:1.5;margin:0 0 14px}
+  .pmguard{font-size:12px;line-height:1.5;color:var(--paper);background:rgba(90,169,255,.08);border-left:2px solid var(--cool);border-radius:0 8px 8px 0;padding:11px 13px;margin-bottom:16px}
+  .pmlinks{display:flex;flex-direction:column;gap:9px;margin-bottom:14px}
+  .pmlink{text-align:left;border:1px solid var(--line);border-radius:11px;padding:13px 15px;background:var(--card);cursor:pointer;font:inherit;color:var(--paper);transition:.14s;display:flex;flex-direction:column;gap:3px}
+  .pmlink:hover{border-color:rgba(232,160,79,.4);background:var(--ink)}
+  .pmln{font-size:13.5px;font-weight:700}
+  .pmsearch{font-family:ui-monospace,monospace;font-size:9px;color:var(--fogd);font-weight:600}
+  .pmcost{font-family:ui-monospace,monospace;font-size:8.5px;font-weight:700;letter-spacing:.05em;padding:2px 7px;border-radius:999px;vertical-align:middle;margin-left:4px}
+  .pmcost-free{color:var(--node);background:rgba(124,240,208,.12);border:1px solid rgba(124,240,208,.3)}
+  .pmcost-paid{color:var(--fogd);background:rgba(255,255,255,.04);border:1px solid var(--lsoft)}
+  .pmld{font-size:12px;color:var(--fog);line-height:1.4}
+  .pmfoot{font-size:11px;color:var(--fogd);line-height:1.5;margin:0 0 16px}
+  .pmclose{width:100%;font:inherit;font-size:13px;font-weight:700;padding:11px;border-radius:10px;cursor:pointer;border:1px solid var(--line);background:var(--ink);color:var(--fog)}
+  .pmclose:hover{color:var(--paper)}
   .scalefilter{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:22px}
   .scalefilter .sflabel{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--fogd)}
   .sfbtns{display:inline-flex;gap:6px;flex-wrap:wrap;background:var(--ink);border:1px solid var(--line);border-radius:999px;padding:4px}
@@ -327,7 +508,7 @@
   .rxrmeta{display:flex;align-items:center;gap:8px;flex-shrink:0}
   @media(max-width:620px){.rxrhead{flex-direction:column;align-items:flex-start;gap:9px}.rxrmeta{flex-wrap:wrap}}
   .rxdetail{max-height:0;overflow:hidden;transition:max-height .3s ease}
-  .rxrow.open .rxdetail{max-height:900px}
+  .rxrow.open .rxdetail{max-height:1400px}
   .rxphases{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:4px 16px 0}
   @media(max-width:620px){.rxphases{grid-template-columns:1fr}}
   .rxphase{border:1px solid var(--lsoft);border-radius:10px;padding:12px 13px;background:var(--ink)}
@@ -339,6 +520,15 @@
   .rxcue.g .rxcd{background:#4fd1a1}.rxcue.y .rxcd{background:#e8c24f}.rxcue.r .rxcd{background:#ff5b5b}
   .rxcue p{margin:0;font-size:12px;line-height:1.45;color:var(--paper)}
   .rxground{margin:14px 16px 16px;padding:11px 13px;border-left:2px solid var(--amber);background:rgba(232,160,79,.05);color:var(--fog);font-size:11.5px;line-height:1.5;border-radius:0 8px 8px 0}
+  .rxonboard{margin:14px 16px 0;padding:14px;border:1px solid var(--lsoft);border-radius:10px;background:var(--ink)}
+  .rxok{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--cool);margin:0 0 10px}
+  .rxolist{list-style:none;padding:0;margin:0 0 12px}
+  .rxolist li{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--lsoft);font-size:12px}
+  .rxolist li:last-child{border-bottom:none}
+  .rxoi{flex-shrink:0;width:40%;font-weight:700;color:var(--paper)}
+  .rxov{color:var(--fog)}
+  @media(max-width:560px){.rxolist li{flex-direction:column;gap:2px}.rxoi{width:auto}}
+  .rxonote{margin:0;font-size:11px;line-height:1.5;color:var(--fogd);padding:10px 12px;background:rgba(90,169,255,.05);border-left:2px solid var(--cool);border-radius:0 8px 8px 0}
   .rxtier{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px;font-weight:700;white-space:nowrap}
   .rxt1{color:#7cf0d0;background:rgba(124,240,208,.1);border:1px solid rgba(124,240,208,.25)}
   .rxt2{color:#5aa9ff;background:rgba(90,169,255,.1);border:1px solid rgba(90,169,255,.25)}
@@ -393,6 +583,7 @@
   .door .stub{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--fogd);margin-top:10px}
   .doornote{text-align:center;margin-top:24px;font-size:12px;color:var(--fogd);max-width:56ch;margin-left:auto;margin-right:auto}
 
+  /* ===== partygoer "up" side — the invitation ===== */
   .pgwrap{max-width:1000px;margin:0 auto}
   .pghero{text-align:center;padding:22px 18px 34px;border-bottom:1px solid var(--lsoft);margin-bottom:34px}
   .pghero .pgeye,.pgpromise .pgeye{font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.34em;text-transform:uppercase;color:var(--amber);margin:0 0 14px}
@@ -424,6 +615,15 @@
   .pgvows li{position:relative;padding:13px 0 13px 34px;font-size:13.5px;color:var(--paper);line-height:1.5;border-bottom:1px solid var(--lsoft)}
   .pgvows li:last-child{border-bottom:none}
   .pgvows li::before{content:"△";position:absolute;left:4px;top:13px;color:var(--amber);font-size:13px}
+  .pgvolunteer{display:flex;gap:18px;align-items:flex-start;max-width:820px;margin:18px auto 0;border:1px solid var(--line);border-radius:18px;padding:24px;background:linear-gradient(180deg,var(--card),var(--ink))}
+  @media(max-width:620px){.pgvolunteer{flex-direction:column;text-align:center;align-items:center}}
+  .pgvico{font-size:34px;flex-shrink:0}
+  .pgvbody{flex:1}
+  .pgvbody h3{font-family:var(--serif);font-weight:500;font-size:clamp(20px,3.5vw,26px);margin:0 0 10px;color:var(--paper)}
+  .pgvd{color:var(--fog);font-size:13px;line-height:1.55;margin:0 0 16px}
+  .pgvbtn{font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:11px;cursor:pointer;border:1px solid rgba(124,240,208,.4);background:rgba(124,240,208,.1);color:var(--node);transition:.15s}
+  .pgvbtn:hover{background:rgba(124,240,208,.18)}
+  .pgvguard{margin:14px 0 0;font-size:11.5px;line-height:1.5;color:var(--fog);background:rgba(124,240,208,.06);border-left:2px solid var(--node);border-radius:0 8px 8px 0;padding:10px 13px}
 
   /* ===== fork: choose your path ===== */
   .tfork{max-width:900px;margin:0 auto;padding:30px 20px 10px;text-align:center}
@@ -457,14 +657,30 @@
   <canvas id="stars"></canvas>
   <div class="aura"></div><div class="ring r1"></div><div class="ring r2"></div>
   <div class="compass">
-    <button class="dir up" onclick="goLiveOr('sky','up')"><span class="ic">✦</span><span class="nm">Sky Map</span><span class="hint">the cosmos above</span></button>
-    <button class="dir down" onclick="go('tonal','down')"><span class="ic">▽</span><span class="nm">Tonal</span><span class="hint">how it's built</span></button>
-    <button class="dir left" onclick="go('studies','left')"><span class="ic">❋</span><span class="nm">Studies</span><span class="hint">the knowledge</span></button>
-    <button class="dir right" onclick="goLiveOr('clock','right')"><span class="ic">◷</span><span class="nm">Clock</span><span class="hint">time</span></button>
-    <div class="phrase" onclick="goLiveOr('me','center')">
-      <p class="eye">Music Mecca Collective · Delphi</p>
+    <button class="dir up" onclick="fireNav('up')"><span class="ic">✦</span><span class="nm">Sky Map</span><span class="hint">the cosmos above</span></button>
+    <button class="dir down" onclick="fireNav('down')"><span class="ic">▽</span><span class="nm">Tonal</span><span class="hint">how it's built</span></button>
+    <button class="dir left" onclick="fireNav('left')"><span class="ic">❋</span><span class="nm">Studies</span><span class="hint">the knowledge</span></button>
+    <button class="dir right" onclick="fireNav('right')"><span class="ic">◷</span><span class="nm">Clock</span><span class="hint">time</span></button>
+    <div class="yinyang" title="Enter — begin with you">
+      <svg viewBox="0 0 100 100">
+        <defs><clipPath id="yyclip"><circle cx="50" cy="50" r="49"/></clipPath></defs>
+        <g clip-path="url(#yyclip)" class="yynav" onclick="fireNav('center')" onmousedown="startHold('center',this.closest('.yinyang'))" onmouseup="endHold(this.closest('.yinyang'))" ontouchstart="startHold('center',this.closest('.yinyang'))" ontouchend="endHold(this.closest('.yinyang'))">
+          <rect x="0" y="0" width="100" height="100" fill="#0f1524"/>
+          <path d="M50,1 a24.5,24.5 0 0,1 0,49 a24.5,24.5 0 0,0 0,49 a49,49 0 0,1 0,-98 z" fill="#e8e6df"/>
+        </g>
+        <g class="yydot yyshare" onclick="shareApp(event)"><title>Share DELPHI</title>
+          <circle cx="50" cy="25.5" r="8" fill="#0f1524"/>
+          <text x="50" y="25.5" class="yyicon" text-anchor="middle" dominant-baseline="central" fill="#e8e6df">↗</text>
+        </g>
+        <g class="yydot yycopy" onclick="copyOracle(event)"><title>Copy the oracle</title>
+          <circle cx="50" cy="74.5" r="8" fill="#e8e6df" class="yyeye"/>
+          <text x="50" y="74.5" class="yyicon" text-anchor="middle" dominant-baseline="central" fill="#0f1524">⧉</text>
+        </g>
+        <circle cx="50" cy="50" r="49" fill="none" stroke="var(--line)" stroke-width="1"/>
+      </svg>
+    </div>
+    <div class="phrase" onclick="event.stopPropagation();fireNav('center')">
       <h1 id="momentPhrase">The vessel remembers what the crowd forgets.</h1>
-      <p class="tap">☉ enter — begin with you</p>
     </div>
   </div>
 </div>
@@ -586,9 +802,10 @@
     <div class="grid" id="d-grid"></div>
   </div>
 </div>
-<div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 </div>
 </section>
+
+<div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -608,13 +825,57 @@ const PHRASES=["The vessel remembers what the crowd forgets.","Every quality is 
 document.getElementById('momentPhrase').textContent=PHRASES[Math.floor(Math.random()*PHRASES.length)];
 /* navigation */
 const portal=document.getElementById('portal');
-function go(name,dir){portal.style.opacity='0';portal.style.pointerEvents='none';
+function clearOverlays(){const g=document.getElementById('gate');if(g)g.classList.remove('open');const mh=document.getElementById('modalHost');if(mh)mh.innerHTML='';const bd=document.getElementById('backdrop');if(bd)bd.classList.remove('open');document.body.style.overflow='';}
+function go(name,dir){clearOverlays();portal.style.opacity='0';portal.style.pointerEvents='none';
   const s=document.getElementById('screen-'+name);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active','from-left','from-right','from-up','from-down','from-center'));
   s.classList.add('active','from-'+dir);if(name==='studies'&&typeof ensureStudies==='function')ensureStudies();if(name==='tonal'&&typeof ensureTonal==='function')ensureTonal();window.scrollTo(0,0);}
+function home(){if(location.protocol!=='file:'&&hostedDeepLink()){location.href='/';return;}clearOverlays();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';portal.className='';}
+function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);if(name==='studies'||name==='tonal')go(name,name==='studies'?'left':'down');}catch(e){}}
+
+/* ===== fluid navigation: scroll, drag/swipe, and hold-to-charge ===== */
+const _dirMap={up:['sky','up'],down:['tonal','down'],left:['studies','left'],right:['clock','right'],center:['me','center']};
+let _navBusy=false;
 function hostedDeepLink(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');return q==='studies'||q==='tonal'||path.endsWith('/studies')||path.endsWith('/tonal');}catch(e){return false;}}
 function goLiveOr(name,dir){if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href='/';return;}go(name,dir);}
-function home(){if(location.protocol!=='file:'&&hostedDeepLink()){location.href='/';return;}document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';}
-function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);if(name==='studies'||name==='tonal')go(name,name==='studies'?'left':'down');}catch(e){}}
+function fireNav(dir){if(_navBusy||!dir||!_dirMap[dir])return;if(!_portalActive())return;_navBusy=true;const[name,d]=_dirMap[dir];if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href='/';_navBusy=false;return;}portal.classList.add('charge-'+dir);setTimeout(()=>{go(name,d);portal.className='';_navBusy=false;},620);}
+function _portalActive(){return portal.style.opacity!=='0'&&getComputedStyle(portal).pointerEvents!=='none';}
+function _dirFromDelta(dx,dy){const adx=Math.abs(dx),ady=Math.abs(dy);if(Math.max(adx,ady)<50)return null;return ady>adx?(dy>0?'down':'up'):(dx>0?'right':'left');}
+
+// scroll wheel → up/down
+let _wheelLock=false;
+window.addEventListener('wheel',e=>{if(!_portalActive()||_navBusy||_wheelLock)return;if(Math.abs(e.deltaY)<24)return;_wheelLock=true;setTimeout(()=>_wheelLock=false,700);fireNav(e.deltaY>0?'down':'up');},{passive:true});
+
+// mouse drag → any direction (click-and-drag toward where you want to go)
+let _mdx=0,_mdy=0,_mdown=false;
+portal.addEventListener('mousedown',e=>{if(!_portalActive())return;if(e.target.closest('.phrase,.yydot'))return;_mdown=true;_mdx=e.clientX;_mdy=e.clientY;});
+window.addEventListener('mouseup',e=>{if(_holdTimer){clearTimeout(_holdTimer);_holdTimer=null;portal.classList.remove('charging');document.querySelectorAll('.charging-target').forEach(x=>x.classList.remove('charging-target'));}if(!_mdown||!_portalActive()||_navBusy){_mdown=false;return;}_mdown=false;const dir=_dirFromDelta(e.clientX-_mdx,e.clientY-_mdy);if(dir)fireNav(dir);});
+
+// touch swipe → any direction
+let _tsx=0,_tsy=0,_tst=0;
+window.addEventListener('touchstart',e=>{if(!_portalActive())return;const t=e.changedTouches[0];_tsx=t.clientX;_tsy=t.clientY;_tst=Date.now();},{passive:true});
+window.addEventListener('touchend',e=>{if(!_portalActive()||_navBusy)return;const t=e.changedTouches[0];if(Date.now()-_tst>800)return;const dir=_dirFromDelta(t.clientX-_tsx,t.clientY-_tsy);if(dir)fireNav(dir);},{passive:true});
+
+// press-and-hold on a direction (or center) → charge → navigate
+let _holdTimer=null;
+function startHold(dir,el){if(!_portalActive()||_navBusy)return;portal.classList.add('charging');el.classList.add('charging-target');_holdTimer=setTimeout(()=>{el.classList.remove('charging-target');portal.classList.remove('charging');fireNav(dir);},600);}
+function endHold(el){if(_holdTimer){clearTimeout(_holdTimer);_holdTimer=null;}portal.classList.remove('charging');if(el)el.classList.remove('charging-target');}
+window.startHold=startHold;window.endHold=endHold;
+function yySpark(el){if(!el)return;const svg=el.ownerSVGElement||el.closest('svg');const c=el.querySelector('circle')||el;let cx=50,cy=50;try{cx=+c.getAttribute('cx');cy=+c.getAttribute('cy');}catch(e){}const ns='http://www.w3.org/2000/svg';const g=document.createElementNS(ns,'g');g.setAttribute('class','sparkburst');for(let i=0;i<8;i++){const ang=(Math.PI*2*i)/8;const ln=document.createElementNS(ns,'line');ln.setAttribute('x1',cx);ln.setAttribute('y1',cy);ln.setAttribute('x2',cx+Math.cos(ang)*4);ln.setAttribute('y2',cy+Math.sin(ang)*4);ln.setAttribute('stroke','var(--amber)');ln.setAttribute('stroke-width','1.4');ln.setAttribute('stroke-linecap','round');ln.style.setProperty('--dx',Math.cos(ang)*14+'px');ln.style.setProperty('--dy',Math.sin(ang)*14+'px');g.appendChild(ln);}svg.appendChild(g);setTimeout(()=>g.remove(),620);}
+function toast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t);}t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800);}
+window.copyOracle=(ev)=>{if(ev){ev.stopPropagation();ev.preventDefault();}const t=(document.getElementById('momentPhrase')||{}).textContent||'';const el=ev&&ev.currentTarget;const done=()=>{if(el){el.classList.add('done');yySpark(el);setTimeout(()=>el.classList.remove('done'),1200);}toast('Oracle copied ✦');};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(done);}else{try{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);done();}catch(e){}}};
+window.shareApp=(ev)=>{if(ev){ev.stopPropagation();ev.preventDefault();}const el=ev&&ev.currentTarget;if(el){yySpark(el);el.classList.add('done');setTimeout(()=>el.classList.remove('done'),1200);}const url=(location&&location.href)||'https://delphi.pauloventura.org';const text='DELPHI — the oracle, the studies, the build.';const enc=encodeURIComponent,U=enc(url),T=enc(text);const opts=[
+    {k:'Instagram',ic:'📷',act:()=>{navigator.clipboard&&navigator.clipboard.writeText(url);toast('Link copied — paste into your IG story ✦');}},
+    {k:'Facebook',ic:'📘',url:'https://www.facebook.com/sharer/sharer.php?u='+U},
+    {k:'WhatsApp',ic:'💬',url:'https://wa.me/?text='+T+'%20'+U},
+    {k:'Messenger',ic:'✉️',url:'https://www.facebook.com/dialog/send?link='+U+'&app_id=0&redirect_uri='+U},
+    {k:'X',ic:'✕',url:'https://twitter.com/intent/tweet?text='+T+'&url='+U},
+    {k:'Telegram',ic:'📨',url:'https://t.me/share/url?url='+U+'&text='+T},
+    {k:'Email',ic:'✦',url:'mailto:?subject='+enc('DELPHI')+'&body='+T+'%20'+U},
+    {k:'Copy link',ic:'⧉',act:()=>{navigator.clipboard&&navigator.clipboard.writeText(url);toast('Link copied ✦');}}
+  ];
+  if(navigator.share){navigator.share({title:'DELPHI',text:text,url:url}).catch(()=>shareBubble(opts));}else{shareBubble(opts);}};
+function shareBubble(opts){const host=document.getElementById('modalHost');const items=opts.map((o,i)=>`<button class="shopt" data-i="${i}"><span class="shic">${o.ic}</span><span>${esc(o.k)}</span></button>`).join('');modal(`<div class="shwrap"><p class="shttl">Share DELPHI</p><div class="shgrid">${items}</div></div>`);document.querySelectorAll('.shopt').forEach(b=>{b.onclick=()=>{const o=opts[+b.dataset.i];closeModal();if(o.act)o.act();else if(o.url)window.open(o.url,'_blank','noopener');};});}
+window.shareBubble=shareBubble;window.toast=toast;
 /* outbound gate pattern */
 let _url=null;
 function outbound(url,label){_url=url;document.getElementById('gate-msg').textContent='This opens '+(label||'an external site')+' in a new tab.';document.getElementById('gate').classList.add('open');}
@@ -678,7 +939,7 @@ const TD={
     depts:[
       {id:"lead",name:"Leadership &amp; Production",ico:"🎬",roles:[
         {n:"Promoter / Organizer",t:1,rate:"—",cert:"",d:"Owns the endeavor: books, budgets, and carries the risk."},
-        {n:"Event Producer / PM",t:1,rate:"$$$",cert:"",d:"Runs the night end to end: plan, schedule, and the point person when something breaks. Even a bar night needs one."},
+        {n:"Event Producer",t:1,rate:"$$$",cert:"",d:"Runs the night end to end: plan, schedule, and the point person when something breaks. Even a bar night needs one."},
         {n:"Production Manager",t:3,rate:"$$$",cert:"",d:"Runs the technical build across all departments."},
         {n:"Stage Manager",t:2,rate:"$$",cert:"",d:"Runs the show clock; cues transitions and set changes."},
         {n:"Show Caller",t:4,rate:"$$$",cert:"",d:"Calls live cues across audio/light/video in real time."},
@@ -746,7 +1007,11 @@ const TD={
         {n:"Vendor / Catering",t:1,rate:"$$",cert:"FOOD",d:"Food, drink, or market vendor — from a single taco cart at a bar to a full market row at a festival."},
         {n:"Parking / Transport",t:3,rate:"$",cert:"",d:"Ingress, egress, and shuttle flow."},
         {n:"Permits / Compliance",t:3,rate:"$$",cert:"",d:"Licenses, noise, occupancy, and city relations."},
-        {n:"Water / Infrastructure",t:4,rate:"$$",cert:"",d:"Water points, fencing, power runs across a site."}
+        {n:"Water / Infrastructure",t:4,rate:"$$",cert:"",d:"Water points, fencing, power runs across a site."},
+        {n:"Cleaning / Janitorial",t:1,rate:"$",cert:"",d:"Keeps restrooms, floors, and common areas clean during the event. Even a bar needs someone on this."},
+        {n:"Restroom / Porta-Potty Service",t:2,rate:"$$",cert:"",d:"Portable restroom delivery, servicing, and pumping — usually a licensed 3rd-party company at scale."},
+        {n:"Waste / Recycling Lead",t:2,rate:"$",cert:"",d:"Bins, sorting, haul-away, and keeping trash from overrunning the space."},
+        {n:"Teardown / Site Restoration",t:2,rate:"$",cert:"",d:"Clears the site after the event — strike leftovers, ground sweep, and leaving it better than found."}
       ]}
     ]
   },
@@ -781,6 +1046,132 @@ const TD={
 
 const troot=document.getElementById("tonal-root");
 const rxDeptOrderStatic=["foh","talent","audio","site","money","light","stage","video","lead"].map(id=>TD.roles.depts.find(d=>d.id===id)).filter(Boolean);
+// mock endeavors — pick one before roles are revealed. Each sets scale + frames the crew.
+const rxEndeavors=[
+  {id:"thursday",name:"Thursday Warm-Up",kind:"Bar night",tier:1,ico:"🍸",cap:"~120",
+   vibe:"A weeknight resident DJ session at a neighborhood bar. Low-key, high-warmth, the room you build a scene in.",
+   note:"One person wears several hats here — the producer likely also runs the door and the vibe."},
+  {id:"coupled",name:"Coupled // Warehouse",kind:"Club night",tier:2,ico:"🔊",cap:"~450",
+   vibe:"A late-night warehouse party with a real sound system, proper lighting, and a headliner. The scene's main event.",
+   note:"Departments start to separate — you need dedicated sound, light, door, and care."},
+  {id:"resonance",name:"RESONANCE Live",kind:"Concert",tier:3,ico:"🎛️",cap:"~1,800",
+   vibe:"A ticketed concert with production: staged, lit, filmed, and run on a real show clock. A step into the industry.",
+   note:"Now it's a production — rigging, video, and a production manager holding the technical build."},
+  {id:"nodefest",name:"NODE Festival",kind:"Festival",tier:4,ico:"⛺",cap:"5,000+",
+   vibe:"A multi-stage outdoor festival — camping, vendors, drones, the works. The full endeavor, every department live.",
+   note:"Nearly the whole taxonomy. Site, sanitation, medical, and compliance become their own worlds."}
+];
+
+// how a role gets filled: direct hire, staffing agency/marketplace, or a licensed 3rd-party provider
+const rxProviders={
+  direct:{label:"Direct hire",note:"You bring this person in yourself — a resident, a friend of the scene, or someone from your talent pool."},
+  agency:{label:"Staffing agency",note:"Fill through an on-demand staffing marketplace or event-staffing agency (e.g. Instawork, PeopleReady, Thumbtack). They vet, schedule, and often handle pay."},
+  licensed:{label:"Licensed provider",note:"Contract a specialized, licensed 3rd-party company that carries the permits, insurance, and compliance for this. You don't own this liability — they do."}
+};
+// explicit sourcing by role id; anything not listed falls back to the department default.
+const rxRoleSource={
+  // licensed / specialized 3rd-party (permits, insurance, compliance)
+  "rx-bartender":"licensed",            // liquor liability + alcohol permits
+  "rx-security":"licensed",             // licensed security firm / guard cards
+  "rx-medic-first-aid":"licensed",      // certified medical provider
+  "rx-restroom-porta-potty-service":"licensed",
+  "rx-waste-recycling-lead":"licensed",
+  "rx-permits-compliance":"licensed",
+  "rx-rigger-up-ground":"licensed",     // certified rigging
+  "rx-scaffold-structure-crew":"licensed",
+  "rx-master-electrician":"licensed",
+  "rx-power-generator-tech":"licensed",
+  "rx-laser-sfx-operator":"licensed",
+  "rx-drone-operator":"licensed",       // FAA Part 107
+  "rx-vendor-catering":"licensed",      // food-safety / vendor permits
+  // agency / marketplace (vetted general event labor)
+  "rx-stagehand":"agency",
+  "rx-deck-crew":"agency",
+  "rx-cleaning-janitorial":"agency",
+  "rx-teardown-site-restoration":"agency",
+  "rx-door-cashier":"agency",
+  "rx-coat-guest-services":"agency",
+  "rx-parking-transport":"agency",
+  "rx-audio-tech-a2":"agency",
+  "rx-lighting-tech":"agency",
+  "rx-camera-operator":"agency"
+  // everything else defaults to "direct" (the creative/leadership/talent core you bring yourself)
+};
+
+function rxSourceOf(r){return rxRoleSource[rxRoleId(r)]||"direct";}
+// mock events — the builder side opens here. Each has a status + audience-aware actions.
+const rxEvents=[
+  {id:"coupled-live",name:"Coupled // Warehouse",kind:"Club night",tier:2,ico:"🔊",cap:"~450",
+   status:"live",date:"This Saturday",venue:"The Annex, Nashville",
+   vibe:"Late-night warehouse party, full system, headliner booked. Tickets are live and the crew is set.",
+   actions:["tickets","dashboard"]},
+  {id:"resonance-live",name:"RESONANCE Live",kind:"Concert",tier:3,ico:"🎛️",cap:"~1,800",
+   status:"live",date:"Mar 14",venue:"Marathon Music Works",
+   vibe:"Ticketed concert with full production — staged, lit, and filmed. On sale now.",
+   actions:["tickets","dashboard"]},
+  {id:"thursday-up",name:"Thursday Warm-Up",kind:"Bar night",tier:1,ico:"🍸",cap:"~120",
+   status:"upcoming",date:"Every Thursday",venue:"Duncan St Bar",
+   vibe:"Weeknight resident session. Crew roles opening — claim a shift or check the one you're onboarded in.",
+   actions:["roles","dashboard"]},
+  {id:"nodefest-up",name:"NODE Festival",kind:"Festival",tier:4,ico:"⛺",cap:"5,000+",
+   status:"upcoming",date:"Summer '26",venue:"TBA — outdoor site",
+   vibe:"Multi-stage outdoor festival in planning. Departments staffing up now across all 58 roles.",
+   actions:["roles","dashboard"]}
+];
+// what each audience can create
+const rxCreators=[
+  {ico:"🎫",who:"Promoter",d:"Compose a new endeavor: venue, date, style, and the crew to book. You own the vision and the risk."},
+  {ico:"🏛️",who:"Venue",d:"Offer your room to the scene — capacity, existing infrastructure, and the dates you're open."},
+  {ico:"💎",who:"Investor",d:"Back an endeavor's bucket for a fair share of the outcome. Capital and curation stay separate."}
+];
+
+function rxEventCard(e){
+  const badge=e.status==='live'?'<span class="evbadge live">On sale</span>':'<span class="evbadge up">Staffing</span>';
+  const acts=e.actions.map(a=>{
+    if(a==='tickets')return '<button class="evbtn primary" onclick="tonalDoor(\'Ticketing\')">🎫 Buy tickets</button>';
+    if(a==='roles')return '<button class="evbtn primary" onclick="rolesPickEndeavor(\''+e.id+'\')">🧩 Find a role</button>';
+    if(a==='dashboard')return '<button class="evbtn" onclick="rxDashModal(\''+e.id+'\')">◫ Role dashboard</button>';
+    return '';
+  }).join('');
+  return '<div class="evcard"><div class="evtop"><span class="evico">'+e.ico+'</span><div class="evhead"><h3>'+esc(e.name)+'</h3><span class="evmeta">'+esc(e.kind)+' · '+esc(e.cap)+'</span></div>'+badge+'</div><div class="evwhen">'+esc(e.date)+' · '+esc(e.venue)+'</div><p class="evvibe">'+esc(e.vibe)+'</p><div class="evacts">'+acts+'</div></div>';
+}
+
+// curated provider directory — opens through the outbound gate. Vetted categories, not endorsements.
+const rxProviderLinks={
+  agency:{
+    title:"Staffing marketplaces",
+    intro:"On-demand platforms that vet, schedule, and often handle pay for general event labor. Post a shift, review profiles, fill the role.",
+    guard:"Guardrail: confirm the platform background-checks workers and carries liability coverage. You still set the call time, brief, and care expectations.",
+    links:[
+      {name:"Instawork",url:"https://www.instawork.com/",note:"On-demand vetted event staff — servers, barbacks, cleanup, setup."},
+      {name:"PeopleReady",url:"https://www.peopleready.com/staffing/events/",note:"Traditional agency with an account manager; good for larger crews."},
+      {name:"Thumbtack",url:"https://www.thumbtack.com/","note":"Local pros for smaller, one-off needs."}
+    ]
+  },
+  licensed:{
+    title:"Licensed providers",
+    intro:"Specialized companies that carry the permits, insurance, and compliance for high-liability roles. You contract the outcome; they own the risk.",
+    guard:"Guardrail: verify current license, insurance (certificate of insurance naming your event), and any local permit BEFORE the event. This is the liability you're offloading — confirm it's actually covered.",
+    links:[
+      {name:"Find licensed bartending services","search":"licensed insured bartending service near me","note":"Alcohol service with liquor liability — never a generic staffing app."},
+      {name:"Find licensed security firms","search":"licensed event security company guard card near me","note":"Guard-carded, insured personnel; never freelancers for security."},
+      {name:"United Site Services","url":"https://www.unitedsiteservices.com/","note":"National porta-potty + sanitation provider."},
+      {name:"Find event medical services","search":"event medical services EMT standby near me","note":"Certified on-site medical / EMT standby."}
+    ]
+  },
+  payment:{
+    title:"Payment & W-9 platforms",
+    intro:"Contractor-payment services that collect the W-9, store sensitive data on compliant infrastructure, and file 1099s. DELPHI never touches this data. Start with the free option — it covers most events at no cost to you or the promoter.",
+    guard:"Guardrail: the platform handles compliance mechanics, but worker classification and tax reporting remain your responsibility — confirm with a CPA.",
+    links:[
+      {name:"Found",url:"https://found.com/",cost:"free",note:"Free — no monthly fee, no minimums. W-9 built into the payment flow, auto 1099-NEC. Start here."},
+      {name:"Square Payroll",url:"https://squareup.com/us/en/payroll",cost:"$6/contractor",note:"$6 per contractor/month, no base fee. Handy if you already run Square at the bar or door."},
+      {name:"Gusto (contractor plan)",url:"https://gusto.com/product/how-it-works/contractors",cost:"paid",note:"Fuller payroll suite, QuickBooks/Xero integration — for bigger, ongoing operations."},
+      {name:"Deel",url:"https://www.deel.com/",cost:"paid",note:"Only if you pay international artists or crew."}
+    ]
+  }
+};
+
 troot.innerHTML=`
   <div class="twrap">
 
@@ -833,6 +1224,17 @@ troot.innerHTML=`
           <h3>${esc(TD.welcome.promise.h)}</h3>
           <ul class="pgvows">${TD.welcome.promise.vows.map(v=>`<li>${esc(v)}</li>`).join("")}</ul>
         </div>
+
+        <div class="pgvolunteer">
+          <div class="pgvico">🤝</div>
+          <div class="pgvbody">
+            <p class="pgeye">Another way in</p>
+            <h3>Volunteer &amp; work-exchange</h3>
+            <p class="pgvd">Short on cash, big on heart? Trade a few hours for your way in. Volunteers help with setup, the door, waste and cleanup, or teardown — and become part of how the night gets built. You'll get a clear shift, a real role from the crew list, and the same care and respect as anyone on the team.</p>
+            <button class="pgvbtn" onclick="tonalDoor('Volunteer sign-up')">Volunteer for a shift ↓</button>
+            <p class="pgvguard">🛡️ Your safety and dignity come first. Volunteers get a clear shift, a real role, water and breaks, and the same care and consent the whole night runs on — never exploitation dressed as opportunity.</p>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -859,21 +1261,58 @@ troot.innerHTML=`
 
     <div class="tpanel" id="tpanel-roles">
       <div class="rolesx">
-        <div class="rxintro">
-          <p>The full crew taxonomy — <strong>54 roles across 9 departments</strong>. An endeavor reveals more of them as it scales: a bar night needs a handful; a festival needs nearly all. Filter by scale, then browse each department.</p>
-        </div>
-        <div class="scalefilter">
-          <span class="sflabel">Show roles for:</span>
-          <div class="sfbtns">
-            <button class="sfbtn active" data-tier="0" onclick="rolesScale(0)">All</button>
-            ${TD.roles.tiers.map((t,i)=>`<button class="sfbtn" data-tier="${i+1}" onclick="rolesScale(${i+1})">${esc(t)}</button>`).join("")}
+
+        <!-- STEP 1: the events hub -->
+        <div id="endeavor-picker">
+          <div class="rxintro">
+            <p>Start with an <strong>event</strong>. Live events are on sale now; upcoming ones are staffing up. Pick one to buy in, find a role, or open your dashboard — or create a new one.</p>
+          </div>
+
+          <div class="evsection">
+            <p class="evseclabel">🔴 Live now — on sale</p>
+            <div class="evgrid">
+              ${rxEvents.filter(e=>e.status==="live").map(e=>rxEventCard(e)).join("")}
+            </div>
+          </div>
+
+          <div class="evsection">
+            <p class="evseclabel">🟡 Upcoming — staffing up</p>
+            <div class="evgrid">
+              ${rxEvents.filter(e=>e.status==="upcoming").map(e=>rxEventCard(e)).join("")}
+            </div>
+          </div>
+
+          <div class="evcreate">
+            <p class="evseclabel">✦ Create an event</p>
+            <p class="evcintro">Bring a new endeavor into the pool. Choose how you're stepping in:</p>
+            <div class="evcgrid">
+              ${rxCreators.map(c=>`<button class="evccard" onclick="rxCreateModal('${esc(c.who)}')">
+                <span class="evcico">${c.ico}</span><h4>${esc(c.who)}</h4><p>${esc(c.d)}</p>
+              </button>`).join("")}
+            </div>
           </div>
         </div>
-        <div class="deptbar" role="tablist">
-          <button class="depttab active" data-dept="all" onclick="rolesDept('all')"><span class="di">✳</span><span class="dn">All departments</span><span class="dc" id="dc-all"></span></button>
-          ${rxDeptOrderStatic.map(d=>`<button class="depttab" data-dept="${d.id}" onclick="rolesDept('${d.id}')"><span class="di">${d.ico}</span><span class="dn">${d.name}</span><span class="dc" id="dc-${d.id}"></span></button>`).join("")}
+
+        <!-- STEP 2: the roles explorer (revealed via an event's Find roles action) -->
+        <div id="roles-explorer" style="display:none">
+          <div class="endbar">
+            <div class="endbarleft"><span class="endbarico" id="eb-ico"></span><div><span class="endbarname" id="eb-name"></span><span class="endbarnote" id="eb-note"></span></div></div>
+            <button class="switchpath" onclick="rolesPickEndeavor(null)">↔ Back to events</button>
+          </div>
+          <div class="scalefilter">
+            <span class="sflabel">Show roles for:</span>
+            <div class="sfbtns">
+              <button class="sfbtn" data-tier="0" onclick="rolesScale(0)">All</button>
+              ${TD.roles.tiers.map((t,i)=>`<button class="sfbtn" data-tier="${i+1}" onclick="rolesScale(${i+1})">${esc(t)}</button>`).join("")}
+            </div>
+          </div>
+          <div class="deptbar" role="tablist">
+            <button class="depttab active" data-dept="all" onclick="rolesDept('all')"><span class="di">✳</span><span class="dn">All departments</span><span class="dc" id="dc-all"></span></button>
+            ${rxDeptOrderStatic.map(d=>`<button class="depttab" data-dept="${d.id}" onclick="rolesDept('${d.id}')"><span class="di">${d.ico}</span><span class="dn">${d.name}</span><span class="dc" id="dc-${d.id}"></span></button>`).join("")}
+          </div>
+          <div id="roles-host"></div>
         </div>
-        <div id="roles-host"></div>
+
       </div>
     </div>
 
@@ -926,7 +1365,7 @@ troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
 }));
 
 // ---- roles explorer (department tabs + scale filter) ----
-let _rxDept="all", _rxTier=0;
+let _rxDept="all", _rxTier=0, _rxEndeavor=null;
 // department display order: ground-level (doors) -> high-level ops
 const rxDeptOrder=["foh","talent","audio","site","money","light","stage","video","lead"];
 function rxDeptsOrdered(){return rxDeptOrder.map(id=>TD.roles.depts.find(d=>d.id===id)).filter(Boolean);}
@@ -938,6 +1377,88 @@ function rxSort(a,b){return (a.t-b.t)||((rateOrder[a.rate]||0)-(rateOrder[b.rate
 
 // ---- agreement generator: every role expands into a Before/During/After grounded in the framework ----
 // Templates keyed by department — the shape of the commitment for that kind of work.
+const rxRoleAgreements={
+  // FRONT OF HOUSE & GUEST
+  "rx-door-cashier":{b:"Get the float, the price sheet, the guest list, and the wristband system. Know comps, re-entry rules, and who to call for a dispute.",d:"Take money cleanly, band every entry, keep the count honest. A calm door sets the tone for the whole night.",a:"Reconcile cash against the count, hand the drawer to the Steward, and flag any discrepancy immediately."},
+  "rx-security":{b:"Walk the room with the Care Lead: exits, blind spots, the quiet space. Confirm your radio channel and the de-escalation-first policy.",d:"Presence over force. De-escalate, protect consent, watch density. You're here so people feel safe, not policed.",a:"Log any incident factually, hand off to the next shift or close, and debrief what strained the room."},
+  "rx-bartender":{b:"Confirm your alcohol certification is current. Set up the well, check IDs policy, know last-call and the water-always rule.",d:"Serve at a steady pace, cut kindly when needed, keep water free and visible. The bar is a care station too.",a:"Cash out, restock, log inventory, and report anyone you had to cut for the Care Lead's awareness."},
+  "rx-coat-guest-services":{b:"Set up the check system with clear tickets and a lost-item log. Learn the venue map so you can direct anyone.",d:"Keep the handoff fast and friendly. You're often the first and last human touch of the night — make it warm.",a:"Reunite every last item with its owner, log unclaimed goods, and note any recurring guest questions."},
+  "rx-care-harm-reduction-lead":{b:"Stock the care station: water, electrolytes, quiet space, sober support, testing supplies where lawful. Brief every department on your veto.",d:"Hold the priesthood of the ground. You have absolute veto on wellbeing. No one is left alone in a hard moment.",a:"Restock, log what was used (anonymously), and debrief the team on what the night's care load revealed."},
+  "rx-medic-first-aid":{b:"Confirm your certification and kit. Establish the medical post, comms with Security and Care, and the route for EMS if escalation is needed.",d:"Respond fast and calm. Assess, treat within scope, escalate to EMS when it's beyond you. Document as you go.",a:"Restock the kit, file incident notes per protocol, and flag any pattern worth designing against next time."},
+  // TALENT & ARTIST RELATIONS
+  "rx-headline-dj-artist":{b:"Confirm set time, technical rider, and the room's intention. Advance your files/gear. Arrive rested — the room rises with you.",d:"Serve the arc, not the ego. Read the peak, hold it, and hand off gracefully. You are a steward of the energy.",a:"Settle payment and any recordings. Share what the room responded to so the next build learns from it."},
+  "rx-support-opener":{b:"Know your slot and its job: warm the room, don't peak it. Confirm tech needs and coordinate the handoff with the headliner.",d:"Build the early energy patiently. Your job is the on-ramp — leave the crowd hungry, not spent.",a:"Clear your gear promptly for the next act, settle payment, and note the room's early temperature."},
+  "rx-live-performer":{b:"Confirm choreography/staging needs, space, timing, and any safety concerns with Stage. Advance costume and prop logistics.",d:"Perform to the intention and the room. Coordinate with Stage on any movement, rigging, or floor cue.",a:"Strike costumes and props, settle payment, and debrief any staging safety notes with the Stage Manager."},
+  "rx-artist-liaison":{b:"Build the hospitality plan: arrivals, riders, green room, timing. Confirm each artist's needs and point of contact.",d:"Be the calm bridge between talent and production. Anticipate needs, protect set times, solve quietly.",a:"Close out hospitality, thank each artist, and log rider/timing notes for smoother future advances."},
+  "rx-backline-tech":{b:"Advance the backline list, confirm instruments/gear condition, and stage-plot every position before soundcheck.",d:"Keep the stage playable: quick changeovers, instant fixes, spare everything. Invisible when it works.",a:"Inventory and pack backline, flag any damage, and note gear that needs repair or replacement."},
+  "rx-mc-host":{b:"Know the run of show, the names, the pronunciations, and the intention. Coordinate cues with the Stage Manager.",d:"Guide energy between sets without hijacking it. You're the connective voice, not the main act.",a:"Debrief timing with Stage, note what transitions landed, and settle payment."},
+  // AUDIO
+  "rx-foh-engineer":{b:"Advance the technical rider, load in the console, and tune the system to the actual room before doors.",d:"Mix for the crowd and the room. Keep levels within venue and safety limits — protect ears and the mix.",a:"Strike and pack the console, log the system state, and flag anything needing repair."},
+  "rx-dj-tech":{b:"Set up the booth: decks, mixer, monitors, cabling. Test every input and confirm the changeover workflow with the DJs.",d:"Keep the booth flawless. Fast, clean DJ changeovers; instant troubleshooting so the music never stops.",a:"Break down the booth, coil and label cables, and report any gear issues."},
+  "rx-monitor-engineer":{b:"Advance monitor/IEM needs per performer. Set up the monitor world and ring out wedges before soundcheck.",d:"Give performers exactly what they need to hear. A confident artist is a monitor engineer's real output.",a:"Strike the monitor rig, log IEM/pack assignments, and note any performer-specific settings for next time."},
+  "rx-audio-tech-a2":{b:"Prep mics, stands, DIs, and stage cabling. Walk the stage plot with the FOH engineer and label every line.",d:"Support the stage: quick mic swaps, line fixes, and battery checks. Keep the FOH engineer's world clean.",a:"Coil and inventory audio gear, replace consumables, and flag damaged cable or mics."},
+  "rx-systems-pa-engineer":{b:"Confirm the PA design for the room, hang/stack the system, and time-align and tune it before anyone else needs the stage.",d:"Own the system's coverage and headroom. Every seat gets the same honest sound, safely within SPL limits.",a:"De-rig the system carefully, log rigging and amp state, and document the tuning for the venue file."},
+  "rx-rf-comms-coordinator":{b:"Coordinate the RF plot: scan the spectrum, assign frequencies, and confirm no conflicts across mics, IEMs, and comms.",d:"Keep the invisible layer clean. Monitor for dropouts and interference all night; the show runs on this.",a:"Return and log all RF gear, document the frequency plan, and note any local interference for next time."},
+  // SITE & OPERATIONS
+  "rx-venue-owner-host":{b:"Confirm the room's capacity, house rules, existing infrastructure, and what's provided vs. brought. Align on the intention and care ethic.",d:"Be the local anchor: house knowledge, neighbor relations, and the goodwill that lets this happen again.",a:"Walk the room after strike, confirm it's left better than found, and settle the venue agreement."},
+  "rx-vendor-catering":{b:"Confirm your permits/food-safety cert, power and space needs, and load-in slot. Align menu and pricing with the organizer.",d:"Serve cleanly and legally. Keep your footprint tidy — your station reflects on the whole endeavor.",a:"Break down and haul out completely, settle the vendor split, and leave your area spotless."},
+  "rx-ops-logistics-coordinator":{b:"Build the master schedule: load-in windows, vendor slots, transport, and strike order. Confirm every department's timing.",d:"Keep the machine moving. Solve bottlenecks before they cascade; you own the flow of people and gear.",a:"Confirm full load-out, reconcile transport and rentals, and log the timeline's real-world friction."},
+  "rx-parking-transport":{b:"Map ingress/egress, shuttle routes, and accessible parking. Coordinate with Security on flow and with the venue on neighbor impact.",d:"Keep arrival and exit smooth and safe. First and last impression of the night is often the parking lot.",a:"Clear the lots, reconcile any shuttle/valet costs, and note flow problems for next time."},
+  "rx-permits-compliance":{b:"Secure every license: occupancy, noise, alcohol, special-event. Confirm curfews and inspection requirements with the city.",d:"Keep the endeavor legal and neighborly all night — noise, capacity, and curfew within bounds.",a:"File closeout paperwork, log any violations or warnings, and build the compliance checklist for next time."},
+  "rx-water-infrastructure":{b:"Plan water points, fencing, power runs, and sanitation across the site. Confirm capacity against expected headcount.",d:"Keep the site's body alive: hydration, power, and safe structure. Invisible until it fails, so it can't.",a:"Break down infrastructure, reconcile rentals, and document the site plan and any capacity strain."},
+  "rx-cleaning-janitorial":{b:"Confirm supplies, bin locations, and the service rotation. Know the high-traffic zones and the restroom schedule.",d:"Keep restrooms, floors, and common areas clean all night. A clean space is a care signal — it tells people they're valued.",a:"Do the final pass, bag and stage waste for haul-away, and restock for the next use."},
+  "rx-restroom-porta-potty-service":{b:"Confirm unit count against headcount, delivery/placement, and the servicing schedule. For 3rd-party: confirm the contract, licensing, and pump-out timing.",d:"Keep units stocked, serviced, and sanitary through the event. Nobody thinks about this until it fails — so it can't.",a:"Final service and pickup (or confirm the vendor's), verify placement areas are clean, and reconcile the contract."},
+  "rx-waste-recycling-lead":{b:"Plan bin placement, sorting streams, and the haul-away. Confirm the waste contract and any local recycling requirements.",d:"Keep trash from overrunning the space. Empty before overflow, keep recycling honest, and protect the grounds.",a:"Consolidate and haul all waste, confirm the site is clear of litter, and log volume for next time's planning."},
+  "rx-teardown-site-restoration":{b:"Confirm the strike order, the restoration standard with the venue/landowner, and the crew and equipment for the clear.",d:"Clear the site methodically after the event — strike leftovers, sweep the grounds, and honor the leave-it-better ethic.",a:"Walk the site with the venue/host, confirm it's restored, and document any damage or lessons for next time."},
+  // MARKETING & MONEY
+  "rx-marketing-lead":{b:"Set the campaign: story, channels, timeline, and budget. Align the message with the intention and the framework.",d:"Drive awareness honestly. No hype the night can't honor — the promise you sell is the promise care must keep.",a:"Report reach and conversion, reconcile marketing spend, and archive what messaging actually moved people."},
+  "rx-social-content-creator":{b:"Build the content calendar and assets: flyers, clips, channels. Confirm brand/visual guidelines and the intention.",d:"Capture and post the energy in real time if scheduled. Respect consent — don't film people who didn't opt in.",a:"Archive assets, hand raw capture to the recap editor, and note which posts resonated."},
+  "rx-ticketing-manager":{b:"Set up tiers, waves, and the sales platform. Confirm pricing, comps, and the door-list sync with the box office.",d:"Watch sales velocity and adjust waves. Keep the platform and the physical door in sync all night.",a:"Reconcile tickets sold vs. scanned, report final numbers to the Steward, and close the platform."},
+  "rx-steward-treasurer":{b:"Open the transparent ledger. Confirm the budget, the bucket structure, and the recoup-first waterfall with backers before a dollar moves.",d:"Track every dollar live against plan. Any deviation is named, not hidden — the books stay honest in real time.",a:"Reconcile the full ledger, run the recoup-first waterfall, pay hard costs and workers first, and report P&L to the syndicate."},
+  "rx-photographer":{b:"Confirm the shot list, key moments, and consent norms. Coordinate with the Care Lead on the quiet-space no-photo rule.",d:"Document the night's soul without intruding. Read consent; some moments and people are not yours to shoot.",a:"Cull and deliver a first selects batch, back up everything, and flag any consent-sensitive frames."},
+  "rx-videographer-recap":{b:"Plan the recap: coverage, key sets, b-roll, and audio sources. Coordinate with the Video and Photo teams on positions.",d:"Capture the arc for the aftermovie. Respect consent and the quiet space; get the moments that tell the story.",a:"Back up all footage, log the edit plan, and note what coverage the next recap should add."},
+  // LIGHTING & ELECTRICAL
+  "rx-lighting-designer-ld":{b:"Design looks to the intention and each set. Confirm the fixture plot, power, and the console with the Master Electrician.",d:"Paint the room to the music. Light serves the moment and the safety of movement — never blinding, never dark where it's dangerous.",a:"Save the show file, document the rig, and strike with the lighting techs. Note what looks landed."},
+  "rx-lighting-operator":{b:"Load the show file, confirm cues with the LD, and check every fixture responds before doors.",d:"Run the console live to the music. Feel the room; the best operation is invisible and inevitable.",a:"Save any live edits back to the file, and support the strike and fixture log."},
+  "rx-lighting-tech":{b:"Rig, address, and focus every fixture per the plot. Confirm power distribution and cabling with the Master Electrician.",d:"Keep the rig alive: swap fixtures, fix DMX, chase gremlins fast. The show can't stop for a dead light.",a:"Strike, coil, and log fixtures. Flag any fixture or cable needing repair to the Master Electrician."},
+  "rx-master-electrician":{b:"Own power from the source: confirm distro, load calculations, grounding, and every electrical safety requirement before anyone plugs in.",d:"Nothing overloads, nothing shocks. You are the last word on electrical safety across the whole site.",a:"Power down safely, inspect and log distro and cable, and file any electrical concern before the next build."},
+  "rx-power-generator-tech":{b:"Confirm generator sizing, fuel, grounding, and distro runs for the whole site. Coordinate load with the Master Electrician.",d:"Keep the power clean and uninterrupted. A festival's whole nervous system runs through you — no dropouts.",a:"Power down and secure generators, log fuel and runtime, and note any load or grounding issue."},
+  "rx-laser-sfx-operator":{b:"Confirm laser-safety compliance (variance/zoning where required), haze/CO2 placement, and clearances with Stage and the Master Electrician.",d:"Run FX to the music within every safety zone. Audience-scan and pyro-adjacent effects follow the law, no exceptions.",a:"Power down and secure FX units, log gas/consumables, and file the safety compliance record."},
+  // STAGE & RIGGING
+  "rx-stagehand":{b:"Get the load-in plan, know the strike order, and confirm your crew lead. Lift smart — the body is the tool.",d:"Move gear and set pieces fast and safe. Communicate every heavy or overhead move; no surprises.",a:"Load out completely, return borrowed tools, and flag anything damaged in transit."},
+  "rx-deck-crew":{b:"Learn the set-change choreography and your cues with the Stage Manager. Confirm prop and set-piece positions.",d:"Execute changeovers cleanly on cue. Silent, fast, and safe — you keep the show's momentum.",a:"Strike set pieces in order, inventory props, and note any changeover that needs rethinking."},
+  "rx-scaffold-structure-crew":{b:"Confirm structural plans, load ratings, and certification requirements. Inspect every component before it goes up.",d:"Build to spec, no shortcuts. Stage, towers, and roof carry people and gear — the covenant is structural integrity.",a:"Dismantle in safe sequence, inspect and log every component, and quarantine anything compromised."},
+  "rx-rigger-up-ground":{b:"Confirm your rigging certification, the rig plot, and every point's load rating. Inspect hardware before anything goes overhead.",d:"Every point rated, checked, and doubled where it matters. Nothing unsafe over people's heads — ever.",a:"De-rig in sequence, inspect and log all hardware, and pull anything questionable from service."},
+  "rx-automation-op":{b:"Confirm the automation plot, load limits, and e-stop placement. Test every moving element empty before the show.",d:"Run kinetic scenery precisely and safely. People are near moving mass — your focus is absolute.",a:"Park and lock all automation, inspect and log the system, and report any fault before the next use."},
+  // VIDEO & BROADCAST
+  "rx-led-screen-tech":{b:"Build and map the LED walls, confirm processing and content feed, and test resolution and sync before doors.",d:"Keep the walls clean and fed. Instant response to dead panels or feed drops — the visual can't glitch at the peak.",a:"De-rig panels carefully, log the wall map and any dead tiles, and pack processing gear."},
+  "rx-vj-content-op":{b:"Load and organize the visual content, confirm the feed to LED/projection, and sync your workflow to the music and LD.",d:"Run visuals live to the energy. React to the room; the imagery breathes with the set.",a:"Archive the content set, back up any live capture, and note what visuals hit."},
+  "rx-camera-operator":{b:"Confirm your position, lens, comms channel, and the shot discipline with the Video Director. Frame the intention.",d:"Get the Director's shots and the moments between. Steady, composed, consent-aware in the crowd.",a:"Return camera gear, offload media, and log coverage gaps for the Director."},
+  "rx-video-director":{b:"Build the camera plan and shot list, confirm every source and comms, and align the visual story with the intention.",d:"Call the live cut across all cameras. See the whole room, tell the story in real time, keep the feed alive.",a:"Confirm the recording, debrief the camera team, and hand the edit plan to the recap."},
+  "rx-vision-mixer-td":{b:"Confirm every input to the switcher, build your bus/effects, and rehearse the cut sequence with the Director.",d:"Switch the program cleanly on the Director's call. Your hands are the show's live edit — no fumbles.",a:"Save the switcher config, confirm the program record, and log any signal issue."},
+  "rx-drone-operator":{b:"Confirm FAA Part 107 currency, airspace authorization, and crowd-overflight rules. Pre-flight the aircraft and set no-fly zones.",d:"Fly within every regulation and never over uncontrolled crowds. Aerial beauty never trumps airspace law or safety.",a:"Log the flight, offload footage, inspect the aircraft, and file any airspace or battery note."},
+  "rx-streaming-broadcast-eng":{b:"Confirm the encode chain, bandwidth, redundancy, and the platform destinations. Test the full stream end to end before doors.",d:"Keep the stream alive and clean. Monitor bitrate and dropouts; the remote audience is counting on you.",a:"Confirm the archive/VOD, log the stream health, and note any bandwidth or encode issue."},
+  // LEADERSHIP & PRODUCTION
+  "rx-promoter-organizer":{b:"Own the vision, the budget, and the risk. Book talent, secure the venue, align backers, and set the intention everyone serves.",d:"Hold the whole endeavor lightly and clearly. Empower each lead, protect the intention, and carry the calm.",a:"Close out every agreement and payment, thank the team, and carry the lessons and the seed to the next."},
+  "rx-event-producer":{b:"Turn the vision into a runnable plan: schedule, departments, budget lines, and contingencies. Confirm every lead is briefed and resourced.",d:"Run the night end to end. Be the point person when something breaks; solve without dropping the intention.",a:"Reconcile the plan against reality, close out departments, and document what to change next time."},
+  "rx-production-manager":{b:"Own the technical build across all departments. Confirm the advance, the schedule, and every crew's needs and safety plan.",d:"Coordinate the technical machine. Keep departments in sync and on time; safety and the schedule are yours.",a:"Oversee the full strike, confirm all gear returned, and debrief the technical lessons."},
+  "rx-stage-manager":{b:"Build the run of show, confirm every cue and changeover, and align talent, audio, light, and video on timing.",d:"Run the show clock. Call cues, hold set times, and keep transitions tight — you are the night's heartbeat.",a:"Log the actual run, note timing friction, and debrief transitions with each department."},
+  "rx-show-caller":{b:"Master the cue sheet across audio, light, video, and automation. Rehearse the sequence and confirm comms with every department.",d:"Call the live show in real time across all departments. Precision and calm under pressure keep the spectacle safe.",a:"Save the final cue sheet, debrief the departments, and document timing for the next build."},
+  "rx-site-event-manager":{b:"Own the whole grounds: multiple stages, zones, vendors, and infrastructure. Confirm every area lead and the master site plan.",d:"Coordinate the entire site. Keep zones, flow, and safety aligned across a footprint too big for one set of eyes — so you empower many.",a:"Confirm full site strike and restoration, reconcile the grounds, and document the site's real-world lessons."}
+};
+
+// shared onboarding checklist + payment/W-9 note (display only — the portal never collects or stores this data)
+const rxOnboard={
+  items:[
+    {k:"Legal name & contact",v:"For the agreement and the 1099 at year-end."},
+    {k:"Mailing address",v:"Required on the W-9 for tax reporting."},
+    {k:"Chosen payment method",v:"Direct deposit (ACH), or another method the payment platform supports."},
+    {k:"W-9 on file",v:"Anyone paid $600+ in a year needs one; we collect it up front for everyone."},
+    {k:"Certifications (if the role needs one)",v:"Proof of the cert flagged on this role, where applicable."}
+  ],
+  note:"Onboarding, W-9 collection, and payments are handled by a dedicated contractor-payment platform (e.g. Gusto's contractor plan, or a free option like Found) — not by this app. That platform collects the W-9, stores sensitive data (including SSNs) on compliant infrastructure, and files the 1099-NEC at year-end. DELPHI never sees or stores your tax ID or payment details; it only links out to the secure platform through the outbound gate. This isn't tax or legal advice — classification and compliance are the organizer's responsibility, ideally confirmed with a CPA."
+};
+
 const rxAgreements={
   foh:{before:"Arrive early, briefed on the night's intention and the care plan. Know your post, your relief, and who holds the Care veto.",during:"Hold the boundary with warmth. Watch crowd density and consent. A guest in trouble is the priority, not the count.",after:"Hand off a clean count and any incidents. Flag what strained the boundary so next time holds better."},
   talent:{before:"Confirm set time, tech needs, and the room's intention. Arrive rested; the room rises with you.",during:"Read the room, serve the arc, hand off gracefully. You hold the energy — not your ego.",after:"Settle payment and files. Note what the room responded to for the next build."},
@@ -958,18 +1479,31 @@ function rxCues(r){
 }
 function rxRoleId(r){return "rx-"+r.n.toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"");}
 function rxDetail(r,deptId){
-  const ag=rxAgreements[deptId]||rxAgreements.foh;
+  const spec=rxRoleAgreements[rxRoleId(r)];
+  const dept=rxAgreements[deptId]||rxAgreements.foh;
+  const before=spec?spec.b:dept.before, during=spec?spec.d:dept.during, after=spec?spec.a:dept.after;
   const cues=rxCues(r);
   return `<div class="rxdetail" id="${rxRoleId(r)}">
     <div class="rxphases">
-      <div class="rxphase"><span class="rxpk">Before</span><p>${esc(ag.before)}</p></div>
-      <div class="rxphase"><span class="rxpk">During</span><p>${esc(ag.during)}</p></div>
-      <div class="rxphase"><span class="rxpk">After</span><p>${esc(ag.after)}</p></div>
+      <div class="rxphase"><span class="rxpk">Before</span><p>${esc(before)}</p></div>
+      <div class="rxphase"><span class="rxpk">During</span><p>${esc(during)}</p></div>
+      <div class="rxphase"><span class="rxpk">After</span><p>${esc(after)}</p></div>
     </div>
     <div class="rxcues">
       <div class="rxcue g"><span class="rxcd"></span><p>${esc(cues.green)}</p></div>
       <div class="rxcue y"><span class="rxcd"></span><p>${esc(cues.yellow)}</p></div>
       <div class="rxcue r"><span class="rxcd"></span><p>${cues.red}</p></div>
+    </div>
+    <div class="rxsourcing">
+      <p class="rxsk">How to fill this role</p>
+      <div class="rxsbody"><span class="rxsrc rxsrc-${rxSourceOf(r)}">${esc(rxProviders[rxSourceOf(r)].label)}</span><p>${esc(rxProviders[rxSourceOf(r)].note)}</p></div>
+      ${rxSourceOf(r)!=="direct"?`<button class="rxsbtn" onclick="event.stopPropagation();rxProviderModal('${rxSourceOf(r)}')">Find vetted providers →</button>`:""}
+    </div>
+    <div class="rxonboard">
+      <p class="rxok">Onboarding — what this role provides</p>
+      <ul class="rxolist">${rxOnboard.items.map(it=>`<li><span class="rxoi">${esc(it.k)}</span><span class="rxov">${esc(it.v)}</span></li>`).join("")}</ul>
+      <p class="rxonote">${esc(rxOnboard.note)}</p>
+      <button class="rxsbtn" onclick="event.stopPropagation();rxProviderModal('payment')">See payment / W-9 platforms →</button>
     </div>
     <p class="rxground">Grounded in the RESONANCE framework — the paper, the polarity scales, and the Resonant Consent curriculum — so everyone arrives ready, with guidance and enthusiasm.</p>
   </div>`;
@@ -984,6 +1518,7 @@ function rxRow(r,deptIco){
         <p class="rxrd">${esc(r.d)}</p>
       </div>
       <div class="rxrmeta">
+        <span class="rxsrc rxsrc-${rxSourceOf(r)}">${esc(rxProviders[rxSourceOf(r)].label)}</span>
         <span class="rxtier rxt${r.t}">${esc(tierTag)}+</span>
         ${r.cert?`<span class="rxcert" title="Requires certification">✓ ${esc(certLabel[r.cert]||r.cert)}</span>`:""}
         ${r.rate?`<span class="rxrate">${esc(r.rate)}</span>`:""}
@@ -1019,12 +1554,151 @@ function rolesRender(){
 window.rolesDept=(id)=>{_rxDept=id;troot.querySelectorAll(".depttab").forEach(t=>t.classList.toggle("active",t.dataset.dept===id));rolesRender();};
 window.rolesScale=(tier)=>{_rxTier=tier;troot.querySelectorAll(".sfbtn").forEach(b=>b.classList.toggle("active",+b.dataset.tier===tier));rolesRender();};
 window.rolesToggle=(id)=>{const row=troot.querySelector('.rxrow[data-role="'+id+'"]');if(row)row.classList.toggle("open");};
-rolesRender();
+window.rxProviderModal=(type)=>{
+  const P=rxProviderLinks[type];if(!P)return;
+  const linkHtml=P.links.map(l=>{
+    const isSearch=!!l.search;
+    const url=isSearch?("https://www.google.com/search?q="+encodeURIComponent(l.search)):l.url;
+    return `<button class="pmlink" onclick="outbound('${url.replace(/'/g,"\\'")}','${esc(l.name).replace(/'/g,"\\'")}')">
+      <span class="pmln">${esc(l.name)}${l.cost?` <span class="pmcost pmcost-${l.cost==='free'?'free':'paid'}">${l.cost==='free'?'FREE':esc(l.cost)}</span>`:''}${isSearch?' <span class=\"pmsearch\">↗ search</span>':''}</span>
+      <span class="pmld">${esc(l.note)}</span>
+    </button>`;
+  }).join("");
+  modal(`<div class="pmwrap">
+    <p class="pmkick">${esc(P.title)}</p>
+    <p class="pmintro">${esc(P.intro)}</p>
+    <div class="pmguard">🛡️ ${esc(P.guard)}</div>
+    <div class="pmlinks">${linkHtml}</div>
+    <p class="pmfoot">These are starting points, not endorsements — vet each provider yourself. Links open an external site through DELPHI's outbound gate.</p>
+    <button class="pmclose" onclick="closeModal()">Close</button>
+  </div>`);
+};
+window.rolesPickEndeavor=(id)=>{
+  _rxEndeavor=id?rxEvents.find(e=>e.id===id):null;
+  const picker=troot.querySelector("#endeavor-picker"), exp=troot.querySelector("#roles-explorer");
+  if(_rxEndeavor){
+    picker.style.display="none"; exp.style.display="block";
+    troot.querySelector("#eb-ico").textContent=_rxEndeavor.ico;
+    troot.querySelector("#eb-name").textContent=_rxEndeavor.name+" · "+_rxEndeavor.kind;
+    troot.querySelector("#eb-note").textContent=_rxEndeavor.date+" · "+_rxEndeavor.venue;
+    _rxTier=_rxEndeavor.tier;
+    troot.querySelectorAll(".sfbtn").forEach(b=>b.classList.toggle("active",+b.dataset.tier===_rxTier));
+    _rxDept="all";
+    troot.querySelectorAll(".depttab").forEach(t=>t.classList.toggle("active",t.dataset.dept==="all"));
+    rolesRender();
+  } else {
+    exp.style.display="none"; picker.style.display="block";
+  }
+  document.getElementById("screen-tonal").scrollTo(0,0);
+};
+window.rxDashModal=(id)=>{const e=rxEvents.find(x=>x.id===id);if(!e)return;
+  // pick a representative role for this event's tier from the taxonomy
+  const pool=[];TD.roles.depts.forEach(d=>d.roles.forEach(r=>{if(r.t<=e.tier)pool.push(r);}));
+  const myRole=pool.find(r=>r.n==="Bartender")||pool.find(r=>r.n==="Stagehand")||pool[0];
+  const rid=rxRoleId(myRole);const ag=rxRoleAgreements[rid]||{};
+  const src=rxSourceOf(myRole);const srcLabel=rxProviders[src].label;
+  const crewTotal=pool.length;const staffed=Math.round(crewTotal*(e.status==="live"?0.9:0.55));
+  const payReady=e.status==="live";
+  const call=e.status==="live"?"Doors 9:00 PM · Call 7:30 PM":"Call time TBD — confirm with producer";
+  modal(`<div class="dashwrap">
+    <div class="dashhead"><span class="dashico">${e.ico}</span><div><p class="dashname">${esc(e.name)}</p><p class="dashsub">${esc(e.kind)} · ${esc(e.date)} · ${esc(e.venue)}</p></div><span class="evbadge ${e.status==="live"?"live":"up"}">${e.status==="live"?"On sale":"Staffing"}</span></div>
+
+    <div class="dashrole">
+      <p class="dashlbl">Your role</p>
+      <div class="dashrolerow"><h3>${esc(myRole.n)}</h3><span class="rxsrc rxsrc-${src}">${esc(srcLabel)}</span></div>
+      <p class="dashcall">🕘 ${esc(call)}</p>
+    </div>
+
+    <div class="dashgrid">
+      <div class="dashstat"><span class="dsn">${staffed}/${crewTotal}</span><span class="dsl">Crew staffed</span></div>
+      <div class="dashstat"><span class="dsn ${payReady?"ok":"pend"}">${payReady?"Ready":"Pending"}</span><span class="dsl">Onboarding</span></div>
+      <div class="dashstat"><span class="dsn ${payReady?"ok":"pend"}">${payReady?"Set":"Setup"}</span><span class="dsl">Payment · W-9</span></div>
+    </div>
+
+    ${ag.b?`<div class="dashagree">
+      <p class="dashlbl">Your agreement</p>
+      <div class="dashphase"><span class="dp">Before</span><p>${esc(ag.b)}</p></div>
+      <div class="dashphase"><span class="dp">During</span><p>${esc(ag.d)}</p></div>
+      <div class="dashphase"><span class="dp">After</span><p>${esc(ag.a)}</p></div>
+    </div>`:""}
+
+    <div class="dashacts">
+      ${payReady?`<button class="evbtn primary" onclick="toast('Checked in ✦ — have a great night')">✓ Check in for shift</button>`:`<button class="evbtn primary" onclick="rxProviderModal('payment')">Finish onboarding →</button>`}
+      <button class="evbtn" onclick="rolesPickEndeavor('${e.id}')">Browse all roles</button>
+    </div>
+    <p class="pmfoot">Mock dashboard — a preview of the crew-member view. Real sign-in, live staffing counts, and pay status come with the backend. Your earnings stay private to you and the organizer.</p>
+    <button class="pmclose" onclick="closeModal()">Close</button>
+  </div>`);};
+/* ===== Promoter Create-Event wizard ===== */
+let _wz=null;
+window.rxCreateModal=(who)=>{
+  if(who!=="Promoter"){const c=rxCreators.find(x=>x.who===who)||{ico:"✦",who:who,d:""};modal(`<div class="pmwrap"><p class="pmkick">${c.ico} Create as ${esc(who)}</p><p class="pmintro">${esc(c.d)}</p><div class="pmguard">🛡️ Coming soon. The ${esc(who)} flow is next. The Promoter wizard is live now — try it to see the shape.</div><button class="pmclose" onclick="closeModal()">Close</button></div>`);return;}
+  _wz={step:0,name:"",date:"",venue:"",tier:2,style:"",cap:"",depts:{},price:"",backers:""};
+  wzRender();
+};
+const _wzSteps=["Basics","Scale","Crew","Economics","Review"];
+function wzRender(){
+  const s=_wz.step;
+  const dots=_wzSteps.map((n,i)=>`<span class="wzdot ${i===s?'on':''} ${i<s?'done':''}" onclick="wzGo(${i})">${i+1}<em>${esc(n)}</em></span>`).join('');
+  let body="";
+  if(s===0)body=wzBasics();
+  else if(s===1)body=wzScale();
+  else if(s===2)body=wzCrew();
+  else if(s===3)body=wzEcon();
+  else body=wzReview();
+  const back=s>0?`<button class="evbtn" onclick="wzGo(${s-1})">← Back</button>`:`<button class="evbtn" onclick="closeModal()">Cancel</button>`;
+  const next=s<4?`<button class="evbtn primary" onclick="wzNext()">Continue →</button>`:`<button class="evbtn primary" onclick="wzPublish()">✦ Publish endeavor</button>`;
+  modal(`<div class="wzwrap"><div class="wzsteps">${dots}</div><div class="wzbody">${body}</div><div class="wznav">${back}${next}</div></div>`);
+  wzBind();
+}
+function wzBasics(){return `<p class="wzh">Name your endeavor</p>
+  <label class="wzf"><span>Event name</span><input id="wz-name" class="wzin" value="${esc(_wz.name)}" placeholder="Coupled // Warehouse"></label>
+  <label class="wzf"><span>Date</span><input id="wz-date" class="wzin" value="${esc(_wz.date)}" placeholder="Sat, Mar 14 — or 'Every Thursday'"></label>
+  <label class="wzf"><span>Venue / location</span><input id="wz-venue" class="wzin" value="${esc(_wz.venue)}" placeholder="The Annex, Nashville"></label>
+  <label class="wzf"><span>Style / intention</span><input id="wz-style" class="wzin" value="${esc(_wz.style)}" placeholder="Deep house, high-warmth, care-first"></label>`;}
+function wzScale(){const tiers=TD.roles.tiers;return `<p class="wzh">What scale is this?</p><p class="wzsub">Scale sets which crew roles the endeavor reveals.</p>
+  <div class="wztiers">${tiers.map((t,i)=>`<button class="wztier ${_wz.tier===i+1?'on':''}" onclick="wzSetTier(${i+1})"><span class="wztn">${esc(t)}</span></button>`).join('')}</div>
+  <label class="wzf"><span>Expected capacity</span><input id="wz-cap" class="wzin" value="${esc(_wz.cap)}" placeholder="~450"></label>`;}
+function wzCrew(){
+  // auto-suggest roles for the tier, grouped by dept
+  const byDept={};TD.roles.depts.forEach(d=>{const rs=d.roles.filter(r=>r.t<=_wz.tier);if(rs.length)byDept[d.id]={name:d.name,ico:d.ico,roles:rs};});
+  if(Object.keys(_wz.depts).length===0){Object.keys(byDept).forEach(id=>_wz.depts[id]=true);}
+  const blocks=Object.entries(byDept).map(([id,d])=>{const on=_wz.depts[id]!==false;return `<button class="wzdept ${on?'on':''}" onclick="wzToggleDept('${id}')"><span class="wzdi">${d.ico}</span><span class="wzdn">${esc(d.name)}</span><span class="wzdc">${d.roles.length} roles</span><span class="wzck">${on?'✓':''}</span></button>`;}).join('');
+  const total=Object.entries(byDept).reduce((n,[id,d])=>n+(_wz.depts[id]!==false?d.roles.length:0),0);
+  return `<p class="wzh">Which departments do you need?</p><p class="wzsub">Suggested for your scale — toggle off what you're covering yourself. <strong>${total} role functions</strong> selected.</p><div class="wzdepts">${blocks}</div>`;
+}
+function wzEcon(){return `<p class="wzh">Economics</p><p class="wzsub">Illustrative only — the transparent ledger and recoup-first waterfall run live once real.</p>
+  <label class="wzf"><span>Ticket price (from)</span><input id="wz-price" class="wzin" value="${esc(_wz.price)}" placeholder="$20"></label>
+  <label class="wzf"><span>Backers / syndicate</span><input id="wz-backers" class="wzin" value="${esc(_wz.backers)}" placeholder="e.g. 3 backers funding the bucket"></label>
+  <div class="pmguard">🛡️ Capital and curation stay separate. Backers recoup first from the waterfall; hard costs and crew are paid before profit splits. This is not financial advice.</div>`;}
+function wzReview(){
+  const deptCount=Object.values(_wz.depts).filter(v=>v!==false).length;
+  const byDept={};TD.roles.depts.forEach(d=>{const rs=d.roles.filter(r=>r.t<=_wz.tier);if(rs.length&&_wz.depts[d.id]!==false)byDept[d.id]=rs.length;});
+  const roleTotal=Object.values(byDept).reduce((a,b)=>a+b,0);
+  const row=(k,v)=>`<div class="wzrev"><span class="wzrk">${k}</span><span class="wzrv">${v||'<em>—</em>'}</span></div>`;
+  return `<p class="wzh">Review &amp; publish</p>
+  ${row('Name',esc(_wz.name))}
+  ${row('Date',esc(_wz.date))}
+  ${row('Venue',esc(_wz.venue))}
+  ${row('Style',esc(_wz.style))}
+  ${row('Scale',esc(TD.roles.tiers[_wz.tier-1]))}
+  ${row('Capacity',esc(_wz.cap))}
+  ${row('Crew',deptCount+' departments · '+roleTotal+' role functions')}
+  ${row('Ticket from',esc(_wz.price))}
+  ${row('Backers',esc(_wz.backers))}
+  <p class="pmfoot">On publish this would enter Tonal's staffing pipeline as an upcoming event. Mock preview — no backend yet.</p>`;
+}
+function wzBind(){['name','date','venue','style','cap','price','backers'].forEach(k=>{const el=document.getElementById('wz-'+k);if(el)el.oninput=()=>{_wz[k]=el.value;};});}
+window.wzGo=(i)=>{_wz.step=Math.max(0,Math.min(4,i));wzRender();};
+window.wzNext=()=>{if(_wz.step===0&&!_wz.name.trim()){toast('Give your endeavor a name ✦');return;}wzGo(_wz.step+1);};
+window.wzSetTier=(t)=>{_wz.tier=t;_wz.depts={};wzRender();};
+window.wzToggleDept=(id)=>{_wz.depts[id]=_wz.depts[id]===false?true:false;wzRender();};
+window.wzPublish=()=>{closeModal();toast('✦ '+(_wz.name||'Endeavor')+' created — entering the staffing pipeline');};
 rolesRender();
 
 tonalRender();
 }
-window.tonalDoor=(name)=>{modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">🚧</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:40ch;margin-left:auto;margin-right:auto">This door isn't wired to live payment yet. When it opens, it'll route through DELPHI's outbound gate to the real ${esc(name)==="Ticketing"?"Ticket Fairy":"Stripe"} flow.</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
+window.tonalDoor=(name)=>{const isVol=name==="Volunteer sign-up";const msg=isVol?"This isn't wired yet. When it opens, you'll pick an available shift and role, and we'll get you set up — a real spot on the crew in exchange for your way in.":("This door isn't wired to live payment yet. When it opens, it'll route through DELPHI's outbound gate to the real "+(name==="Ticketing"?"Ticket Fairy":"Stripe")+" flow.");const ico=isVol?"🤝":"🚧";modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">${ico}</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:42ch;margin-left:auto;margin-right:auto">${esc(msg)}</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
 
 let _studiesMounted=false;
 function ensureStudies(){if(_studiesMounted)return;_studiesMounted=true;
@@ -1035,7 +1709,7 @@ function lc(l){return LIN_COLORS[l]||"#828da3";}
 
 /* ===== POLARITY (first) — PDF-style rows grouped by domain ===== */
 const pState={doms:new Set(),q:""};document.getElementById("n-polarity").textContent=polarity.length;
-pdomains.forEach(dm=>{const b=document.createElement("button");b.className="pill";b.dataset.dom=dm.name;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${dm.emoji}</span>${esc(dm.name)}`;document.getElementById("p-domains").appendChild(b);});
+(()=>{const host=document.getElementById("p-domains");const perRow=Math.ceil(pdomains.length/3);pdomains.forEach((dm,i)=>{if(i%perRow===0){const r=document.createElement("div");r.className="pdrow";host.appendChild(r);}const b=document.createElement("button");b.className="pill";b.dataset.dom=dm.name;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${dm.emoji}</span>${esc(dm.name)}`;host.lastChild.appendChild(b);});})();
 const CELLCLASS=["y3","y2","y1","node","g1","g2","g3"];const LVN=["−3","−2","−1","0","+1","+2","+3"];
 function scaleRow(s){const cells=s.levels.map((t,i)=>`<div class="cell ${CELLCLASS[i]}" data-lv="${LVN[i]}">${esc(t)}</div>`).join("");
   return `<div class="scalerow" onclick='openPolarity(${s.n})'><div class="idx">${s.n}</div>${cells}</div>`;}
@@ -1091,7 +1765,7 @@ function empty(){return `<p style="color:var(--fog);text-align:center;padding:40
 document.querySelectorAll("#screen-studies .tab").forEach(t=>t.addEventListener("click",()=>{document.querySelectorAll("#screen-studies .tab").forEach(x=>x.setAttribute("aria-selected","false"));t.setAttribute("aria-selected","true");document.querySelectorAll("#screen-studies .tabpanel").forEach(p=>p.classList.remove("active"));document.getElementById("panel-"+t.dataset.tab).classList.add("active");}));
 pRender();mRender();dRender();
 }
-bootPortal();
 </script>
 
+<script>bootPortal();</script>
 </body></html>

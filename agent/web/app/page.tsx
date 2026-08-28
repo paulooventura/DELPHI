@@ -271,6 +271,11 @@ export default function Home() {
   const emfCleanupRef = useRef<(() => void) | null>(null);
   const liveAttitudeRef = useRef({ view: altAzToEnu(180, 0), roll: 0 });
   const attitudeHudMs = useRef(0);
+  const rawOrientCleanupRef = useRef<(() => void) | null>(null);
+  const [sensorDiag, setSensorDiag] = useState<{ events: number; status: "none" | "ok" | "event-but-null" | "denied" }>({
+    events: 0,
+    status: "none",
+  });
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
@@ -598,6 +603,32 @@ export default function Home() {
   function stopOrientationWatch() {
     headingCleanupRef.current?.();
     headingCleanupRef.current = null;
+    rawOrientCleanupRef.current?.();
+    rawOrientCleanupRef.current = null;
+  }
+
+  function startRawOrientationDiag() {
+    rawOrientCleanupRef.current?.();
+    const onRaw = (event: Event) => {
+      const e = event as DeviceOrientationEvent;
+      setSensorDiag(prev => {
+        const events = prev.events + 1;
+        const status =
+          e.alpha == null && e.beta == null && e.gamma == null ? "event-but-null" : "ok";
+        if (prev.events === events && prev.status === status) return prev;
+        return { events, status };
+      });
+    };
+    window.addEventListener("deviceorientation", onRaw, true);
+    if ("ondeviceorientationabsolute" in window) {
+      window.addEventListener("deviceorientationabsolute", onRaw, true);
+    }
+    rawOrientCleanupRef.current = () => {
+      window.removeEventListener("deviceorientation", onRaw, true);
+      if ("ondeviceorientationabsolute" in window) {
+        window.removeEventListener("deviceorientationabsolute", onRaw, true);
+      }
+    };
   }
 
   async function startOrientationWatch(options?: { resetCalibration?: boolean }) {
@@ -607,9 +638,12 @@ export default function Home() {
       setHeadingLive(false);
       setPitchLive(false);
       setSkyPose("too-flat");
+      setSensorDiag({ events: 0, status: "denied" });
       return;
     }
     stopOrientationWatch();
+    setSensorDiag({ events: 0, status: "none" });
+    startRawOrientationDiag();
     if (options?.resetCalibration) {
       resetOrientationCalibration();
     } else {
@@ -1107,6 +1141,7 @@ export default function Home() {
       arPoseReady={skyArPoseReady}
       skyWeather={skyWeatherSlot}
       skyWarmth={spectrumWarmth}
+      sensorDiag={sensorDiag}
       onEnterSky={() => {
         // Retry watches if already primed; do not re-prompt from here.
         if (toggles.heading || toggles.location) void startOrientationWatch();
