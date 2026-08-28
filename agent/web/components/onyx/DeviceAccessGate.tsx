@@ -47,8 +47,12 @@ export function DeviceAccessGate({
           </span>
         </button>
 
-        <p className="onyx-access-build" aria-hidden>
+        <p className="onyx-access-build">
           build {DELPHI_BUILD}
+          {" · "}
+          <a href={`/portal?b=${DELPHI_BUILD}`} className="onyx-access-portal-link">
+            Portal (Tonal &amp; Studies)
+          </a>
         </p>
       </div>
     </div>

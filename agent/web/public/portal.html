@@ -1,6 +1,21 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-08-28c ca6e248 -->
+<!-- build: 2026-08-28d -->
+<script>
+(function(){
+  var BUILD='2026-08-28d';
+  try{
+    var prev=localStorage.getItem('delphi-portal-build');
+    var q=new URLSearchParams(location.search).get('b');
+    if(prev&&prev!==BUILD&&!q){
+      localStorage.setItem('delphi-portal-build',BUILD);
+      location.replace(location.pathname+'?b='+encodeURIComponent(BUILD)+(location.hash||''));
+      return;
+    }
+    localStorage.setItem('delphi-portal-build',BUILD);
+  }catch(e){}
+})();
+</script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DELPHI</title>
 <style>
@@ -649,13 +664,16 @@
   .vbtag.builder{color:var(--amber);border-color:rgba(232,160,79,.3);background:rgba(232,160,79,.06)}
   .switchpath{font:inherit;font-size:12px;font-weight:650;padding:8px 15px;border-radius:999px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--fog);transition:.15s}
   .switchpath:hover{color:var(--paper);border-color:var(--fog)}
+  #build-banner{position:fixed;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:999;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--node);opacity:.75;pointer-events:none;white-space:nowrap}
 </style>
 
 </head>
 <body>
 
+<div id="build-banner" aria-hidden="true">portal · build 2026-08-28d</div>
+
 <!-- ===== PORTAL HOME ===== -->
-<div id="portal" data-build="2026-08-28c-ca6e248">
+<div id="portal" data-build="2026-08-28d">
   <canvas id="stars"></canvas>
   <div class="aura"></div><div class="ring r1"></div><div class="ring r2"></div>
   <div class="compass">

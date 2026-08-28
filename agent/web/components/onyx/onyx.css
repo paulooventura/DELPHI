@@ -202,7 +202,16 @@
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--onyx-ink-faint);
-  pointer-events: none;
+}
+.onyx-access-portal-link {
+  color: var(--onyx-ink-quiet);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-transform: none;
+  letter-spacing: 0.04em;
+}
+.onyx-access-portal-link:hover {
+  color: var(--onyx-ink-bright);
 }
 
 /* ── Splash ──────────────────────────────────────────────────────────────── */

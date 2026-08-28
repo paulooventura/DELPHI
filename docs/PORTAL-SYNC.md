@@ -6,6 +6,18 @@ In this GitHub repo there is **no** `portal/src/` tree. The file Vercel serves i
 agent/web/public/portal.html
 ```
 
+## Canonical links (two doors — same domain)
+
+| What you want | URL | What you'll see |
+|---|---|---|
+| **Portal** (yinyang compass, Tonal, Studies) | **https://delphi.pauloventura.org/portal** | Oracle phrase, compass, Tonal builder |
+| **Sky app** (crystal gate, cosmic clock, sky map) | https://delphi.pauloventura.org/ | Black crystal → Allow access → tabs |
+| **Force fresh portal** (cache bust) | https://delphi.pauloventura.org/fresh | Redirects to portal with latest build |
+
+If the portal looks stale: open **`/fresh`** in Safari (not a Home Screen icon). Delete any old DELPHI icon from the home screen, open `/fresh`, then re-add if needed.
+
+Confirm you're on the latest build: portal shows **`portal · build 2026-08-28d`** at the bottom; crystal gate shows **`build 2026-08-28d`** at the bottom.
+
 On Paulo's Windows machine the editable draft lives at `G:\DELPHI\portal\src\DELPHI_portal.html`.
 Canonical Claude diffs (`DELPHI_TONAL_CANONICAL.html`) are **diff references only** — never deploy them raw (they lack host wiring).
 
