@@ -1,16 +1,10 @@
 import type { CapacitorConfig } from "@capacitor/cli";
+import { DELPHI_BUILD as BUILD } from "./lib/buildStamp";
 
 /**
  * DELPHI native shell — loads the live web app so we keep one UI codebase.
- *
- * Production (default): WebView → https://delphi.pauloventura.org
- * Local iterate: set CAP_SERVER_URL=http://YOUR_LAN_IP:3000 before `npx cap sync`
- *   (phone and PC must be on the same Wi‑Fi; Next must listen on 0.0.0.0).
- *
- * Keep `BUILD` in sync with agent/web/lib/buildStamp.ts — it busts WKWebView
- * document cache that otherwise keeps serving a stale shell forever.
+ * BUILD is imported from lib/buildStamp.ts (single source of truth).
  */
-const BUILD = "2026-08-26e";
 const baseUrl =
   process.env.CAP_SERVER_URL?.trim() || "https://delphi.pauloventura.org";
 const serverUrl = baseUrl.includes("?")

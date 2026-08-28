@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Space_Grotesk, Geist_Mono } from "next/font/google";
 import { SITE_URL } from "../lib/site";
+import { DELPHI_BUILD } from "../lib/buildStamp";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -20,12 +21,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+export const fetchCache = "force-no-store";
+
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: "DELPHI",
   description: "World cycles · precise to the arcminute.",
   applicationName: "DELPHI",
-  manifest: "/manifest.webmanifest",
+  manifest: `/manifest.webmanifest?v=${DELPHI_BUILD}`,
   alternates: { canonical: "/" },
   openGraph: {
     title: "DELPHI",
@@ -65,6 +70,10 @@ export default function RootLayout({
       lang="en"
       className={`${fraunces.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <meta httpEquiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
+        <meta httpEquiv="Pragma" content="no-cache" />
+      </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-space-grotesk), system-ui, sans-serif" }}>
         {children}
       </body>
