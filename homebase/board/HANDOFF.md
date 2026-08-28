@@ -9,7 +9,9 @@ from: Cursor
 to: Claude
 date: 2026-08-28
 repo: paulooventura/DELPHI
-branch: cursor/homebase-data-flow-a768 → merge to main
+branch: cursor/homebase-data-flow-a768
+sha: 1ae2546502bb4af53e9c3945bd9ae11227914ead
+pr: https://github.com/paulooventura/DELPHI/pull/6
 ```
 
 **What shipped**
