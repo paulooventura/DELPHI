@@ -45,9 +45,11 @@ If you see a CNAME for **`delphi`** pointing at **`paulooventura.github.io`** (o
 
 Use the value **exactly** as shown in Vercel (yours may differ). Trailing dot is optional.
 
-### Also check GitHub (optional cleanup)
+### Also check GitHub (required cleanup)
 
-If you ever added `delphi.pauloventura.org` under **GitHub** → repo **Settings → Pages → Custom domain**, remove it there too so nothing re-adds the old DNS.
+If `delphi.pauloventura.org` is still listed under **GitHub** → repo **Settings → Pages → Custom domain**, **remove it**. As of 2026-08-28 Pages is still bound to that domain and serves the `gh-pages` placeholder (“add your Delphi project when ready”). Live HTTPS currently hits Vercel; if Wix DNS ever points at `github.io` again, the custom domain goes blank.
+
+Also set the GitHub **default branch to `main`**. `master` is an empty Visual Studio skeleton; Cloud Agents that clone the default get no app.
 
 ## 3. Wix site — menu link
 

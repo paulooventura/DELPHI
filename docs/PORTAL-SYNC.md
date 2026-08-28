@@ -18,8 +18,7 @@ If the portal looks stale: open **`/fresh`** in Safari (not a Home Screen icon).
 
 Confirm you're on the latest build: portal shows **`portal · build 2026-08-28d`** at the bottom; crystal gate shows **`build 2026-08-28d`** at the bottom.
 
-On Paulo's Windows machine the editable draft lives at `G:\DELPHI\portal\src\DELPHI_portal.html`.
-Canonical Claude diffs (`DELPHI_TONAL_CANONICAL.html`) are **diff references only** — never deploy them raw (they lack host wiring).
+On Paulo's Windows machine an optional draft lives at `G:\DELPHI\portal\src\DELPHI_portal.html`. The file that ships is still `agent/web/public/portal.html` in git. Canonical Claude diffs (`DELPHI_TONAL_CANONICAL.html`) are **diff references only** — never deploy them raw (they lack host wiring). Prefer editing the git file so Cursor and Claude are not forked; see [homebase/flow/CURSOR-CLAUDE.md](../homebase/flow/CURSOR-CLAUDE.md).
 
 ## Sync workflow (Windows → repo)
 
