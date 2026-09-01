@@ -16,6 +16,20 @@ const nextConfig: NextConfig = {
       { source: "/door", destination: `/portal?b=${DELPHI_BUILD}`, permanent: false },
     ];
   },
+  async headers() {
+    return [
+      {
+        source: "/:path*",
+        headers: [
+          {
+            key: "Content-Security-Policy",
+            value:
+              "frame-ancestors 'self' file: http://localhost:* http://127.0.0.1:* https://delphi.pauloventura.org",
+          },
+        ],
+      },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/studies", destination: "/portal.html" },

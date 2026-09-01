@@ -216,6 +216,129 @@ export function playHourBell(ctx: AudioContext, hour24: number) {
   }
 }
 
+const PLANET_HZ: Record<string, number> = {
+  saturn: 49,
+  jupiter: 62,
+  mars: 74,
+  sun: 82,
+  venus: 98,
+  mercury: 110,
+  moon: 92,
+};
+
+const SHI_HZ = [98, 110, 123, 131, 147, 165, 175, 196, 220, 247, 262, 294];
+
+function woodMark(ctx: AudioContext, hz: number, peak: number, dur: number) {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const t = ctx.currentTime;
+  const out = masterBus(ctx);
+  const knock = ctx.createBufferSource();
+  knock.buffer = noiseBuffer(ctx, 1.5);
+  const bp = ctx.createBiquadFilter();
+  bp.type = "bandpass";
+  bp.frequency.setValueAtTime(hz * 2.4, t);
+  bp.Q.setValueAtTime(1.6, t);
+  const g = ctx.createGain();
+  g.gain.setValueAtTime(peak, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  knock.connect(bp);
+  bp.connect(g);
+  g.connect(out);
+  knock.start(t);
+  knock.stop(t + dur + 0.02);
+  const body = ctx.createOscillator();
+  const bodyG = ctx.createGain();
+  body.type = "triangle";
+  body.frequency.setValueAtTime(hz, t);
+  body.frequency.exponentialRampToValueAtTime(hz * 0.72, t + dur);
+  bodyG.gain.setValueAtTime(peak * 0.7, t);
+  bodyG.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  body.connect(bodyG);
+  bodyG.connect(out);
+  body.start(t);
+  body.stop(t + dur + 0.02);
+}
+
+/** Ghaṭi — ~24 min from sunrise. Clay / wood, quieter than the minute gong. */
+export function playGhatiMark(ctx: AudioContext) {
+  woodMark(ctx, 108, 0.2, 0.42);
+}
+
+/** Muhūrta — ~48 min. Warmer bowl than the minute strike. */
+export function playMuhurtaMark(ctx: AudioContext) {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  playGongStrike(ctx, ctx.currentTime, 88, 0.24, 2.6);
+}
+
+/** Planetary hour — pitch follows the Chaldean ruler. */
+export function playPlanetaryHourMark(ctx: AudioContext, planet: string) {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  playGongStrike(ctx, ctx.currentTime, PLANET_HZ[planet] ?? 82, 0.26, 2.9);
+}
+
+/** Chinese shí — 2 h double-hour. Pentatonic ding + wood. */
+export function playShiMark(ctx: AudioContext, index: number) {
+  woodMark(ctx, SHI_HZ[((index % 12) + 12) % 12] ?? 131, 0.16, 0.55);
+}
+
+/** Kè — 14.4 min water-clock mark. */
+export function playKeMark(ctx: AudioContext) {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const t = ctx.currentTime;
+  const out = masterBus(ctx);
+  const drip = ctx.createOscillator();
+  const g = ctx.createGain();
+  drip.type = "sine";
+  drip.frequency.setValueAtTime(420, t);
+  drip.frequency.exponentialRampToValueAtTime(210, t + 0.28);
+  g.gain.setValueAtTime(0.12, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
+  drip.connect(g);
+  g.connect(out);
+  drip.start(t);
+  drip.stop(t + 0.4);
+}
+
+/** .beat — 86.4 s. A whisper above the wood tick, not a gong. */
+export function playBeatMark(ctx: AudioContext) {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const t = ctx.currentTime;
+  const out = masterBus(ctx);
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(784, t);
+  g.gain.setValueAtTime(0.055, t);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
+  osc.connect(g);
+  g.connect(out);
+  osc.start(t);
+  osc.stop(t + 0.16);
+}
+
+/** Sunrise / sunset — the day lane's real gates. */
+export function playDayGate(ctx: AudioContext, gate: "sunrise" | "sunset") {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const t0 = ctx.currentTime;
+  const rise = gate === "sunrise";
+  playGongStrike(ctx, t0, rise ? 96 : 64, 0.3, 4.4);
+  playGongStrike(ctx, t0 + 0.35, rise ? 144 : 48, 0.16, 3.6);
+}
+
+/** Slow sky — moon sector, wuku, pancawara, season. Rare on purpose. */
+export function playSlowSkyMark(ctx: AudioContext, kind: "moon" | "wuku" | "pancawara" | "season") {
+  if (audioSilenced) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const hz = { moon: 58, wuku: 52, pancawara: 46, season: 41 }[kind];
+  playGongStrike(ctx, ctx.currentTime, hz, 0.2, 5.2);
+}
+
 // ─── Schumann atmosphere (32.5 Hz “song of the planet”) ─────────────────────
 
 export const SCHUMANN_HZ = 32.5;

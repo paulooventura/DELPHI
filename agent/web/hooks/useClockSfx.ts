@@ -1,33 +1,73 @@
 "use client";
 
-import { useEffect, useRef, useState, type MutableRefObject } from "react";
+import { useEffect, useRef, useState, type MutableRefObject, type RefObject } from "react";
+import { marksKey, readClockLaneMarks, type ClockLaneMarks } from "../lib/clockLaneMarks";
 import {
   getClockAudio,
   isClockAudioSilenced,
   muteClockAudio,
+  playBeatMark,
+  playDayGate,
+  playGhatiMark,
   playHourBell,
+  playKeMark,
   playMinuteBell,
+  playMuhurtaMark,
+  playPlanetaryHourMark,
   playSecondTick,
+  playShiMark,
+  playSlowSkyMark,
   resumeClockAudio,
   startSchumannAtmosphere,
   unmuteClockAudio,
 } from "../lib/clockSfx";
+import { HOME_LAT, HOME_LON } from "../lib/observerHome";
+
+export type ClockObserver = { lat: number; lon: number };
 
 function syncChimeRefs(refs: {
   lastSec: MutableRefObject<number>;
   lastChimeKey: MutableRefObject<string>;
+  lastMarks: MutableRefObject<ClockLaneMarks | null>;
+  lastMarkMs: MutableRefObject<number>;
+  observer: ClockObserver;
 }) {
   const d = new Date();
   refs.lastSec.current = d.getSeconds();
   refs.lastChimeKey.current = `${d.getHours()}:${d.getMinutes()}`;
+  refs.lastMarkMs.current = d.getTime();
+  refs.lastMarks.current = readClockLaneMarks(d, refs.observer.lat, refs.observer.lon);
 }
 
-export function useClockSfx(enabled: boolean) {
+function fireLaneMarks(ctx: AudioContext, prev: ClockLaneMarks, next: ClockLaneMarks) {
+  if (next.ghati !== prev.ghati) playGhatiMark(ctx);
+  if (next.muhurta !== prev.muhurta) playMuhurtaMark(ctx);
+  if (next.planetaryHour !== prev.planetaryHour) playPlanetaryHourMark(ctx, next.planetaryHour);
+  if (next.shi !== prev.shi) playShiMark(ctx, next.shi);
+  if (next.ke !== prev.ke) playKeMark(ctx);
+  if (next.beat !== prev.beat) playBeatMark(ctx);
+  if (next.crossedSunrise) playDayGate(ctx, "sunrise");
+  if (next.crossedSunset) playDayGate(ctx, "sunset");
+  if (next.moon !== prev.moon) playSlowSkyMark(ctx, "moon");
+  if (next.wuku !== prev.wuku) playSlowSkyMark(ctx, "wuku");
+  if (next.pancawara !== prev.pancawara) playSlowSkyMark(ctx, "pancawara");
+  if (next.season !== prev.season) playSlowSkyMark(ctx, "season");
+}
+
+export function useClockSfx(
+  enabled: boolean,
+  observerRef?: RefObject<ClockObserver>,
+) {
   const [active, setActive] = useState(false);
   const lastSec = useRef(-1);
   const lastChimeKey = useRef("");
+  const lastMarks = useRef<ClockLaneMarks | null>(null);
+  const lastMarkMs = useRef(0);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+
+  const readObserver = (): ClockObserver =>
+    observerRef?.current ?? { lat: HOME_LAT, lon: HOME_LON };
 
   useEffect(() => {
     if (!enabled) {
@@ -36,7 +76,7 @@ export function useClockSfx(enabled: boolean) {
       return;
     }
 
-    const refs = { lastSec, lastChimeKey };
+    const refs = { lastSec, lastChimeKey, lastMarks, lastMarkMs, observer: readObserver() };
     let raf = 0;
     let alive = true;
 
@@ -44,6 +84,7 @@ export function useClockSfx(enabled: boolean) {
       if (document.visibilityState === "hidden") return;
       void resumeClockAudio().then(ctx => {
         if (!ctx || !alive || !enabledRef.current || document.visibilityState === "hidden") return;
+        refs.observer = readObserver();
         syncChimeRefs(refs);
         unmuteClockAudio();
         startSchumannAtmosphere(ctx);
@@ -55,7 +96,6 @@ export function useClockSfx(enabled: boolean) {
     window.addEventListener("keydown", unlock, { once: true });
 
     const silence = () => {
-      // Fade out — hard-cutting the Schumann bed was the close-app noise.
       muteClockAudio({ fadeMs: 160 });
       setActive(false);
     };
@@ -79,8 +119,6 @@ export function useClockSfx(enabled: boolean) {
     };
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", silence);
-    // iOS Capacitor often fires blur (Control Center, app switcher peek). Mute
-    // like haptics — but always restore on focus so silence does not stick.
     window.addEventListener("blur", silence);
     window.addEventListener("focus", restore);
 
@@ -91,6 +129,7 @@ export function useClockSfx(enabled: boolean) {
       document.visibilityState === "visible" &&
       !isClockAudioSilenced()
     ) {
+      refs.observer = readObserver();
       syncChimeRefs(refs);
       unmuteClockAudio();
       startSchumannAtmosphere(existing);
@@ -99,7 +138,6 @@ export function useClockSfx(enabled: boolean) {
 
     const loop = () => {
       if (!alive) return;
-      // Never resume / tick while backgrounded — that fought the fade mute.
       if (
         !enabledRef.current ||
         document.visibilityState === "hidden" ||
@@ -110,10 +148,7 @@ export function useClockSfx(enabled: boolean) {
       }
       const ctx = getClockAudio();
       if (ctx) {
-        if (ctx.state === "suspended") {
-          // Don't spam resume() before a user gesture — browser console floods.
-          // Unlock / focus / enable() paths call resumeClockAudio explicitly.
-        } else if (ctx.state === "running") {
+        if (ctx.state === "running") {
           const d = new Date();
           const sec = d.getSeconds();
           const min = d.getMinutes();
@@ -131,6 +166,18 @@ export function useClockSfx(enabled: boolean) {
                 else playMinuteBell(ctx);
               }
             }
+
+            const obs = readObserver();
+            const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
+            const prev = lastMarks.current;
+            if (
+              prev &&
+              (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
+            ) {
+              fireLaneMarks(ctx, prev, next);
+            }
+            lastMarks.current = next;
+            lastMarkMs.current = d.getTime();
           }
         }
       }
@@ -156,7 +203,13 @@ export function useClockSfx(enabled: boolean) {
     enable: () =>
       void resumeClockAudio().then(ctx => {
         if (!ctx || document.visibilityState === "hidden") return;
-        syncChimeRefs({ lastSec, lastChimeKey });
+        syncChimeRefs({
+          lastSec,
+          lastChimeKey,
+          lastMarks,
+          lastMarkMs,
+          observer: readObserver(),
+        });
         unmuteClockAudio();
         startSchumannAtmosphere(ctx);
         setActive(true);

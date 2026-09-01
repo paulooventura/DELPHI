@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { CycleSnapshot } from "../lib/cycleSystems";
 import { getCycleSnapshot } from "../lib/cycleSystems";
 import { CelestialSkyView } from "../components/CelestialSkyView";
@@ -278,13 +278,29 @@ export default function Home() {
   });
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
   const togglesRef = useRef(toggles);
-  const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
+  const observerRef = useRef({ lat: FALLBACK_LAT, lon: FALLBACK_LON });
+  const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn, observerRef);
   const [showLaunch, completeLaunch] = useShowLaunch();
   /** After splash: true until this page session has granted (or just granted). */
   const [needsAccessGate, setNeedsAccessGate] = useState(true);
+  /** Choir / Tina iframe — skip splash + gate so the sky can fill their canvas. */
+  const [chorusEmbed, setChorusEmbed] = useState(false);
+  useLayoutEffect(() => {
+    try {
+      const embed = new URLSearchParams(window.location.search).get("embed") === "1";
+      setChorusEmbed(embed);
+      if (embed) {
+        setNeedsAccessGate(false);
+        completeLaunch();
+        setClockSfxOn(false);
+      }
+    } catch {
+      /* keep standalone boot */
+    }
+  }, [completeLaunch]);
   const [accessBusy, setAccessBusy] = useState(false);
   const primingAccessRef = useRef(false);
-  useScreenWakeLock(true);
+  useScreenWakeLock(!chorusEmbed);
 
   // ── Tabbed app shell (Clock · Sky · Moment · Atlas · Senses · Oracle)
   const isAppTab = (v: string | null): v is AppTab =>
@@ -386,10 +402,10 @@ export default function Home() {
 
   // Clock tick sound: on by default — unlock audio when splash dismisses.
   useEffect(() => {
-    if (!showLaunch && clockSfxOn && tab === "clock") {
+    if (!chorusEmbed && !showLaunch && clockSfxOn && tab === "clock") {
       void enableSfx();
     }
-  }, [showLaunch, clockSfxOn, tab, enableSfx]);
+  }, [chorusEmbed, showLaunch, clockSfxOn, tab, enableSfx]);
 
   // ── Digital clock (1 second tick)
   useEffect(() => {
@@ -874,6 +890,7 @@ export default function Home() {
   const hasLiveLocation = signals?.lat != null && signals?.lon != null;
   const mapLat = signals?.lat ?? FALLBACK_LAT;
   const mapLon = signals?.lon ?? FALLBACK_LON;
+  observerRef.current = { lat: mapLat, lon: mapLon };
 
   function applySkyAzOffset(value: number) {
     const v = Math.max(-20, Math.min(20, value));
@@ -1117,7 +1134,7 @@ export default function Home() {
 
   return (
     <OnyxApp
-      showSplash={showLaunch}
+      showSplash={showLaunch && !chorusEmbed}
       onSplashDone={() => {
         if (hasAccessThisSession()) {
           setNeedsAccessGate(false);
@@ -1125,12 +1142,12 @@ export default function Home() {
           void startOrientationWatch();
         }
         completeLaunch();
-        if (clockSfxOn) void enableSfx();
+        if (clockSfxOn && !chorusEmbed) void enableSfx();
       }}
       onPrimeAccess={() => {
         if (hasAccessThisSession()) void primeDeviceAccess();
       }}
-      showAccessGate={needsAccessGate}
+      showAccessGate={needsAccessGate && !chorusEmbed}
       sensorsUnlocked={!needsAccessGate}
       onAllowAccess={() => {
         void primeDeviceAccess();

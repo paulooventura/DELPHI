@@ -22,7 +22,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Drop stale WKWebView website data when the shell build bumps so the
         // app refetches delphi.pauloventura.org instead of a frozen HTML shell.
         // Keep this string in sync with agent/web/lib/buildStamp.ts.
-        let shellBuild = "2026-09-01c"
+        let shellBuild = "2026-09-01e"
         let buildKey = "delphi.shellBuild"
         let previous = UserDefaults.standard.string(forKey: buildKey)
         if previous != shellBuild {

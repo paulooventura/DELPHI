@@ -87,6 +87,25 @@ readable: motion where motion is real, stillness named as stillness.
 - Virtualize off-screen cells; only draw what's near the now-line.
 - Pause the RAF loop when the clock tab isn't visible.
 
+## Sonic layers
+
+The Schumann bed stays the planet's continuous voice. Civil seconds / minutes /
+hours keep the wood tick and the gongs. Each new measured lane gets a mark when
+its **index actually advances** — not a fake loop:
+
+| Lane | Sound |
+|------|--------|
+| Ghaṭi | clay / wood (~24 min from sunrise) |
+| Muhūrta | warmer bowl (~48 min) |
+| Planetary hour | bowl pitched to the Chaldean ruler |
+| Chinese shí | pentatonic wood (~2 h) |
+| Kè | water-clock drip (14.4 min) |
+| .beat | high whisper (86.4 s) |
+| Sunrise / sunset | two-strike day gate |
+| Moon / wuku / pancawara / season | rare slow-sky bowl |
+
+Helek and prāṇa stay silent — too fast; they would drown the second.
+
 ## The point
 
 Reading down the now-line, the user sees that the single sentence on the home screen

@@ -16,7 +16,7 @@ agent/web/public/portal.html
 
 If the portal looks stale: open **`/fresh`** in Safari (not a Home Screen icon). Delete any old DELPHI icon from the home screen, open `/fresh`, then re-add if needed.
 
-Confirm you're on the latest build: portal shows **`portal · build 2026-09-01c`** at the bottom; crystal gate shows **`build 2026-09-01c`** at the bottom.
+Confirm you're on the latest build: portal shows **`portal · build 2026-09-01e`** at the bottom; crystal gate shows **`build 2026-09-01e`** at the bottom.
 
 Hosted portal doors deep-link the live Onyx app: Sky → `/?mode=sky`, Orrery → `/?mode=rings`, You → `/?mode=you`. Studies and Tonal stay on the HTML portal. Do not change the `/studies` `/tonal` `/portal` rewrites.
 
