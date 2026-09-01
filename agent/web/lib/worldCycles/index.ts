@@ -19,6 +19,21 @@ export {
   type WorldCyclePreferences,
 } from "./preferences";
 export { WORLD_CYCLE_PLUGINS, defaultEnabledIds, getPlugin, listPlugins } from "./registry";
+export {
+  TIME_SYSTEMS,
+  getTimeSystem,
+  listTimeSystems,
+  timeUnitPlugins,
+  type TimeAnchor,
+  type TimeSystemDef,
+  type TimeUnitDef,
+} from "./timeUnits";
+export {
+  resolveSolarFrame,
+  sunriseDayFraction,
+  daylightFraction,
+  type SolarFrame,
+} from "./solarDay";
 export { resolveWorldCycles, type ResolveOptions } from "./resolveWorldCycles";
 export { worldCyclesToCycleSnapshot } from "./snapshotBridge";
 export { synthesizeMultiVoice, nowStripReadings } from "./multiVoice";

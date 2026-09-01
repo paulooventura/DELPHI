@@ -88,7 +88,12 @@ export type WorldCycleSnapshot = {
   byId: Record<string, CycleReading>;
 };
 
-export type AtlasPresetId = "delphi_classic" | "abrahamic" | "asia" | "planet";
+export type AtlasPresetId =
+  | "delphi_classic"
+  | "abrahamic"
+  | "asia"
+  | "time_compendium"
+  | "planet";
 
 export type AtlasPreset = {
   id: AtlasPresetId;

@@ -10,6 +10,7 @@ import { lunarPlugin } from "./plugins/lunar";
 import { persianPlugin } from "./plugins/persian";
 import { tropicalPlugin } from "./plugins/tropical";
 import { tzolkinDelphiPlugin, tzolkinPlugin } from "./plugins/tzolkin";
+import { timeUnitPlugins } from "./timeUnits";
 
 /** Canonical plugin registry — single source for Atlas / Clock / Moment. */
 export const WORLD_CYCLE_PLUGINS: CyclePlugin[] = [
@@ -25,6 +26,8 @@ export const WORLD_CYCLE_PLUGINS: CyclePlugin[] = [
   tzolkinPlugin,
   tzolkinDelphiPlugin,
   galactic1320Plugin,
+  // Sub-day time-counting systems (the compendium) — folded in via factory.
+  ...timeUnitPlugins(),
 ];
 
 const byId = new Map(WORLD_CYCLE_PLUGINS.map((p) => [p.id, p]));

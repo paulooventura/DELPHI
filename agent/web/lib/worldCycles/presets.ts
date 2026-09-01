@@ -28,6 +28,19 @@ export const ATLAS_PRESETS: AtlasPreset[] = [
     systemIds: ["gregorian", "chinese_lunisolar", "chinese_year", "tropical_zodiac", "lunar_phase"],
   },
   {
+    id: "time_compendium",
+    label: "Time Compendium",
+    blurb:
+      "How humanity has counted below the hour — helek, ghaṭi, kè, and the .beat — read through one moment.",
+    systemIds: [
+      "gregorian",
+      "time_hebrew_helek",
+      "time_hindu_ghati",
+      "time_chinese_ke",
+      "time_swatch_beat",
+    ],
+  },
+  {
     id: "planet",
     label: "Planet",
     blurb: "Tier A living calendars across the globe — Atlas showcase.",
