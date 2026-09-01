@@ -292,7 +292,6 @@ export default function Home() {
       if (embed) {
         setNeedsAccessGate(false);
         completeLaunch();
-        setClockSfxOn(false);
       }
     } catch {
       /* keep standalone boot */
@@ -400,12 +399,13 @@ export default function Home() {
     };
   }, [cycles, tab]);
 
-  // Clock tick sound: on by default — unlock audio when splash dismisses.
+  // Cycle sonics: Schumann + civil ticks + lane marks. Unlock after splash
+  // (or immediately in the Chorus iframe — stone stays on).
   useEffect(() => {
-    if (!chorusEmbed && !showLaunch && clockSfxOn && tab === "clock") {
+    if (!showLaunch && clockSfxOn) {
       void enableSfx();
     }
-  }, [chorusEmbed, showLaunch, clockSfxOn, tab, enableSfx]);
+  }, [showLaunch, clockSfxOn, enableSfx]);
 
   // ── Digital clock (1 second tick)
   useEffect(() => {
@@ -1142,7 +1142,7 @@ export default function Home() {
           void startOrientationWatch();
         }
         completeLaunch();
-        if (clockSfxOn && !chorusEmbed) void enableSfx();
+        if (clockSfxOn) void enableSfx();
       }}
       onPrimeAccess={() => {
         if (hasAccessThisSession()) void primeDeviceAccess();
