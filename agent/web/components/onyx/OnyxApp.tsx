@@ -154,7 +154,7 @@ export function OnyxApp({
   onSplashDone: () => void;
   /** Sync from splash tap — iOS sensor permission must stay on the gesture. */
   onPrimeAccess?: () => void;
-  /** Fallback when splash was skipped / auto-ended before priming. */
+  /** After splash, once per page session until Allow. */
   showAccessGate?: boolean;
   onAllowAccess?: () => void;
   accessBusy?: boolean;
@@ -388,16 +388,15 @@ export function OnyxApp({
     <>Hold still. The sky is still reading you.</>
   );
 
-  // Access gate FIRST on every load — before splash/home — so OS prompts
-  // always ride a user gesture at open, not after navigating back to home.
-  if (showAccessGate && onAllowAccess) {
-    return <DeviceAccessGate onAllow={onAllowAccess} busy={accessBusy} />;
-  }
-
+  // Splash first on every open. Permissions follow once per page session.
   if (showSplash) {
     return (
       <OnyxSplash onEnter={onSplashDone} onPrimeAccess={onPrimeAccess} />
     );
+  }
+
+  if (showAccessGate && onAllowAccess) {
+    return <DeviceAccessGate onAllow={onAllowAccess} busy={accessBusy} />;
   }
 
   const openSky = () => {

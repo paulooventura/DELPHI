@@ -1,8 +1,9 @@
 "use client";
 
 /**
- * First screen on every load until the crystal is tapped.
- * One tap → location + orientation + motion prompts, then splash/home.
+ * After splash, once per page session until the crystal is tapped.
+ * Close the tab/page or uninstall to see this again. One tap → location +
+ * orientation + motion, then home.
  */
 
 import { DELPHI_BUILD } from "../../lib/buildStamp";
@@ -24,8 +25,8 @@ export function DeviceAccessGate({
           </p>
           <p className="onyx-access-lead">
             Allow location and device sensors so the compass, sky map, and moment
-            stay live. This screen opens every time you load Delphi — tap the
-            crystal once to continue.
+            stay live. This screen shows once after you open Delphi, until you
+            close the page or uninstall. Tap the crystal once to continue.
           </p>
         </div>
 

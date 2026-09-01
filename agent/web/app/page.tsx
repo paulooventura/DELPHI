@@ -7,7 +7,7 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
-import { requestDeviceAccessPermissions } from "../lib/deviceAccess";
+import { hasAccessThisSession, requestDeviceAccessPermissions } from "../lib/deviceAccess";
 import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, compassNeedsPortraitLock, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
@@ -280,7 +280,7 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn);
   const [showLaunch, completeLaunch] = useShowLaunch();
-  /** Always true on load — gate must run before splash/home every open. */
+  /** After splash: true until this page session has granted (or just granted). */
   const [needsAccessGate, setNeedsAccessGate] = useState(true);
   const [accessBusy, setAccessBusy] = useState(false);
   const primingAccessRef = useRef(false);
@@ -755,8 +755,9 @@ export default function Home() {
   }
 
   /**
-   * Permission ask from the Allow button (user gesture) — every page load.
-   * Location starts inside requestDeviceAccessPermissions before awaits.
+   * Permission ask from the Allow button (user gesture). After grant, this
+   * page session skips the gate. Location starts inside
+   * requestDeviceAccessPermissions before awaits.
    */
   async function primeDeviceAccess() {
     if (primingAccessRef.current) return;
@@ -781,8 +782,9 @@ export default function Home() {
       if (raw) initial = { ...DEFAULT_TOGGLES, ...JSON.parse(raw) };
     } catch { /* fresh session — all senses on */ }
     setToggles(initial);
-    // Never requestPermission or start watches from mount — the access gate
-    // must own the gesture path on every load.
+    // Never requestPermission or start watches from mount — splash then the
+    // access gate own the gesture path. Same-session resume starts watches
+    // after splash if already granted.
     return () => {
       muteHaptics();
       cancelHaptic();
@@ -1117,11 +1119,16 @@ export default function Home() {
     <OnyxApp
       showSplash={showLaunch}
       onSplashDone={() => {
+        if (hasAccessThisSession()) {
+          setNeedsAccessGate(false);
+          void captureSensors();
+          void startOrientationWatch();
+        }
         completeLaunch();
         if (clockSfxOn) void enableSfx();
       }}
       onPrimeAccess={() => {
-        void primeDeviceAccess();
+        if (hasAccessThisSession()) void primeDeviceAccess();
       }}
       showAccessGate={needsAccessGate}
       sensorsUnlocked={!needsAccessGate}

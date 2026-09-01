@@ -9,8 +9,9 @@ const FADE_MS = 720;
  * Nothing on screen except the film and centered DELPHI. No corners, tagline,
  * coords, land ack, enter chrome, or seeds.
  *
- * Tap can re-run device access on the user-gesture path (required on iOS).
- * The access gate already owns the first ask on every load.
+ * Tap can re-run device access on the user-gesture path (required on iOS)
+ * when this session already granted. First ask lives on the permissions
+ * screen after this splash.
  */
 export function OnyxSplash({
   onEnter,

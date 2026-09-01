@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  hasAccessThisSession,
   hasPrimedDeviceAccess,
+  markAccessThisSession,
   markDeviceAccessPrimed,
   requestDeviceAccessPermissions,
 } from "./deviceAccess";
@@ -18,6 +20,7 @@ function installMemoryStorage() {
     clear: () => store.clear(),
   };
   vi.stubGlobal("localStorage", memory);
+  vi.stubGlobal("sessionStorage", memory);
   return memory;
 }
 
@@ -57,13 +60,25 @@ describe("deviceAccess — ask on open gesture", () => {
 
   it("marks primed after location + sensor ask", async () => {
     expect(hasPrimedDeviceAccess()).toBe(false);
+    expect(hasAccessThisSession()).toBe(false);
     const grants = await requestDeviceAccessPermissions();
     expect(typeof grants.location).toBe("boolean");
     expect(typeof grants.orientation).toBe("boolean");
     expect(typeof grants.motion).toBe("boolean");
     expect(grants.location).toBe(true);
     expect(hasPrimedDeviceAccess()).toBe(true);
+    expect(hasAccessThisSession()).toBe(true);
     markDeviceAccessPrimed();
+    expect(hasPrimedDeviceAccess()).toBe(true);
+  });
+
+  it("session grant is separate from a closed page", () => {
+    expect(hasAccessThisSession()).toBe(false);
+    markAccessThisSession();
+    expect(hasAccessThisSession()).toBe(true);
+    expect(hasPrimedDeviceAccess()).toBe(true);
+    sessionStorage.removeItem("delphi-access-session-v1");
+    expect(hasAccessThisSession()).toBe(false);
     expect(hasPrimedDeviceAccess()).toBe(true);
   });
 });

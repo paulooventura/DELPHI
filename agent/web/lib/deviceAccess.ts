@@ -3,16 +3,20 @@
  * Must run from a user gesture (Allow button). iOS will not show
  * DeviceOrientation/Motion dialogs from a mount effect.
  *
- * The UI gate is shown on EVERY page load until Allow is tapped for that load.
- * OS dialogs only appear when the browser still needs consent; if already
- * granted, the tap simply starts watches immediately.
+ * The permissions UI shows after the splash, once per page session
+ * (sessionStorage). Closing the tab/page or uninstalling clears it.
+ * A refresh in the same tab keeps the grant. OS dialogs only appear when
+ * the browser still needs consent; if already granted, Allow just starts
+ * watches.
  */
 
 import { requestOrientationPermission } from "./localSignals";
 import { requestMotionPermission } from "./deviceSensors";
 
-/** Ever-asked marker (diagnostics / future); does not skip the open gate. */
+/** Install-lifetime marker (survives refresh; gone after uninstall). */
 const STORAGE_KEY = "delphi-device-access-v3";
+/** Page-session grant — dies when the tab/page closes. */
+const SESSION_KEY = "delphi-access-session-v1";
 
 export function hasPrimedDeviceAccess(): boolean {
   try {
@@ -30,6 +34,25 @@ export function markDeviceAccessPrimed(): void {
   } catch {
     /* private mode */
   }
+}
+
+export function hasAccessThisSession(): boolean {
+  try {
+    if (typeof sessionStorage === "undefined") return false;
+    return sessionStorage.getItem(SESSION_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+export function markAccessThisSession(): void {
+  try {
+    if (typeof sessionStorage === "undefined") return;
+    sessionStorage.setItem(SESSION_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+  markDeviceAccessPrimed();
 }
 
 export type DeviceAccessGrants = {
@@ -64,6 +87,6 @@ export async function requestDeviceAccessPermissions(): Promise<DeviceAccessGran
   const orientation = await requestOrientationPermission();
   const motion = await requestMotionPermission();
   const location = await locationPromise;
-  markDeviceAccessPrimed();
+  markAccessThisSession();
   return { location, orientation, motion };
 }

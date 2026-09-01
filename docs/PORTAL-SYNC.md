@@ -10,13 +10,13 @@ agent/web/public/portal.html
 
 | What you want | URL | What you'll see |
 |---|---|---|
-| **Live home** (glassy yin-yang after the crystal gate) | **https://delphi.pauloventura.org/** | Allow access → phrase + compass: ↑ sky · ↓ tonal · ← studies · → orrery · center you |
+| **Live home** (glassy yin-yang after splash + Allow) | **https://delphi.pauloventura.org/** | Splash first, then Allow once per page session → phrase + compass: ↑ sky · ↓ tonal · ← studies · → orrery · center you |
 | **Portal** (HTML yin-yang, Tonal, Studies) | **https://delphi.pauloventura.org/portal** | Same doors; Tonal builder + Studies stay here |
 | **Force fresh portal** (cache bust) | https://delphi.pauloventura.org/fresh | Redirects to portal with latest build |
 
 If the portal looks stale: open **`/fresh`** in Safari (not a Home Screen icon). Delete any old DELPHI icon from the home screen, open `/fresh`, then re-add if needed.
 
-Confirm you're on the latest build: portal shows **`portal · build 2026-09-01b`** at the bottom; crystal gate shows **`build 2026-09-01b`** at the bottom.
+Confirm you're on the latest build: portal shows **`portal · build 2026-09-01c`** at the bottom; crystal gate shows **`build 2026-09-01c`** at the bottom.
 
 Hosted portal doors deep-link the live Onyx app: Sky → `/?mode=sky`, Orrery → `/?mode=rings`, You → `/?mode=you`. Studies and Tonal stay on the HTML portal. Do not change the `/studies` `/tonal` `/portal` rewrites.
 
