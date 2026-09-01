@@ -61,5 +61,14 @@ function voiceBit(r: CycleReading): string {
 
 export function nowStripReadings(world: WorldCycleSnapshot, enabledIds?: string[]): CycleReading[] {
   const order = NOW_STRIP_ORDER.filter((id) => !enabledIds || enabledIds.includes(id));
-  return order.map((id) => world.byId[id]).filter(Boolean) as CycleReading[];
+  const seen = new Set(order);
+  const out = order.map((id) => world.byId[id]).filter(Boolean) as CycleReading[];
+  if (enabledIds) {
+    for (const id of enabledIds) {
+      if (seen.has(id)) continue;
+      const r = world.byId[id];
+      if (r) out.push(r);
+    }
+  }
+  return out;
 }

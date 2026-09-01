@@ -272,7 +272,7 @@ function resolveTimeSystem(sys: TimeSystemDef, ctx: CycleContext): CycleReading 
   const seasonalNote = seasonal ? " · seasonal" : "";
 
   return {
-    systemId: sys.id,
+    systemId: `time_${sys.id}`,
     title: sys.title,
     primary,
     secondary: `${unit.gloss}${seasonalNote}`,

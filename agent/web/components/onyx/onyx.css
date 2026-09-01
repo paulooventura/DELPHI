@@ -2175,3 +2175,54 @@
   text-align: right;
   color: var(--onyx-ink-bright);
 }
+
+.onyx-time-compendium {
+  margin-bottom: 1.25rem;
+}
+.onyx-time-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0 0 0.85rem;
+}
+.onyx-time-filter {
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  border: 1px solid rgba(169, 156, 255, 0.28);
+  background: rgba(12, 10, 24, 0.7);
+  color: rgba(226, 232, 240, 0.82);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+.onyx-time-filter.on,
+.onyx-time-filter.pack {
+  border-color: rgba(169, 156, 255, 0.7);
+  background: linear-gradient(160deg, rgba(140, 124, 255, 0.22), rgba(12, 10, 24, 0.9));
+  color: #f4f0ff;
+}
+.onyx-time-seasonal .cp-atlas-toggle {
+  animation: onyx-time-breathe 3.6s ease-in-out infinite;
+}
+@keyframes onyx-time-breathe {
+  0%, 100% { box-shadow: 0 0 0 rgba(169, 156, 255, 0); }
+  50% { box-shadow: 0 0 18px rgba(169, 156, 255, 0.28); }
+}
+.onyx-time-body {
+  padding: 0.15rem 0.7rem 0.75rem 2.6rem;
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(226, 232, 240, 0.82);
+}
+.onyx-time-body p { margin: 0.45rem 0 0; }
+.onyx-time-meta,
+.onyx-time-src {
+  color: rgba(148, 163, 184, 0.88);
+  font-size: 0.68rem;
+}
+.onyx-time-units {
+  margin: 0.45rem 0 0;
+  padding-left: 1.1rem;
+}
+.onyx-time-units li { margin: 0.2rem 0; }
+.onyx-time-body .onyx-primary-btn { margin-top: 0.7rem; }

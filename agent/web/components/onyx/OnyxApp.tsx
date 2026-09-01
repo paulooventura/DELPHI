@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode, type RefObject } from "re
 import type { CosmicClockState } from "../../lib/cosmic";
 import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
+import { presetById } from "../../lib/worldCycles";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
 import { jdFromDate } from "../../lib/phase/timeResolution";
 import {
@@ -27,6 +28,7 @@ import { byId } from "../../lib/lore/qualia";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import type { LiveAttitude } from "../CelestialSkyView";
 import { AtlasPanel } from "../AtlasPanel";
+import { OnyxTimeCompendium } from "./OnyxTimeCompendium";
 import { SensorArray, type SensorArrayProps } from "../SensorArray";
 import { EmfReader } from "../EmfReader";
 import { PauloVenturaHub } from "../PauloVenturaHub";
@@ -463,6 +465,24 @@ export function OnyxApp({
                 Atlas
                 <span>World cycle calendars</span>
               </button>
+              <button
+                type="button"
+                className="onyx-tool-btn"
+                onClick={() => {
+                  const preset = presetById("time_compendium");
+                  if (preset) {
+                    onCyclePrefsChange({
+                      ...cyclePrefs,
+                      presetId: preset.id,
+                      enabledIds: [...preset.systemIds],
+                    });
+                  }
+                  setMode("atlas");
+                }}
+              >
+                Time units
+                <span>Helek · ghaṭi · kè · .beat</span>
+              </button>
               <button type="button" className="onyx-tool-btn" onClick={() => setMode("senses")}>
                 Senses
                 <span>Device instruments</span>
@@ -558,6 +578,7 @@ export function OnyxApp({
             close
           </button>
           <div className="onyx-overlay">
+            <OnyxTimeCompendium prefs={cyclePrefs} onChange={onCyclePrefsChange} />
             <AtlasPanel prefs={cyclePrefs} onChange={onCyclePrefsChange} />
           </div>
         </div>
