@@ -369,6 +369,9 @@
 /* Depths: 0 Street, 1 Moment, 2 Self — crystal recedes, never balloons. */
 .onyx-device[data-depth="0"] .onyx-crystal-stage { opacity: 0.9; }
 .onyx-device[data-depth="0"] .onyx-crystal { width: 236px; height: 330px; }
+/* Street: yin-yang is the gem; keep the old crystal as a faint purple ghost. */
+.onyx-yy-home[data-depth="0"] .onyx-crystal-stage { opacity: 0.22; }
+.onyx-yy-home[data-depth="0"] .onyx-crystal { width: 280px; height: 390px; filter: blur(1.2px); }
 .onyx-device[data-depth="1"] .onyx-crystal-stage { opacity: 0.4; }
 .onyx-device[data-depth="1"] .onyx-crystal { width: 200px; height: 280px; }
 .onyx-device[data-depth="2"] .onyx-crystal-stage { opacity: 0.18; }
@@ -435,6 +438,7 @@
 .onyx-panel.show .onyx-rx,
 .onyx-panel.show .onyx-why,
 .onyx-panel.show .onyx-side-doors,
+.onyx-panel.show .onyx-yy-phrase-btn,
 .onyx-panel.show input {
   pointer-events: auto;
 }
@@ -467,6 +471,37 @@
 .onyx-p0 .big {
   font-family: var(--font-voice); font-size: 26px; font-weight: 300;
   color: var(--onyx-ink); line-height: 1.5;
+}
+.onyx-yy-phrase {
+  z-index: 9;
+  max-width: min(46vmin, 320px);
+  padding: 18px 16px;
+  border-radius: 20px;
+  background: radial-gradient(ellipse at center, rgba(6, 5, 14, 0.55) 0%, rgba(6, 5, 14, 0.28) 58%, transparent 100%);
+  pointer-events: none;
+}
+.onyx-yy-phrase-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: center;
+  max-width: 100%;
+}
+.onyx-yy-phrase .big {
+  font-size: clamp(17px, 3.1vw, 24px);
+  line-height: 1.28;
+}
+.onyx-yy-math {
+  margin-top: 12px !important;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 10px !important;
+  letter-spacing: 0.12em;
+  color: var(--onyx-ink-quiet) !important;
+  text-transform: uppercase;
 }
 .onyx-p0 .big em { font-style: italic; color: var(--onyx-ink-bright); font-weight: 400; }
 .onyx-p0 .sub { font-size: 12px; color: var(--onyx-ink-soft); margin-top: 18px; letter-spacing: 0.03em; }
@@ -554,6 +589,48 @@
   position: absolute; bottom: 48px; left: 0; right: 0; z-index: 8;
   display: flex; flex-direction: column; align-items: center; gap: 10px;
   transition: opacity var(--onyx-settle);
+}
+.onyx-yy-wrap {
+  inset: 0;
+  bottom: 0;
+  justify-content: center;
+  pointer-events: none;
+}
+.onyx-yy-wrap .onyx-yy-gem { pointer-events: auto; }
+.onyx-yy-stage {
+  width: min(78vmin, 420px);
+  height: min(78vmin, 420px);
+}
+.onyx-yy-dirs {
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+.onyx-yy-wrap .onyx-yy-dirs span { opacity: 0.55; }
+.onyx-yy-gem {
+  padding: 0;
+  filter:
+    drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 22px rgba(140, 124, 255, 0.32));
+}
+.onyx-yy-gem .onyx-yy-svg {
+  width: min(52vmin, 340px);
+  height: min(52vmin, 340px);
+  display: block;
+}
+.onyx-yy-gem.floating {
+  animation: onyx-compass-float 5.4s ease-in-out infinite;
+}
+.onyx-you-divinations {
+  width: 100%;
+  margin: 0 0 22px;
+}
+.onyx-you-divinations-body {
+  padding: 8px 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
 }
 .onyx-device[data-depth="2"] .onyx-compass-wrap { opacity: 0; pointer-events: none; }
 .onyx-chint {

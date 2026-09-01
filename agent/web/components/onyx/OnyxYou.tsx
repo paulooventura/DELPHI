@@ -10,6 +10,7 @@ import {
 import { composePerson } from "../../lib/lore/resolvePerson";
 import { distillTemplate, type Composition } from "../../lib/lore/compose";
 import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
+import type { EmbracedCast } from "../../lib/lore/castStore";
 
 function overlap(a: Composition, b: Composition) {
   const nowQ = new Set(a.activeQualities);
@@ -45,6 +46,9 @@ export function OnyxYou({
   nowChord,
   onBack,
   onBirthSaved,
+  expandDivinations = false,
+  heldCasts = [],
+  onOpenCast,
 }: {
   nowChord: Composition;
   /** @deprecated kept for call-site compat; birth place comes from city pick */
@@ -53,6 +57,10 @@ export function OnyxYou({
   onBack: () => void;
   /** Fired after local save/clear so home can re-distill with color lean. */
   onBirthSaved?: (birth: BirthRecord | null) => void;
+  /** Divinations are an expansion of You, not a home-compass door. */
+  expandDivinations?: boolean;
+  heldCasts?: EmbracedCast[];
+  onOpenCast?: () => void;
 }) {
   const [birth, setBirth] = useState<BirthRecord | null>(() => loadBirth());
   const [year, setYear] = useState(String(birth?.year ?? ""));
@@ -71,6 +79,11 @@ export function OnyxYou({
   const [searching, setSearching] = useState(false);
   const [listOpen, setListOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [divinationsOpen, setDivinationsOpen] = useState(expandDivinations);
+
+  useEffect(() => {
+    if (expandDivinations) setDivinationsOpen(true);
+  }, [expandDivinations]);
   const abortRef = useRef<AbortController | null>(null);
   const placeWrapRef = useRef<HTMLDivElement>(null);
 
@@ -224,6 +237,36 @@ export function OnyxYou({
         <div className="onyx-overlay onyx-you">
           <p className="onyx-eyebrow">YOU</p>
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
+
+          <div className="onyx-you-divinations">
+            <button
+              type="button"
+              className="onyx-row"
+              aria-expanded={divinationsOpen}
+              onClick={() => setDivinationsOpen(v => !v)}
+            >
+              <span>Divinations</span>
+              <span className="onyx-row-r">{divinationsOpen ? "▴" : "▾"}</span>
+            </button>
+            {divinationsOpen && (
+              <div className="onyx-you-divinations-body">
+                <p className="onyx-layer-meta">
+                  Draws live here — an expansion of You, not a home door. They colour a labeled
+                  layer through you. They never rewrite the sky clock.
+                </p>
+                {heldCasts.length > 0 && (
+                  <p className="onyx-layer-meta">
+                    Held · {heldCasts.map(h => h.label).join(" · ")}
+                  </p>
+                )}
+                {onOpenCast && (
+                  <button type="button" className="onyx-primary-btn" onClick={onOpenCast}>
+                    Draw
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="onyx-about-block onyx-you-blurb">
             Birth date, hour, and place are computed here and stored in this browser only. Nothing is

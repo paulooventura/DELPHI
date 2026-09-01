@@ -203,6 +203,25 @@ export function OnyxApp({
   const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
   /** Clock-entry film — plays each time the user swipes into the orrery. */
   const [orreryIntro, setOrreryIntro] = useState(true);
+  /** Cast opens as an expansion of You, not a home-compass door. */
+  const [castReturn, setCastReturn] = useState<"home" | "you">("you");
+  const [youExpandCast, setYouExpandCast] = useState(false);
+
+  const openStudies = () => {
+    window.location.href = "/studies";
+  };
+  const openTonal = () => {
+    window.location.href = "/tonal";
+  };
+  const openYou = (expandCast = false) => {
+    setYouExpandCast(expandCast);
+    setMode("you");
+  };
+  const openCastFromYou = () => {
+    setCastReturn("you");
+    setYouExpandCast(true);
+    setMode("cast");
+  };
 
   // Local-only natal + embraced casts — never sent; fold into labeled layers.
   useEffect(() => {
@@ -487,6 +506,9 @@ export function OnyxApp({
     return (
       <OnyxYou
         nowChord={homeSnap?.chord ?? activeReading.chord}
+        expandDivinations={youExpandCast}
+        heldCasts={embraced}
+        onOpenCast={openCastFromYou}
         onBack={() => setMode("home")}
         onBirthSaved={next => {
           setBirth(next);
@@ -500,12 +522,14 @@ export function OnyxApp({
   if (mode === "cast") {
     return (
       <OnyxCast
-        onBack={() => setMode("home")}
+        onBack={() => setMode(castReturn)}
         held={embraced}
         onEmbraced={list => {
           setEmbraced(list);
           setActiveLayerChoice(undefined); // deepen to with-drawn
-          setMode("home");
+          setCastReturn("you");
+          setYouExpandCast(true);
+          setMode("you");
         }}
         onResetHeld={resetHeldDivinations}
       />
@@ -622,8 +646,10 @@ export function OnyxApp({
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}
       onOpenWhy={() => setMode("decompose")}
-      onOpenYou={() => setMode("you")}
-      onOpenCast={() => setMode("cast")}
+      onOpenYou={() => openYou(false)}
+      onOpenCast={openCastFromYou}
+      onOpenStudies={openStudies}
+      onOpenTonal={openTonal}
       pulseEnabled={pulseEnabled}
       onPulseEnabledChange={onPulseEnabledChange}
       sensorsUnlocked={sensorsUnlocked}

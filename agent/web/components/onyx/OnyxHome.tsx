@@ -14,20 +14,25 @@ import {
 import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
+import { OnyxYinYang } from "./OnyxYinYang";
+import {
+  COMPASS_AIM_PX,
+  COMPASS_LOCK_PX,
+  doorForAim,
+  resolveCompassAim,
+  type CompassAim,
+} from "../../lib/onyxCompass";
 
 const REST = 3;
 const QUIET = 37;
-/** Street → Moment → Self. Scroll up from Street opens the live sky. */
+/** Street → Moment → Self. Compass on Street is the portal doors. */
 const MAX = 2;
 const HINTS = [
-  "↑ sky · ↓ you · → clock · ← cast",
-  "↑ sky · ↓ you · → clock · ← cast",
+  "↑ sky · ↓ tonal · → orrery · ← studies · center you",
+  "↑ sky · ↓ tonal · → orrery · ← studies",
   "swipe up to return",
 ] as const;
 
-type CompassAim = "up" | "down" | "left" | "right" | null;
-const COMPASS_LOCK_PX = 10;
-const COMPASS_AIM_PX = 42;
 const COMPASS_FOLLOW_MAX = 28;
 
 export type HeldCastChip = {
@@ -75,6 +80,9 @@ export type OnyxHomeProps = {
   onOpenWhy?: () => void;
   onOpenYou?: () => void;
   onOpenCast?: () => void;
+  /** Portal doors — Studies / Tonal live on the HTML portal routes. */
+  onOpenStudies?: () => void;
+  onOpenTonal?: () => void;
   /** Stone switch: sound + haptic pulse master. */
   pulseEnabled?: boolean;
   onPulseEnabledChange?: (on: boolean) => void;
@@ -105,6 +113,8 @@ export function OnyxHome({
   onOpenWhy,
   onOpenYou,
   onOpenCast,
+  onOpenStudies,
+  onOpenTonal,
   pulseEnabled = true,
   onPulseEnabledChange,
   sensorsUnlocked = false,
@@ -116,7 +126,6 @@ export function OnyxHome({
   const [stoneX, setStoneX] = useState(pulseEnabled ? REST : QUIET);
   const [compassLocked, setCompassLocked] = useState(false);
   const [compassAim, setCompassAim] = useState<CompassAim>(null);
-  const [compassNeedle, setCompassNeedle] = useState(0);
   const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
   const deviceRef = useRef<HTMLDivElement>(null);
   const depthRef = useRef(0);
@@ -215,12 +224,17 @@ export function OnyxHome({
         onOpenSky();
         return;
       }
+      if (prev === 0 && delta > 0) {
+        buzz("step");
+        onOpenTonal?.();
+        return;
+      }
       const nd = Math.max(0, Math.min(MAX, prev + delta));
       if (nd === prev) return;
       buzz(nd === MAX ? "deep" : "step");
       setDepth(nd);
     },
-    [buzz, onOpenSky],
+    [buzz, onOpenSky, onOpenTonal],
   );
 
   // Own rAF clock — don't depend on parent `now` cadence for the felt second.
@@ -355,28 +369,21 @@ export function OnyxHome({
   const swipeY0 = useRef<number | null>(null);
   const swipeIgnore = useRef(false);
 
-  const resolveCompassAim = (dx: number, dy: number): CompassAim => {
-    const dist = Math.hypot(dx, dy);
-    if (dist < COMPASS_AIM_PX) return null;
-    if (Math.abs(dx) >= Math.abs(dy)) return dx > 0 ? "right" : "left";
-    return dy > 0 ? "down" : "up";
-  };
-
   const commitCompassAim = useCallback(
     (aim: CompassAim) => {
-      if (!aim) return;
+      const door = doorForAim(aim);
+      if (!door) return;
       buzz("step");
-      if (aim === "up") onOpenSky();
-      else if (aim === "down") {
+      if (door === "sky") onOpenSky();
+      else if (door === "tonal") onOpenTonal?.();
+      else if (door === "studies") onOpenStudies?.();
+      else if (door === "orrery") onOpenRings();
+      else if (door === "you") {
         if (onOpenYou) onOpenYou();
         else go(MAX);
-      } else if (aim === "right") onOpenRings();
-      else if (aim === "left") {
-        if (onOpenCast) onOpenCast();
-        else onOpenTools();
       }
     },
-    [buzz, go, onOpenCast, onOpenRings, onOpenSky, onOpenTools, onOpenYou],
+    [buzz, go, onOpenRings, onOpenSky, onOpenStudies, onOpenTonal, onOpenYou],
   );
 
   const resetCompass = useCallback(() => {
@@ -385,7 +392,6 @@ export function OnyxHome({
     setCompassLocked(false);
     setCompassAim(null);
     setCompassFollow({ x: 0, y: 0 });
-    setCompassNeedle(depthRef.current * 22);
   }, []);
 
   const onCompassPointerDown = (e: React.PointerEvent<HTMLButtonElement>) => {
@@ -412,12 +418,6 @@ export function OnyxHome({
     const clamp = (v: number) => Math.max(-COMPASS_FOLLOW_MAX, Math.min(COMPASS_FOLLOW_MAX, v));
     setCompassFollow({ x: clamp(dx), y: clamp(dy) });
 
-    if (dist > 2) {
-      // Needle SVG points up; atan2(dx, -dy) → 0° when dragging up.
-      const deg = (Math.atan2(dx, -dy) * 180) / Math.PI;
-      setCompassNeedle(deg);
-    }
-
     const aim = resolveCompassAim(dx, dy);
     if (aim !== compassAimRef.current) {
       compassAimRef.current = aim;
@@ -442,11 +442,7 @@ export function OnyxHome({
     resetCompass();
     if (aim) commitCompassAim(aim);
     else if (wasTap) {
-      // Light tap still opens the sky from Street.
-      if (depthRef.current === 0) {
-        buzz("step");
-        onOpenSky();
-      }
+      commitCompassAim("center");
     }
   };
 
@@ -457,7 +453,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
       ),
     );
   };
@@ -490,7 +486,7 @@ export function OnyxHome({
     <div className="onyx-root onyx-home-fade">
       <div
         ref={deviceRef}
-        className="onyx-device"
+        className="onyx-device onyx-yy-home"
         data-depth={depth}
         role="application"
         aria-label="Delphi"
@@ -592,12 +588,25 @@ export function OnyxHome({
 
         {/* 0 STREET */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
-          <div className="onyx-center">
+          <div className="onyx-center onyx-yy-phrase">
             {readingLayerLabel && (
               <p className="onyx-layer-label">{readingLayerLabel}</p>
             )}
-            <p className="big">{momentLine}</p>
-            <p className="sub">Lift your phone to the sky.</p>
+            <button
+              type="button"
+              className="onyx-yy-phrase-btn"
+              onClick={e => {
+                e.stopPropagation();
+                commitCompassAim("center");
+              }}
+            >
+              <p className="big">{momentLine}</p>
+            </button>
+            <p className="sub onyx-yy-math">
+              {clockLabel.toUpperCase().replace(",", " ·")} · {zodiacSign}
+              {" · moon "}
+              {Math.round(phaseFraction * 100)}%
+            </p>
             {provenanceLine && (
               <p className="onyx-provenance">{provenanceLine}</p>
             )}
@@ -811,40 +820,40 @@ export function OnyxHome({
                   You · natal (local)
                 </button>
               )}
-              {onOpenCast && (
+              {onOpenYou && (
                 <button
                   type="button"
                   className="onyx-ghost-btn"
                   onClick={() => {
                     buzz("tick");
-                    onOpenCast();
+                    onOpenYou();
                   }}
                 >
-                  Cast · side door
+                  Divinations · inside You
                 </button>
               )}
             </div>
           </div>
         </div>
 
-        <div className={`onyx-compass-wrap${compassLocked ? " holding" : ""}`}>
-          <div className="onyx-compass-stage">
-            <div className="onyx-compass-dirs" aria-hidden>
-              <span className={`d-up${compassAim === "up" ? " on" : ""}`}>sky</span>
-              <span className={`d-left${compassAim === "left" ? " on" : ""}`}>cast</span>
-              <span className={`d-right${compassAim === "right" ? " on" : ""}`}>clock</span>
-              <span className={`d-down${compassAim === "down" ? " on" : ""}`}>you</span>
+        <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}`}>
+          <div className="onyx-compass-stage onyx-yy-stage">
+            <div className="onyx-compass-dirs onyx-yy-dirs" aria-hidden>
+              <span className={`d-up${compassAim === "up" ? " on" : ""}`}>sky map</span>
+              <span className={`d-left${compassAim === "left" ? " on" : ""}`}>studies</span>
+              <span className={`d-right${compassAim === "right" ? " on" : ""}`}>orrery</span>
+              <span className={`d-down${compassAim === "down" ? " on" : ""}`}>tonal</span>
             </div>
             <button
               type="button"
-              className={`onyx-compass${compassLocked ? " locked" : " floating"}${compassAim ? " aiming" : ""}`}
+              className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : " floating"}${compassAim ? " aiming" : ""}`}
               style={
                 {
                   ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
                   ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
                 } as React.CSSProperties
               }
-              aria-label="Hold and drag: up sky, down you, right clock, left cast"
+              aria-label="Hold and drag: up sky map, down tonal, right orrery, left studies. Tap the glass for you."
               onPointerDown={onCompassPointerDown}
               onPointerMove={onCompassPointerMove}
               onPointerUp={onCompassPointerUp}
@@ -853,22 +862,7 @@ export function OnyxHome({
                 resetCompass();
               }}
             >
-              <svg width="118" height="118" viewBox="0 0 62 62" role="img" aria-label="Compass">
-                <polygon
-                  points="31,3 47,11 55,31 47,51 31,59 15,51 7,31 15,11"
-                  fill="rgba(120,108,200,0.05)"
-                  stroke="var(--onyx-edge-bright)"
-                  strokeWidth="0.75"
-                />
-                <circle cx="31" cy="31" r="18" fill="none" stroke="#2c2942" strokeWidth="0.5" />
-                <g
-                  className="needle"
-                  style={{ transform: `rotate(${compassLocked ? compassNeedle : depth * 22}deg)` }}
-                >
-                  <path d="M31 15 L35 33 L31 29 L27 33 Z" fill="var(--onyx-core)" />
-                </g>
-                <circle cx="31" cy="31" r="1.7" fill="#d8d2ff" />
-              </svg>
+              <OnyxYinYang aiming={Boolean(compassAim)} locked={compassLocked} />
             </button>
           </div>
         </div>
