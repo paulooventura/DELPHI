@@ -55,6 +55,61 @@ export type OnyxMode =
   | "about"
   | "decompose";
 
+const ONYX_MODES: readonly OnyxMode[] = [
+  "home",
+  "sky",
+  "rings",
+  "tools",
+  "atlas",
+  "senses",
+  "oracle",
+  "you",
+  "cast",
+  "about",
+  "decompose",
+];
+
+const MODE_ALIASES: Record<string, OnyxMode> = {
+  sky: "sky",
+  clock: "rings",
+  rings: "rings",
+  me: "you",
+  you: "you",
+  home: "home",
+  moment: "home",
+  cast: "cast",
+  atlas: "atlas",
+  senses: "senses",
+  oracle: "oracle",
+  tools: "tools",
+  about: "about",
+  decompose: "decompose",
+};
+
+function parseOnyxMode(raw: string | null): OnyxMode | null {
+  if (!raw) return null;
+  const alias = MODE_ALIASES[raw];
+  if (alias) return alias;
+  return ONYX_MODES.includes(raw as OnyxMode) ? (raw as OnyxMode) : null;
+}
+
+function modeFromSearch(): OnyxMode {
+  if (typeof window === "undefined") return "home";
+  const q = new URLSearchParams(window.location.search);
+  return parseOnyxMode(q.get("mode") || q.get("tab")) ?? "home";
+}
+
+function writeModeToUrl(mode: OnyxMode) {
+  if (typeof window === "undefined") return;
+  const url = new URL(window.location.href);
+  if (mode === "home") url.searchParams.delete("mode");
+  else url.searchParams.set("mode", mode);
+  url.searchParams.delete("tab");
+  const next = `${url.pathname}${url.search}${url.hash}`;
+  const now = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  if (next !== now) window.history.replaceState(null, "", next);
+}
+
 export function OnyxApp({
   showSplash,
   onSplashDone,
@@ -134,7 +189,11 @@ export function OnyxApp({
   pulseEnabled?: boolean;
   onPulseEnabledChange?: (on: boolean) => void;
 }) {
-  const [mode, setMode] = useState<OnyxMode>("home");
+  const [mode, setModeState] = useState<OnyxMode>(modeFromSearch);
+  const setMode = (next: OnyxMode) => {
+    setModeState(next);
+    writeModeToUrl(next);
+  };
   const [distilled, setDistilled] = useState<string>("");
   const [birth, setBirth] = useState<BirthRecord | null>(null);
   const [embraced, setEmbraced] = useState<EmbracedCast[]>([]);
@@ -149,6 +208,10 @@ export function OnyxApp({
   useEffect(() => {
     setBirth(loadBirth());
     setEmbraced(loadEmbraced());
+  }, []);
+
+  useEffect(() => {
+    writeModeToUrl(modeFromSearch());
   }, []);
 
   function resetHeldDivinations() {

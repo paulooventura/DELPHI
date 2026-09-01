@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-08-28d -->
+<!-- build: 2026-08-31a -->
 <script>
 (function(){
-  var BUILD='2026-08-28d';
+  var BUILD='2026-08-31a';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -670,10 +670,10 @@
 </head>
 <body>
 
-<div id="build-banner" aria-hidden="true">portal · build 2026-08-28d</div>
+<div id="build-banner" aria-hidden="true">portal · build 2026-08-31a</div>
 
 <!-- ===== PORTAL HOME ===== -->
-<div id="portal" data-build="2026-08-28d">
+<div id="portal" data-build="2026-08-31a">
   <canvas id="stars"></canvas>
   <div class="aura"></div><div class="ring r1"></div><div class="ring r2"></div>
   <div class="compass">
@@ -713,7 +713,7 @@
     <p class="eye">Center · The Self</p>
     <h2>Begin with you</h2>
     <p>Your birthday, your signs, your chart — the starting point of every divination. This is where the personal thread begins, then goes deeper into the readings.</p>
-    <div class="tag">Coming in the next pass</div>
+    <div class="tag">Live app · You</div>
     <div class="dirnote">Tap the phrase on the portal to return here anytime.</div>
   </div>
 </section>
@@ -726,7 +726,7 @@
     <p class="eye">Above · Scroll Up</p>
     <h2>The Sky Map</h2>
     <p>The cosmos overhead — the live sky, the moment's configuration, the chart of now. The outermost lens, where self meets cosmos.</p>
-    <div class="tag">Coming in a later pass</div>
+    <div class="tag">Live app · Sky</div>
   </div>
 </section>
 
@@ -738,7 +738,7 @@
     <p class="eye">Right · Time</p>
     <h2>The Clock</h2>
     <p>Time as the app reads it — the hour, the phase, the turning. The rhythm underneath everything else.</p>
-    <div class="tag">Coming in a later pass</div>
+    <div class="tag">Live app · Clock</div>
   </div>
 </section>
 
@@ -856,8 +856,9 @@ function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';c
 const _dirMap={up:['sky','up'],down:['tonal','down'],left:['studies','left'],right:['clock','right'],center:['me','center']};
 let _navBusy=false;
 function hostedDeepLink(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');return q==='studies'||q==='tonal'||path.endsWith('/studies')||path.endsWith('/tonal');}catch(e){return false;}}
-function goLiveOr(name,dir){if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href='/';return;}go(name,dir);}
-function fireNav(dir){if(_navBusy||!dir||!_dirMap[dir])return;if(!_portalActive())return;_navBusy=true;const[name,d]=_dirMap[dir];if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href='/';_navBusy=false;return;}portal.classList.add('charge-'+dir);setTimeout(()=>{go(name,d);portal.className='';_navBusy=false;},620);}
+function liveAppHref(name){const mode=name==='clock'?'rings':name==='me'?'you':name;return '/?mode='+encodeURIComponent(mode);}
+function goLiveOr(name,dir){if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href=liveAppHref(name);return;}go(name,dir);}
+function fireNav(dir){if(_navBusy||!dir||!_dirMap[dir])return;if(!_portalActive())return;_navBusy=true;const[name,d]=_dirMap[dir];if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href=liveAppHref(name);_navBusy=false;return;}portal.classList.add('charge-'+dir);setTimeout(()=>{go(name,d);portal.className='';_navBusy=false;},620);}
 function _portalActive(){return portal.style.opacity!=='0'&&getComputedStyle(portal).pointerEvents!=='none';}
 function _dirFromDelta(dx,dy){const adx=Math.abs(dx),ady=Math.abs(dy);if(Math.max(adx,ady)<50)return null;return ady>adx?(dy>0?'down':'up'):(dx>0?'right':'left');}
 

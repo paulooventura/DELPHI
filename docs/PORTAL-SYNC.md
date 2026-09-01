@@ -16,7 +16,9 @@ agent/web/public/portal.html
 
 If the portal looks stale: open **`/fresh`** in Safari (not a Home Screen icon). Delete any old DELPHI icon from the home screen, open `/fresh`, then re-add if needed.
 
-Confirm you're on the latest build: portal shows **`portal · build 2026-08-28d`** at the bottom; crystal gate shows **`build 2026-08-28d`** at the bottom.
+Confirm you're on the latest build: portal shows **`portal · build 2026-08-31a`** at the bottom; crystal gate shows **`build 2026-08-31a`** at the bottom.
+
+Hosted portal doors deep-link the live Onyx app: Sky → `/?mode=sky`, Clock → `/?mode=rings`, You → `/?mode=you`. Studies and Tonal stay on the HTML portal. Do not change the `/studies` `/tonal` `/portal` rewrites.
 
 On Paulo's Windows machine the editable draft lives at `G:\DELPHI\portal\src\DELPHI_portal.html`.
 Canonical Claude diffs (`DELPHI_TONAL_CANONICAL.html`) are **diff references only** — never deploy them raw (they lack host wiring).
