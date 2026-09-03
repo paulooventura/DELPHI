@@ -142,15 +142,15 @@ export function OnyxYinYang({
           <stop offset="40%" stopColor="#07060c" />
           <stop offset="100%" stopColor="#000000" />
         </radialGradient>
-        <radialGradient id={`${uid}-shade`} ref={shadeRef} cx="34%" cy="28%" r="70%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
-          <stop offset="22%" stopColor="rgba(255,255,255,0.12)" />
-          <stop offset="58%" stopColor="rgba(0,0,0,0)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,0.62)" />
+        <radialGradient id={`${uid}-shade`} ref={shadeRef} cx="34%" cy="28%" r="72%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.62)" />
+          <stop offset="18%" stopColor="rgba(255,255,255,0.16)" />
+          <stop offset="52%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.72)" />
         </radialGradient>
-        <radialGradient id={`${uid}-spec`} ref={specRef} cx="34%" cy="28%" r="18%">
+        <radialGradient id={`${uid}-spec`} ref={specRef} cx="34%" cy="28%" r="16%">
           <stop offset="0%" stopColor="rgba(255,255,255,1)" />
-          <stop offset="35%" stopColor="rgba(255,255,255,0.55)" />
+          <stop offset="28%" stopColor="rgba(255,255,255,0.7)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </radialGradient>
         <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
@@ -161,7 +161,7 @@ export function OnyxYinYang({
         </filter>
       </defs>
 
-      <circle cx="50" cy="52.5" r="47" fill="rgba(0,0,0,0.38)" />
+      <circle cx="50" cy="51.6" r="47" fill="rgba(0,0,0,0.32)" />
 
       <g clipPath={`url(#${uid}-clip)`}>
         <rect width="100" height="100" fill={`url(#${uid}-yin)`} />
@@ -174,23 +174,23 @@ export function OnyxYinYang({
 
         <rect
           ref={windowRef}
-          x="22"
-          y="44"
-          width="13"
-          height="18"
-          rx="0.4"
-          fill="rgba(255,255,255,0.22)"
+          x="20"
+          y="40"
+          width="16"
+          height="22"
+          rx="0.35"
+          fill="rgba(255,255,255,0.34)"
           filter={`url(#${uid}-win)`}
-          transform="rotate(-16 28 52)"
+          transform="rotate(-18 28 51)"
         />
         <rect
-          x="29"
-          y="46"
-          width="6"
-          height="13"
-          rx="0.3"
-          fill="rgba(255,255,255,0.1)"
-          transform="rotate(-16 32 52)"
+          x="27"
+          y="43"
+          width="7"
+          height="15"
+          rx="0.25"
+          fill="rgba(255,255,255,0.16)"
+          transform="rotate(-18 30.5 50.5)"
         />
 
         <circle cx="50" cy="50" r="48" fill={`url(#${uid}-shade)`} />

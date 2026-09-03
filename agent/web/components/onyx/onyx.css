@@ -467,7 +467,7 @@
 .onyx-yy-phrase {
   position: absolute;
   left: 50%;
-  top: 50.6%;
+  top: 50%;
   transform: translate(-50%, -50%);
   z-index: 9;
   width: min(48vmin, 300px);
@@ -635,18 +635,42 @@
   letter-spacing: 0.2em;
   text-transform: uppercase;
   z-index: 4;
+  pointer-events: none;
 }
 .onyx-yy-dirs button {
   pointer-events: auto;
   padding: 8px 10px;
 }
+/* Keep door words off the marble until a drag/aim — they were printing through the phrase. */
 .onyx-yy-wrap .onyx-yy-dirs span,
-.onyx-yy-wrap .onyx-yy-dirs button { opacity: 0.55; }
-.onyx-yy-gem {
+.onyx-yy-wrap .onyx-yy-dirs button { opacity: 0; }
+.onyx-yy-wrap.holding .onyx-yy-dirs span,
+.onyx-yy-wrap.holding .onyx-yy-dirs button { opacity: 0.7; }
+.onyx-yy-wrap .onyx-yy-dirs button.on { opacity: 1; }
+.onyx-yy-dirs .d-up { top: -2px; }
+.onyx-yy-dirs .d-down { bottom: -2px; }
+.onyx-yy-dirs .d-left { left: -2px; }
+.onyx-yy-dirs .d-right { right: -2px; }
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase {
+  opacity: 0;
+  transition: opacity 0.12s linear;
+}
+/* Beat .onyx-compass purple glow so the gem reads as a marble, not a badge. */
+.onyx-compass.onyx-yy-gem {
   padding: 0;
+  animation: none;
   filter:
-    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.62))
-    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.12));
+    drop-shadow(0 22px 16px rgba(0, 0, 0, 0.58))
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.16));
+}
+.onyx-compass.onyx-yy-gem.floating {
+  animation: none;
+}
+.onyx-compass.onyx-yy-gem.locked,
+.onyx-compass.onyx-yy-gem.aiming {
+  filter:
+    drop-shadow(0 26px 20px rgba(0, 0, 0, 0.64))
+    drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
 }
 .onyx-yy-gem .onyx-yy-svg {
   width: min(52vmin, 340px);
