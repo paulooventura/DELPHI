@@ -11,11 +11,12 @@ import {
   composeLayers,
   provenance,
   takeSnapshot,
+  type DistillOptions,
   type LayerId,
   type MomentSnapshot,
 } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
-import { phraseForMoment } from "../../lib/lore/distillPhrase";
+import { phraseCacheKeyFrom, phraseForMoment, requestPhraseBrain, writeCachedPhrase } from "../../lib/lore/distillPhrase";
 import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
 import {
   clearEmbraced,
@@ -113,6 +114,7 @@ function writeModeToUrl(mode: OnyxMode) {
 }
 
 export function OnyxApp({
+  bootReady = true,
   showSplash,
   onSplashDone,
   onPrimeAccess,
@@ -150,11 +152,13 @@ export function OnyxApp({
   pulseEnabled = true,
   onPulseEnabledChange,
 }: {
+  /** False until sessionStorage is read — hold black so returns don't flash splash. */
+  bootReady?: boolean;
   showSplash: boolean;
   onSplashDone: () => void;
   /** Sync from splash tap — iOS sensor permission must stay on the gesture. */
   onPrimeAccess?: () => void;
-  /** After splash, once per page session until Allow. */
+  /** After splash, once per app open until Allow. */
   showAccessGate?: boolean;
   onAllowAccess?: () => void;
   accessBusy?: boolean;
@@ -225,7 +229,9 @@ export function OnyxApp({
     setMode("cast");
   };
 
-  // Local-only natal + embraced casts — never sent; fold into labeled layers.
+  // Natal + embraced casts stay on-device as records. Home folds them into
+  // labeled layers; the phrase brain only receives axis math + quality words.
+
   useEffect(() => {
     setBirth(loadBirth());
     setEmbraced(loadEmbraced());
@@ -241,7 +247,7 @@ export function OnyxApp({
   }
 
   const phaseFraction = cosmic?.lunarPhaseFraction ?? cycles?.lunar?.fraction ?? 0.35;
-  const homeReady = !showAccessGate && !showSplash;
+  const homeReady = bootReady && !showAccessGate && !showSplash;
   void onRingSelect;
 
   // Snapshot locks when home opens or when the user returns — not on the clock tick.
@@ -265,6 +271,8 @@ export function OnyxApp({
     if (!birth) return [];
     return resolvePerson(birth).entries.filter(e => e.honesty === "render");
   }, [birth]);
+
+  const colorLean = natal?.tribe?.color;
 
   const drawnEntries = useMemo(() => {
     const seen = new Set<string>();
@@ -317,18 +325,45 @@ export function OnyxApp({
     return `${layered.active}:${snapFp}:${natalFp}:${drawnFp}`;
   }, [layered.active, natalEntries, drawnEntries, homeSnap?.takenAt]);
 
-  // Local speak() on the ACTIVE layer chord — no fetch, no API key (Addendum 5).
+  const distillOpts = useMemo<DistillOptions>(() => {
+    const opts: DistillOptions = {};
+    if (layered.active !== "moment" && colorLean) opts.colorLean = colorLean;
+    if (layered.active === "with-drawn") {
+      const held = [...new Set(embraced.flatMap(c => c.qualities ?? []))]
+        .map(q => q.trim().toLowerCase())
+        .filter(Boolean)
+        .slice(0, 8);
+      if (held.length) opts.castLean = held;
+    }
+    return opts;
+  }, [layered.active, colorLean, embraced]);
+
+  // Local speak() immediately; phrase brain upgrades when a server key exists.
+  // Natal / casts travel only as axis math + quality words — never the birth record.
   useEffect(() => {
     if (!homeSnap || lockedMomentEntries.length === 0) return;
-    const { phrase } = phraseForMoment(
+    const { phrase, source } = phraseForMoment(
       activeReading.chord,
       civilYmd,
       lat,
       lon,
-      undefined,
+      distillOpts,
       layerCacheKey,
     );
     setDistilled(phrase);
+    if (source === "cache") return;
+
+    const ac = new AbortController();
+    void requestPhraseBrain(activeReading.chord, distillOpts, { signal: ac.signal })
+      .then(voiced => {
+        if (!voiced?.phrase) return;
+        writeCachedPhrase(
+          phraseCacheKeyFrom(civilYmd, lat, lon, distillOpts, layerCacheKey),
+          voiced.phrase,
+        );
+        setDistilled(voiced.phrase);
+      });
+    return () => ac.abort();
   }, [
     homeSnap,
     lockedMomentEntries.length,
@@ -338,6 +373,7 @@ export function OnyxApp({
     lat,
     lon,
     layerCacheKey,
+    distillOpts,
   ]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
@@ -388,7 +424,17 @@ export function OnyxApp({
     <>Hold still. The sky is still reading you.</>
   );
 
-  // Splash first on every open. Permissions follow once per page session.
+  // Splash + Allow once per app open. Later door trips skip both.
+  if (!bootReady) {
+    return (
+      <div className="onyx-root" role="status" aria-label="Delphi" aria-busy="true">
+        <div className="onyx-device">
+          <div className="onyx-splash-veil on" aria-hidden />
+        </div>
+      </div>
+    );
+  }
+
   if (showSplash) {
     return (
       <OnyxSplash onEnter={onSplashDone} onPrimeAccess={onPrimeAccess} />

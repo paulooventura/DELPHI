@@ -471,7 +471,7 @@
   transform: translate(-50%, -50%);
   z-index: 11;
   width: 56%;
-  max-height: 30%;
+  max-height: 42%;
   padding: 0 4px;
   margin: 0;
   display: flex;
@@ -517,8 +517,8 @@
 .onyx-yy-phrase .big {
   margin: 0 auto;
   width: 100%;
-  font-size: clamp(10px, 2.15vmin, 13px);
-  line-height: 1.22;
+  font-size: clamp(9px, 2.05vmin, 12.5px);
+  line-height: 1.28;
   text-align: center;
   text-wrap: balance;
   text-shadow:

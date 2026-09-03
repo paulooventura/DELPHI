@@ -39,4 +39,4 @@ On Book the HTML draft is `G:\DELPHI\portal` — copy into `agent/web/public/por
 
 Pushes to `main` deploy Vercel production. Settings: [docs/DOMAIN.md](docs/DOMAIN.md) (root directory empty, build overrides off). Alias `delphi-wine.vercel.app` follows the custom domain.
 
-Optional keys in `agent/web/.env.local` or Vercel (never commit them): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `AIRLABS_API_KEY`. Research Console stays free without them. Aircraft on Sky uses AirLabs when set, otherwise demo traffic.
+Optional keys in `agent/web/.env.local` or Vercel (never commit them): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `AIRLABS_API_KEY`. Research Console stays free without them. The home distilled phrase uses **Anthropic Sonnet** when `ANTHROPIC_API_KEY` is set (`ANTHROPIC_PHRASE_MODEL` / `ANTHROPIC_DECOMPOSE_MODEL`, default `claude-sonnet-4-6`), then OpenAI `gpt-4o`, then Gemini. No keys → local `speak()` fallback. Birth date/time/place never leave the device — only axis math. Aircraft on Sky uses AirLabs when set, otherwise demo traffic.

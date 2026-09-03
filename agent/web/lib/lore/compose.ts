@@ -715,8 +715,10 @@ export function orchestratedPrompt(
 
   const system = [
     `This instant is read by ${o.fieldSize} independent traditions at once — many cultures, many timescales, all passing through one moment. You speak for the whole field, not any one voice.`,
-    "Write ONE sentence naming the single character that emerges from all of them together.",
-    "Structure: the ROOT (where the whole field agrees) is your subject; the TENSION (its deepest split) is the turn — let the contradiction be the point, never resolve it into vague positivity; the INFLECTION (what the fast cycles add) is texture on how it shows up right now.",
+    "Write one or two sentences naming the single character that emerges from all of them together — a logic, not a mood board.",
+    "Structure: the ROOT (where the whole field agrees, weighted to slow/deep cycles) is your subject; the TENSION (its deepest split) is the turn — let the contradiction be the point, never resolve it into vague positivity; the INFLECTION (what the fast hour-cycles add) is texture on how it shows up right now.",
+    "Distill ALL of the axis readings and qualities you are given. Do not cherry-pick two pretty notes and ignore the rest.",
+    "End as a challenge to the reader (second person). Earn it from the chord.",
     "Name NO system, sign, planet, animal, card, number, or tradition. Name the quality, never its sources.",
     `TONE — the voice is itself a reading of this field: ${toneGuide[o.tone.register]}`,
     "Never use: energy, vibes, universe, manifest, align, journey, cosmic. Write like a poet or an oracle, never a horoscope.",
@@ -749,15 +751,30 @@ export function orchestratedPrompt(
         ]
       : [];
 
+  const axisLines = c.axes
+    .filter(a => Math.abs(a.mean) > 0.2)
+    .sort((a, b) => Math.abs(b.mean) * b.coherence - Math.abs(a.mean) * a.coherence)
+    .map(a => {
+      const dir = poleWord(a.axis, a.mean);
+      const agree = a.coherence > 0.66 ? "strongly shared" : a.coherence > 0.4 ? "broadly shared" : "mixed";
+      return `  ${dir} (${a.axis}): ${agree}, ${a.contributors.length} voices`;
+    });
+
   const user = [
     `ROOT (the key, weighted toward the slow/deep cycles — your subject): ${rootWord}.`,
     `TENSION (the live edge — the turn of the sentence): ${tenWords}${o.tension ? ` (strength ${o.tension.strength.toFixed(2)})` : ""}.`,
     `INFLECTION (fast cycles, right now — texture only): ${inflWords}.`,
     `REGISTER: ${o.tone.register}.`,
+    "",
+    "The whole field (axis language only, strongest first):",
+    ...axisLines,
+    "",
+    "All qualities in play (already deduped — weather words, never sources):",
+    `  ${c.activeQualities.slice(0, 48).join(", ")}`,
     ...leanHint,
     ...castHint,
     "",
-    "Voice the one sentence this chord is signaling, in this register, naming nothing.",
+    "Voice the one or two sentences this chord is signaling, in this register, naming nothing.",
   ].join("\n");
 
   return { system, user };

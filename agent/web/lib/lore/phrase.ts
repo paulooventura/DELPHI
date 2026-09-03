@@ -1,9 +1,9 @@
 /**
  * PHRASE — Delphi's local oracle voice. No API. No third-party dependency.
  * ----------------------------------------------------------------------------
- * Turns orchestration (root · tension · inflection · tone) into ONE sentence
+ * Turns orchestration (root · tension · inflection · tone) into ONE reading
  * that names the field and challenges the reader — every home phrase ends as
- * a dare. This is what the old model path was for; we own it on-device.
+ * a dare. Offline fallback for the phrase brain; we own this path on-device.
  *
  * Grammar (structure, not mush):
  *   WEATHER  — root axis → subject (the standing character of the moment)
@@ -16,7 +16,7 @@
  * anytime for more variety; no regeneration needed.
  */
 
-import type { Composition, Orchestration, Tone } from "./compose";
+import type { Composition, DistillOptions, Orchestration, Tone } from "./compose";
 import { orchestrate } from "./compose";
 
 type Axis =
@@ -295,9 +295,8 @@ function hingeClause(o: Orchestration, seed: number): string {
 }
 
 function hourClause(o: Orchestration, seed: number): string {
-  // Always include inflection when present and charge is mid/high — the "now."
+  // Fast cycles are the hour's texture — include them whenever they vote.
   if (!o.inflection.length) return "";
-  if (o.tone.charge < 0.35 && seed % 3 !== 0) return "";
   const inf = o.inflection[0]!;
   if (!isAxis(inf.axis)) return "";
   const tint = pick(HOUR_FEEL[inf.axis][poleOf(inf.pole)], seed, 8);
@@ -309,10 +308,10 @@ function dareLine(reg: Tone["register"], seed: number): string {
 }
 
 /**
- * Distilled line for the home orb — weather + dare, no hinge/hour.
- * Must fit between the two taijitu dots.
+ * Distilled line for the home orb — weather + hinge + hour + dare.
+ * Local fallback when the phrase brain is offline. Wraps between the dots.
  */
-export function speak(c: Composition): string {
+export function speak(c: Composition, opts?: DistillOptions): string {
   const o = orchestrate(c);
   const seed = seedFrom(o);
 
@@ -321,7 +320,18 @@ export function speak(c: Composition): string {
   }
 
   const weather = weatherLine(o, c, seed);
+  const hinge = hingeClause(o, seed);
+  const hour = hourClause(o, seed);
   const dare = dareLine(o.tone.register, seed);
-  const line = `${cap(weather)}.${dare}`.replace(/\s+/g, " ").trim();
+  let body = `${cap(weather)}${hinge}${hour}`;
+
+  const held = (opts?.castLean ?? [])
+    .map(q => q.trim().toLowerCase())
+    .filter(q => q.length > 1 && !body.toLowerCase().includes(q))
+    .slice(0, 2);
+  if (held.length === 2) body += `, with ${held[0]} and ${held[1]} held beneath`;
+  else if (held.length === 1) body += `, with ${held[0]} held beneath`;
+
+  const line = `${body}.${dare}`.replace(/\s+/g, " ").trim();
   return /[.!?]$/.test(line) ? line : `${line}.`;
 }
