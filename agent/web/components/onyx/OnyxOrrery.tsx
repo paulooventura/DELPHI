@@ -20,15 +20,29 @@ import {
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
 
+type LaneFilter = "full" | "clock" | "calendar";
+
+const CLOCK_LANE_IDS: OrreryLaneId[] = ["sec", "helek", "prana", "pala", "min", "ghati", "planetary-hour", "muhurta", "shi", "day"];
+const CALENDAR_LANE_IDS: OrreryLaneId[] = ["year", "month", "season", "wuku-tzolkin", "moon", "pancawara", "day"];
+
+function filterLabel(f: LaneFilter): string {
+  return f === "full" ? "All cycles" : f === "clock" ? "Clock only" : "Calendar only";
+}
+function nextFilter(f: LaneFilter): LaneFilter {
+  return f === "full" ? "clock" : f === "clock" ? "calendar" : "full";
+}
+
 export function OnyxOrrery({
   lat,
   lon,
   onBack,
+  onOpenTonal,
   hapticsEnabled = true,
 }: {
   lat: number;
   lon: number;
   onBack: () => void;
+  onOpenTonal?: () => void;
   /** Master stone toggle — escapement ticks respect this. */
   hapticsEnabled?: boolean;
 }) {
@@ -38,6 +52,9 @@ export function OnyxOrrery({
   const hapticsRef = useRef(hapticsEnabled);
   hapticsRef.current = hapticsEnabled;
   const [expanded, setExpanded] = useState<OrreryLaneState | null>(null);
+  const [laneFilter, setLaneFilter] = useState<LaneFilter>("full");
+  const laneFilterRef = useRef<LaneFilter>("full");
+  laneFilterRef.current = laneFilter;
   const lanesRef = useRef<OrreryLaneState[]>([]);
   const hitRef = useRef<{ y0: number; y1: number; id: string }[]>([]);
   const lastIndexRef = useRef<Map<OrreryLaneId, number>>(new Map());
@@ -82,7 +99,11 @@ export function OnyxOrrery({
 
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
-      const { lanes, slowSky } = computeOrreryState(new Date(), lat, lon);
+      const { lanes: allLanes, slowSky } = computeOrreryState(new Date(), lat, lon);
+      const activeFilter = laneFilterRef.current;
+      const lanes = activeFilter === "full" ? allLanes
+        : activeFilter === "clock" ? allLanes.filter(l => CLOCK_LANE_IDS.includes(l.id))
+        : allLanes.filter(l => CALENDAR_LANE_IDS.includes(l.id));
       lanesRef.current = lanes;
 
       nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
@@ -288,7 +309,29 @@ export function OnyxOrrery({
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
           close
         </button>
-        <p className="onyx-orrery-title">ORRERY</p>
+        <div className="onyx-orrery-header">
+          <p className="onyx-orrery-title">ORRERY</p>
+          <div className="onyx-orrery-controls">
+            <button
+              type="button"
+              className="onyx-orrery-filter-btn"
+              onClick={() => setLaneFilter(f => nextFilter(f))}
+              title="Toggle cycle filter"
+            >
+              {filterLabel(laneFilter)}
+            </button>
+            {onOpenTonal && (
+              <button
+                type="button"
+                className="onyx-orrery-filter-btn"
+                onClick={onOpenTonal}
+                title="Open Tonal"
+              >
+                Tonal ↗
+              </button>
+            )}
+          </div>
+        </div>
         <p className="onyx-orrery-sub">Read down the now-line · tap a lane</p>
         <div className="onyx-orrery-wrap" ref={wrapRef}>
           <canvas

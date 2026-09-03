@@ -10,14 +10,14 @@ import {
 import { computeSolarDayEvents } from "../cosmic/astronomy";
 
 describe("orrery lanes — CLOCK-SPEC", () => {
-  it("returns 15 lanes north→south with a slow-sky cluster", () => {
+  it("returns 17 lanes north→south with a slow-sky cluster", () => {
     const { lanes, slowSky } = computeOrreryState(
       new Date("2026-07-24T18:00:00Z"),
       36.16,
       -86.78,
     );
-    expect(lanes).toHaveLength(15);
-    expect(lanes[0]!.id).toBe("season"); // slow / north
+    expect(lanes).toHaveLength(17);
+    expect(lanes[0]!.id).toBe("year"); // slowest / north
     expect(lanes[lanes.length - 1]!.id).toBe("ms"); // fast / south
     expect(lanes[0]!.speedT).toBeGreaterThan(lanes[lanes.length - 1]!.speedT);
     expect(slowSky.length).toBeGreaterThanOrEqual(3);

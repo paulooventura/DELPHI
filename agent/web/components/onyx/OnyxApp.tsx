@@ -529,6 +529,7 @@ export function OnyxApp({
           setOrreryIntro(true);
           setMode("home");
         }}
+        onOpenTonal={() => { window.location.href = "/tonal"; }}
         hapticsEnabled={pulseEnabled}
       />
     );
@@ -623,7 +624,7 @@ export function OnyxApp({
         onBirthSaved={next => {
           setBirth(next);
           setActiveLayerChoice(undefined); // deepen to through-you
-          setMode("home");
+          // stay on You screen so user can see the chord that just resolved
         }}
       />
     );

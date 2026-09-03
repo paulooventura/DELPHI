@@ -68,7 +68,9 @@ export type OrreryLaneId =
   | "pancawara"
   | "moon"
   | "wuku-tzolkin"
-  | "season";
+  | "season"
+  | "month"
+  | "year";
 
 /**
  * Escapement haptic class — all lanes scroll by true phase; discrete-tick
@@ -252,8 +254,59 @@ export function computeOrreryState(
   const ghatiIndex = Math.floor(mod(ghatiFloat, 60));
   const ghatiProg = mod(ghatiFloat, 1);
 
+  // Gregorian year and month
+  const calParts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timeZone,
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  }).formatToParts(date);
+  const calGet = (t: string) => Number(calParts.find(p => p.type === t)?.value ?? 0);
+  const calYear = calGet("year");
+  const calMonth = calGet("month"); // 1-12
+  const calDay = calGet("day");
+  const daysThisMonth = new Date(calYear, calMonth, 0).getDate();
+  const monthProg = (calDay - 1 + dayFrac) / daysThisMonth;
+
+  const MONTH_NAMES = ["January","February","March","April","May","June",
+    "July","August","September","October","November","December"];
+  const monthCells = MONTH_NAMES.map((n, i) => ({ id: `mo-${i+1}`, label: n }));
+
+  // Year lane: decade-scale, 10 years visible
+  const yearStart = Math.floor(calYear / 10) * 10;
+  const yearCells = Array.from({ length: 10 }, (_, i) => ({
+    id: `yr-${yearStart + i}`,
+    label: String(yearStart + i),
+  }));
+  const yearInDecade = calYear - yearStart;
+  const yearProg = (calMonth - 1 + (calDay - 1) / daysThisMonth) / 12;
+
   // Display order: north (slow) → south (fast). speedT 1 = blue/north, 0 = red/south.
   const lanesNorthToSouth: OrreryLaneState[] = [
+    {
+      id: "year",
+      name: "Year",
+      cycle: "10 years",
+      tier: "display",
+      speedT: 1.08,
+      index: yearInDecade,
+      progress: yearProg,
+      cells: yearCells,
+      activeLabel: String(calYear),
+      lore: "The Gregorian calendar year — ten years in view, so you can feel where this year sits in its decade.",
+    },
+    {
+      id: "month",
+      name: "Month",
+      cycle: "12 months",
+      tier: "display",
+      speedT: 1.04,
+      index: calMonth - 1,
+      progress: monthProg,
+      cells: monthCells,
+      activeLabel: MONTH_NAMES[calMonth - 1] ?? "—",
+      lore: "The civil calendar month. Twelve Gregorian months advancing left as the year moves.",
+    },
     {
       id: "season",
       name: "Solar season",

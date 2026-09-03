@@ -2176,19 +2176,45 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   overflow: hidden;
 }
 .onyx-orrery-device .onyx-stars { z-index: 0; }
-.onyx-orrery-title {
+.onyx-orrery-header {
   position: absolute;
-  top: 26px;
-  left: 0;
-  right: 0;
+  top: 16px;
+  left: 0; right: 0;
   z-index: 8;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 0 12px;
+}
+.onyx-orrery-title {
   margin: 0;
   font-size: 11px;
   letter-spacing: 0.42em;
   color: var(--onyx-ink-quiet);
   font-weight: 300;
   pointer-events: none;
+}
+.onyx-orrery-controls {
+  display: flex;
+  gap: 6px;
+  margin-left: auto;
+}
+.onyx-orrery-filter-btn {
+  background: rgba(100,90,160,0.18);
+  border: 0.5px solid rgba(140,124,255,0.28);
+  border-radius: 10px;
+  padding: 4px 9px;
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--onyx-ink-soft);
+  cursor: pointer;
+  transition: .15s;
+}
+.onyx-orrery-filter-btn:hover {
+  background: rgba(100,90,160,0.32);
+  color: var(--onyx-ink);
 }
 .onyx-orrery-sub {
   position: absolute;
@@ -2549,6 +2575,22 @@ html[data-sky="day"] .onyx-device {
 }
 html[data-sky="day"] .onyx-stars { opacity: 0.2; }
 html[data-sky="day"] .onyx-dust { background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.55); }
+/* Day sky: overlay becomes frosted white so dark text stays legible */
+html[data-sky="day"] .onyx-overlay {
+  background: rgba(255, 255, 255, 0.72);
+}
+html[data-sky="day"] .onyx-decomp-card {
+  border-bottom-color: rgba(30, 44, 64, 0.18);
+}
+html[data-sky="day"] .onyx-overlay-close {
+  background: rgba(255,255,255,0.5);
+  border-color: rgba(30,44,64,0.3);
+  color: #142033;
+}
+/* Twilight: keep slight warmth */
+html[data-sky="twilight"] .onyx-overlay {
+  background: rgba(20, 8, 30, 0.65);
+}
 
 html[data-sky="twilight"] .onyx-root {
   --onyx-black: #1c1020;

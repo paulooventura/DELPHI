@@ -529,21 +529,8 @@ export function OnyxHome({
           onEnabledChange={setPulse}
         />
 
-        {/* 0 STREET */}
-        <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
-          {heldCasts.length > 0 && (
-            <div className="onyx-yy-street-meta">
-              <HeldStrip
-                casts={heldCasts}
-                eyebrow="Held · embraced cast"
-                onOpenCast={onOpenCast}
-                onResetHeld={onResetHeld}
-                onReleaseHeld={onReleaseHeld}
-                buzz={buzz}
-              />
-            </div>
-          )}
-        </div>
+        {/* 0 STREET — no held-cast strip here; divinations live inside You */}
+        <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`} />
 
         {/* 1 MOMENT */}
         <div className={`onyx-panel onyx-p2${depth === 1 ? " show" : ""}`}>
