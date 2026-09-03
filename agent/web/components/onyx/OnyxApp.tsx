@@ -32,6 +32,7 @@ import {
   type BrainAvailability,
   type DistillPrefs,
 } from "../../lib/lore/distillPrefs";
+import { byId } from "../../lib/lore/qualia";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import type { LiveAttitude } from "../CelestialSkyView";
 import { AtlasPanel } from "../AtlasPanel";
