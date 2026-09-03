@@ -6,6 +6,7 @@ import {
   type LiveAttitude,
 } from "../CelestialSkyView";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
+import { OnyxAudioStone } from "./OnyxAudioStone";
 import { cardinalFromHeading } from "./onyxCopy";
 
 const DIRS = ["N", "·", "NE", "·", "E", "·", "SE", "·", "S", "·", "SW", "·", "W", "·", "NW", "·", "N", "·", "NE", "·", "E"];
@@ -24,6 +25,7 @@ export function OnyxSky({
   livePitch = false,
   arPoseReady = true,
   hapticsEnabled = true,
+  onPulseEnabledChange,
   warmth = 0.55,
   weather = null,
   sensorDiag,
@@ -40,6 +42,7 @@ export function OnyxSky({
   livePitch?: boolean;
   arPoseReady?: boolean;
   hapticsEnabled?: boolean;
+  onPulseEnabledChange?: (on: boolean) => void;
   warmth?: number;
   weather?: SkyWeatherSlot | null;
   sensorDiag?: { events: number; status: "none" | "ok" | "event-but-null" | "denied" };
@@ -99,7 +102,7 @@ export function OnyxSky({
     const el = t as HTMLElement | null;
     if (!el?.closest) return false;
     // Detail sheet / chrome controls own their gestures.
-    return Boolean(el.closest(".onyx-sky-back, .cp-sky-object-panel, button, a, input, textarea"));
+    return Boolean(el.closest(".onyx-sky-back, .onyx-stone-track, .cp-sky-object-panel, button, a, input, textarea"));
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -164,6 +167,7 @@ export function OnyxSky({
         <button type="button" className="onyx-sky-back" onClick={leave}>
           ← home
         </button>
+        <OnyxAudioStone enabled={hapticsEnabled} onEnabledChange={onPulseEnabledChange} />
 
         <div className="onyx-sky-live">
           <CelestialSkyView

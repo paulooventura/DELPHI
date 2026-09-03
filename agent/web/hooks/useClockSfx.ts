@@ -80,8 +80,12 @@ export function useClockSfx(
     let raf = 0;
     let alive = true;
 
-    const unlock = () => {
+    const unlock = (ev: Event) => {
+      const t = ev.target as HTMLElement | null;
+      if (t?.closest?.(".onyx-stone-track")) return;
       if (document.visibilityState === "hidden") return;
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
       void resumeClockAudio().then(ctx => {
         if (!ctx || !alive || !enabledRef.current || document.visibilityState === "hidden") return;
         refs.observer = readObserver();
@@ -92,8 +96,8 @@ export function useClockSfx(
       });
     };
 
-    window.addEventListener("pointerdown", unlock, { once: true });
-    window.addEventListener("keydown", unlock, { once: true });
+    window.addEventListener("pointerdown", unlock);
+    window.addEventListener("keydown", unlock);
 
     const silence = () => {
       muteClockAudio({ fadeMs: 160 });

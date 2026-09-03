@@ -419,6 +419,7 @@ export function OnyxApp({
         livePitch={livePitch}
         arPoseReady={arPoseReady}
         hapticsEnabled={pulseEnabled}
+        onPulseEnabledChange={onPulseEnabledChange}
         warmth={skyWarmth}
         weather={skyWeather}
         sensorDiag={sensorDiag}

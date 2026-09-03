@@ -14,6 +14,7 @@ import {
 import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
+import { OnyxAudioStone } from "./OnyxAudioStone";
 import { OnyxYinYang } from "./OnyxYinYang";
 import {
   COMPASS_AIM_PX,
@@ -23,9 +24,6 @@ import {
   type CompassAim,
 } from "../../lib/onyxCompass";
 
-const REST = 3;
-const QUIET = 37;
-/** Street → Moment → Self. Compass on Street is the portal doors. */
 const MAX = 2;
 const HINTS = [
   "↑ sky · ↓ tonal · → orrery · ← studies · center you",
@@ -123,7 +121,6 @@ export function OnyxHome({
   const [datesOpen, setDatesOpen] = useState(false);
   const [pulseAnim, setPulseAnim] = useState<"none" | "beat" | "chime">("none");
   const [hapticOn, setHapticOn] = useState(pulseEnabled);
-  const [stoneX, setStoneX] = useState(pulseEnabled ? REST : QUIET);
   const [compassLocked, setCompassLocked] = useState(false);
   const [compassAim, setCompassAim] = useState<CompassAim>(null);
   const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
@@ -133,10 +130,6 @@ export function OnyxHome({
   const depthRef = useRef(0);
   depthRef.current = depth;
   const wheelLock = useRef(false);
-  const dragging = useRef(false);
-  const moved = useRef(false);
-  const startX = useRef(0);
-  const stoneXRef = useRef(pulseEnabled ? REST : QUIET);
   const hapticRef = useRef(pulseEnabled);
   const lastSec = useRef(-1);
   const onPulseRef = useRef(onPulseEnabledChange);
@@ -144,14 +137,9 @@ export function OnyxHome({
   const compassPtr = useRef<{ id: number; x0: number; y0: number; armed: boolean } | null>(null);
   const compassAimRef = useRef<CompassAim>(null);
 
-  // Keep stone in sync if parent toggles pulse (e.g. after splash unlock).
   useEffect(() => {
-    if (dragging.current) return;
     hapticRef.current = pulseEnabled;
     setHapticOn(pulseEnabled);
-    const x = pulseEnabled ? REST : QUIET;
-    stoneXRef.current = x;
-    setStoneX(x);
   }, [pulseEnabled]);
 
   const stars = useMemo(
@@ -293,59 +281,11 @@ export function OnyxHome({
     return () => clearTimeout(t);
   }, [pulseAnim]);
 
-  const setPulse = useCallback((enabled: boolean, announce: boolean) => {
+  const setPulse = useCallback((enabled: boolean) => {
     hapticRef.current = enabled;
     setHapticOn(enabled);
-    const x = enabled ? REST : QUIET;
-    stoneXRef.current = x;
-    setStoneX(x);
     onPulseRef.current?.(enabled);
-    if (announce && enabled) void pulseHaptic("tick");
   }, []);
-
-  const applyStone = useCallback(
-    (x: number) => {
-      const clamped = Math.max(REST, Math.min(QUIET, x));
-      stoneXRef.current = clamped;
-      setStoneX(clamped);
-      const nowQuiet = clamped > (REST + QUIET) / 2;
-      const enabled = !nowQuiet;
-      if (enabled !== hapticRef.current) {
-        hapticRef.current = enabled;
-        setHapticOn(enabled);
-        onPulseRef.current?.(enabled);
-        if (enabled) void pulseHaptic("tick");
-      }
-    },
-    [],
-  );
-
-  const endStone = useCallback(() => {
-    if (!dragging.current) return;
-    dragging.current = false;
-    if (!moved.current) {
-      // Tap flips on/off.
-      setPulse(!hapticRef.current, true);
-    } else {
-      // Snap to the side the drag landed on.
-      setPulse(hapticRef.current, false);
-    }
-  }, [setPulse]);
-
-  useEffect(() => {
-    const move = (e: MouseEvent) => {
-      if (!dragging.current) return;
-      moved.current = true;
-      applyStone(e.clientX - startX.current);
-    };
-    const up = () => endStone();
-    window.addEventListener("mousemove", move);
-    window.addEventListener("mouseup", up);
-    return () => {
-      window.removeEventListener("mousemove", move);
-      window.removeEventListener("mouseup", up);
-    };
-  }, [applyStone, endStone]);
 
   const onWheel = (e: React.WheelEvent) => {
     // NOW / clock depth: let the panel scroll instead of stealing the wheel for depth.
@@ -552,56 +492,10 @@ export function OnyxHome({
           <span className="sec">{sec}</span>
         </p>
 
-        <div
-          className={`onyx-stone-track${!hapticOn ? " quiet" : ""}`}
-          role="switch"
-          aria-checked={hapticOn}
-          aria-label="Slide the stone to quiet sound and pulse"
-          tabIndex={0}
-          onPointerDown={e => {
-            e.stopPropagation();
-            e.currentTarget.setPointerCapture(e.pointerId);
-            dragging.current = true;
-            moved.current = false;
-            startX.current = e.clientX - stoneXRef.current;
-          }}
-          onPointerMove={e => {
-            if (!dragging.current) return;
-            moved.current = true;
-            applyStone(e.clientX - startX.current);
-          }}
-          onPointerUp={e => {
-            e.stopPropagation();
-            endStone();
-          }}
-          onPointerCancel={endStone}
-          onKeyDown={e => {
-            if (e.key === "Enter" || e.key === " ") {
-              e.preventDefault();
-              setPulse(!hapticOn, true);
-            }
-          }}
-        >
-          <span className="onyx-groove-on" />
-          <span className="onyx-groove-off" />
-          <span className="onyx-stone" style={{ left: stoneX, transition: dragging.current ? "none" : undefined }}>
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
-              <polygon
-                points="9,1 15,4.5 15,13.5 9,17 3,13.5 3,4.5"
-                fill="#0b0a12"
-                stroke="var(--onyx-edge-bright)"
-                strokeWidth="0.6"
-              />
-              <polygon
-                points="9,4 12.5,6 12.5,12 9,14 5.5,12 5.5,6"
-                fill="none"
-                stroke="rgba(140,124,255,0.3)"
-                strokeWidth="0.4"
-              />
-              <circle cx="9" cy="9" r="1.6" fill="var(--onyx-core)" fillOpacity={0.75} />
-            </svg>
-          </span>
-        </div>
+        <OnyxAudioStone
+          enabled={hapticOn}
+          onEnabledChange={setPulse}
+        />
 
         {/* 0 STREET */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>

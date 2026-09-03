@@ -1,2 +1,2 @@
 /** Bumped on every production push that must break WebView / CDN stale shells. */
-export const DELPHI_BUILD = "2026-09-03b";
+export const DELPHI_BUILD = "2026-09-03c";

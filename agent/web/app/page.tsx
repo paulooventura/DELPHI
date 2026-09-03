@@ -21,6 +21,7 @@ import { DashboardContainer } from "../components/DashboardContainer";
 import { COSMIC_CLOCK_OUTER_RADIUS, type RingSelectMeta } from "../components/CosmicClockWheel";
 import type { ClockRingData } from "../lib/timeEngine";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
+import { muteClockAudio } from "../lib/clockSfx";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
 import { useSpringValue } from "../hooks/useSpringValue";
@@ -1189,6 +1190,7 @@ export default function Home() {
       onPulseEnabledChange={on => {
         setClockSfxOn(on);
         if (on) void enableSfx();
+        else muteClockAudio({ fadeMs: 120 });
       }}
       sensorProps={{
         autoAwaken: true,

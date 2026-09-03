@@ -818,7 +818,7 @@
 .onyx-device[data-depth="2"] .onyx-descend { opacity: 0; }
 
 .onyx-stone-track {
-  position: absolute; top: 22px; right: 20px; z-index: 9;
+  position: absolute; top: 22px; right: 20px; z-index: 40;
   width: 58px; height: 24px; border-radius: 14px;
   border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.04);
   display: flex; align-items: center; padding: 0 3px; cursor: grab;
