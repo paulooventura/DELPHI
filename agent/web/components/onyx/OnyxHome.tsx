@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { CycleReading } from "../../lib/worldCycles";
 import {
   cancelHaptic,
@@ -14,12 +14,12 @@ import {
 import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
+import { OnyxStarfield } from "./OnyxStarfield";
 import { OnyxAudioStone } from "./OnyxAudioStone";
 import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
 import { OnyxYinYang } from "./OnyxYinYang";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
-import { voiceChipLabel } from "../../lib/lore/distillPrefs";
 import {
   COMPASS_AIM_PX,
   COMPASS_LOCK_PX,
@@ -29,11 +29,6 @@ import {
 } from "../../lib/onyxCompass";
 
 const MAX = 2;
-const HINTS = [
-  "↑ sky · ↓ tonal · → orrery · ← studies · center you",
-  "↑ sky · ↓ tonal · → orrery · ← studies",
-  "swipe up to return",
-] as const;
 
 const COMPASS_FOLLOW_MAX = 28;
 
@@ -95,7 +90,7 @@ export type OnyxHomeProps = {
 };
 
 export function OnyxHome({
-  now,
+  now: _now,
   phaseFraction,
   zodiacSign,
   momentLine,
@@ -138,6 +133,7 @@ export function OnyxHome({
   const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [distillOpen, setDistillOpen] = useState(false);
+  const [wallNow, setWallNow] = useState(() => _now);
   const deviceRef = useRef<HTMLDivElement>(null);
   const enterTimer = useRef(0);
   const flashTimer = useRef(0);
@@ -156,37 +152,19 @@ export function OnyxHome({
     setHapticOn(pulseEnabled);
   }, [pulseEnabled]);
 
-  const stars = useMemo(
-    () =>
-      Array.from({ length: 130 }, (_, i) => {
-        const top = Math.pow(((i * 17) % 100) / 100, 1.5) * 100;
-        const left = (i * 37) % 100;
-        const s = i % 8 === 0 ? 1.2 + (i % 3) * 0.4 : 0.4 + (i % 5) * 0.15;
-        const o = 0.22 + (i % 6) * 0.08;
-        // ~1 in 5 stars get an occasional bright shimmer burst.
-        const shimmer = i % 5 === 0;
-        return {
-          top,
-          left,
-          s,
-          o,
-          tw: shimmer ? 7 + (i % 6) : 3 + (i % 5),
-          d: (i % 11) * 0.85,
-          shimmer,
-          key: i,
-        };
-      }),
-    [],
-  );
+  useEffect(() => {
+    const id = window.setInterval(() => setWallNow(new Date()), 250);
+    return () => window.clearInterval(id);
+  }, []);
 
-  const clockLabel = now.toLocaleString([], {
+  const clockLabel = wallNow.toLocaleString([], {
     weekday: "short",
     day: "numeric",
     month: "short",
     hour: "numeric",
     minute: "2-digit",
   });
-  const sec = String(now.getSeconds()).padStart(2, "0");
+  const sec = String(wallNow.getSeconds()).padStart(2, "0");
 
   const buzz = useCallback((kind: HapticKind) => {
     const on = hapticRef.current;
@@ -474,7 +452,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-distill-chip, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-phase-moon, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-distill-chip, input, textarea, a",
       ),
     );
   };
@@ -532,30 +510,14 @@ export function OnyxHome({
       >
         <div className="onyx-field">
           <div className="onyx-aura" />
-          <div className="onyx-stars">
-            {stars.map(s => (
-              <span
-                key={s.key}
-                className={`onyx-dust${s.shimmer ? " shimmer" : ""}`}
-                style={{
-                  top: `${s.top}%`,
-                  left: `${s.left}%`,
-                  width: s.s,
-                  height: s.s,
-                  ["--o" as string]: s.o,
-                  ["--tw" as string]: `${s.tw}s`,
-                  ["--d" as string]: `${s.d}s`,
-                }}
-              />
-            ))}
-          </div>
+          <OnyxStarfield />
           {depth !== 0 && <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />}
         </div>
 
         <div className="onyx-vignette" />
         <div className={`onyx-pulse-ring${pulseAnim === "beat" ? " beat" : ""}${pulseAnim === "chime" ? " chime" : ""}`} />
 
-        <OnyxPhaseMoon phaseFraction={phaseFraction} />
+        <OnyxPhaseMoon phaseFraction={phaseFraction} onOpenSky={onOpenSky} />
         <p className="onyx-wordmark">DELPHI</p>
         <p className="onyx-clock">
           {clockLabel.toUpperCase().replace(",", " ·")}:
@@ -569,66 +531,8 @@ export function OnyxHome({
 
         {/* 0 STREET */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
-          <div className="onyx-yy-street-meta">
-            {readingLayerLabel && (
-              <p className="onyx-layer-label">{readingLayerLabel}</p>
-            )}
-            <p className="sub onyx-yy-math">
-              {clockLabel.toUpperCase().replace(",", " ·")} · {zodiacSign}
-              {" · moon "}
-              {Math.round(phaseFraction * 100)}%
-            </p>
-            {provenanceLine && (
-              <p className="onyx-provenance">{provenanceLine}</p>
-            )}
-            {readingLayers.length > 1 && (
-              <div className="onyx-layers">
-                <p className="onyx-held-eyebrow">How to read</p>
-                <div className="onyx-held-row">
-                  {readingLayers.map(l => (
-                    <button
-                      key={l.id}
-                      type="button"
-                      className={`onyx-layer-chip${activeLayerId === l.id ? " on" : ""}`}
-                      onClick={e => {
-                        e.stopPropagation();
-                        buzz("tick");
-                        onSelectLayer?.(l.id);
-                      }}
-                    >
-                      {l.id === "moment"
-                        ? "The moment"
-                        : l.id === "through-you"
-                          ? "Through you"
-                          : "What you drew"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {distillPrefs && onDistillPrefs && (
-              <div className="onyx-layers onyx-distill-entry">
-                <p className="onyx-held-eyebrow">How it speaks</p>
-                <div className="onyx-held-row">
-                  <button
-                    type="button"
-                    className="onyx-layer-chip onyx-distill-chip on"
-                    aria-haspopup="dialog"
-                    aria-expanded={distillOpen}
-                    onClick={e => {
-                      e.stopPropagation();
-                      buzz("tick");
-                      setDistillOpen(true);
-                    }}
-                  >
-                    {voiceChipLabel(distillPrefs.voice)}
-                    {" · "}
-                    {distillPrefs.depth === "deep" ? "Deep" : "Spark"}
-                  </button>
-                </div>
-              </div>
-            )}
-            {heldCasts.length > 0 && (
+          {heldCasts.length > 0 && (
+            <div className="onyx-yy-street-meta">
               <HeldStrip
                 casts={heldCasts}
                 eyebrow="Held · embraced cast"
@@ -637,8 +541,8 @@ export function OnyxHome({
                 onReleaseHeld={onReleaseHeld}
                 buzz={buzz}
               />
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         {/* 1 MOMENT */}
@@ -920,9 +824,6 @@ export function OnyxHome({
           </div>
         </div>
 
-        <p className="onyx-descend" style={{ opacity: compassLocked ? 0.35 : 1 }}>
-          {HINTS[depth]}
-        </p>
         {shareOpen && (
           <OnyxShareSheet
             text={momentLine}

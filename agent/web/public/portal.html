@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-01f -->
+<!-- build: 2026-09-03g -->
 <script>
 (function(){
-  var BUILD='2026-09-01f';
+  var BUILD='2026-09-03g';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -19,8 +19,8 @@
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DELPHI</title>
 <style>
-  :root{--void:#07080c;--ink:#0e1017;--card:#141824;--card2:#1a1f2e;--line:#262d3d;--lsoft:#1e2432;
-    --fog:#828da3;--fogd:#5c6577;--paper:#e8ecf3;--green:#4fd1a1;--yellow:#f5c451;--red:#ff5b5b;--cool:#5aa9ff;--violet:#a78bfa;--node:#7cf0d0;--amber:#e8a04f;
+  :root{--void:#000000;--ink:#050506;--card:#0c0c12;--card2:#12121a;--line:rgba(140,124,255,0.16);--lsoft:rgba(140,124,255,0.1);
+    --fog:#8f8ca3;--fogd:#5a5770;--paper:#d3d0e2;--green:#4fd1a1;--yellow:#f5c451;--red:#ff5b5b;--cool:#8a7bff;--violet:#a99cff;--node:#a99cff;--amber:#c4b8ff;
     --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;}
   *{box-sizing:border-box}html,body{margin:0;height:100%}
   body{background:var(--void);color:var(--paper);font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -141,7 +141,20 @@
   @media(max-width:560px){.dir .nm{display:none}.dir{opacity:.8}}
 
   /* ===== SCREENS (slide in from a direction) ===== */
-  .screen{position:fixed;inset:0;z-index:20;background:var(--void);overflow-y:auto;display:none;opacity:0}
+  .screen{position:fixed;inset:0;z-index:20;background:#000;overflow-y:auto;display:none;opacity:0}
+  .screen::before{content:"";position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.9;
+    background-image:
+      radial-gradient(1px 1px at 8% 12%, rgba(255,255,255,.55) 50%, transparent 51%),
+      radial-gradient(1px 1px at 22% 38%, rgba(244,240,255,.4) 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 41% 18%, rgba(255,255,255,.7) 50%, transparent 51%),
+      radial-gradient(1px 1px at 63% 72%, rgba(244,240,255,.35) 50%, transparent 51%),
+      radial-gradient(1px 1px at 81% 28%, rgba(255,255,255,.5) 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 14% 81%, rgba(255,255,255,.65) 50%, transparent 51%),
+      radial-gradient(1px 1px at 52% 54%, rgba(244,240,255,.3) 50%, transparent 51%),
+      radial-gradient(1px 1px at 73% 9%, rgba(255,255,255,.45) 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 91% 61%, rgba(244,240,255,.5) 50%, transparent 51%),
+      radial-gradient(1px 1px at 33% 91%, rgba(255,255,255,.4) 50%, transparent 51%);}
+  .screen > *:not(.backhome){position:relative;z-index:1}
   .screen.active{display:block;animation:screenin .5s cubic-bezier(.2,.8,.3,1) forwards}
   @keyframes screenin{from{opacity:0}to{opacity:1}}
   .screen.from-left.active{animation-name:fromleft}.screen.from-up.active{animation-name:fromup}
@@ -838,7 +851,7 @@
 (function(){const c=document.getElementById('stars');if(!c)return;const x=c.getContext('2d');let w,h,stars;
  function size(){w=c.width=innerWidth;h=c.height=innerHeight;stars=Array.from({length:Math.min(160,Math.floor(w*h/9000))},()=>({x:Math.random()*w,y:Math.random()*h,r:Math.random()*1.3+.2,a:Math.random(),s:Math.random()*.02+.004}));}
  size();addEventListener('resize',size);
- (function loop(){x.clearRect(0,0,w,h);for(const st of stars){st.a+=st.s;const tw=.4+.6*Math.abs(Math.sin(st.a));x.globalAlpha=tw;x.fillStyle=st.r>1.1?'#7cf0d0':'#dfe6f2';x.beginPath();x.arc(st.x,st.y,st.r,0,7);x.fill();}x.globalAlpha=1;requestAnimationFrame(loop);})();
+ (function loop(){x.clearRect(0,0,w,h);for(const st of stars){st.a+=st.s;const tw=.4+.6*Math.abs(Math.sin(st.a));x.globalAlpha=tw;x.fillStyle=st.r>1.1?'#f4f0ff':'#d3d0e2';x.beginPath();x.arc(st.x,st.y,st.r,0,7);x.fill();}x.globalAlpha=1;requestAnimationFrame(loop);})();
 })();
 /* moment phrases — rotate one in on load */
 const PHRASES=["The vessel remembers what the crowd forgets.","Every quality is an axis; you are the node.","Leave the ordinary. Gather. Return re-membered.","The chamber only amplifies what you bring to it.","Resonance is the root; the gathering is the vessel."];

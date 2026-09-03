@@ -10,6 +10,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
+import { OnyxStarfield } from "./OnyxStarfield";
 import {
   computeOrreryState,
   laneColor,
@@ -278,6 +279,7 @@ export function OnyxOrrery({
   return (
     <div className="onyx-root">
       <div className="onyx-device onyx-orrery-device">
+        <OnyxStarfield />
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
           close
         </button>

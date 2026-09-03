@@ -11,6 +11,7 @@ import { composePerson } from "../../lib/lore/resolvePerson";
 import { distillTemplate, type Composition } from "../../lib/lore/compose";
 import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
 import type { EmbracedCast } from "../../lib/lore/castStore";
+import { OnyxStarfield } from "./OnyxStarfield";
 
 function overlap(a: Composition, b: Composition) {
   const nowQ = new Set(a.activeQualities);
@@ -231,6 +232,7 @@ export function OnyxYou({
   return (
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
+        <OnyxStarfield />
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
           close
         </button>

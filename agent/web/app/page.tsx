@@ -359,6 +359,7 @@ export default function Home() {
     altitudeM: signals?.altM ?? null,
     pressureHpa: deviceAmbient.pressureHpa ?? cycles?.weather?.pressureHpa ?? null,
     lux: deviceAmbient.lux,
+    tickMs: 250,
   });
 
   useEffect(() => { togglesRef.current = toggles; }, [toggles]);

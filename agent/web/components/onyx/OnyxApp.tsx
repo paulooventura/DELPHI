@@ -49,6 +49,7 @@ import { OnyxAbout } from "./OnyxAbout";
 import { OnyxDecompose } from "./OnyxDecompose";
 import { OnyxOrrery } from "./OnyxOrrery";
 import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
+import { OnyxStarfield } from "./OnyxStarfield";
 import { DeviceAccessGate } from "./DeviceAccessGate";
 import "./onyx.css";
 
@@ -523,6 +524,7 @@ export function OnyxApp({
     return (
       <div className="onyx-root">
         <div className="onyx-device">
+          <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
@@ -648,6 +650,7 @@ export function OnyxApp({
     return (
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
+          <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
@@ -664,6 +667,7 @@ export function OnyxApp({
     return (
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
+          <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
@@ -686,6 +690,7 @@ export function OnyxApp({
     return (
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
+          <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
             close
           </button>
