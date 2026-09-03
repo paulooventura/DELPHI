@@ -369,9 +369,7 @@
 /* Depths: 0 Street, 1 Moment, 2 Self — crystal recedes, never balloons. */
 .onyx-device[data-depth="0"] .onyx-crystal-stage { opacity: 0.9; }
 .onyx-device[data-depth="0"] .onyx-crystal { width: 236px; height: 330px; }
-/* Street: yin-yang is the gem; keep the old crystal as a faint purple ghost. */
-.onyx-yy-home[data-depth="0"] .onyx-crystal-stage { opacity: 0.22; }
-.onyx-yy-home[data-depth="0"] .onyx-crystal { width: 280px; height: 390px; filter: blur(1.2px); }
+.onyx-yy-home[data-depth="0"] .onyx-crystal-stage { display: none; }
 .onyx-device[data-depth="1"] .onyx-crystal-stage { opacity: 0.4; }
 .onyx-device[data-depth="1"] .onyx-crystal { width: 200px; height: 280px; }
 .onyx-device[data-depth="2"] .onyx-crystal-stage { opacity: 0.18; }
@@ -432,6 +430,7 @@
 }
 /* Keep panels non-blocking so vertical swipes hit .onyx-device; re-enable controls only. */
 .onyx-panel.show { opacity: 1; pointer-events: none; }
+.onyx-p0.show { z-index: 9; }
 .onyx-panel.show button,
 .onyx-panel.show a,
 .onyx-panel.show .onyx-rows,
@@ -439,6 +438,7 @@
 .onyx-panel.show .onyx-why,
 .onyx-panel.show .onyx-side-doors,
 .onyx-panel.show .onyx-yy-phrase-btn,
+.onyx-panel.show .onyx-yy-street-meta button,
 .onyx-panel.show input {
   pointer-events: auto;
 }
@@ -464,6 +464,35 @@
   position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%);
   display: flex; flex-direction: column; align-items: center; padding: 0 34px; text-align: center;
 }
+.onyx-yy-phrase {
+  position: absolute;
+  left: 50%;
+  top: 50.6%;
+  transform: translate(-50%, -50%);
+  z-index: 9;
+  width: min(48vmin, 300px);
+  max-width: 86vw;
+  padding: 0 10px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background: none;
+  pointer-events: none;
+}
+.onyx-yy-street-meta {
+  position: absolute;
+  left: 50%;
+  top: calc(50% + min(32vmin, 196px));
+  transform: translateX(-50%);
+  z-index: 9;
+  width: min(82vw, 440px);
+  text-align: center;
+  pointer-events: none;
+}
+.onyx-yy-street-meta button { pointer-events: auto; }
 .onyx-eyebrow {
   font-size: 10px; letter-spacing: 0.28em; color: var(--onyx-ink-quiet);
   font-weight: 300; margin-bottom: 20px;
@@ -472,28 +501,28 @@
   font-family: var(--font-voice); font-size: 26px; font-weight: 300;
   color: var(--onyx-ink); line-height: 1.5;
 }
-.onyx-yy-phrase {
-  z-index: 9;
-  max-width: min(46vmin, 320px);
-  padding: 18px 16px;
-  border-radius: 20px;
-  background: radial-gradient(ellipse at center, rgba(6, 5, 14, 0.55) 0%, rgba(6, 5, 14, 0.28) 58%, transparent 100%);
-  pointer-events: none;
-}
 .onyx-yy-phrase-btn {
   background: none;
   border: none;
   padding: 0;
   margin: 0;
+  width: 100%;
   cursor: pointer;
   color: inherit;
   font: inherit;
   text-align: center;
-  max-width: 100%;
+  pointer-events: auto;
 }
 .onyx-yy-phrase .big {
-  font-size: clamp(17px, 3.1vw, 24px);
-  line-height: 1.28;
+  margin: 0 auto;
+  width: 100%;
+  font-size: clamp(16px, 3vw, 22px);
+  line-height: 1.32;
+  text-align: center;
+  text-wrap: balance;
+  text-shadow:
+    0 0 14px rgba(0, 0, 0, 0.92),
+    0 1px 2px rgba(0, 0, 0, 0.88);
 }
 .onyx-yy-math {
   margin-top: 12px !important;
@@ -605,21 +634,61 @@
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
+  z-index: 4;
 }
-.onyx-yy-wrap .onyx-yy-dirs span { opacity: 0.55; }
+.onyx-yy-dirs button {
+  pointer-events: auto;
+  padding: 8px 10px;
+}
+.onyx-yy-wrap .onyx-yy-dirs span,
+.onyx-yy-wrap .onyx-yy-dirs button { opacity: 0.55; }
 .onyx-yy-gem {
   padding: 0;
   filter:
-    drop-shadow(0 18px 36px rgba(0, 0, 0, 0.55))
-    drop-shadow(0 0 22px rgba(140, 124, 255, 0.32));
+    drop-shadow(0 18px 22px rgba(0, 0, 0, 0.62))
+    drop-shadow(0 1px 0 rgba(255, 255, 255, 0.12));
 }
 .onyx-yy-gem .onyx-yy-svg {
   width: min(52vmin, 340px);
   height: min(52vmin, 340px);
   display: block;
+  transform-origin: 50% 50%;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    inset -14px -20px 32px rgba(0, 0, 0, 0.55),
+    inset 12px 10px 20px rgba(255, 255, 255, 0.22);
 }
 .onyx-yy-gem.floating {
   animation: onyx-compass-float 5.4s ease-in-out infinite;
+}
+.onyx-yy-gem.spinning {
+  animation: none;
+  cursor: default;
+}
+.onyx-yy-gem.spin-right .onyx-yy-svg,
+.onyx-yy-gem.spin-up .onyx-yy-svg {
+  animation: onyx-yy-spin-cw 0.72s cubic-bezier(0.22, 0.82, 0.2, 1) forwards;
+}
+.onyx-yy-gem.spin-left .onyx-yy-svg,
+.onyx-yy-gem.spin-down .onyx-yy-svg {
+  animation: onyx-yy-spin-ccw 0.72s cubic-bezier(0.22, 0.82, 0.2, 1) forwards;
+}
+.onyx-yy-gem.spin-center .onyx-yy-svg {
+  animation: onyx-yy-spin-center 0.34s cubic-bezier(0.2, 0.8, 0.2, 1) forwards;
+}
+@keyframes onyx-yy-spin-cw {
+  from { transform: rotate(0deg) scale(1); }
+  to { transform: rotate(360deg) scale(0.94); }
+}
+@keyframes onyx-yy-spin-ccw {
+  from { transform: rotate(0deg) scale(1); }
+  to { transform: rotate(-360deg) scale(0.94); }
+}
+@keyframes onyx-yy-spin-center {
+  0% { transform: scale(1) rotate(0deg); }
+  55% { transform: scale(1.05) rotate(10deg); }
+  100% { transform: scale(0.92) rotate(0deg); }
 }
 .onyx-you-divinations {
   width: 100%;
@@ -686,13 +755,26 @@
   color: var(--onyx-ink-faint);
   text-transform: lowercase;
 }
-.onyx-compass-dirs span {
+.onyx-compass-dirs span,
+.onyx-compass-dirs button {
   position: absolute;
   opacity: 0;
   transition: opacity var(--onyx-lift), color var(--onyx-lift), transform var(--onyx-lift);
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
 }
-.onyx-compass-wrap.holding .onyx-compass-dirs span { opacity: 0.45; }
-.onyx-compass-dirs span.on {
+.onyx-yy-dirs button { pointer-events: auto; }
+.onyx-compass-wrap.holding .onyx-compass-dirs span,
+.onyx-compass-wrap.holding .onyx-compass-dirs button { opacity: 0.45; }
+.onyx-compass-dirs span.on,
+.onyx-compass-dirs button.on {
   opacity: 1 !important;
   color: var(--onyx-core);
 }

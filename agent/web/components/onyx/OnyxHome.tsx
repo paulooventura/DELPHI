@@ -127,7 +127,9 @@ export function OnyxHome({
   const [compassLocked, setCompassLocked] = useState(false);
   const [compassAim, setCompassAim] = useState<CompassAim>(null);
   const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
+  const [gemSpin, setGemSpin] = useState<CompassAim>(null);
   const deviceRef = useRef<HTMLDivElement>(null);
+  const enterTimer = useRef(0);
   const depthRef = useRef(0);
   depthRef.current = depth;
   const wheelLock = useRef(false);
@@ -373,7 +375,6 @@ export function OnyxHome({
     (aim: CompassAim) => {
       const door = doorForAim(aim);
       if (!door) return;
-      buzz("step");
       if (door === "sky") onOpenSky();
       else if (door === "tonal") onOpenTonal?.();
       else if (door === "studies") onOpenStudies?.();
@@ -383,8 +384,26 @@ export function OnyxHome({
         else go(MAX);
       }
     },
-    [buzz, go, onOpenRings, onOpenSky, onOpenStudies, onOpenTonal, onOpenYou],
+    [go, onOpenRings, onOpenSky, onOpenStudies, onOpenTonal, onOpenYou],
   );
+
+  const enterDoor = useCallback(
+    (aim: CompassAim) => {
+      if (!aim || gemSpin) return;
+      if (!doorForAim(aim)) return;
+      setGemSpin(aim);
+      buzz("step");
+      window.clearTimeout(enterTimer.current);
+      const ms = aim === "center" ? 340 : 720;
+      enterTimer.current = window.setTimeout(() => {
+        commitCompassAim(aim);
+        setGemSpin(null);
+      }, ms);
+    },
+    [buzz, commitCompassAim, gemSpin],
+  );
+
+  useEffect(() => () => window.clearTimeout(enterTimer.current), []);
 
   const resetCompass = useCallback(() => {
     compassPtr.current = null;
@@ -440,10 +459,8 @@ export function OnyxHome({
     const aim = resolveCompassAim(dx, dy);
     const wasTap = Math.hypot(dx, dy) < COMPASS_LOCK_PX;
     resetCompass();
-    if (aim) commitCompassAim(aim);
-    else if (wasTap) {
-      commitCompassAim("center");
-    }
+    if (aim) enterDoor(aim);
+    else if (wasTap) enterDoor("center");
   };
 
   const swipeTargetIgnored = (t: EventTarget | null) => {
@@ -453,7 +470,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
       ),
     );
   };
@@ -522,7 +539,7 @@ export function OnyxHome({
               />
             ))}
           </div>
-          <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />
+          {depth !== 0 && <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />}
         </div>
 
         <div className="onyx-vignette" />
@@ -588,20 +605,22 @@ export function OnyxHome({
 
         {/* 0 STREET */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
-          <div className="onyx-center onyx-yy-phrase">
-            {readingLayerLabel && (
-              <p className="onyx-layer-label">{readingLayerLabel}</p>
-            )}
+          <div className="onyx-yy-phrase">
             <button
               type="button"
               className="onyx-yy-phrase-btn"
               onClick={e => {
                 e.stopPropagation();
-                commitCompassAim("center");
+                enterDoor("center");
               }}
             >
               <p className="big">{momentLine}</p>
             </button>
+          </div>
+          <div className="onyx-yy-street-meta">
+            {readingLayerLabel && (
+              <p className="onyx-layer-label">{readingLayerLabel}</p>
+            )}
             <p className="sub onyx-yy-math">
               {clockLabel.toUpperCase().replace(",", " ·")} · {zodiacSign}
               {" · moon "}
@@ -836,17 +855,11 @@ export function OnyxHome({
           </div>
         </div>
 
-        <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}`}>
+        <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
-            <div className="onyx-compass-dirs onyx-yy-dirs" aria-hidden>
-              <span className={`d-up${compassAim === "up" ? " on" : ""}`}>sky map</span>
-              <span className={`d-left${compassAim === "left" ? " on" : ""}`}>studies</span>
-              <span className={`d-right${compassAim === "right" ? " on" : ""}`}>orrery</span>
-              <span className={`d-down${compassAim === "down" ? " on" : ""}`}>tonal</span>
-            </div>
             <button
               type="button"
-              className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : " floating"}${compassAim ? " aiming" : ""}`}
+              className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
               style={
                 {
                   ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
@@ -854,7 +867,11 @@ export function OnyxHome({
                 } as React.CSSProperties
               }
               aria-label="Hold and drag: up sky map, down tonal, right orrery, left studies. Tap the glass for you."
-              onPointerDown={onCompassPointerDown}
+              disabled={Boolean(gemSpin)}
+              onPointerDown={e => {
+                if (gemSpin) return;
+                onCompassPointerDown(e);
+              }}
               onPointerMove={onCompassPointerMove}
               onPointerUp={onCompassPointerUp}
               onPointerCancel={e => {
@@ -862,8 +879,36 @@ export function OnyxHome({
                 resetCompass();
               }}
             >
-              <OnyxYinYang aiming={Boolean(compassAim)} locked={compassLocked} />
+              <OnyxYinYang
+                aiming={Boolean(compassAim) || Boolean(gemSpin)}
+                locked={compassLocked}
+                spinning={Boolean(gemSpin)}
+                sensorsUnlocked={sensorsUnlocked}
+              />
             </button>
+            <div className="onyx-compass-dirs onyx-yy-dirs">
+              {(
+                [
+                  ["up", "sky map"],
+                  ["left", "studies"],
+                  ["right", "orrery"],
+                  ["down", "tonal"],
+                ] as const
+              ).map(([dir, label]) => (
+                <button
+                  key={dir}
+                  type="button"
+                  className={`d-${dir}${compassAim === dir || gemSpin === dir ? " on" : ""}`}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={e => {
+                    e.stopPropagation();
+                    enterDoor(dir);
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
