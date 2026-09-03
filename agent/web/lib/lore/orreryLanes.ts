@@ -14,6 +14,16 @@ import { resolveMoment } from "./resolveMoment";
 
 /** 1 ghati = 24 minutes. Zero-point is local sunrise, not midnight. */
 export const GHATI_MS = 24 * 60 * 1000;
+/** 1 pala / vighaṭi = 24 s. 60 pala in one ghaṭi. */
+export const PALA_MS = 24 * 1000;
+/** 1 prāṇa = 4 s. Six breaths in one pala. */
+export const PRANA_MS = 4 * 1000;
+/** 1 helek = 3⅓ s. 1080 per hour, 25920 per sunrise-day. */
+export const HELEK_MS = (10 / 3) * 1000;
+export const HELEK_PER_HOUR = 1080;
+export const HELEK_PER_DAY = 25920;
+/** 1 rega = 1/76 helek ≈ 43.86 ms. */
+export const REGA_PER_HELEK = 76;
 
 /**
  * Horizontal scroll origin — every lane uses this with true cell-phase progress.
@@ -43,8 +53,12 @@ export function activeCellCenterX(nowX: number, progress: number, cellW: number)
 export type LaneTier = "measured" | "celebrated" | "display";
 
 export type OrreryLaneId =
+  | "rega"
   | "ms"
   | "sec"
+  | "helek"
+  | "prana"
+  | "pala"
   | "min"
   | "ghati"
   | "muhurta"
@@ -64,8 +78,12 @@ export type OrreryMotion = "continuous" | "discrete-tick";
 
 /** Civil / clock subdivisions — no escapement haptic (pure glide). */
 export const CONTINUOUS_LANE_IDS: readonly OrreryLaneId[] = [
+  "rega",
   "ms",
   "sec",
+  "helek",
+  "prana",
+  "pala",
   "min",
   "ghati",
   "day",
@@ -97,6 +115,8 @@ export type OrreryLaneState = {
   /** Active cell label (now-line). */
   activeLabel: string;
   source?: string;
+  /** Why this cycle exists — shown when the lane is opened. */
+  lore?: string;
 };
 
 export type SlowSkyItem = {
@@ -155,7 +175,7 @@ function cellsFromSystem(system: string): OrreryCell[] {
 }
 
 /**
- * Compute all 12 moving lanes + slow-sky cluster for `date` at lat/lon.
+ * Compute moving lanes + slow-sky cluster for `date` at lat/lon.
  * Call from rAF with the wall clock — rates are true, not faked.
  */
 export function computeOrreryState(
@@ -245,6 +265,7 @@ export function computeOrreryState(
       cells: seasonCells,
       activeLabel: seasonCells[seasonIndex]?.label ?? "—",
       source: byId(WZ_IDS[seasonIndex]!)?.source,
+      lore: "The tropical year cut into twelve 30° signs. Celebrated Hellenistic season — one of several ways a sky can be named, not the only one.",
     },
     {
       id: "wuku-tzolkin",
@@ -257,6 +278,7 @@ export function computeOrreryState(
       cells: wukuCells,
       activeLabel: `${wukuCells[wukuIndex]?.label ?? "—"} · ${meta.tzolkinTone} ${meta.tzolkinSign}`,
       source: byId(`wk-${String(meta.wuku).padStart(2, "0")}`)?.source,
+      lore: "Javanese pawukon week beside the Maya 260-day count. Two independent calendars sharing this row because both move slower than the moon.",
     },
     {
       id: "moon",
@@ -269,6 +291,7 @@ export function computeOrreryState(
       cells: moonCells,
       activeLabel: moonCells[moonIndex]?.label ?? "—",
       source: byId(MP_IDS[moonIndex]!)?.source,
+      lore: "Eight equal synodic sectors of the real moon. Measured light — the face you can see, not a personality.",
     },
     {
       id: "pancawara",
@@ -281,6 +304,7 @@ export function computeOrreryState(
       cells: pancaCells,
       activeLabel: pancaCells[pancaIndex]?.label ?? "—",
       source: byId(`pc-${meta.pancawara}`)?.source,
+      lore: "The Javanese five-day market week. Celebrated social time, not a measured orbit.",
     },
     {
       id: "day",
@@ -296,6 +320,7 @@ export function computeOrreryState(
       })),
       activeLabel: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
       source: "Local civil day — sunrise→sunset arc as measured light",
+      lore: "Twenty-four civil hours of this place. The measured day-arc — light, not a named quality.",
     },
     {
       id: "shi",
@@ -308,6 +333,7 @@ export function computeOrreryState(
       cells: shiCells,
       activeLabel: shiCells[shiIndex]?.label ?? "—",
       source: byId(`shi-${SHI[shiIndex]!}`)?.source,
+      lore: "Twelve double-hours named by earthly branch. Zi straddles midnight. Celebrated Chinese civil time.",
     },
     {
       id: "planetary-hour",
@@ -320,6 +346,7 @@ export function computeOrreryState(
       cells: phCells,
       activeLabel: phCells[Math.max(0, phIndex)]?.label ?? "—",
       source: byId(`ph-${meta.planetaryHour}`)?.source,
+      lore: "Chaldean planetary hours — each civil hour named for a wandering star in the ancient cascade. Celebrated rulership, not a spectrograph.",
     },
     {
       id: "muhurta",
@@ -332,6 +359,7 @@ export function computeOrreryState(
       cells: muhCells,
       activeLabel: muhCells[muhIndex]?.label ?? `Muhūrta ${muhIndex + 1}`,
       source: byId(`muh-${String(muhIndex + 1).padStart(2, "0")}`)?.source,
+      lore: "Thirty muhūrta of about forty-eight minutes. The auspicious unit of the Indic day — quality-bearing, celebrated.",
     },
     {
       id: "ghati",
@@ -347,13 +375,14 @@ export function computeOrreryState(
       })),
       activeLabel: `Ghati ${ghatiIndex + 1}`,
       source: "Vedic ghati — 60 × ~24 min from local sunrise (not midnight)",
+      lore: "The water-clock mark of the Indic day: sixty ghaṭi from sunrise, each about twenty-four minutes. Display pulse — it measures light, it does not name a mood.",
     },
     {
       id: "min",
       name: "Minutes",
       cycle: "60 min",
       tier: "display",
-      speedT: 0.18,
+      speedT: 0.2,
       index: minute,
       progress: (second + ms / 1000) / 60,
       cells: Array.from({ length: 60 }, (_, i) => ({
@@ -361,6 +390,55 @@ export function computeOrreryState(
         label: String(i).padStart(2, "0"),
       })),
       activeLabel: `${String(minute).padStart(2, "0")}m`,
+      lore: "Ptolemy's first small part of the hour — sixty of them make the civil hour you already know.",
+    },
+    {
+      id: "pala",
+      name: "Pala",
+      cycle: "~24 s",
+      tier: "display",
+      speedT: 0.16,
+      index: Math.floor(mod(ghatiProg * 60, 60)),
+      progress: mod(ghatiProg * 60, 1),
+      cells: Array.from({ length: 60 }, (_, i) => ({
+        id: `pa-${i}`,
+        label: `P ${i + 1}`,
+      })),
+      activeLabel: `Pala ${Math.floor(mod(ghatiProg * 60, 60)) + 1}`,
+      source: "Vedic pala / vighaṭi — 1/60 of a ghaṭi ≈ 24 s, counted from sunrise",
+      lore: "The older cousin of the minute: sixty pala fill one ghaṭi. Between the civil minute and the civil second, this is how the Indic day subdivides the ghaṭi.",
+    },
+    {
+      id: "prana",
+      name: "Prāṇa",
+      cycle: "~4 s",
+      tier: "display",
+      speedT: 0.13,
+      index: Math.floor(mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 6)),
+      progress: mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 1),
+      cells: Array.from({ length: 6 }, (_, i) => ({
+        id: `pr-${i}`,
+        label: `Breath ${i + 1}`,
+      })),
+      activeLabel: `Prāṇa ${Math.floor(mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 6)) + 1}`,
+      source: "Vedic prāṇa — a breath, 1/6 of a pala ≈ 4 s from sunrise",
+      lore: "A breath: six of them fill a pala. Silent in the sonics (too fast to mark without drowning the second) — present here so the stack between second and minute is complete.",
+    },
+    {
+      id: "helek",
+      name: "Helek",
+      cycle: "3⅓ s",
+      tier: "display",
+      speedT: 0.11,
+      index: Math.floor((second + ms / 1000) / (10 / 3)) % 18,
+      progress: mod((second + ms / 1000) / (10 / 3), 1),
+      cells: Array.from({ length: 18 }, (_, i) => ({
+        id: `hk-${i}`,
+        label: String(i + 1),
+      })),
+      activeLabel: `Helek ${Math.floor((second + ms / 1000) / (10 / 3)) % 18 + 1}`,
+      source: "Hebrew ḥeleq — 1/1080 of an hour = 3⅓ s. The molad is stated in these parts.",
+      lore: "Eighteen ḥalakim fill a civil minute. This is the Jewish calendar's fine gear — the molad (mean conjunction) is written in days, hours, and ḥalakim, not in SI seconds.",
     },
     {
       id: "sec",
@@ -375,6 +453,7 @@ export function computeOrreryState(
         label: String(i).padStart(2, "0"),
       })),
       activeLabel: `${String(second).padStart(2, "0")}s`,
+      lore: "The second small part of the hour — SI's base unit, and the pulse you can hear. Display, not a named quality.",
     },
     {
       id: "ms",

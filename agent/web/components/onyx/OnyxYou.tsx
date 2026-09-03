@@ -43,6 +43,10 @@ function parseOptionalMinute(raw: string): number | undefined {
   return Math.floor(n);
 }
 
+function systemTitle(id: string): string {
+  return id.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
 export function OnyxYou({
   nowChord,
   onBack,
@@ -225,6 +229,17 @@ export function OnyxYou({
     onBirthSaved?.(null);
   }
 
+  const natalBySystem = useMemo(() => {
+    if (!personal) return [];
+    const map = new Map<string, typeof personal.entries>();
+    for (const e of personal.entries) {
+      const list = map.get(e.system) ?? [];
+      list.push(e);
+      map.set(e.system, list);
+    }
+    return [...map.entries()];
+  }, [personal]);
+
   const personalPhrase = personal
     ? distillTemplate(personal.chord, { colorLean: personal.galactic.tribe.color })
     : null;
@@ -239,36 +254,6 @@ export function OnyxYou({
         <div className="onyx-overlay onyx-you">
           <p className="onyx-eyebrow">YOU</p>
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
-
-          <div className="onyx-you-divinations">
-            <button
-              type="button"
-              className="onyx-row"
-              aria-expanded={divinationsOpen}
-              onClick={() => setDivinationsOpen(v => !v)}
-            >
-              <span>Divinations</span>
-              <span className="onyx-row-r">{divinationsOpen ? "▴" : "▾"}</span>
-            </button>
-            {divinationsOpen && (
-              <div className="onyx-you-divinations-body">
-                <p className="onyx-layer-meta">
-                  Draws live here — an expansion of You, not a home door. They colour a labeled
-                  layer through you. They never rewrite the sky clock.
-                </p>
-                {heldCasts.length > 0 && (
-                  <p className="onyx-layer-meta">
-                    Held · {heldCasts.map(h => h.label).join(" · ")}
-                  </p>
-                )}
-                {onOpenCast && (
-                  <button type="button" className="onyx-primary-btn" onClick={onOpenCast}>
-                    Draw
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
 
           <div className="onyx-about-block onyx-you-blurb">
             Birth date, hour, and place are computed here and stored in this browser only. Nothing is
@@ -490,15 +475,24 @@ export function OnyxYou({
                 </p>
               ))}
 
-              {personal.entries.slice(0, 4).map(e => (
-                <article key={e.id} className="onyx-decomp-card onyx-you-voice">
-                  <p className="onyx-decomp-name">
-                    {e.name}
-                    <span>{e.system}</span>
+              {natalBySystem.length > 0 && (
+                <>
+                  <p className="onyx-eyebrow" style={{ marginTop: 20 }}>
+                    CALENDARS · ZODIACS
                   </p>
-                  {e.source && <p className="onyx-decomp-source">{e.source}</p>}
-                </article>
-              ))}
+                  {natalBySystem.map(([system, entries]) => (
+                    <article key={system} className="onyx-decomp-card onyx-you-voice">
+                      <p className="onyx-decomp-name">
+                        {entries.map(e => e.name).join(" · ")}
+                        <span>{systemTitle(system)}</span>
+                      </p>
+                      {entries[0]?.source && (
+                        <p className="onyx-decomp-source">{entries[0].source}</p>
+                      )}
+                    </article>
+                  ))}
+                </>
+              )}
 
               {compare && (
                 <>
@@ -541,6 +535,36 @@ export function OnyxYou({
               )}
             </>
           )}
+
+          <div className="onyx-you-divinations" style={{ marginTop: 28 }}>
+            <button
+              type="button"
+              className="onyx-row"
+              aria-expanded={divinationsOpen}
+              onClick={() => setDivinationsOpen(v => !v)}
+            >
+              <span>Divinations</span>
+              <span className="onyx-row-r">{divinationsOpen ? "▴" : "▾"}</span>
+            </button>
+            {divinationsOpen && (
+              <div className="onyx-you-divinations-body">
+                <p className="onyx-layer-meta">
+                  Draws live here — an expansion of You, not a home door. They colour a labeled
+                  layer through you. They never rewrite the sky clock.
+                </p>
+                {heldCasts.length > 0 && (
+                  <p className="onyx-layer-meta">
+                    Held · {heldCasts.map(h => h.label).join(" · ")}
+                  </p>
+                )}
+                {onOpenCast && (
+                  <button type="button" className="onyx-primary-btn" onClick={onOpenCast}>
+                    Draw
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -10,17 +10,22 @@ import {
 import { computeSolarDayEvents } from "../cosmic/astronomy";
 
 describe("orrery lanes — CLOCK-SPEC", () => {
-  it("returns 12 lanes north→south with a slow-sky cluster", () => {
+  it("returns 15 lanes north→south with a slow-sky cluster", () => {
     const { lanes, slowSky } = computeOrreryState(
       new Date("2026-07-24T18:00:00Z"),
       36.16,
       -86.78,
     );
-    expect(lanes).toHaveLength(12);
+    expect(lanes).toHaveLength(15);
     expect(lanes[0]!.id).toBe("season"); // slow / north
     expect(lanes[lanes.length - 1]!.id).toBe("ms"); // fast / south
     expect(lanes[0]!.speedT).toBeGreaterThan(lanes[lanes.length - 1]!.speedT);
     expect(slowSky.length).toBeGreaterThanOrEqual(3);
+    const ids = lanes.map(l => l.id);
+    expect(ids.indexOf("min")).toBeLessThan(ids.indexOf("pala"));
+    expect(ids.indexOf("pala")).toBeLessThan(ids.indexOf("prana"));
+    expect(ids.indexOf("prana")).toBeLessThan(ids.indexOf("helek"));
+    expect(ids.indexOf("helek")).toBeLessThan(ids.indexOf("sec"));
     for (const lane of lanes) {
       expect(lane.progress).toBeGreaterThanOrEqual(0);
       expect(lane.progress).toBeLessThan(1.0001);

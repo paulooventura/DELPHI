@@ -3,7 +3,7 @@ let sharedNoise: AudioBuffer | null = null;
 let sharedMaster: GainNode | null = null;
 let sharedLimiter: DynamicsCompressorNode | null = null;
 /** Headroom so the bed + ticks + echo cannot pin 0 dBFS. */
-const MASTER_CEILING = 0.62;
+const MASTER_CEILING = 0.36;
 /** Bumps on each mute so delayed teardowns/suspends don't race a later unmute. */
 let muteEpoch = 0;
 let audioSilenced = false;
@@ -107,7 +107,7 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   knockBp.frequency.setValueAtTime(tock ? 380 : 520, t);
   knockBp.Q.setValueAtTime(1.8, t);
   const knockGain = ctx.createGain();
-  knockGain.gain.setValueAtTime(tock ? 0.14 : 0.17, t);
+  knockGain.gain.setValueAtTime(tock ? 0.08 : 0.1, t);
   knockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
   knock.connect(knockBp);
   knockBp.connect(knockGain);
@@ -123,7 +123,7 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   body.frequency.exponentialRampToValueAtTime(tock ? 78 : 98, t + 0.2);
   bodyLp.type = "lowpass";
   bodyLp.frequency.setValueAtTime(900, t);
-  bodyGain.gain.setValueAtTime(tock ? 0.11 : 0.14, t);
+  bodyGain.gain.setValueAtTime(tock ? 0.06 : 0.08, t);
   bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
   body.connect(bodyLp);
   bodyLp.connect(bodyGain);
@@ -376,7 +376,7 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   const out = masterBus(ctx);
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, ctx.currentTime);
-  master.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 3.5);
+  master.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 3.5);
 
   const echo = createEcho(ctx, out, 0.55, 0.32, 0.26);
   const hall = createEcho(ctx, out, 1.15, 0.24, 0.16);

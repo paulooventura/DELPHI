@@ -791,7 +791,7 @@ export function OnyxHome({
             <button
               type="button"
               className="onyx-yy-dot yang"
-              aria-label="Share or copy this reading"
+              aria-label="Share this reading"
               aria-haspopup="dialog"
               aria-expanded={shareOpen}
               onPointerDown={e => e.stopPropagation()}

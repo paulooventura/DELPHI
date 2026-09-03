@@ -90,6 +90,10 @@ export function OnyxOrrery({
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = "#000";
       ctx.fillRect(0, 0, w, h);
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, 0, w, h);
+      ctx.clip();
 
       const padX = 12;
       const padTop = 8;
@@ -244,6 +248,7 @@ export function OnyxOrrery({
       ctx.lineTo(nowX + 4, padTop + 6);
       ctx.closePath();
       ctx.fill();
+      ctx.restore();
 
       raf = requestAnimationFrame(draw);
     };
@@ -304,8 +309,14 @@ export function OnyxOrrery({
                 ? "display pulse"
                 : expanded.tier}
             </p>
+            {expanded.lore && <p className="onyx-decomp-source">{expanded.lore}</p>}
             {expanded.source && (
-              <p className="onyx-decomp-source">{expanded.source}</p>
+              <p className="onyx-layer-meta">{expanded.source}</p>
+            )}
+            {expanded.cells[expanded.index]?.glyph && (
+              <p className="onyx-layer-lead" style={{ fontSize: 22 }}>
+                {expanded.cells[expanded.index]!.glyph}
+              </p>
             )}
             <button
               type="button"
