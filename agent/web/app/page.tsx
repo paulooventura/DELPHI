@@ -281,23 +281,23 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const observerRef = useRef({ lat: FALLBACK_LAT, lon: FALLBACK_LON });
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn, observerRef);
-  const [showLaunch, completeLaunch] = useShowLaunch();
-  /** After splash: true until this page session has granted (or just granted). */
-  const [needsAccessGate, setNeedsAccessGate] = useState(true);
+  const [showLaunch, completeLaunch, launchReady] = useShowLaunch();
+  /** After splash: true until this app session has granted (or just granted). */
+  const [needsAccessGate, setNeedsAccessGate] = useState(false);
+  const [accessReady, setAccessReady] = useState(false);
   /** Choir / Tina iframe — skip splash + gate so the sky can fill their canvas. */
   const [chorusEmbed, setChorusEmbed] = useState(false);
+  const resumedSessionRef = useRef(false);
   useLayoutEffect(() => {
     try {
       const embed = new URLSearchParams(window.location.search).get("embed") === "1";
       setChorusEmbed(embed);
-      if (embed) {
-        setNeedsAccessGate(false);
-        completeLaunch();
-      }
+      setNeedsAccessGate(!embed && !hasAccessThisSession());
     } catch {
-      /* keep standalone boot */
+      setNeedsAccessGate(true);
     }
-  }, [completeLaunch]);
+    setAccessReady(true);
+  }, []);
   const [accessBusy, setAccessBusy] = useState(false);
   const primingAccessRef = useRef(false);
   useScreenWakeLock(!chorusEmbed);
@@ -407,6 +407,18 @@ export default function Home() {
       void enableSfx();
     }
   }, [showLaunch, clockSfxOn, enableSfx]);
+
+  // Same-session return (Studies/Tonal → home) skipped splash, so start
+  // watches here. First open still waits for splash + Allow.
+  useEffect(() => {
+    if (!launchReady || !accessReady) return;
+    if (showLaunch || chorusEmbed) return;
+    if (resumedSessionRef.current) return;
+    if (!hasAccessThisSession()) return;
+    resumedSessionRef.current = true;
+    void captureSensors();
+    void startOrientationWatch();
+  }, [launchReady, accessReady, showLaunch, chorusEmbed]);
 
   // ── Digital clock (1 second tick)
   useEffect(() => {
@@ -799,9 +811,9 @@ export default function Home() {
       if (raw) initial = { ...DEFAULT_TOGGLES, ...JSON.parse(raw) };
     } catch { /* fresh session — all senses on */ }
     setToggles(initial);
-    // Never requestPermission or start watches from mount — splash then the
-    // access gate own the gesture path. Same-session resume starts watches
-    // after splash if already granted.
+    // Never requestPermission from mount — splash then the access gate own
+    // the first-open gesture. Same-session resume (Studies/Tonal → home)
+    // starts watches below without replaying splash.
     return () => {
       muteHaptics();
       cancelHaptic();
@@ -1135,6 +1147,7 @@ export default function Home() {
 
   return (
     <OnyxApp
+      bootReady={launchReady && accessReady}
       showSplash={showLaunch && !chorusEmbed}
       onSplashDone={() => {
         if (hasAccessThisSession()) {

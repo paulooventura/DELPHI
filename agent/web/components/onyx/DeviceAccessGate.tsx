@@ -1,9 +1,10 @@
 "use client";
 
 /**
- * After splash, once per page session until the crystal is tapped.
+ * After splash, once per app open until the crystal is tapped.
  * Close the tab/page or uninstall to see this again. One tap → location +
- * orientation + motion, then home.
+ * orientation + motion, then home. Returning from other doors in the same
+ * open skips this screen.
  */
 
 import { DELPHI_BUILD } from "../../lib/buildStamp";

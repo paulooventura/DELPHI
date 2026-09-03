@@ -1,9 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { OracleLogo } from "./oracle/OracleLogo";
 import { SplashRings } from "./oracle/SplashRings";
 import { reversePlaceLabel, useLaunchSequence } from "../hooks/useLaunchSequence";
+import { hasLaunchedThisSession, LAUNCH_KEY, markLaunchedThisSession } from "../lib/launchSession";
 
 function formatSplashDate(d: Date): string {
   return d.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", year: "numeric" }).toUpperCase();
@@ -78,22 +79,30 @@ export function LaunchScreen({
   );
 }
 
-/** Bump when splash chrome changes so prior sessions re-play the clean intro. */
-const LAUNCH_KEY = "delphi-launched-v3";
-
 /**
- * Splash on every page load (SSR + first paint agree). Do not skip after
- * refresh — the intro always plays first, then permissions or home.
+ * Splash once per app open. Hold black until sessionStorage is read so a
+ * return from Studies/Tonal does not replay the film (hydration-safe).
  */
-export function useShowLaunch(): [boolean, () => void] {
-  const [show, setShow] = useState(true);
+export function useShowLaunch(): [boolean, () => void, boolean] {
+  const [ready, setReady] = useState(false);
+  const [show, setShow] = useState(false);
+
+  useLayoutEffect(() => {
+    try {
+      const embed = new URLSearchParams(window.location.search).get("embed") === "1";
+      setShow(!embed && !hasLaunchedThisSession());
+    } catch {
+      setShow(true);
+    }
+    setReady(true);
+  }, []);
 
   const complete = useCallback(() => {
-    try { sessionStorage.setItem(LAUNCH_KEY, "1"); } catch { /* ignore */ }
+    markLaunchedThisSession();
     setShow(false);
   }, []);
 
-  return [show, complete];
+  return [show, complete, ready];
 }
 
 export { LAUNCH_KEY };

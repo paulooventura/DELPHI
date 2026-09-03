@@ -3,11 +3,11 @@
  * Must run from a user gesture (Allow button). iOS will not show
  * DeviceOrientation/Motion dialogs from a mount effect.
  *
- * The permissions UI shows after the splash, once per page session
+ * The permissions UI shows after the splash, once per app open
  * (sessionStorage). Closing the tab/page or uninstalling clears it.
- * A refresh in the same tab keeps the grant. OS dialogs only appear when
- * the browser still needs consent; if already granted, Allow just starts
- * watches.
+ * Returning from Studies, Tonal, or other doors in the same open does not
+ * show it again. OS dialogs only appear when the browser still needs
+ * consent; if already granted, Allow just starts watches.
  */
 
 import { requestOrientationPermission } from "./localSignals";
