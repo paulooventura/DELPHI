@@ -15,6 +15,7 @@ import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
 import { OnyxAudioStone } from "./OnyxAudioStone";
+import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
 import { OnyxYinYang } from "./OnyxYinYang";
 import {
   COMPASS_AIM_PX,
@@ -126,6 +127,7 @@ export function OnyxHome({
   const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
   const [gemSpin, setGemSpin] = useState<CompassAim>(null);
   const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
+  const [shareOpen, setShareOpen] = useState(false);
   const deviceRef = useRef<HTMLDivElement>(null);
   const enterTimer = useRef(0);
   const flashTimer = useRef(0);
@@ -351,35 +353,39 @@ export function OnyxHome({
     flashTimer.current = window.setTimeout(() => setBallFlash(null), 1400);
   }, []);
 
-  const copyPhrase = useCallback(
-    async (e: React.PointerEvent | React.MouseEvent) => {
+  const openShareSheet = useCallback(
+    (e: React.PointerEvent | React.MouseEvent) => {
       e.stopPropagation();
       e.preventDefault();
-      try {
-        await navigator.clipboard.writeText(momentLine);
-      } catch {
-        /* clipboard blocked */
-      }
-      flashBall("copy");
+      setShareOpen(true);
+      flashBall("share");
       buzz("tick");
     },
-    [buzz, flashBall, momentLine],
+    [buzz, flashBall],
   );
 
-  const sharePhrase = useCallback(
-    async (e: React.PointerEvent | React.MouseEvent) => {
-      e.stopPropagation();
-      e.preventDefault();
-      try {
-        if (typeof navigator.share === "function") {
-          await navigator.share({ title: "DELPHI", text: momentLine });
-        } else {
+  const pickShare = useCallback(
+    async (id: ShareDest) => {
+      const row = destinationsFor(momentLine).find(r => r.id === id);
+      if (id === "copy") {
+        try {
           await navigator.clipboard.writeText(momentLine);
+        } catch {
+          /* clipboard blocked */
         }
-      } catch {
-        /* user cancelled share sheet */
+        flashBall("copy");
+      } else if (id === "more") {
+        try {
+          await navigator.share?.({ title: "DELPHI", text: momentLine, url: "https://delphi.pauloventura.org/" });
+        } catch {
+          /* cancelled */
+        }
+        flashBall("share");
+      } else if (row?.href) {
+        window.open(row.href, "_blank", "noopener,noreferrer");
+        flashBall("share");
       }
-      flashBall("share");
+      setShareOpen(false);
       buzz("tick");
     },
     [buzz, flashBall, momentLine],
@@ -458,7 +464,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
       ),
     );
   };
@@ -503,6 +509,11 @@ export function OnyxHome({
           swipeIgnore.current = false;
         }}
         onKeyDown={e => {
+          if (e.key === "Escape" && shareOpen) {
+            e.preventDefault();
+            setShareOpen(false);
+            return;
+          }
           if (e.key === "ArrowDown") goDelta(1);
           if (e.key === "ArrowUp") goDelta(-1);
         }}
@@ -835,15 +846,19 @@ export function OnyxHome({
               type="button"
               className="onyx-yy-dot yin"
               aria-label="Share this reading"
+              aria-haspopup="dialog"
+              aria-expanded={shareOpen}
               onPointerDown={e => e.stopPropagation()}
-              onClick={sharePhrase}
+              onClick={openShareSheet}
             />
             <button
               type="button"
               className="onyx-yy-dot yang"
-              aria-label="Copy this reading"
+              aria-label="Share or copy this reading"
+              aria-haspopup="dialog"
+              aria-expanded={shareOpen}
               onPointerDown={e => e.stopPropagation()}
-              onClick={copyPhrase}
+              onClick={openShareSheet}
             />
             </div>
             <div className="onyx-compass-dirs onyx-yy-dirs">
@@ -875,6 +890,13 @@ export function OnyxHome({
         <p className="onyx-descend" style={{ opacity: compassLocked ? 0.35 : 1 }}>
           {HINTS[depth]}
         </p>
+        {shareOpen && (
+          <OnyxShareSheet
+            text={momentLine}
+            onPick={pickShare}
+            onClose={() => setShareOpen(false)}
+          />
+        )}
       </div>
     </div>
   );
