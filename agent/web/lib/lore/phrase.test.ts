@@ -87,6 +87,22 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
     );
   });
 
+  it("reader can change the mouth without changing the chord", () => {
+    const chord = compose([
+      mk("Bright", "western-zodiac", {
+        light: 0.85, warm: 0.7, gentle: 0.5, steady: 0.55,
+      }),
+      mk("Settled", "moon-phase", {
+        light: 0.75, warm: 0.55, gentle: 0.4, steady: 0.6,
+      }),
+    ]);
+    const field = speak(chord, { voice: "field" });
+    const dare = speak(chord, { voice: "trickster-challenge" });
+    expect(field).not.toBe(dare);
+    expect(dare.toLowerCase()).toMatch(/your move|walk through|act like/);
+    expect(field).not.toMatch(/Leo|Horse/i);
+  });
+
   it("live phrases name weather and challenge the reader — never tradition labels", () => {
     const snap = takeSnapshot(
       resolveMoment(jdFromDate(new Date("2026-07-29T23:45:00Z")), 36.16, -86.78)

@@ -765,6 +765,74 @@
   background: rgba(255, 255, 255, 0.04);
   color: var(--onyx-ink-bright);
 }
+.onyx-distill-entry {
+  margin-top: 10px;
+}
+.onyx-distill-chip {
+  letter-spacing: 0.12em;
+}
+.onyx-distill-lede {
+  margin: 0 8px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--onyx-ink-soft);
+}
+.onyx-distill-cluster,
+.onyx-distill-split {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.onyx-distill-split {
+  flex-direction: row;
+}
+.onyx-distill-split .onyx-distill-pick {
+  flex: 1;
+}
+.onyx-distill-pick {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 12px 12px 11px;
+  border: 0.5px solid rgba(138, 123, 255, 0.18);
+  border-radius: 14px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.onyx-distill-pick.on {
+  border-color: rgba(138, 123, 255, 0.7);
+  background: rgba(138, 123, 255, 0.12);
+}
+.onyx-distill-pick-name {
+  font-size: 16px;
+  color: var(--onyx-ink-bright);
+}
+.onyx-distill-pick-feel {
+  font-size: 12px;
+  color: var(--onyx-ink-quiet);
+  letter-spacing: 0.02em;
+}
+.onyx-distill-kicker-2 {
+  margin-top: 16px;
+}
+.onyx-distill-minds {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 4px;
+}
+.onyx-distill-note {
+  margin: 14px 8px 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--onyx-ink-quiet);
+}
 /* Beat .onyx-compass purple glow so the gem reads as a marble, not a badge. */
 .onyx-compass.onyx-yy-gem {
   padding: 0;

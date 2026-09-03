@@ -320,9 +320,11 @@ export function speak(c: Composition, opts?: DistillOptions): string {
   }
 
   const weather = weatherLine(o, c, seed);
-  const hinge = hingeClause(o, seed);
+  const register =
+    opts?.voice && opts.voice !== "field" ? opts.voice : o.tone.register;
+  const hinge = hingeClause({ ...o, tone: { ...o.tone, register } }, seed);
   const hour = hourClause(o, seed);
-  const dare = dareLine(o.tone.register, seed);
+  const dare = dareLine(register, seed);
   let body = `${cap(weather)}${hinge}${hour}`;
 
   const held = (opts?.castLean ?? [])

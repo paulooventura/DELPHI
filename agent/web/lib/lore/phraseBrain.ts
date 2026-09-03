@@ -8,7 +8,7 @@
  * when those keys exist on the server.
  */
 
-import type { Composition, DistillOptions } from "./compose";
+import type { Composition, DistillOptions, DistillVoice } from "./compose";
 import { orchestratedPrompt } from "./compose";
 import { isTribeColor, type TribeColor } from "./colorLean";
 import type { Axis, Polarities, QualiaEntry } from "./qualia";
@@ -28,6 +28,7 @@ export type PhraseBrainPayload = {
   fieldSize: number;
   colorLean?: TribeColor;
   castLean?: string[];
+  voice?: DistillVoice;
 };
 
 const TRADITION_LEAK =
@@ -38,6 +39,18 @@ const BANNED_VOICE =
 
 const CHALLENGE =
   /\byou\b|\byour\b|choose|pick |prove|challenge|your move|walk through|act like|what will you|decide|plant |stay with|meet it|don't |sit with|name the|your call/i;
+
+const VOICES: DistillVoice[] = [
+  "field",
+  "warm-witness",
+  "plain-reading",
+  "quiet-riddle",
+  "trickster-challenge",
+];
+
+function isDistillVoice(v: unknown): v is DistillVoice {
+  return typeof v === "string" && (VOICES as string[]).includes(v);
+}
 
 function cleanSystem(raw: string): string {
   return raw.toLowerCase().replace(/[^a-z0-9-]/g, "").slice(0, 40);
@@ -102,6 +115,7 @@ export function toPhraseBrainPayload(
     fieldSize: Math.max(1, Math.min(80, chord.contributors.length)),
     colorLean: opts?.colorLean,
     castLean: castLean.length ? castLean : undefined,
+    voice: opts?.voice,
   };
 }
 
@@ -243,6 +257,7 @@ export function parsePhraseBrainPayload(raw: unknown): PhraseBrainPayload | null
     fieldSize: Math.max(1, Math.min(80, Math.round(finite(o.fieldSize, axes.length)))),
     colorLean,
     castLean: castLean.length ? castLean : undefined,
+    voice: isDistillVoice(o.voice) ? o.voice : undefined,
   };
 }
 
@@ -356,11 +371,13 @@ export type PhraseBrainSource = "anthropic" | "openai" | "gemini";
 
 export async function voicePhraseBrain(
   payload: PhraseBrainPayload,
+  prefer?: PhraseBrainSource | "auto",
 ): Promise<{ phrase: string; source: PhraseBrainSource } | null> {
   const chord = compositionFromPayload(payload);
   const opts: DistillOptions = {
     colorLean: payload.colorLean,
     castLean: payload.castLean,
+    voice: payload.voice,
   };
   const { system, user } = orchestratedPrompt(chord, opts);
 
@@ -369,6 +386,9 @@ export async function voicePhraseBrain(
     { source: "openai", run: () => callOpenAI(system, user) },
     { source: "gemini", run: () => callGemini(system, user) },
   ];
+  if (prefer && prefer !== "auto") {
+    attempts.sort((a, b) => Number(b.source === prefer) - Number(a.source === prefer));
+  }
 
   for (const attempt of attempts) {
     try {
@@ -381,6 +401,20 @@ export async function voicePhraseBrain(
     }
   }
   return null;
+}
+
+export type BrainAvailability = {
+  anthropic: boolean;
+  openai: boolean;
+  gemini: boolean;
+};
+
+export function availableBrains(): BrainAvailability {
+  return {
+    anthropic: Boolean(process.env.ANTHROPIC_API_KEY),
+    openai: Boolean(process.env.OPENAI_API_KEY),
+    gemini: Boolean(process.env.GEMINI_API_KEY),
+  };
 }
 
 export function brainKeysConfigured(): boolean {

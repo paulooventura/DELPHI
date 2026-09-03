@@ -19,8 +19,8 @@ export function phraseCacheKey(
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
   const lean = colorLean ?? "none";
-  // v13: hinge+hour local line; brain upgrade cached under the same key.
-  return `delphi-phrase:v13:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  // v14: mouth (voice/depth/brain) is part of the cache identity.
+  return `delphi-phrase:v14:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 export function readCachedPhrase(key: string): string | null {
@@ -47,9 +47,18 @@ export function phraseCacheKeyFrom(
   lon: number,
   opts?: DistillOptions,
   layerKey = "moment",
+  mouthKey = "field-deep-auto",
 ): string {
   const castKey = (opts?.castLean ?? []).slice(0, 6).join("+") || "none";
-  return phraseCacheKey(civilYmd, lat, lon, opts?.colorLean, castKey, layerKey);
+  const voice = opts?.voice ?? "field";
+  return phraseCacheKey(
+    civilYmd,
+    lat,
+    lon,
+    opts?.colorLean,
+    `${castKey}:${voice}:${mouthKey}`,
+    layerKey,
+  );
 }
 
 export type PhraseResult = {
@@ -67,8 +76,9 @@ export function phraseForMoment(
   lon: number,
   opts?: DistillOptions,
   layerKey = "moment",
+  mouthKey = "field-deep-auto",
 ): PhraseResult {
-  const key = phraseCacheKeyFrom(civilYmd, lat, lon, opts, layerKey);
+  const key = phraseCacheKeyFrom(civilYmd, lat, lon, opts, layerKey, mouthKey);
   const cached = readCachedPhrase(key);
   if (cached && cached.length > 8) {
     return { phrase: cached, source: "cache" };
@@ -83,13 +93,16 @@ export function phraseForMoment(
 export async function requestPhraseBrain(
   chord: Composition,
   opts?: DistillOptions,
-  init?: { signal?: AbortSignal },
+  init?: { signal?: AbortSignal; prefer?: "auto" | "anthropic" | "openai" | "gemini" },
 ): Promise<{ phrase: string; source: string } | null> {
   try {
     const res = await fetch("/api/phrase", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(toPhraseBrainPayload(chord, opts)),
+      body: JSON.stringify({
+        ...toPhraseBrainPayload(chord, opts),
+        prefer: init?.prefer ?? "auto",
+      }),
       signal: init?.signal
         ? AbortSignal.any([init.signal, AbortSignal.timeout(16000)])
         : AbortSignal.timeout(16000),
@@ -100,6 +113,25 @@ export async function requestPhraseBrain(
       return { phrase: json.phrase, source: json.source ?? "brain" };
     }
     return null;
+  } catch {
+    return null;
+  }
+}
+
+export async function requestBrainAvailability(
+  signal?: AbortSignal,
+): Promise<{ anthropic: boolean; openai: boolean; gemini: boolean } | null> {
+  try {
+    const res = await fetch("/api/phrase", { signal: signal ?? AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const json = (await res.json()) as { brains?: { anthropic?: boolean; openai?: boolean; gemini?: boolean } };
+    const b = json.brains;
+    if (!b) return null;
+    return {
+      anthropic: Boolean(b.anthropic),
+      openai: Boolean(b.openai),
+      gemini: Boolean(b.gemini),
+    };
   } catch {
     return null;
   }

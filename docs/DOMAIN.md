@@ -91,8 +91,14 @@ The app is already live at **https://delphi-wine.vercel.app** — use that URL o
 
 ## Environment (optional)
 
-In Vercel → **Settings → Environment Variables**:
+In Vercel → **Settings → Environment Variables** (Production + Preview):
 
 ```
+ANTHROPIC_API_KEY=        # home phrase Deep mind (Claude Sonnet) + research
+OPENAI_API_KEY=           # optional second mouth
+GEMINI_API_KEY=           # optional third mouth
+AIRLABS_API_KEY=          # live aircraft on Sky
 NEXT_PUBLIC_SITE_URL=https://delphi.pauloventura.org
 ```
+
+Never commit keys. After saving, **Redeploy** the latest `main` so the new env is live.

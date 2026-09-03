@@ -15,8 +15,11 @@ import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
 import { OnyxAudioStone } from "./OnyxAudioStone";
+import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
 import { OnyxYinYang } from "./OnyxYinYang";
+import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
+import { voiceChipLabel } from "../../lib/lore/distillPrefs";
 import {
   COMPASS_AIM_PX,
   COMPASS_LOCK_PX,
@@ -60,6 +63,9 @@ export type OnyxHomeProps = {
   readingLayers?: ReadingLayerChip[];
   activeLayerId?: ReadingLayerChip["id"];
   onSelectLayer?: (id: ReadingLayerChip["id"]) => void;
+  distillPrefs?: DistillPrefs;
+  brains?: BrainAvailability | null;
+  onDistillPrefs?: (next: DistillPrefs) => void;
   selfTone: React.ReactNode;
   selfRet: React.ReactNode;
   calendarReadings: CycleReading[];
@@ -98,6 +104,9 @@ export function OnyxHome({
   readingLayers = [],
   activeLayerId = "moment",
   onSelectLayer,
+  distillPrefs,
+  brains = null,
+  onDistillPrefs,
   selfTone,
   selfRet,
   calendarReadings,
@@ -128,6 +137,7 @@ export function OnyxHome({
   const [gemSpin, setGemSpin] = useState<CompassAim>(null);
   const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
+  const [distillOpen, setDistillOpen] = useState(false);
   const deviceRef = useRef<HTMLDivElement>(null);
   const enterTimer = useRef(0);
   const flashTimer = useRef(0);
@@ -464,7 +474,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-distill-chip, input, textarea, a",
       ),
     );
   };
@@ -509,9 +519,10 @@ export function OnyxHome({
           swipeIgnore.current = false;
         }}
         onKeyDown={e => {
-          if (e.key === "Escape" && shareOpen) {
+          if (e.key === "Escape" && (shareOpen || distillOpen)) {
             e.preventDefault();
             setShareOpen(false);
+            setDistillOpen(false);
             return;
           }
           if (e.key === "ArrowDown") goDelta(1);
@@ -592,6 +603,28 @@ export function OnyxHome({
                           : "What you drew"}
                     </button>
                   ))}
+                </div>
+              </div>
+            )}
+            {distillPrefs && onDistillPrefs && (
+              <div className="onyx-layers onyx-distill-entry">
+                <p className="onyx-held-eyebrow">How it speaks</p>
+                <div className="onyx-held-row">
+                  <button
+                    type="button"
+                    className="onyx-layer-chip onyx-distill-chip on"
+                    aria-haspopup="dialog"
+                    aria-expanded={distillOpen}
+                    onClick={e => {
+                      e.stopPropagation();
+                      buzz("tick");
+                      setDistillOpen(true);
+                    }}
+                  >
+                    {voiceChipLabel(distillPrefs.voice)}
+                    {" · "}
+                    {distillPrefs.depth === "deep" ? "Deep" : "Spark"}
+                  </button>
                 </div>
               </div>
             )}
@@ -895,6 +928,14 @@ export function OnyxHome({
             text={momentLine}
             onPick={pickShare}
             onClose={() => setShareOpen(false)}
+          />
+        )}
+        {distillOpen && distillPrefs && onDistillPrefs && (
+          <OnyxDistillSheet
+            prefs={distillPrefs}
+            brains={brains}
+            onChange={onDistillPrefs}
+            onClose={() => setDistillOpen(false)}
           />
         )}
       </div>

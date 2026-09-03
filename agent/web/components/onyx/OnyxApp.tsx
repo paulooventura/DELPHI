@@ -16,7 +16,7 @@ import {
   type MomentSnapshot,
 } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
-import { phraseCacheKeyFrom, phraseForMoment, requestPhraseBrain, writeCachedPhrase } from "../../lib/lore/distillPhrase";
+import { phraseCacheKeyFrom, phraseForMoment, requestBrainAvailability, requestPhraseBrain, writeCachedPhrase } from "../../lib/lore/distillPhrase";
 import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
 import {
   clearEmbraced,
@@ -25,7 +25,13 @@ import {
   type EmbracedCast,
 } from "../../lib/lore/castStore";
 import { natalGalactic, resolvePerson } from "../../lib/lore/resolvePerson";
-import { byId } from "../../lib/lore/qualia";
+import {
+  anyBrain,
+  loadDistillPrefs,
+  saveDistillPrefs,
+  type BrainAvailability,
+  type DistillPrefs,
+} from "../../lib/lore/distillPrefs";
 import type { RingSelectHandler } from "../CosmicClockWheel";
 import type { LiveAttitude } from "../CelestialSkyView";
 import { AtlasPanel } from "../AtlasPanel";
@@ -212,6 +218,8 @@ export function OnyxApp({
   /** Cast opens as an expansion of You, not a home-compass door. */
   const [castReturn, setCastReturn] = useState<"home" | "you">("you");
   const [youExpandCast, setYouExpandCast] = useState(false);
+  const [distillPrefs, setDistillPrefs] = useState<DistillPrefs>(loadDistillPrefs);
+  const [brains, setBrains] = useState<BrainAvailability | null>(null);
 
   const openStudies = () => {
     window.location.href = "/studies";
@@ -235,6 +243,15 @@ export function OnyxApp({
   useEffect(() => {
     setBirth(loadBirth());
     setEmbraced(loadEmbraced());
+    setDistillPrefs(loadDistillPrefs());
+  }, []);
+
+  useEffect(() => {
+    const ac = new AbortController();
+    void requestBrainAvailability(ac.signal).then(next => {
+      if (next) setBrains(next);
+    });
+    return () => ac.abort();
   }, []);
 
   useEffect(() => {
@@ -326,7 +343,7 @@ export function OnyxApp({
   }, [layered.active, natalEntries, drawnEntries, homeSnap?.takenAt]);
 
   const distillOpts = useMemo<DistillOptions>(() => {
-    const opts: DistillOptions = {};
+    const opts: DistillOptions = { voice: distillPrefs.voice };
     if (layered.active !== "moment" && colorLean) opts.colorLean = colorLean;
     if (layered.active === "with-drawn") {
       const held = [...new Set(embraced.flatMap(c => c.qualities ?? []))]
@@ -336,10 +353,11 @@ export function OnyxApp({
       if (held.length) opts.castLean = held;
     }
     return opts;
-  }, [layered.active, colorLean, embraced]);
+  }, [layered.active, colorLean, embraced, distillPrefs.voice]);
 
-  // Local speak() immediately; phrase brain upgrades when a server key exists.
-  // Natal / casts travel only as axis math + quality words — never the birth record.
+  const mouthKey = `${distillPrefs.voice}:${distillPrefs.depth}:${distillPrefs.brain}`;
+
+  // Local speak() immediately; phrase brain upgrades when Deep is on and a key exists.
   useEffect(() => {
     if (!homeSnap || lockedMomentEntries.length === 0) return;
     const { phrase, source } = phraseForMoment(
@@ -349,20 +367,25 @@ export function OnyxApp({
       lon,
       distillOpts,
       layerCacheKey,
+      mouthKey,
     );
     setDistilled(phrase);
     if (source === "cache") return;
+    if (brains === null) return;
+    if (distillPrefs.depth !== "deep" || !anyBrain(brains)) return;
 
     const ac = new AbortController();
-    void requestPhraseBrain(activeReading.chord, distillOpts, { signal: ac.signal })
-      .then(voiced => {
-        if (!voiced?.phrase) return;
-        writeCachedPhrase(
-          phraseCacheKeyFrom(civilYmd, lat, lon, distillOpts, layerCacheKey),
-          voiced.phrase,
-        );
-        setDistilled(voiced.phrase);
-      });
+    void requestPhraseBrain(activeReading.chord, distillOpts, {
+      signal: ac.signal,
+      prefer: distillPrefs.brain,
+    }).then(voiced => {
+      if (!voiced?.phrase) return;
+      writeCachedPhrase(
+        phraseCacheKeyFrom(civilYmd, lat, lon, distillOpts, layerCacheKey, mouthKey),
+        voiced.phrase,
+      );
+      setDistilled(voiced.phrase);
+    });
     return () => ac.abort();
   }, [
     homeSnap,
@@ -374,6 +397,10 @@ export function OnyxApp({
     lon,
     layerCacheKey,
     distillOpts,
+    mouthKey,
+    distillPrefs.depth,
+    distillPrefs.brain,
+    brains,
   ]);
 
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
@@ -693,6 +720,9 @@ export function OnyxApp({
       readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}
       activeLayerId={layered.active}
       onSelectLayer={id => setActiveLayerChoice(id)}
+      distillPrefs={distillPrefs}
+      brains={brains}
+      onDistillPrefs={next => setDistillPrefs(saveDistillPrefs(next))}
       selfTone={selfTone}
       selfRet={selfRet}
       calendarReadings={stripReadings.slice(0, 8)}

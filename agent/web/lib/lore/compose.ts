@@ -28,6 +28,13 @@ import {
   type TribeColor,
 } from "./colorLean";
 
+export type DistillVoice =
+  | "field"
+  | "warm-witness"
+  | "plain-reading"
+  | "quiet-riddle"
+  | "trickster-challenge";
+
 export type DistillOptions = {
   /** Natal tribe color lean — reweights qualities already in the chorus. */
   colorLean?: TribeColor;
@@ -36,6 +43,11 @@ export type DistillOptions = {
    * street phrase lean — never as chord contributors to composeMoment.
    */
   castLean?: string[];
+  /**
+   * Mouth of the reading. "field" lets orchestration pick the register.
+   * Any other value changes VOICE only — never the chord.
+   */
+  voice?: DistillVoice;
 };
 
 /** Soft natal bias on axis ranking for the offline template. */
@@ -702,6 +714,9 @@ export function orchestratedPrompt(
   opts?: DistillOptions,
 ): { system: string; user: string } {
   const o = orchestrate(c);
+  const register: Tone["register"] =
+    opts?.voice && opts.voice !== "field" ? opts.voice : o.tone.register;
+  const chosenMouth = Boolean(opts?.voice && opts.voice !== "field");
   const toneGuide: Record<Tone["register"], string> = {
     "warm-witness":
       "The field is bright and settled. Speak as a warm witness — intimate, affirming, no need to provoke. Simply name what is.",
@@ -720,7 +735,7 @@ export function orchestratedPrompt(
     "Distill ALL of the axis readings and qualities you are given. Do not cherry-pick two pretty notes and ignore the rest.",
     "End as a challenge to the reader (second person). Earn it from the chord.",
     "Name NO system, sign, planet, animal, card, number, or tradition. Name the quality, never its sources.",
-    `TONE — the voice is itself a reading of this field: ${toneGuide[o.tone.register]}`,
+    `TONE — the voice is itself a reading of this field: ${toneGuide[register]}`,
     "Never use: energy, vibes, universe, manifest, align, journey, cosmic. Write like a poet or an oracle, never a horoscope.",
     "Never name colors (red, white, blue, yellow) or kin labels — only felt weather.",
   ].join(" ");
@@ -764,7 +779,7 @@ export function orchestratedPrompt(
     `ROOT (the key, weighted toward the slow/deep cycles — your subject): ${rootWord}.`,
     `TENSION (the live edge — the turn of the sentence): ${tenWords}${o.tension ? ` (strength ${o.tension.strength.toFixed(2)})` : ""}.`,
     `INFLECTION (fast cycles, right now — texture only): ${inflWords}.`,
-    `REGISTER: ${o.tone.register}.`,
+    `REGISTER: ${register}${chosenMouth ? " (reader chose this mouth — keep ROOT/TENSION/INFLECTION honest)" : ""}.`,
     "",
     "The whole field (axis language only, strongest first):",
     ...axisLines,
