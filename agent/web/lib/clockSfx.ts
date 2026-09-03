@@ -1,6 +1,9 @@
 let sharedCtx: AudioContext | null = null;
 let sharedNoise: AudioBuffer | null = null;
 let sharedMaster: GainNode | null = null;
+let sharedLimiter: DynamicsCompressorNode | null = null;
+/** Headroom so the bed + ticks + echo cannot pin 0 dBFS. */
+const MASTER_CEILING = 0.62;
 /** Bumps on each mute so delayed teardowns/suspends don't race a later unmute. */
 let muteEpoch = 0;
 let audioSilenced = false;
@@ -22,8 +25,15 @@ export function getClockAudio(): AudioContext | null {
 function masterBus(ctx: AudioContext): GainNode {
   if (!sharedMaster || sharedMaster.context !== ctx) {
     sharedMaster = ctx.createGain();
-    sharedMaster.gain.value = 1;
-    sharedMaster.connect(ctx.destination);
+    sharedMaster.gain.value = MASTER_CEILING;
+    sharedLimiter = ctx.createDynamicsCompressor();
+    sharedLimiter.threshold.value = -20;
+    sharedLimiter.knee.value = 14;
+    sharedLimiter.ratio.value = 10;
+    sharedLimiter.attack.value = 0.003;
+    sharedLimiter.release.value = 0.18;
+    sharedMaster.connect(sharedLimiter);
+    sharedLimiter.connect(ctx.destination);
   }
   return sharedMaster;
 }
@@ -97,7 +107,7 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   knockBp.frequency.setValueAtTime(tock ? 380 : 520, t);
   knockBp.Q.setValueAtTime(1.8, t);
   const knockGain = ctx.createGain();
-  knockGain.gain.setValueAtTime(tock ? 0.28 : 0.34, t);
+  knockGain.gain.setValueAtTime(tock ? 0.14 : 0.17, t);
   knockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
   knock.connect(knockBp);
   knockBp.connect(knockGain);
@@ -113,7 +123,7 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   body.frequency.exponentialRampToValueAtTime(tock ? 78 : 98, t + 0.2);
   bodyLp.type = "lowpass";
   bodyLp.frequency.setValueAtTime(900, t);
-  bodyGain.gain.setValueAtTime(tock ? 0.22 : 0.28, t);
+  bodyGain.gain.setValueAtTime(tock ? 0.11 : 0.14, t);
   bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
   body.connect(bodyLp);
   bodyLp.connect(bodyGain);
@@ -142,8 +152,8 @@ function playGongStrike(
   duration: number,
 ) {
   const out = masterBus(ctx);
-  const echo = createEcho(ctx, out, 0.42, 0.42, 0.45);
-  const room = createEcho(ctx, out, 0.88, 0.28, 0.28);
+  const echo = createEcho(ctx, out, 0.42, 0.32, 0.26);
+  const room = createEcho(ctx, out, 0.88, 0.22, 0.16);
 
   // Inharmonic gong partials (not strict harmonics — more bowl-like)
   const partials = [
@@ -202,7 +212,7 @@ function playGongStrike(
 export function playMinuteBell(ctx: AudioContext) {
   if (audioSilenced) return;
   if (ctx.state !== "running") void ctx.resume();
-  playGongStrike(ctx, ctx.currentTime, 72, 0.38, 3.2);
+  playGongStrike(ctx, ctx.currentTime, 72, 0.22, 3.2);
 }
 
 /** Hour gong — deeper bowl, one strike per hour count. */
@@ -212,7 +222,7 @@ export function playHourBell(ctx: AudioContext, hour24: number) {
   const strikes = (hour24 % 12) || 12;
   const gap = 1.55;
   for (let i = 0; i < strikes; i++) {
-    playGongStrike(ctx, ctx.currentTime + i * gap, 55, 0.42, 3.8);
+    playGongStrike(ctx, ctx.currentTime + i * gap, 55, 0.24, 3.8);
   }
 }
 
@@ -366,10 +376,10 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   const out = masterBus(ctx);
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, ctx.currentTime);
-  master.gain.exponentialRampToValueAtTime(0.22, ctx.currentTime + 3.5);
+  master.gain.exponentialRampToValueAtTime(0.1, ctx.currentTime + 3.5);
 
-  const echo = createEcho(ctx, out, 0.55, 0.48, 0.55);
-  const hall = createEcho(ctx, out, 1.15, 0.35, 0.4);
+  const echo = createEcho(ctx, out, 0.55, 0.32, 0.26);
+  const hall = createEcho(ctx, out, 1.15, 0.24, 0.16);
   master.connect(out);
   master.connect(echo);
   master.connect(hall);
@@ -380,7 +390,7 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
 
   // Breath envelope — ~8s inhale / exhale cycle into a VCA
   const vca = ctx.createGain();
-  vca.gain.setValueAtTime(0.55, ctx.currentTime);
+  vca.gain.setValueAtTime(0.4, ctx.currentTime);
   vca.connect(master);
   nodes.push(vca);
 
@@ -388,7 +398,7 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   breathLfo.type = "sine";
   breathLfo.frequency.setValueAtTime(0.085, ctx.currentTime); // ~11.7s full breath
   const breathDepth = ctx.createGain();
-  breathDepth.gain.setValueAtTime(0.35, ctx.currentTime);
+  breathDepth.gain.setValueAtTime(0.2, ctx.currentTime);
   breathLfo.connect(breathDepth);
   breathDepth.connect(vca.gain);
   breathLfo.start();
@@ -623,10 +633,10 @@ export function unmuteClockAudio(): void {
     const t = sharedMaster.context.currentTime;
     sharedMaster.gain.cancelScheduledValues(t);
     sharedMaster.gain.setValueAtTime(0.0001, t);
-    sharedMaster.gain.exponentialRampToValueAtTime(1, t + 0.25);
+    sharedMaster.gain.exponentialRampToValueAtTime(MASTER_CEILING, t + 0.25);
   } catch {
     try {
-      sharedMaster.gain.value = 1;
+      sharedMaster.gain.value = MASTER_CEILING;
     } catch {
       /* ignore */
     }

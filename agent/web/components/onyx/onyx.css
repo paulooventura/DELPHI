@@ -2517,4 +2517,38 @@
   padding-left: 1.1rem;
 }
 .onyx-time-units li { margin: 0.2rem 0; }
+
+/* Real sun: day / twilight wash the same starfield instead of a fake midnight. */
+html[data-sky="day"] .onyx-root {
+  --onyx-black: #6aa8d4;
+  --onyx-near: #8ec4e8;
+  --onyx-void: #7eb6e0;
+  --onyx-base: #5a9fd0;
+  --onyx-ink-bright: #142033;
+  --onyx-ink: #1e2c40;
+  --onyx-ink-soft: #3a4d63;
+  --onyx-ink-quiet: #4a5f76;
+  --onyx-ink-faint: #5c738a;
+  --onyx-light: #2f4d7a;
+  background: #5e9cc8;
+}
+html[data-sky="day"] .onyx-device {
+  background:
+    radial-gradient(120% 86% at 50% -8%, #e8f4fc 0%, #9fd0ee 38%, #5a9fd0 78%, #3d7eb0 100%);
+}
+html[data-sky="day"] .onyx-stars { opacity: 0.2; }
+html[data-sky="day"] .onyx-dust { background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.55); }
+
+html[data-sky="twilight"] .onyx-root {
+  --onyx-black: #1c1020;
+  --onyx-near: #241428;
+  --onyx-void: #140c18;
+  --onyx-base: #1a1022;
+  background: #140c18;
+}
+html[data-sky="twilight"] .onyx-device {
+  background:
+    radial-gradient(120% 90% at 50% -6%, #f2c08a 0%, #d07078 36%, #4a2048 68%, #120814 100%);
+}
+html[data-sky="twilight"] .onyx-stars { opacity: 0.62; }
 .onyx-time-body .onyx-primary-btn { margin-top: 0.7rem; }

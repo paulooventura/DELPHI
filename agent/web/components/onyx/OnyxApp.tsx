@@ -7,6 +7,7 @@ import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles"
 import { presetById } from "../../lib/worldCycles";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
 import { jdFromDate } from "../../lib/phase/timeResolution";
+import { skyPeriodAt } from "../../lib/skyPeriod";
 import {
   composeLayers,
   provenance,
@@ -283,6 +284,19 @@ export function OnyxApp({
     const d = String(now.getDate()).padStart(2, "0");
     return `${y}-${m}-${d}`;
   }, [now]);
+
+  const skyTick = Math.floor(now.getTime() / 60_000);
+  const skyPeriod = useMemo(
+    () => skyPeriodAt(new Date(skyTick * 60_000), lat, lon),
+    [skyTick, lat, lon],
+  );
+
+  useEffect(() => {
+    document.documentElement.dataset.sky = skyPeriod;
+    return () => {
+      delete document.documentElement.dataset.sky;
+    };
+  }, [skyPeriod]);
 
   const natal = useMemo(() => (birth ? natalGalactic(birth) : null), [birth]);
 
