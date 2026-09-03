@@ -17,9 +17,9 @@ export function phraseCacheKey(
 ): string {
   const rLat = Math.round(lat * 10) / 10;
   const rLon = Math.round(lon * 10) / 10;
-  // v11: a/an grammar on tinted weather + challenge dare.
   const lean = colorLean ?? "none";
-  return `delphi-phrase:v11:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  // v12: compact orb line (weather + dare) between the taijitu dots.
+  return `delphi-phrase:v12:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 export function readCachedPhrase(key: string): string | null {

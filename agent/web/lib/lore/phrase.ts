@@ -197,38 +197,35 @@ const HOUR: string[] = [
 ];
 
 /**
- * The turn to the reader — always a challenge (imperative, second-person).
- * Weather names the field; the dare makes it the user's move.
+ * The turn to the reader — short enough to sit between the taijitu dots.
  */
 const DARE: Record<Tone["register"], string[]> = {
   "warm-witness": [
-    " Stay with it — will you notice what softens before you leave?",
-    " Don't reach for the next thing. Let this land. Prove you can.",
-    " Meet it without improving it. That is the challenge.",
+    " Stay with it. Your call.",
+    " Let it land on you.",
+    " Meet it. Don't improve it.",
   ],
   "plain-reading": [
-    " Name which side you are feeding — then choose on purpose.",
-    " Don't pretend both poles can lead. Pick the one you will answer.",
-    " See the split cleanly, then take one honest step. Now.",
+    " Name the pole you'll answer.",
+    " Pick one side.",
+    " Choose on purpose.",
   ],
   "quiet-riddle": [
-    " Sit with what stays unsaid until it points — don't look away.",
-    " The answer is waiting for your attention. Will you give it?",
-    " Turn it over once more before you move. That is your task.",
+    " Don't look away.",
+    " Sit with the unsaid.",
+    " Give it your attention.",
   ],
   "trickster-challenge": [
-    " So — which hand do you play?",
-    " The moment is on the table. Your move.",
-    " What will you do with a field that will not sit still?",
-    " Don't watch both doors; walk through one.",
-    " You've been dealt this. Act like it matters.",
+    " Your move.",
+    " Walk through one door.",
+    " Act like it matters.",
   ],
 };
 
 const EMPTY: string[] = [
-  "An even field — nothing pulling hard. What were you avoiding while it was quiet?",
-  "A still point between currents. Decide before the next surge arrives — that is the dare.",
-  "No strong lean either way. Rare. Plant one clear intention while you can.",
+  "An even field. Decide while it's quiet.",
+  "A still point. Plant one intention.",
+  "Nothing pulling hard. What will you do?",
 ];
 
 /* ---- Seeded pick (deterministic per moment) ------------------------------ */
@@ -312,8 +309,8 @@ function dareLine(reg: Tone["register"], seed: number): string {
 }
 
 /**
- * Produce the distilled sentence from a composition — locally, no API.
- * Names the chord, honors the tension, turns to the reader.
+ * Distilled line for the home orb — weather + dare, no hinge/hour.
+ * Must fit between the two taijitu dots.
  */
 export function speak(c: Composition): string {
   const o = orchestrate(c);
@@ -324,15 +321,7 @@ export function speak(c: Composition): string {
   }
 
   const weather = weatherLine(o, c, seed);
-  const hinge = hingeClause(o, seed);
-  const hour = hourClause(o, seed);
   const dare = dareLine(o.tone.register, seed);
-
-  // One breathing sentence: weather + hinge + hour, then the dare as its own beat.
-  // Avoid double periods / awkward "a a" from templates.
-  const body = `${cap(weather)}${hinge}${hour}.`.replace(/\.\./g, ".");
-  const line = `${body}${dare}`.replace(/\s+/g, " ").trim();
-
-  // Guarantee a terminal mark on the dare (templates include it).
+  const line = `${cap(weather)}.${dare}`.replace(/\s+/g, " ").trim();
   return /[.!?]$/.test(line) ? line : `${line}.`;
 }

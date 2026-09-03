@@ -469,10 +469,10 @@
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  z-index: 9;
-  width: min(48vmin, 300px);
-  max-width: 86vw;
-  padding: 0 10px;
+  z-index: 11;
+  width: 56%;
+  max-height: 30%;
+  padding: 0 4px;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -481,6 +481,7 @@
   text-align: center;
   background: none;
   pointer-events: none;
+  overflow: hidden;
 }
 .onyx-yy-street-meta {
   position: absolute;
@@ -516,12 +517,12 @@
 .onyx-yy-phrase .big {
   margin: 0 auto;
   width: 100%;
-  font-size: clamp(16px, 3vw, 22px);
-  line-height: 1.32;
+  font-size: clamp(10px, 2.15vmin, 13px);
+  line-height: 1.22;
   text-align: center;
   text-wrap: balance;
   text-shadow:
-    0 0 14px rgba(0, 0, 0, 0.92),
+    0 0 10px rgba(0, 0, 0, 0.92),
     0 1px 2px rgba(0, 0, 0, 0.88);
 }
 .onyx-yy-math {
@@ -626,9 +627,47 @@
   pointer-events: none;
 }
 .onyx-yy-wrap .onyx-yy-gem { pointer-events: auto; }
-.onyx-yy-stage {
-  width: min(78vmin, 420px);
-  height: min(78vmin, 420px);
+.onyx-yy-wrap .onyx-yy-dot,
+.onyx-yy-wrap .onyx-yy-phrase-btn { pointer-events: auto; }
+.onyx-yy-orb {
+  position: relative;
+  width: min(52vmin, 340px);
+  height: min(52vmin, 340px);
+  flex-shrink: 0;
+}
+.onyx-yy-orb .onyx-yy-gem {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+.onyx-yy-orb .onyx-yy-svg {
+  width: 100%;
+  height: 100%;
+}
+.onyx-yy-dot {
+  position: absolute;
+  left: 50%;
+  width: 18%;
+  height: 18%;
+  transform: translate(-50%, -50%);
+  z-index: 13;
+  padding: 0;
+  margin: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+}
+.onyx-yy-dot.yin { top: 26%; }
+.onyx-yy-dot.yang { top: 74%; }
+.onyx-yy-stage .onyx-yy-phrase {
+  z-index: 12;
+  pointer-events: none;
+}
+.onyx-yy-stage .onyx-yy-phrase-btn {
+  pointer-events: auto;
 }
 .onyx-yy-dirs {
   font-size: 10px;
@@ -651,8 +690,10 @@
 .onyx-yy-dirs .d-down { bottom: -2px; }
 .onyx-yy-dirs .d-left { left: -2px; }
 .onyx-yy-dirs .d-right { right: -2px; }
-.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase {
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase,
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-dot {
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.12s linear;
 }
 /* Beat .onyx-compass purple glow so the gem reads as a marble, not a badge. */

@@ -22,11 +22,15 @@ export function OnyxYinYang({
   locked = false,
   spinning = false,
   sensorsUnlocked = false,
+  copyFlash = false,
+  shareFlash = false,
 }: {
   aiming?: boolean;
   locked?: boolean;
   spinning?: boolean;
   sensorsUnlocked?: boolean;
+  copyFlash?: boolean;
+  shareFlash?: boolean;
 }) {
   const uid = useId().replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement>(null);
@@ -169,8 +173,6 @@ export function OnyxYinYang({
           d="M50,2 a24,24 0 0,1 0,48 a24,24 0 0,0 0,48 a48,48 0 0,1 0,-96 z"
           fill={`url(#${uid}-yang)`}
         />
-        <circle cx="50" cy="26" r="8" fill={`url(#${uid}-yin)`} />
-        <circle cx="50" cy="74" r="8" fill={`url(#${uid}-yang)`} />
 
         <rect
           ref={windowRef}
@@ -202,6 +204,22 @@ export function OnyxYinYang({
           fill={`url(#${uid}-spec)`}
           filter={`url(#${uid}-soft)`}
         />
+        <circle cx="50" cy="26" r="8" fill={shareFlash ? "#2fbf71" : `url(#${uid}-yin)`} />
+        <circle cx="50" cy="74" r="8" fill={copyFlash ? "#2fbf71" : `url(#${uid}-yang)`} />
+        {shareFlash && (
+          <g transform="translate(50 26)" fill="none" stroke="#f7fff9" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="0" cy="-2.2" r="1.15" fill="#f7fff9" stroke="none" />
+            <circle cx="-2.4" cy="2.1" r="1.15" fill="#f7fff9" stroke="none" />
+            <circle cx="2.4" cy="2.1" r="1.15" fill="#f7fff9" stroke="none" />
+            <path d="M-1.4 1.4 L-0.5 -1.1 M1.4 1.4 L0.5 -1.1 M-1.3 2.1 H1.3" />
+          </g>
+        )}
+        {copyFlash && (
+          <g transform="translate(50 74)" fill="none" stroke="#0b1a12" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="-2.6" y="-1.4" width="4.4" height="4.4" rx="0.6" />
+            <rect x="-1.4" y="-2.8" width="4.4" height="4.4" rx="0.6" />
+          </g>
+        )}
       </g>
 
       <circle

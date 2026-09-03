@@ -95,7 +95,7 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
       -86.78,
     );
     const phrase = speak(snap.chord);
-    expect(phrase.length).toBeGreaterThan(40);
+    expect(phrase.length).toBeGreaterThan(12);
     expect(phrase).not.toMatch(/\b(Leo|Mars|Saturn|Horse|nakshatra|wuku)\b/i);
     // Challenge turn: second-person dare
     expect(phrase.toLowerCase()).toMatch(

@@ -125,8 +125,10 @@ export function OnyxHome({
   const [compassAim, setCompassAim] = useState<CompassAim>(null);
   const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
   const [gemSpin, setGemSpin] = useState<CompassAim>(null);
+  const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
   const deviceRef = useRef<HTMLDivElement>(null);
   const enterTimer = useRef(0);
+  const flashTimer = useRef(0);
   const depthRef = useRef(0);
   depthRef.current = depth;
   const wheelLock = useRef(false);
@@ -343,7 +345,53 @@ export function OnyxHome({
     [buzz, commitCompassAim, gemSpin],
   );
 
-  useEffect(() => () => window.clearTimeout(enterTimer.current), []);
+  const flashBall = useCallback((kind: "copy" | "share") => {
+    setBallFlash(kind);
+    window.clearTimeout(flashTimer.current);
+    flashTimer.current = window.setTimeout(() => setBallFlash(null), 1400);
+  }, []);
+
+  const copyPhrase = useCallback(
+    async (e: React.PointerEvent | React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      try {
+        await navigator.clipboard.writeText(momentLine);
+      } catch {
+        /* clipboard blocked */
+      }
+      flashBall("copy");
+      buzz("tick");
+    },
+    [buzz, flashBall, momentLine],
+  );
+
+  const sharePhrase = useCallback(
+    async (e: React.PointerEvent | React.MouseEvent) => {
+      e.stopPropagation();
+      e.preventDefault();
+      try {
+        if (typeof navigator.share === "function") {
+          await navigator.share({ title: "DELPHI", text: momentLine });
+        } else {
+          await navigator.clipboard.writeText(momentLine);
+        }
+      } catch {
+        /* user cancelled share sheet */
+      }
+      flashBall("share");
+      buzz("tick");
+    },
+    [buzz, flashBall, momentLine],
+  );
+
+  useEffect(
+    () => () => {
+      window.clearTimeout(enterTimer.current);
+      window.clearTimeout(flashTimer.current);
+    },
+    [],
+  );
 
   const resetCompass = useCallback(() => {
     compassPtr.current = null;
@@ -410,7 +458,7 @@ export function OnyxHome({
     if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, input, textarea, a",
       ),
     );
   };
@@ -499,18 +547,6 @@ export function OnyxHome({
 
         {/* 0 STREET */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`}>
-          <div className="onyx-yy-phrase">
-            <button
-              type="button"
-              className="onyx-yy-phrase-btn"
-              onClick={e => {
-                e.stopPropagation();
-                enterDoor("center");
-              }}
-            >
-              <p className="big">{momentLine}</p>
-            </button>
-          </div>
           <div className="onyx-yy-street-meta">
             {readingLayerLabel && (
               <p className="onyx-layer-label">{readingLayerLabel}</p>
@@ -751,6 +787,7 @@ export function OnyxHome({
 
         <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
+            <div className="onyx-yy-orb">
             <button
               type="button"
               className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
@@ -778,8 +815,37 @@ export function OnyxHome({
                 locked={compassLocked}
                 spinning={Boolean(gemSpin)}
                 sensorsUnlocked={sensorsUnlocked}
+                copyFlash={ballFlash === "copy"}
+                shareFlash={ballFlash === "share"}
               />
             </button>
+            <div className="onyx-yy-phrase">
+              <button
+                type="button"
+                className="onyx-yy-phrase-btn"
+                onClick={e => {
+                  e.stopPropagation();
+                  enterDoor("center");
+                }}
+              >
+                <p className="big">{momentLine}</p>
+              </button>
+            </div>
+            <button
+              type="button"
+              className="onyx-yy-dot yin"
+              aria-label="Share this reading"
+              onPointerDown={e => e.stopPropagation()}
+              onClick={sharePhrase}
+            />
+            <button
+              type="button"
+              className="onyx-yy-dot yang"
+              aria-label="Copy this reading"
+              onPointerDown={e => e.stopPropagation()}
+              onClick={copyPhrase}
+            />
+            </div>
             <div className="onyx-compass-dirs onyx-yy-dirs">
               {(
                 [
