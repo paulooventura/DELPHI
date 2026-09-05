@@ -1,13 +1,16 @@
 /**
  * Sonic keys for the orrery lanes + default-on time units.
- * Seconds / minutes / hours stay on the civil tick. Helek / prāṇa are too
- * fast to mark — they would drown the second.
+ * Fast units are tracked as gentle harmonic pulses; larger boundaries keep
+ * their own restrained timbres.
  */
 
 import { computeSolarDayEvents } from "./cosmic/astronomy";
 import { computeOrreryState, type OrreryLaneId } from "./lore/orreryLanes";
 
 export type ClockLaneMarks = {
+  helek: number;
+  prana: number;
+  pala: number;
   ghati: number;
   muhurta: number;
   planetaryHour: string;
@@ -85,6 +88,9 @@ export function readClockLaneMarks(
   const nowMs = date.getTime();
 
   return {
+    helek: laneIndex(lanes, "helek"),
+    prana: laneIndex(lanes, "prana"),
+    pala: laneIndex(lanes, "pala"),
     ghati: laneIndex(lanes, "ghati"),
     muhurta: laneIndex(lanes, "muhurta"),
     planetaryHour: PLANETS[phIdx] ?? "sun",
@@ -102,6 +108,9 @@ export function readClockLaneMarks(
 
 export function marksKey(m: ClockLaneMarks): string {
   return [
+    m.helek,
+    m.prana,
+    m.pala,
     m.ghati,
     m.muhurta,
     m.planetaryHour,

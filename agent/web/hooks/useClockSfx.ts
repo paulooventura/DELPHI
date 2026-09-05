@@ -18,11 +18,14 @@ import {
   playBeatMark,
   playDayGate,
   playGhatiMark,
+  playHelekMark,
   playHourBell,
   playKeMark,
   playMinuteBell,
   playMuhurtaMark,
+  playPalaMark,
   playPlanetaryHourMark,
+  playPranaMark,
   playSecondTick,
   playShiMark,
   playSlowSkyMark,
@@ -50,6 +53,9 @@ function syncChimeRefs(refs: {
 }
 
 function fireLaneMarks(ctx: AudioContext, prev: ClockLaneMarks, next: ClockLaneMarks) {
+  if (next.helek !== prev.helek) playHelekMark(ctx);
+  if (next.prana !== prev.prana) playPranaMark(ctx);
+  if (next.pala !== prev.pala) playPalaMark(ctx);
   if (next.ghati !== prev.ghati) playGhatiMark(ctx);
   if (next.muhurta !== prev.muhurta) playMuhurtaMark(ctx);
   if (next.planetaryHour !== prev.planetaryHour) playPlanetaryHourMark(ctx, next.planetaryHour);

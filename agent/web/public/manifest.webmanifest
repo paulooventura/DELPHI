@@ -2,8 +2,8 @@
   "name": "DELPHI — Cosmic Clock",
   "short_name": "DELPHI",
   "description": "Cosmic Clock | Astronomical Guidance — delphi.pauloventura.org",
-  "id": "https://delphi.pauloventura.org/?b=2026-09-01f",
-  "start_url": "/?b=2026-09-01f",
+  "id": "https://delphi.pauloventura.org/",
+  "start_url": "/?b=2026-09-05d",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
@@ -12,10 +12,22 @@
   "categories": ["utilities", "education", "lifestyle"],
   "icons": [
     {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
       "src": "/icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

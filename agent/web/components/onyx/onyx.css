@@ -317,14 +317,54 @@
   background: radial-gradient(115% 88% at 50% 42%, transparent 40%, rgba(0, 0, 0, 0.7) 80%, #000 100%);
   opacity: 0.5; transition: opacity var(--onyx-deep-settle), background var(--onyx-deep-settle);
 }
-.onyx-stars { position: absolute; inset: 0; z-index: 1; transition: opacity var(--onyx-deep-settle); }
+.onyx-stars { position: absolute; inset: 0; z-index: 1; transition: opacity var(--onyx-deep-settle); overflow: hidden; }
 .onyx-dust {
   position: absolute; border-radius: 50%; background: #fff;
   animation: onyx-tw var(--tw, 4s) ease-in-out infinite; animation-delay: var(--d, 0s);
 }
 .onyx-dust.shimmer {
-  background: #f4f0ff;
+  animation-duration: var(--tw, 8s);
   animation-name: onyx-shimmer;
+}
+.onyx-comet {
+  position: absolute;
+  height: 2px;
+  border-radius: 2px;
+  pointer-events: none;
+  transform-origin: left center;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.95) 18%,
+    rgba(190, 170, 255, 0.55) 55%,
+    rgba(120, 100, 220, 0) 100%
+  );
+  box-shadow:
+    0 0 6px 1px rgba(220, 210, 255, 0.55),
+    0 0 14px 2px rgba(140, 120, 255, 0.25);
+  animation: onyx-comet-fly var(--comet-dur, 1.2s) cubic-bezier(0.2, 0.15, 0.35, 1) forwards;
+  transform: rotate(var(--comet-angle, -32deg)) translateX(0) scaleX(0.2);
+  opacity: 0;
+}
+@keyframes onyx-comet-fly {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--comet-angle, -32deg)) translateX(0) scaleX(0.15);
+  }
+  8% {
+    opacity: 1;
+    transform: rotate(var(--comet-angle, -32deg)) translateX(4vw) scaleX(1);
+  }
+  70% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--comet-angle, -32deg)) translateX(72vw) scaleX(0.35);
+  }
+}
+.onyx-dust.shimmer {
+  background: #f4f0ff;
   animation-timing-function: ease-in-out;
 }
 
@@ -914,11 +954,22 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   height: min(52vmin, 340px);
   display: block;
   transform-origin: 50% 50%;
+  transform:
+    perspective(720px)
+    rotateX(var(--yy-rx, 0deg))
+    rotateY(var(--yy-ry, 0deg));
+  transition: transform 80ms linear, filter 180ms ease;
   border-radius: 50%;
   overflow: hidden;
   box-shadow:
     inset -14px -20px 32px rgba(0, 0, 0, 0.55),
     inset 12px 10px 20px rgba(255, 255, 255, 0.22);
+}
+.onyx-yy-contact-shadow {
+  transform: translate(var(--yy-sh-x, 0), var(--yy-sh-y, 2px));
+  transform-origin: center;
+  filter: blur(2.4px);
+  opacity: 0.72;
 }
 .onyx-yy-gem.floating {
   animation: onyx-compass-float 5.4s ease-in-out infinite;

@@ -286,6 +286,70 @@ function woodMark(ctx: AudioContext, hz: number, peak: number, dur: number) {
   body.stop(t + dur + 0.02);
 }
 
+/**
+ * Tiny tonal pulse for the fast gears. Frequencies are harmonics of the
+ * 32.5 Hz bed, with short attacks and very low peaks so overlaps form a chord
+ * instead of competing clocks.
+ */
+function harmonicPulse(
+  ctx: AudioContext,
+  hz: number,
+  peak: number,
+  dur: number,
+  pan = 0,
+) {
+  if (audioSilenced || audioParked) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const t = ctx.currentTime;
+  const out = masterBus(ctx);
+  const osc = ctx.createOscillator();
+  const overtone = ctx.createOscillator();
+  const gain = ctx.createGain();
+  const overtoneGain = ctx.createGain();
+  const filter = ctx.createBiquadFilter();
+  const panner = ctx.createStereoPanner();
+
+  osc.type = "sine";
+  osc.frequency.setValueAtTime(hz, t);
+  overtone.type = "sine";
+  overtone.frequency.setValueAtTime(hz * 2, t);
+  overtoneGain.gain.setValueAtTime(0.16, t);
+  filter.type = "lowpass";
+  filter.frequency.setValueAtTime(Math.min(1400, hz * 5), t);
+  panner.pan.setValueAtTime(pan, t);
+
+  gain.gain.setValueAtTime(0.0001, t);
+  gain.gain.exponentialRampToValueAtTime(peak, t + 0.012);
+  gain.gain.exponentialRampToValueAtTime(peak * 0.42, t + dur * 0.38);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+
+  osc.connect(filter);
+  overtone.connect(overtoneGain);
+  overtoneGain.connect(filter);
+  filter.connect(gain);
+  gain.connect(panner);
+  panner.connect(out);
+  osc.start(t);
+  overtone.start(t);
+  osc.stop(t + dur + 0.02);
+  overtone.stop(t + dur + 0.02);
+}
+
+/** Helek — 3⅓ s, the highest and lightest fast gear. */
+export function playHelekMark(ctx: AudioContext) {
+  harmonicPulse(ctx, SCHUMANN_HZ * 6, 0.018, 0.12, -0.18);
+}
+
+/** Prāṇa — ~4 s breath pulse, warm fifth above the bed. */
+export function playPranaMark(ctx: AudioContext) {
+  harmonicPulse(ctx, SCHUMANN_HZ * 4, 0.022, 0.2, 0.16);
+}
+
+/** Pala — ~24 s, a slightly fuller low harmonic. */
+export function playPalaMark(ctx: AudioContext) {
+  harmonicPulse(ctx, SCHUMANN_HZ * 3, 0.03, 0.34);
+}
+
 /** Ghaṭi — ~24 min from sunrise. Clay / wood, quieter than the minute gong. */
 export function playGhatiMark(ctx: AudioContext) {
   woodMark(ctx, 108, 0.2, 0.42);

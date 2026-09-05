@@ -475,7 +475,7 @@ export function computeOrreryState(
       })),
       activeLabel: `Prāṇa ${Math.floor(mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 6)) + 1}`,
       source: "Vedic prāṇa — a breath, 1/6 of a pala ≈ 4 s from sunrise",
-      lore: "A breath: six of them fill a pala. Silent in the sonics (too fast to mark without drowning the second) — present here so the stack between second and minute is complete.",
+      lore: "A breath: six of them fill a pala. In the sonics it is a tiny warm harmonic pulse — present without drowning the civil second.",
     },
     {
       id: "helek",

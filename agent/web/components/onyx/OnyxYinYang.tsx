@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { pulseHaptic } from "../../lib/haptics";
 import { watchDeviceOrientation } from "../../lib/localSignals";
 
-/** Polished taijitu marble — key light follows pointer / gimbal, not a flat badge. */
+/** Polished taijitu marble — a ball, not a flat badge. Light + tilt follow pointer / gimbal. */
 
 type Light = { lx: number; ly: number };
 
@@ -38,11 +39,17 @@ export function OnyxYinYang({
   const specRef = useRef<SVGRadialGradientElement>(null);
   const specCircleRef = useRef<SVGCircleElement>(null);
   const windowRef = useRef<SVGRectElement>(null);
+  const rimRef = useRef<SVGCircleElement>(null);
   const target = useRef<Light>({ ...IDLE });
   const current = useRef<Light>({ ...IDLE });
   const baseline = useRef<{ beta: number; gamma: number } | null>(null);
   const samples = useRef(0);
   const raf = useRef(0);
+  const lastHaptic = useRef(0);
+  const idleT0 = useRef(performance.now());
+  const lastInput = useRef(performance.now());
+  const spinningRef = useRef(spinning);
+  spinningRef.current = spinning;
 
   useEffect(() => {
     const svg = svgRef.current;
@@ -65,25 +72,59 @@ export function OnyxYinYang({
       specCircleRef.current?.setAttribute("cy", cy.toFixed(1));
       windowRef.current?.setAttribute("x", (l.lx * 0.42 + 8).toFixed(1));
       windowRef.current?.setAttribute("y", (l.ly * 0.28 + 36).toFixed(1));
+
+      // Ball tilt — stronger than the light alone so it reads as volume.
+      const rx = clamp((50 - l.ly) * 0.28, -14, 14);
+      const ry = clamp((l.lx - 50) * 0.32, -16, 16);
       svg.style.setProperty("--yy-lx", `${l.lx.toFixed(1)}%`);
       svg.style.setProperty("--yy-ly", `${l.ly.toFixed(1)}%`);
+      svg.style.setProperty("--yy-rx", `${rx.toFixed(2)}deg`);
+      svg.style.setProperty("--yy-ry", `${ry.toFixed(2)}deg`);
+      // Soft contact shadow under the sphere shifts opposite the light.
+      const shX = ((50 - l.lx) / 50) * 6;
+      const shY = 2 + ((l.ly - 30) / 50) * 4;
+      svg.style.setProperty("--yy-sh-x", `${shX.toFixed(2)}px`);
+      svg.style.setProperty("--yy-sh-y", `${shY.toFixed(2)}px`);
+      rimRef.current?.setAttribute(
+        "stroke",
+        `rgba(${180 + (l.lx / 100) * 40}, ${170 + (l.ly / 100) * 30}, 255, 0.42)`,
+      );
     };
 
     const tick = () => {
+      const now = performance.now();
+      // Idle breathe when nothing is steering the ball.
+      if (now - lastInput.current > 1400 && !spinningRef.current) {
+        const t = (now - idleT0.current) / 1000;
+        target.current = {
+          lx: IDLE.lx + Math.sin(t * 0.55) * 7 + Math.sin(t * 0.19) * 3,
+          ly: IDLE.ly + Math.cos(t * 0.48) * 5 + Math.sin(t * 0.31) * 2.5,
+        };
+      }
       const c = current.current;
       const t = target.current;
-      c.lx = lerp(c.lx, t.lx, 0.14);
-      c.ly = lerp(c.ly, t.ly, 0.14);
+      c.lx = lerp(c.lx, t.lx, 0.12);
+      c.ly = lerp(c.ly, t.ly, 0.12);
       paint(c);
       raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);
 
     const applyDelta = (db: number, dg: number) => {
+      lastInput.current = performance.now();
       target.current = {
-        lx: clamp(IDLE.lx + dg * 1.15, 14, 78),
-        ly: clamp(IDLE.ly - db * 0.95, 12, 68),
+        lx: clamp(IDLE.lx + dg * 1.35, 12, 82),
+        ly: clamp(IDLE.ly - db * 1.1, 10, 72),
       };
+    };
+
+    const maybeHaptic = (db: number, dg: number) => {
+      const mag = Math.abs(db) + Math.abs(dg);
+      if (mag < 9) return;
+      const now = performance.now();
+      if (now - lastHaptic.current < 2200) return;
+      lastHaptic.current = now;
+      void pulseHaptic("tick");
     };
 
     const stopOrient = sensorsUnlocked
@@ -96,13 +137,14 @@ export function OnyxYinYang({
             baseline.current = { beta, gamma };
             if (samples.current < 8) return;
           }
-          const db = clamp(beta - baseline.current.beta, -28, 28);
-          const dg = clamp(gamma - baseline.current.gamma, -28, 28);
-          if (Math.abs(db) + Math.abs(dg) > 0.4) {
+          const db = clamp(beta - baseline.current.beta, -32, 32);
+          const dg = clamp(gamma - baseline.current.gamma, -32, 32);
+          if (Math.abs(db) + Math.abs(dg) > 0.35) {
             gimbalLive = true;
             lastGimbal = performance.now();
           }
           applyDelta(db, dg);
+          maybeHaptic(db, dg);
         })
       : () => {};
 
@@ -113,7 +155,7 @@ export function OnyxYinYang({
       if (r.width < 1 || r.height < 1) return;
       const nx = ((e.clientX - r.left) / r.width) * 2 - 1;
       const ny = ((e.clientY - r.top) / r.height) * 2 - 1;
-      applyDelta(ny * 18, nx * 22);
+      applyDelta(ny * 22, nx * 26);
     };
     host.addEventListener("pointermove", onPointer, { passive: true });
 
@@ -138,24 +180,29 @@ export function OnyxYinYang({
         </clipPath>
         <radialGradient id={`${uid}-yang`} cx="40%" cy="32%" r="80%">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="62%" stopColor="#f3f1f8" />
-          <stop offset="100%" stopColor="#d8d4e6" />
+          <stop offset="55%" stopColor="#f3f1f8" />
+          <stop offset="100%" stopColor="#c9c4d8" />
         </radialGradient>
         <radialGradient id={`${uid}-yin`} cx="62%" cy="70%" r="84%">
-          <stop offset="0%" stopColor="#1a1630" />
-          <stop offset="40%" stopColor="#07060c" />
+          <stop offset="0%" stopColor="#2a2448" />
+          <stop offset="35%" stopColor="#0c0a14" />
           <stop offset="100%" stopColor="#000000" />
         </radialGradient>
-        <radialGradient id={`${uid}-shade`} ref={shadeRef} cx="34%" cy="28%" r="72%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.62)" />
-          <stop offset="18%" stopColor="rgba(255,255,255,0.16)" />
-          <stop offset="52%" stopColor="rgba(0,0,0,0)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,0.72)" />
+        <radialGradient id={`${uid}-shade`} ref={shadeRef} cx="34%" cy="28%" r="78%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
+          <stop offset="14%" stopColor="rgba(255,255,255,0.22)" />
+          <stop offset="42%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="78%" stopColor="rgba(0,0,0,0.45)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.82)" />
         </radialGradient>
-        <radialGradient id={`${uid}-spec`} ref={specRef} cx="34%" cy="28%" r="16%">
+        <radialGradient id={`${uid}-spec`} ref={specRef} cx="34%" cy="28%" r="18%">
           <stop offset="0%" stopColor="rgba(255,255,255,1)" />
-          <stop offset="28%" stopColor="rgba(255,255,255,0.7)" />
+          <stop offset="30%" stopColor="rgba(255,255,255,0.72)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+        </radialGradient>
+        <radialGradient id={`${uid}-ao`} cx="50%" cy="62%" r="70%">
+          <stop offset="55%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.38)" />
         </radialGradient>
         <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="0.65" />
@@ -165,7 +212,17 @@ export function OnyxYinYang({
         </filter>
       </defs>
 
-      <circle cx="50" cy="51.6" r="47" fill="rgba(0,0,0,0.32)" />
+      {/* Grounded contact shadow — shifts with tilt via CSS vars on the host gem */}
+      <ellipse
+        className="onyx-yy-contact-shadow"
+        cx="50"
+        cy="92"
+        rx="34"
+        ry="5.5"
+        fill="rgba(0,0,0,0.45)"
+      />
+
+      <circle cx="50" cy="51.8" r="47.2" fill="rgba(0,0,0,0.28)" />
 
       <g clipPath={`url(#${uid}-clip)`}>
         <rect width="100" height="100" fill={`url(#${uid}-yin)`} />
@@ -196,11 +253,12 @@ export function OnyxYinYang({
         />
 
         <circle cx="50" cy="50" r="48" fill={`url(#${uid}-shade)`} />
+        <circle cx="50" cy="50" r="48" fill={`url(#${uid}-ao)`} />
         <circle
           ref={specCircleRef}
           cx="34"
           cy="26"
-          r="16"
+          r="17"
           fill={`url(#${uid}-spec)`}
           filter={`url(#${uid}-soft)`}
         />
@@ -223,6 +281,7 @@ export function OnyxYinYang({
       </g>
 
       <circle
+        ref={rimRef}
         cx="50"
         cy="50"
         r="48.15"

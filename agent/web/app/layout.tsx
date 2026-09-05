@@ -39,9 +39,16 @@ export const metadata: Metadata = {
     siteName: "Paulo Ventura · DELPHI",
   },
   icons: {
-    icon: "/icon.svg",
-    shortcut: "/icon.svg",
-    apple: "/icon.svg",
+    icon: [
+      { url: `/icon.svg?v=${DELPHI_BUILD}`, type: "image/svg+xml" },
+      { url: `/icon-192.png?v=${DELPHI_BUILD}`, sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: `/icon.svg?v=${DELPHI_BUILD}`,
+    apple: {
+      url: `/apple-touch-icon.png?v=${DELPHI_BUILD}`,
+      sizes: "180x180",
+      type: "image/png",
+    },
   },
   appleWebApp: {
     capable: true,

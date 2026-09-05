@@ -1,24 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DELPHI">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="DELPHI yin-yang marble">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#0a1020"/>
-      <stop offset="100%" stop-color="#05070b"/>
-    </linearGradient>
-    <linearGradient id="gold" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#f5d78e"/>
-      <stop offset="100%" stop-color="#c9a227"/>
-    </linearGradient>
+    <radialGradient id="bg" cx="38%" cy="24%" r="90%">
+      <stop offset="0%" stop-color="#1d1735"/>
+      <stop offset="45%" stop-color="#090710"/>
+      <stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="yang" cx="34%" cy="24%" r="92%">
+      <stop offset="0%" stop-color="#fff"/>
+      <stop offset="55%" stop-color="#f3f1f8"/>
+      <stop offset="100%" stop-color="#bdb7cd"/>
+    </radialGradient>
+    <radialGradient id="yin" cx="36%" cy="25%" r="100%">
+      <stop offset="0%" stop-color="#352b58"/>
+      <stop offset="38%" stop-color="#0e0b19"/>
+      <stop offset="100%" stop-color="#000"/>
+    </radialGradient>
+    <radialGradient id="sphere" cx="31%" cy="23%" r="82%">
+      <stop offset="0%" stop-color="#fff" stop-opacity=".58"/>
+      <stop offset="18%" stop-color="#dcd3ff" stop-opacity=".16"/>
+      <stop offset="48%" stop-color="#000" stop-opacity="0"/>
+      <stop offset="78%" stop-color="#000" stop-opacity=".32"/>
+      <stop offset="100%" stop-color="#000" stop-opacity=".78"/>
+    </radialGradient>
+    <radialGradient id="shine" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fff" stop-opacity=".95"/>
+      <stop offset="32%" stop-color="#fff" stop-opacity=".55"/>
+      <stop offset="100%" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <clipPath id="orb">
+      <circle cx="256" cy="250" r="192"/>
+    </clipPath>
+    <filter id="shadow" x="-40%" y="-40%" width="180%" height="190%">
+      <feDropShadow dx="0" dy="22" stdDeviation="20" flood-color="#000" flood-opacity=".8"/>
+      <feDropShadow dx="-7" dy="-8" stdDeviation="8" flood-color="#b7a7ff" flood-opacity=".18"/>
+    </filter>
+    <filter id="blur">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
   </defs>
+
   <rect width="512" height="512" rx="112" fill="url(#bg)"/>
-  <g transform="translate(256 240)" stroke="url(#gold)" fill="none">
-    <path d="M-90 -50 L-30 -70 L0 -80 L30 -70 L90 -50" stroke-width="2" opacity="0.7"/>
-    <path d="M-60 -20 L0 -40 L60 -20" stroke-width="2" opacity="0.7"/>
-    <path d="M-40 10 L0 -10 L40 10" stroke-width="2" opacity="0.7"/>
-    <path d="M-40 50 Q0 20 40 50 Q0 90 -40 50" stroke-width="4"/>
-    <circle cx="0" cy="52" r="14" stroke-width="3"/>
-    <line x1="0" y1="-80" x2="0" y2="100" stroke-width="4" stroke-linecap="round"/>
-    <circle cx="0" cy="-88" r="8" fill="url(#gold)" stroke="none"/>
-    <path d="M35 55 A22 22 0 1 1 35 95 A16 16 0 1 0 35 55" fill="url(#gold)" stroke="none"/>
+  <circle cx="256" cy="250" r="202" fill="#080510" stroke="#8068c8" stroke-opacity=".22" stroke-width="3"/>
+  <g filter="url(#shadow)">
+    <g clip-path="url(#orb)">
+      <rect x="64" y="58" width="384" height="384" fill="url(#yin)"/>
+      <path
+        d="M256 58
+           a96 96 0 0 1 0 192
+           a96 96 0 0 0 0 192
+           a192 192 0 0 1 0-384z"
+        fill="url(#yang)"
+      />
+      <circle cx="256" cy="154" r="32" fill="url(#yin)"/>
+      <circle cx="256" cy="346" r="32" fill="url(#yang)"/>
+      <circle cx="256" cy="250" r="192" fill="url(#sphere)"/>
+      <ellipse cx="188" cy="150" rx="72" ry="58" fill="url(#shine)" filter="url(#blur)" transform="rotate(-22 188 150)"/>
+      <rect x="150" y="122" width="38" height="104" rx="4" fill="#fff" fill-opacity=".18" transform="rotate(-20 169 174)"/>
+    </g>
   </g>
-  <text x="256" y="430" text-anchor="middle" fill="url(#gold)" font-family="system-ui,sans-serif" font-size="52" font-weight="600" letter-spacing="12">DELPHI</text>
+  <circle cx="256" cy="250" r="193" fill="none" stroke="#eee8ff" stroke-opacity=".45" stroke-width="3"/>
+  <circle cx="256" cy="250" r="197" fill="none" stroke="#24163f" stroke-opacity=".8" stroke-width="5"/>
 </svg>

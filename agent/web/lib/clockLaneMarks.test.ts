@@ -5,6 +5,25 @@ import { computeSolarDayEvents } from "./cosmic/astronomy";
 const NASH = { lat: 36.16, lon: -86.78 };
 
 describe("clock lane marks", () => {
+  it("tracks helek, prāṇa, and pala boundaries for the harmonic pulse stack", () => {
+    const sunrise = computeSolarDayEvents(
+      new Date("2026-09-01T12:00:00Z"),
+      NASH.lat,
+      NASH.lon,
+    ).sunrise;
+    const at = (ms: number) =>
+      readClockLaneMarks(new Date(sunrise.getTime() + ms), NASH.lat, NASH.lon);
+
+    expect(at(4_100).prana).not.toBe(at(100).prana);
+    expect(at(24_100).pala).not.toBe(at(100).pala);
+
+    const minute = new Date("2026-09-01T12:00:00.100Z");
+    const later = new Date(minute.getTime() + 3_400);
+    expect(readClockLaneMarks(later, NASH.lat, NASH.lon).helek).not.toBe(
+      readClockLaneMarks(minute, NASH.lat, NASH.lon).helek,
+    );
+  });
+
   it("ghati advances ~24 min after Nashville sunrise", () => {
     const sunrise = computeSolarDayEvents(
       new Date("2026-09-01T12:00:00Z"),
