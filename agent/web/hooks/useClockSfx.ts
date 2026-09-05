@@ -12,7 +12,9 @@ import { marksKey, readClockLaneMarks, type ClockLaneMarks } from "../lib/clockL
 import {
   getClockAudio,
   isClockAudioSilenced,
+  isSchumannAtmosphereRunning,
   muteClockAudio,
+  parkClockAudio,
   playBeatMark,
   playDayGate,
   playGhatiMark,
@@ -27,6 +29,7 @@ import {
   resumeClockAudio,
   startSchumannAtmosphere,
   unmuteClockAudio,
+  unparkClockAudio,
 } from "../lib/clockSfx";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
 
@@ -86,6 +89,7 @@ export function useClockSfx(
     const refs = { lastSec, lastChimeKey, lastMarks, lastMarkMs, observer: readObserver() };
     let raf = 0;
     let alive = true;
+    let parkTimer = 0;
 
     const unlock = (ev: Event) => {
       const t = ev.target as HTMLElement | null;
@@ -106,32 +110,42 @@ export function useClockSfx(
     window.addEventListener("pointerdown", unlock);
     window.addEventListener("keydown", unlock);
 
-    const silence = () => {
-      muteClockAudio({ fadeMs: 160 });
-      setActive(false);
-    };
-
     const restore = () => {
       if (!enabledRef.current || document.visibilityState === "hidden") return;
+      window.clearTimeout(parkTimer);
+      parkTimer = 0;
       void resumeClockAudio().then(ctx => {
         if (!ctx || !alive || !enabledRef.current || document.visibilityState === "hidden") return;
+        unparkClockAudio();
         unmuteClockAudio();
-        startSchumannAtmosphere(ctx);
+        // Only build the bed if it's gone — never tear/rebuild on flicker.
+        if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
         setActive(true);
       });
     };
 
     const onVis = () => {
       if (document.visibilityState === "hidden") {
-        silence();
+        // Debounce — mobile chrome flickers visibility; hard mute was chopping the bed.
+        window.clearTimeout(parkTimer);
+        parkTimer = window.setTimeout(() => {
+          if (document.visibilityState !== "hidden") return;
+          parkClockAudio({ fadeMs: 100 });
+          setActive(false);
+        }, 450);
         return;
       }
       restore();
     };
-    // Only visibility/pagehide — blur/focus fires on mobile chrome (URL bar,
-    // notifications) and was mute→unmute thrashing the Schumann bed.
+
+    const onPageHide = () => {
+      window.clearTimeout(parkTimer);
+      parkClockAudio({ fadeMs: 80 });
+      setActive(false);
+    };
+
     document.addEventListener("visibilitychange", onVis);
-    window.addEventListener("pagehide", silence);
+    window.addEventListener("pagehide", onPageHide);
 
     const existing = getClockAudio();
     if (
@@ -158,38 +172,36 @@ export function useClockSfx(
         return;
       }
       const ctx = getClockAudio();
-      if (ctx) {
-        if (ctx.state === "running") {
-          const d = new Date();
-          const sec = d.getSeconds();
-          const min = d.getMinutes();
-          const hr = d.getHours();
+      if (ctx?.state === "running") {
+        const d = new Date();
+        const sec = d.getSeconds();
+        const min = d.getMinutes();
+        const hr = d.getHours();
 
-          if (sec !== lastSec.current) {
-            playSecondTick(ctx, sec);
-            lastSec.current = sec;
+        if (sec !== lastSec.current) {
+          playSecondTick(ctx, sec);
+          lastSec.current = sec;
 
-            if (sec === 0) {
-              const chimeKey = `${hr}:${min}`;
-              if (chimeKey !== lastChimeKey.current) {
-                lastChimeKey.current = chimeKey;
-                if (min === 0) playHourBell(ctx, hr);
-                else playMinuteBell(ctx);
-              }
+          if (sec === 0) {
+            const chimeKey = `${hr}:${min}`;
+            if (chimeKey !== lastChimeKey.current) {
+              lastChimeKey.current = chimeKey;
+              if (min === 0) playHourBell(ctx, hr);
+              else playMinuteBell(ctx);
             }
-
-            const obs = readObserver();
-            const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
-            const prev = lastMarks.current;
-            if (
-              prev &&
-              (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
-            ) {
-              fireLaneMarks(ctx, prev, next);
-            }
-            lastMarks.current = next;
-            lastMarkMs.current = d.getTime();
           }
+
+          const obs = readObserver();
+          const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
+          const prev = lastMarks.current;
+          if (
+            prev &&
+            (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
+          ) {
+            fireLaneMarks(ctx, prev, next);
+          }
+          lastMarks.current = next;
+          lastMarkMs.current = d.getTime();
         }
       }
       raf = requestAnimationFrame(loop);
@@ -198,11 +210,12 @@ export function useClockSfx(
 
     return () => {
       alive = false;
+      window.clearTimeout(parkTimer);
       cancelAnimationFrame(raf);
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
       document.removeEventListener("visibilitychange", onVis);
-      window.removeEventListener("pagehide", silence);
+      window.removeEventListener("pagehide", onPageHide);
       muteClockAudio({ fadeMs: 120 });
     };
   }, [enabled]);
@@ -218,8 +231,9 @@ export function useClockSfx(
         lastMarkMs,
         observer: readObserver(),
       });
+      unparkClockAudio();
       unmuteClockAudio();
-      startSchumannAtmosphere(ctx);
+      if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
       setActive(true);
     });
   }, []);

@@ -2,11 +2,16 @@ let sharedCtx: AudioContext | null = null;
 let sharedNoise: AudioBuffer | null = null;
 let sharedMaster: GainNode | null = null;
 let sharedLimiter: DynamicsCompressorNode | null = null;
+/** Bed bus — bypasses the tick compressor so marks don't duck the pad. */
+let sharedBedOut: GainNode | null = null;
 /** Headroom so the bed + ticks + echo cannot pin 0 dBFS. */
 const MASTER_CEILING = 0.36;
+const BED_CEILING = 0.42;
 /** Bumps on each mute so delayed teardowns/suspends don't race a later unmute. */
 let muteEpoch = 0;
 let audioSilenced = false;
+/** Soft park (tab flicker) — bed stays built; only hard mute tears it down. */
+let audioParked = false;
 
 type AudioContextCtor = typeof AudioContext;
 
@@ -26,18 +31,27 @@ function masterBus(ctx: AudioContext): GainNode {
   if (!sharedMaster || sharedMaster.context !== ctx) {
     sharedMaster = ctx.createGain();
     sharedMaster.gain.value = MASTER_CEILING;
-    // Gentle ceiling — aggressive ratio/threshold was ducking the Schumann bed
-    // on every second tick (heard as play / cut / play).
+    // Soft peak catch only — never duck the continuous bed (that's on bedBus).
     sharedLimiter = ctx.createDynamicsCompressor();
-    sharedLimiter.threshold.value = -10;
-    sharedLimiter.knee.value = 18;
-    sharedLimiter.ratio.value = 3;
-    sharedLimiter.attack.value = 0.012;
-    sharedLimiter.release.value = 0.35;
+    sharedLimiter.threshold.value = -6;
+    sharedLimiter.knee.value = 20;
+    sharedLimiter.ratio.value = 2.2;
+    sharedLimiter.attack.value = 0.02;
+    sharedLimiter.release.value = 0.45;
     sharedMaster.connect(sharedLimiter);
     sharedLimiter.connect(ctx.destination);
+
+    sharedBedOut = ctx.createGain();
+    sharedBedOut.gain.value = BED_CEILING;
+    sharedBedOut.connect(ctx.destination);
   }
   return sharedMaster;
+}
+
+/** Continuous atmosphere — separate from tick/gong bus so marks can't chop it. */
+function bedBus(ctx: AudioContext): GainNode {
+  masterBus(ctx);
+  return sharedBedOut!;
 }
 
 export async function resumeClockAudio(): Promise<AudioContext | null> {
@@ -91,12 +105,12 @@ function createEcho(
 }
 
 export function isClockAudioSilenced(): boolean {
-  return audioSilenced;
+  return audioSilenced || audioParked;
 }
 
-/** Clear woody knock — tick / tock on each second. */
+/** Clear woody knock — tick / tock on each second. Soft enough not to chop the bed. */
 export function playSecondTick(ctx: AudioContext, second: number) {
-  if (audioSilenced) return;
+  if (audioSilenced || audioParked) return;
   if (ctx.state !== "running") void ctx.resume();
   const t = ctx.currentTime;
   const tock = second % 2 === 1;
@@ -109,40 +123,40 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   knockBp.frequency.setValueAtTime(tock ? 380 : 520, t);
   knockBp.Q.setValueAtTime(1.8, t);
   const knockGain = ctx.createGain();
-  knockGain.gain.setValueAtTime(tock ? 0.08 : 0.1, t);
-  knockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.06);
+  knockGain.gain.setValueAtTime(tock ? 0.028 : 0.034, t);
+  knockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
   knock.connect(knockBp);
   knockBp.connect(knockGain);
   knockGain.connect(out);
   knock.start(t);
-  knock.stop(t + 0.07);
+  knock.stop(t + 0.06);
 
   const body = ctx.createOscillator();
   const bodyLp = ctx.createBiquadFilter();
   const bodyGain = ctx.createGain();
   body.type = "triangle";
   body.frequency.setValueAtTime(tock ? 160 : 205, t);
-  body.frequency.exponentialRampToValueAtTime(tock ? 78 : 98, t + 0.2);
+  body.frequency.exponentialRampToValueAtTime(tock ? 78 : 98, t + 0.16);
   bodyLp.type = "lowpass";
   bodyLp.frequency.setValueAtTime(900, t);
-  bodyGain.gain.setValueAtTime(tock ? 0.06 : 0.08, t);
-  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.22);
+  bodyGain.gain.setValueAtTime(tock ? 0.022 : 0.028, t);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
   body.connect(bodyLp);
   bodyLp.connect(bodyGain);
   bodyGain.connect(out);
   body.start(t);
-  body.stop(t + 0.24);
+  body.stop(t + 0.2);
 
   const tip = ctx.createOscillator();
   const tipGain = ctx.createGain();
   tip.type = "sine";
   tip.frequency.setValueAtTime(tock ? 540 : 680, t);
-  tipGain.gain.setValueAtTime(0.08, t);
-  tipGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.04);
+  tipGain.gain.setValueAtTime(0.022, t);
+  tipGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
   tip.connect(tipGain);
   tipGain.connect(out);
   tip.start(t);
-  tip.stop(t + 0.05);
+  tip.stop(t + 0.04);
 }
 
 /** Deep harmonious gong strike with long resonant tail. */
@@ -371,17 +385,17 @@ const SCHUMANN_FUND = 7.83;
  * Occasional harmonic blooms from the Schumann series add texture without crowding the pad.
  */
 export function startSchumannAtmosphere(ctx: AudioContext): void {
-  if (audioSilenced) return;
+  if (audioSilenced || audioParked) return;
   if (schumannBed) return;
   if (ctx.state !== "running") void ctx.resume();
 
-  const out = masterBus(ctx);
+  const out = bedBus(ctx);
   const master = ctx.createGain();
   master.gain.setValueAtTime(0.0001, ctx.currentTime);
   master.gain.exponentialRampToValueAtTime(0.055, ctx.currentTime + 3.5);
 
-  const echo = createEcho(ctx, out, 0.55, 0.32, 0.26);
-  const hall = createEcho(ctx, out, 1.15, 0.24, 0.16);
+  const echo = createEcho(ctx, out, 0.55, 0.28, 0.2);
+  const hall = createEcho(ctx, out, 1.15, 0.2, 0.12);
   master.connect(out);
   master.connect(echo);
   master.connect(hall);
@@ -390,17 +404,17 @@ export function startSchumannAtmosphere(ctx: AudioContext): void {
   const nodes: AudioNode[] = [master, echo, hall];
   const timers: number[] = [];
 
-  // Breath envelope — ~8s inhale / exhale cycle into a VCA
+  // Gentle breath — shallow so it never reads as cut/play.
   const vca = ctx.createGain();
-  vca.gain.setValueAtTime(0.4, ctx.currentTime);
+  vca.gain.setValueAtTime(0.55, ctx.currentTime);
   vca.connect(master);
   nodes.push(vca);
 
   const breathLfo = ctx.createOscillator();
   breathLfo.type = "sine";
-  breathLfo.frequency.setValueAtTime(0.085, ctx.currentTime); // ~11.7s full breath
+  breathLfo.frequency.setValueAtTime(0.07, ctx.currentTime);
   const breathDepth = ctx.createGain();
-  breathDepth.gain.setValueAtTime(0.2, ctx.currentTime);
+  breathDepth.gain.setValueAtTime(0.06, ctx.currentTime);
   breathLfo.connect(breathDepth);
   breathDepth.connect(vca.gain);
   breathLfo.start();
@@ -558,39 +572,16 @@ export function stopSchumannAtmosphere(opts?: { fadeSec?: number }): void {
   window.setTimeout(tearDown, Math.ceil(fadeSec * 1000) + 60);
 }
 
-/** Pause any HTML media so cast ritual films don't click on close. */
-function silenceHtmlMedia(): void {
-  if (typeof document === "undefined") return;
-  for (const el of document.querySelectorAll("video, audio")) {
-    const media = el as HTMLMediaElement;
-    try {
-      media.pause();
-      media.muted = true;
-      media.volume = 0;
-    } catch {
-      /* ignore */
-    }
-  }
-}
-
 /**
- * Fade the clock bus out, then stop oscillators / suspend context.
- * Hard-cutting gain or stopping sources mid-wave was the close-app buzz.
+ * Soft park for brief tab/visibility flickers — fade + suspend, keep the
+ * Schumann bed intact so restore doesn't rebuild (that was the cut/play loop).
  */
-export function muteClockAudio(opts?: { fadeMs?: number }): void {
-  const fadeMs = opts?.fadeMs ?? 160;
+export function parkClockAudio(opts?: { fadeMs?: number }): void {
+  if (audioSilenced) return;
+  const fadeMs = opts?.fadeMs ?? 120;
   const fadeSec = fadeMs / 1000;
   const epoch = ++muteEpoch;
-  audioSilenced = true;
-
-  if (typeof navigator !== "undefined" && navigator.vibrate) {
-    try {
-      navigator.vibrate(0);
-    } catch {
-      /* ignore */
-    }
-  }
-  silenceHtmlMedia();
+  audioParked = true;
 
   const ctx = sharedCtx;
   const t = ctx?.currentTime ?? 0;
@@ -602,6 +593,139 @@ export function muteClockAudio(opts?: { fadeMs?: number }): void {
     } catch {
       try {
         sharedMaster.gain.value = 0.0001;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (sharedBedOut && ctx) {
+    try {
+      sharedBedOut.gain.cancelScheduledValues(t);
+      sharedBedOut.gain.setValueAtTime(Math.max(0.0001, sharedBedOut.gain.value), t);
+      sharedBedOut.gain.exponentialRampToValueAtTime(0.0001, t + fadeSec);
+    } catch {
+      try {
+        sharedBedOut.gain.value = 0.0001;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (schumannBed) {
+    try {
+      const m = schumannBed.master;
+      m.gain.cancelScheduledValues(t);
+      m.gain.setValueAtTime(Math.max(0.0001, m.gain.value), t);
+      m.gain.exponentialRampToValueAtTime(0.0001, t + fadeSec);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  if (ctx) {
+    window.setTimeout(() => {
+      if (epoch !== muteEpoch || !audioParked || audioSilenced) return;
+      try {
+        void ctx.suspend();
+      } catch {
+        /* ignore */
+      }
+    }, fadeMs + 40);
+  }
+}
+
+/** Undo park — resume bed without rebuilding oscillators. */
+export function unparkClockAudio(): void {
+  if (audioSilenced) return;
+  muteEpoch += 1;
+  audioParked = false;
+  const ctx = sharedCtx;
+  if (ctx && ctx.state === "suspended") {
+    void ctx.resume();
+  }
+  const t = ctx?.currentTime ?? 0;
+  if (sharedMaster) {
+    try {
+      sharedMaster.gain.cancelScheduledValues(t);
+      sharedMaster.gain.setValueAtTime(Math.max(0.0001, sharedMaster.gain.value), t);
+      sharedMaster.gain.exponentialRampToValueAtTime(MASTER_CEILING, t + 0.2);
+    } catch {
+      try {
+        sharedMaster.gain.value = MASTER_CEILING;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (sharedBedOut) {
+    try {
+      sharedBedOut.gain.cancelScheduledValues(t);
+      sharedBedOut.gain.setValueAtTime(Math.max(0.0001, sharedBedOut.gain.value), t);
+      sharedBedOut.gain.exponentialRampToValueAtTime(BED_CEILING, t + 0.2);
+    } catch {
+      try {
+        sharedBedOut.gain.value = BED_CEILING;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (schumannBed) {
+    try {
+      const m = schumannBed.master;
+      m.gain.cancelScheduledValues(t);
+      m.gain.setValueAtTime(Math.max(0.0001, m.gain.value), t);
+      m.gain.exponentialRampToValueAtTime(0.055, t + 0.35);
+    } catch {
+      /* ignore */
+    }
+  }
+}
+
+/**
+ * Hard mute — stone off / leave app. Tears down the bed.
+ * Fade the clock bus out, then stop oscillators / suspend context.
+ */
+export function muteClockAudio(opts?: { fadeMs?: number }): void {
+  const fadeMs = opts?.fadeMs ?? 160;
+  const fadeSec = fadeMs / 1000;
+  const epoch = ++muteEpoch;
+  audioSilenced = true;
+  audioParked = false;
+
+  if (typeof navigator !== "undefined" && navigator.vibrate) {
+    try {
+      navigator.vibrate(0);
+    } catch {
+      /* ignore */
+    }
+  }
+  // Do NOT silenceHtmlMedia here — that paused the keep-awake video and
+  // thrashed iOS audio sessions (heard as chopped bed).
+
+  const ctx = sharedCtx;
+  const t = ctx?.currentTime ?? 0;
+  if (sharedMaster && ctx) {
+    try {
+      sharedMaster.gain.cancelScheduledValues(t);
+      sharedMaster.gain.setValueAtTime(Math.max(0.0001, sharedMaster.gain.value), t);
+      sharedMaster.gain.exponentialRampToValueAtTime(0.0001, t + fadeSec);
+    } catch {
+      try {
+        sharedMaster.gain.value = 0.0001;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
+  if (sharedBedOut && ctx) {
+    try {
+      sharedBedOut.gain.cancelScheduledValues(t);
+      sharedBedOut.gain.setValueAtTime(Math.max(0.0001, sharedBedOut.gain.value), t);
+      sharedBedOut.gain.exponentialRampToValueAtTime(0.0001, t + fadeSec);
+    } catch {
+      try {
+        sharedBedOut.gain.value = 0.0001;
       } catch {
         /* ignore */
       }
@@ -627,13 +751,30 @@ export function unmuteClockAudio(): void {
   const wasSilenced = audioSilenced;
   muteEpoch += 1;
   audioSilenced = false;
+  audioParked = false;
   const ctx = sharedCtx;
   if (ctx && ctx.state === "suspended") {
     void ctx.resume();
   }
+  if (sharedBedOut) {
+    try {
+      const t = sharedBedOut.context.currentTime;
+      sharedBedOut.gain.cancelScheduledValues(t);
+      sharedBedOut.gain.setValueAtTime(
+        wasSilenced ? 0.0001 : Math.max(0.0001, sharedBedOut.gain.value),
+        t,
+      );
+      sharedBedOut.gain.exponentialRampToValueAtTime(BED_CEILING, t + (wasSilenced ? 0.3 : 0.05));
+    } catch {
+      try {
+        sharedBedOut.gain.value = BED_CEILING;
+      } catch {
+        /* ignore */
+      }
+    }
+  }
   if (!sharedMaster) return;
-  // Already open — do not re-slam gain to ~0 (React re-renders used to pump
-  // unmute every second and sounded like the bed cutting in and out).
+  // Already open — do not re-slam gain to ~0.
   if (!wasSilenced && sharedMaster.gain.value > MASTER_CEILING * 0.45) {
     try {
       const t = sharedMaster.context.currentTime;
