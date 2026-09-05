@@ -18,7 +18,7 @@ import { OnyxStarfield } from "./OnyxStarfield";
 import { OnyxAudioStone } from "./OnyxAudioStone";
 import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
-import { OnyxDoorArrows } from "./OnyxDoorArrows";
+import { OnyxCompassRose } from "./OnyxCompassRose";
 import { OnyxYinYang } from "./OnyxYinYang";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
 import {
@@ -725,68 +725,74 @@ export function OnyxHome({
         <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
             <div className="onyx-yy-orb">
-            <OnyxDoorArrows active={compassAim ?? gemSpin ?? null} />
-            <button
-              type="button"
-              className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
-              style={
-                {
-                  ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
-                  ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
-                } as React.CSSProperties
-              }
-              aria-label="Hold and drag: up sky map, down tonal, right orrery, left studies. Tap the glass for you."
-              disabled={Boolean(gemSpin)}
-              onPointerDown={e => {
-                if (gemSpin) return;
-                onCompassPointerDown(e);
-              }}
-              onPointerMove={onCompassPointerMove}
-              onPointerUp={onCompassPointerUp}
-              onPointerCancel={e => {
-                e.stopPropagation();
-                resetCompass();
-              }}
-            >
-              <OnyxYinYang
-                aiming={Boolean(compassAim) || Boolean(gemSpin)}
-                locked={compassLocked}
-                spinning={Boolean(gemSpin)}
-                sensorsUnlocked={sensorsUnlocked}
-                copyFlash={ballFlash === "copy"}
-                shareFlash={ballFlash === "share"}
+              <OnyxCompassRose
+                active={compassAim ?? gemSpin ?? null}
+                follow={compassFollow}
+                holding={compassLocked || Boolean(gemSpin)}
               />
-            </button>
-            <div className="onyx-yy-phrase">
-              <button
-                type="button"
-                className="onyx-yy-phrase-btn"
-                onClick={e => {
-                  e.stopPropagation();
-                  enterDoor("center");
-                }}
-              >
-                <p className="big">{momentLine}</p>
-              </button>
-            </div>
-            <button
-              type="button"
-              className="onyx-yy-dot yin"
-              aria-label="Share this reading"
-              aria-haspopup="dialog"
-              aria-expanded={shareOpen}
-              onPointerDown={e => e.stopPropagation()}
-              onClick={openShareSheet}
-            />
-            <button
-              type="button"
-              className="onyx-yy-dot yang"
-              aria-label="Share this reading"
-              aria-haspopup="dialog"
-              aria-expanded={shareOpen}
-              onPointerDown={e => e.stopPropagation()}
-              onClick={openShareSheet}
-            />
+              <div className="onyx-yy-gem-nest">
+                <button
+                  type="button"
+                  className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
+                  style={
+                    {
+                      ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
+                      ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
+                    } as React.CSSProperties
+                  }
+                  aria-label="Hold and drag: up sky map, down tonal, right orrery, left studies. Tap the glass for you."
+                  disabled={Boolean(gemSpin)}
+                  onPointerDown={e => {
+                    if (gemSpin) return;
+                    onCompassPointerDown(e);
+                  }}
+                  onPointerMove={onCompassPointerMove}
+                  onPointerUp={onCompassPointerUp}
+                  onPointerCancel={e => {
+                    e.stopPropagation();
+                    resetCompass();
+                  }}
+                >
+                  <OnyxYinYang
+                    aiming={Boolean(compassAim) || Boolean(gemSpin)}
+                    locked={compassLocked}
+                    spinning={Boolean(gemSpin)}
+                    sensorsUnlocked={sensorsUnlocked}
+                    copyFlash={ballFlash === "copy"}
+                    shareFlash={ballFlash === "share"}
+                  />
+                </button>
+                <button
+                  type="button"
+                  className="onyx-yy-dot yin"
+                  aria-label="Share this reading"
+                  aria-haspopup="dialog"
+                  aria-expanded={shareOpen}
+                  onPointerDown={e => e.stopPropagation()}
+                  onClick={openShareSheet}
+                />
+                <button
+                  type="button"
+                  className="onyx-yy-dot yang"
+                  aria-label="Share this reading"
+                  aria-haspopup="dialog"
+                  aria-expanded={shareOpen}
+                  onClick={openShareSheet}
+                  onPointerDown={e => e.stopPropagation()}
+                />
+              </div>
+              <div className="onyx-yy-phrase">
+                <button
+                  type="button"
+                  className="onyx-yy-phrase-btn"
+                  onClick={e => {
+                    e.stopPropagation();
+                    enterDoor("center");
+                  }}
+                >
+                  <p className="big">{momentLine}</p>
+                </button>
+              </div>
             </div>
             <div className="onyx-compass-dirs onyx-yy-dirs">
               {(

@@ -44,7 +44,15 @@
   height: min(100dvh, 872px);
   position: relative;
   overflow: hidden;
-  background: var(--onyx-black);
+  background:
+    radial-gradient(120% 80% at 50% -12%, rgba(88, 72, 160, 0.22) 0%, transparent 46%),
+    radial-gradient(90% 70% at 50% 110%, rgba(20, 12, 40, 0.55) 0%, transparent 50%),
+    var(--onyx-black);
+  box-shadow:
+    inset 0 1px 0 rgba(220, 210, 255, 0.08),
+    inset 0 0 80px rgba(0, 0, 0, 0.45),
+    0 0 0 1px rgba(140, 124, 255, 0.12),
+    0 24px 64px rgba(0, 0, 0, 0.55);
   /* Own vertical swipes — don't let the browser steal them for overscroll. */
   touch-action: none;
   overscroll-behavior: none;
@@ -371,9 +379,10 @@
   background: radial-gradient(115% 88% at 50% 42%, transparent 40%, rgba(0, 0, 0, 0.7) 80%, #000 100%);
   opacity: 0.5; transition: opacity var(--onyx-deep-settle), background var(--onyx-deep-settle);
 }
-.onyx-stars { position: absolute; inset: 0; z-index: 1; transition: opacity var(--onyx-deep-settle); overflow: hidden; }
+.onyx-stars { position: absolute; inset: 0; z-index: 1; transition: opacity var(--onyx-deep-settle); overflow: hidden; opacity: 1; }
 .onyx-dust {
   position: absolute; border-radius: 50%; background: #fff;
+  box-shadow: 0 0 4px rgba(220, 210, 255, 0.35);
   animation: onyx-tw var(--tw, 4s) ease-in-out infinite; animation-delay: var(--d, 0s);
 }
 .onyx-dust.shimmer {
@@ -744,7 +753,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   transition: opacity var(--onyx-settle);
 }
 .onyx-yy-wrap {
-  --yy-size: clamp(260px, 72vmin, 360px);
+  --yy-size: clamp(240px, 64vmin, 320px);
   top: 50%;
   left: 50%;
   right: auto;
@@ -774,6 +783,54 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   width: var(--yy-size);
   height: var(--yy-size);
   transform: translate(-50%, -50%);
+  filter:
+    drop-shadow(0 28px 36px rgba(0, 0, 0, 0.55))
+    drop-shadow(0 0 40px rgba(108, 92, 255, 0.12));
+}
+.onyx-compass-rose {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: visible;
+}
+.onyx-compass-letter {
+  font-family: var(--font-ui);
+  font-size: 4.6px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.onyx-compass-door {
+  font-family: var(--font-ui);
+  font-size: 2.35px;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.onyx-compass-needle {
+  transition: opacity 180ms ease;
+  opacity: 0.42;
+}
+.onyx-compass-needle.on {
+  opacity: 1;
+  transition: opacity 80ms linear;
+}
+.onyx-compass-rose.holding .onyx-compass-cardinal:not(.on) .onyx-compass-letter {
+  fill: rgba(180, 170, 220, 0.42);
+}
+.onyx-compass-cardinal.on .onyx-compass-letter {
+  font-size: 5.2px;
+}
+.onyx-yy-gem-nest {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 58%;
+  height: 58%;
+  transform: translate(-50%, -50%);
+  z-index: 3;
 }
 .onyx-yy-arrows {
   position: absolute;
@@ -812,7 +869,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   0%, 100% { opacity: 0.48; }
   50% { opacity: 0.78; }
 }
-.onyx-yy-orb .onyx-yy-gem {
+.onyx-yy-orb .onyx-yy-gem,
+.onyx-yy-gem-nest .onyx-yy-gem {
   position: relative;
   z-index: 1;
   width: 100%;
@@ -821,7 +879,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   padding: 0;
   margin: 0;
 }
-.onyx-yy-orb .onyx-yy-gem .onyx-yy-svg {
+.onyx-yy-orb .onyx-yy-gem .onyx-yy-svg,
+.onyx-yy-gem-nest .onyx-yy-gem .onyx-yy-svg {
   width: 100%;
   height: 100%;
 }
@@ -860,8 +919,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   inset: auto;
   left: 50%;
   top: 50%;
-  width: calc(var(--yy-size) * 1.3);
-  height: calc(var(--yy-size) * 1.3);
+  width: calc(var(--yy-size) * 1.38);
+  height: calc(var(--yy-size) * 1.38);
   transform: translate(-50%, -50%);
 }
 .onyx-yy-dirs button {
@@ -879,14 +938,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-dirs .d-left { left: -2px; }
 .onyx-yy-dirs .d-right { right: -2px; }
 @media (min-width: 800px) {
-  .onyx-yy-wrap { --yy-size: clamp(330px, 42vmin, 460px); }
+  .onyx-yy-wrap { --yy-size: clamp(280px, 38vmin, 380px); }
 }
 @media (orientation: landscape) and (max-height: 620px) {
-  .onyx-yy-wrap { --yy-size: clamp(220px, 58vmin, 330px); }
+  .onyx-yy-wrap { --yy-size: clamp(200px, 52vmin, 280px); }
 }
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase,
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-dot,
-.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-arrows {
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-arrows,
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-compass-rose {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s linear;
@@ -1046,8 +1106,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
     drop-shadow(0 0 10px rgba(255, 255, 255, 0.2));
 }
 .onyx-yy-gem .onyx-yy-svg {
-  width: min(52vmin, 340px);
-  height: min(52vmin, 340px);
+  width: 100%;
+  height: 100%;
   display: block;
   transform-origin: 50% 50%;
   transform:
@@ -2837,55 +2897,24 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-time-units li { margin: 0.2rem 0; }
 
-/* Real sun: day / twilight wash the same starfield instead of a fake midnight. */
-html[data-sky="day"] .onyx-root {
-  --onyx-black: #6aa8d4;
-  --onyx-near: #8ec4e8;
-  --onyx-void: #7eb6e0;
-  --onyx-base: #5a9fd0;
-  --onyx-ink-bright: #142033;
-  --onyx-ink: #1e2c40;
-  --onyx-ink-soft: #3a4d63;
-  --onyx-ink-quiet: #4a5f76;
-  --onyx-ink-faint: #5c738a;
-  --onyx-light: #2f4d7a;
-  background: #5e9cc8;
+/* Sky period still sets data-sky for phrase contrast — never wash the frame blue.
+   Edges stay black / starry so the phone shell doesn't fight the marble. */
+html[data-sky="day"] .onyx-yy-phrase .big,
+html[data-sky="twilight"] .onyx-yy-phrase .big {
+  color: #fff;
 }
-html[data-sky="day"] .onyx-device {
-  background:
-    radial-gradient(120% 86% at 50% -8%, #e8f4fc 0%, #9fd0ee 38%, #5a9fd0 78%, #3d7eb0 100%);
-}
-html[data-sky="day"] .onyx-stars { opacity: 0.2; }
-html[data-sky="day"] .onyx-dust { background: #fff; box-shadow: 0 0 6px rgba(255, 255, 255, 0.55); }
-/* Day sky: overlay becomes frosted white so dark text stays legible */
-html[data-sky="day"] .onyx-overlay {
-  background: rgba(255, 255, 255, 0.72);
-}
-html[data-sky="day"] .onyx-decomp-card {
-  border-bottom-color: rgba(30, 44, 64, 0.18);
-}
-html[data-sky="day"] .onyx-overlay-close {
-  background: rgba(255,255,255,0.5);
-  border-color: rgba(30,44,64,0.3);
-  color: #142033;
-}
-/* Twilight: keep slight warmth */
+html[data-sky="day"] .onyx-overlay,
 html[data-sky="twilight"] .onyx-overlay {
-  background: rgba(20, 8, 30, 0.65);
+  background: rgba(4, 3, 10, 0.72);
+  backdrop-filter: blur(18px) saturate(1.2);
+  -webkit-backdrop-filter: blur(18px) saturate(1.2);
 }
-
-html[data-sky="twilight"] .onyx-root {
-  --onyx-black: #1c1020;
-  --onyx-near: #241428;
-  --onyx-void: #140c18;
-  --onyx-base: #1a1022;
-  background: #140c18;
+html[data-sky="day"] .onyx-overlay-close,
+html[data-sky="twilight"] .onyx-overlay-close {
+  background: rgba(20, 16, 36, 0.55);
+  border-color: rgba(188, 174, 255, 0.35);
+  color: var(--onyx-ink-bright);
 }
-html[data-sky="twilight"] .onyx-device {
-  background:
-    radial-gradient(120% 90% at 50% -6%, #f2c08a 0%, #d07078 36%, #4a2048 68%, #120814 100%);
-}
-html[data-sky="twilight"] .onyx-stars { opacity: 0.62; }
 .onyx-time-body .onyx-primary-btn { margin-top: 0.7rem; }
 
 /* ── Gemstone couture pass ──────────────────────────────────────────────── */
