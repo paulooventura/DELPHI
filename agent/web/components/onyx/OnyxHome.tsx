@@ -510,6 +510,7 @@ export function OnyxHome({
         tabIndex={0}
       >
         <div className="onyx-field">
+          <div className="onyx-home-vision" aria-hidden />
           <div className="onyx-aura" />
           <OnyxStarfield />
           {depth !== 0 && <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />}

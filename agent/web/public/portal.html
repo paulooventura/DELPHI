@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-03k -->
+<!-- build: 2026-09-05g -->
 <script>
 (function(){
-  var BUILD='2026-09-03k';
+  var BUILD='2026-09-05g';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -214,6 +214,36 @@
   .phrase.charging-target{animation:pulseglow .5s ease infinite}
 </style>
 <style id="studies-css">
+  #screen-studies{background:#010504}
+  #screen-studies::before{
+    opacity:1;
+    background-image:
+      linear-gradient(180deg,rgba(0,8,5,.72),rgba(0,4,3,.84) 42%,rgba(0,0,0,.94)),
+      radial-gradient(circle at 50% 35%,transparent 0 18%,rgba(0,0,0,.46) 62%,rgba(0,0,0,.82) 100%),
+      url("/studies-atmosphere.jpg");
+    background-size:cover;
+    background-position:center 28%;
+    filter:saturate(.72) contrast(1.08);
+  }
+  #studies-intro{
+    position:fixed;inset:0;z-index:500;display:none;place-items:center;overflow:hidden;
+    background:#000;opacity:0;cursor:pointer;transition:opacity .38s ease;
+  }
+  #studies-intro.show{display:grid;opacity:1}
+  #studies-intro.leaving{opacity:0;pointer-events:none}
+  #studies-intro video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;pointer-events:none}
+  #studies-intro::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.1),transparent 54%,rgba(0,0,0,.56))}
+  #studies-intro .intro-skip{
+    position:absolute;top:max(18px,env(safe-area-inset-top));right:max(18px,env(safe-area-inset-right));z-index:2;
+    border:1px solid rgba(255,255,255,.28);border-radius:999px;background:rgba(0,0,0,.34);
+    color:#f4f0ff;font:600 10px/1 ui-monospace,monospace;letter-spacing:.2em;text-transform:uppercase;
+    padding:11px 15px;backdrop-filter:blur(10px);cursor:pointer;
+  }
+  #studies-intro .intro-hint{
+    position:absolute;left:50%;bottom:max(24px,env(safe-area-inset-bottom));z-index:2;transform:translateX(-50%);
+    margin:0;color:rgba(244,240,255,.72);font:500 9px/1.2 ui-monospace,monospace;letter-spacing:.24em;
+    text-transform:uppercase;white-space:nowrap;text-shadow:0 2px 12px #000;
+  }
   #screen-studies .wrap{max-width:1200px;margin:0 auto;padding:64px 22px 80px}
   #screen-studies .kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.42em;color:var(--fog);text-transform:uppercase;margin:0 0 14px;text-align:center}
   #screen-studies h1.title{font-family:var(--serif);font-weight:500;font-size:clamp(30px,6vw,52px);margin:0;text-align:center;letter-spacing:.01em}
@@ -860,6 +890,29 @@
 </div>
 </section>
 
+<div
+  id="studies-intro"
+  role="button"
+  tabindex="0"
+  aria-label="Studies opening film. Tap to skip."
+  aria-hidden="true"
+  onclick="dismissStudiesIntro()"
+  onkeydown="if(event.key==='Enter'||event.key===' '||event.key==='Escape'){event.preventDefault();dismissStudiesIntro()}"
+>
+  <video
+    id="studies-intro-video"
+    src="/studies-intro.mp4"
+    preload="auto"
+    muted
+    playsinline
+    webkit-playsinline
+    onended="dismissStudiesIntro()"
+    onerror="dismissStudiesIntro()"
+  ></video>
+  <button class="intro-skip" type="button">Skip</button>
+  <p class="intro-hint">Tap anywhere to enter</p>
+</div>
+
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <!-- outbound gate -->
@@ -880,10 +933,28 @@ const PHRASES=["The vessel remembers what the crowd forgets.","Every quality is 
 document.getElementById('momentPhrase').textContent=PHRASES[Math.floor(Math.random()*PHRASES.length)];
 /* navigation */
 const portal=document.getElementById('portal');
+const STUDIES_INTRO_KEY='delphi-studies-intro-seen-v1';
+let _studiesIntroPlayed=false;
+let _studiesIntroTimer=0;
+function dismissStudiesIntro(){
+  const intro=document.getElementById('studies-intro');const video=document.getElementById('studies-intro-video');
+  if(!intro||!intro.classList.contains('show'))return;
+  intro.classList.add('leaving');if(video)video.pause();clearTimeout(_studiesIntroTimer);
+  _studiesIntroTimer=setTimeout(()=>{intro.classList.remove('show','leaving');intro.setAttribute('aria-hidden','true');},400);
+}
+function maybePlayStudiesIntro(){
+  if(_studiesIntroPlayed)return;
+  try{if(sessionStorage.getItem(STUDIES_INTRO_KEY)==='1'){_studiesIntroPlayed=true;return;}}catch(e){}
+  _studiesIntroPlayed=true;try{sessionStorage.setItem(STUDIES_INTRO_KEY,'1');}catch(e){}
+  const intro=document.getElementById('studies-intro');const video=document.getElementById('studies-intro-video');
+  if(!intro||!video)return;
+  clearTimeout(_studiesIntroTimer);intro.classList.remove('leaving');intro.classList.add('show');intro.setAttribute('aria-hidden','false');
+  try{video.currentTime=0;const playing=video.play();if(playing&&playing.catch)playing.catch(()=>{});}catch(e){}
+}
 function clearOverlays(){const g=document.getElementById('gate');if(g)g.classList.remove('open');const mh=document.getElementById('modalHost');if(mh)mh.innerHTML='';const bd=document.getElementById('backdrop');if(bd)bd.classList.remove('open');document.body.style.overflow='';}
 function go(name,dir){clearOverlays();portal.style.opacity='0';portal.style.pointerEvents='none';
   const s=document.getElementById('screen-'+name);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active','from-left','from-right','from-up','from-down','from-center'));
-  s.classList.add('active','from-'+dir);if(name==='studies'&&typeof ensureStudies==='function')ensureStudies();if(name==='tonal'&&typeof ensureTonal==='function')ensureTonal();window.scrollTo(0,0);}
+  s.classList.add('active','from-'+dir);if(name==='studies'){if(typeof ensureStudies==='function')ensureStudies();maybePlayStudiesIntro();}if(name==='tonal'&&typeof ensureTonal==='function')ensureTonal();window.scrollTo(0,0);}
 function home(){if(location.protocol!=='file:'&&hostedDeepLink()){location.href='/';return;}clearOverlays();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';portal.className='';}
 function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);if(name==='studies'||name==='tonal')go(name,name==='studies'?'left':'down');}catch(e){}}
 

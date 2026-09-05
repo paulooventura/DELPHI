@@ -308,9 +308,24 @@
 
 /* ── Home field ──────────────────────────────────────────────────────────── */
 .onyx-field { position: absolute; inset: 0; z-index: 0; transition: transform var(--onyx-deep-settle); }
+.onyx-home-vision {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  background-image:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(2, 1, 8, 0.03) 42%, rgba(0, 0, 0, 0.44) 100%),
+    url("/home-cosmos.jpg");
+  background-size: cover;
+  background-position: center calc(50% + 4vh);
+  filter: saturate(0.84) contrast(1.08) brightness(0.78);
+  opacity: 0.82;
+  transition: opacity var(--onyx-deep-settle), filter var(--onyx-deep-settle);
+}
 .onyx-aura {
-  position: absolute; inset: 0; transition: opacity var(--onyx-deep-settle);
-  background: radial-gradient(120% 80% at 50% 8%, rgba(30, 26, 54, 0.5) 0%, rgba(8, 7, 16, 0.4) 38%, #000 70%);
+  position: absolute; inset: 0; z-index: 0; transition: opacity var(--onyx-deep-settle);
+  background:
+    radial-gradient(82% 58% at 50% 49%, rgba(190, 177, 255, 0.08), transparent 64%),
+    radial-gradient(120% 80% at 50% 8%, rgba(30, 26, 54, 0.28) 0%, rgba(8, 7, 16, 0.18) 45%, rgba(0, 0, 0, 0.56) 100%);
 }
 .onyx-vignette {
   position: absolute; inset: 0; pointer-events: none; z-index: 3;
@@ -427,6 +442,14 @@
 .onyx-device[data-depth="2"] .onyx-stars { opacity: 0.1; }
 .onyx-device[data-depth="1"] .onyx-aura { opacity: 0.6; }
 .onyx-device[data-depth="2"] .onyx-aura { opacity: 0.3; }
+.onyx-device[data-depth="1"] .onyx-home-vision {
+  opacity: 0.34;
+  filter: saturate(0.55) contrast(1.06) brightness(0.5) blur(1px);
+}
+.onyx-device[data-depth="2"] .onyx-home-vision {
+  opacity: 0.16;
+  filter: saturate(0.35) brightness(0.34) blur(2px);
+}
 
 .onyx-phase-moon {
   position: absolute; top: 14px; left: 50%; transform: translateX(-50%); z-index: 8;
@@ -692,8 +715,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-wrap .onyx-yy-phrase-btn { pointer-events: auto; }
 .onyx-yy-orb {
   position: relative;
-  width: min(52vmin, 340px);
-  height: min(52vmin, 340px);
+  width: min(60vmin, 380px);
+  height: min(60vmin, 380px);
   flex-shrink: 0;
 }
 .onyx-yy-arrows {
