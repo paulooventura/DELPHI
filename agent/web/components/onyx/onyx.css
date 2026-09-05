@@ -312,14 +312,53 @@
   position: absolute;
   inset: 0;
   z-index: 0;
-  background-image:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.08) 0%, rgba(2, 1, 8, 0.03) 42%, rgba(0, 0, 0, 0.44) 100%),
-    url("/home-cosmos.jpg");
-  background-size: cover;
-  background-position: center calc(50% + 4vh);
-  filter: saturate(0.84) contrast(1.08) brightness(0.78);
-  opacity: 0.82;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 250, 235, 0.42) 0 1.5%, rgba(214, 200, 255, 0.2) 5%, transparent 19%),
+    radial-gradient(ellipse 96% 58% at 50% 50%, rgba(153, 129, 222, 0.18), rgba(57, 42, 105, 0.11) 34%, transparent 69%),
+    radial-gradient(ellipse 145% 94% at 50% 48%, #141023 0%, #080711 47%, #010104 78%, #000 100%);
+  opacity: 1;
   transition: opacity var(--onyx-deep-settle), filter var(--onyx-deep-settle);
+}
+.onyx-home-vision::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(112vmax, 980px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background:
+    repeating-conic-gradient(
+      from 12deg,
+      rgba(242, 234, 255, 0.16) 0deg 2deg,
+      rgba(166, 143, 226, 0.08) 4deg 8deg,
+      transparent 12deg 25deg
+    ),
+    radial-gradient(circle, rgba(255, 248, 225, 0.18) 0 2%, rgba(177, 155, 232, 0.14) 7%, transparent 42%);
+  mask-image: radial-gradient(circle, #000 0 3%, rgba(0, 0, 0, 0.86) 14%, rgba(0, 0, 0, 0.28) 43%, transparent 68%);
+  filter: blur(7px);
+  mix-blend-mode: screen;
+  opacity: 0.68;
+  transform: translate(-50%, -50%) rotate(-17deg) scaleY(0.42);
+  animation: onyx-galaxy-breathe 22s ease-in-out infinite alternate;
+}
+.onyx-home-vision::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 135%;
+  height: 15%;
+  border-radius: 50%;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 5, 0.5) 45%, rgba(1, 0, 7, 0.78) 57%, transparent);
+  filter: blur(10px);
+  opacity: 0.72;
+  transform: translate(-50%, -50%) rotate(-13deg);
+}
+@keyframes onyx-galaxy-breathe {
+  from { transform: translate(-50%, -50%) rotate(-19deg) scaleY(0.39) scale(0.98); opacity: 0.58; }
+  to { transform: translate(-50%, -50%) rotate(-14deg) scaleY(0.45) scale(1.025); opacity: 0.75; }
 }
 .onyx-aura {
   position: absolute; inset: 0; z-index: 0; transition: opacity var(--onyx-deep-settle);
@@ -443,12 +482,12 @@
 .onyx-device[data-depth="1"] .onyx-aura { opacity: 0.6; }
 .onyx-device[data-depth="2"] .onyx-aura { opacity: 0.3; }
 .onyx-device[data-depth="1"] .onyx-home-vision {
-  opacity: 0.34;
-  filter: saturate(0.55) contrast(1.06) brightness(0.5) blur(1px);
+  opacity: 0.4;
+  filter: saturate(0.68) brightness(0.62) blur(1px);
 }
 .onyx-device[data-depth="2"] .onyx-home-vision {
-  opacity: 0.16;
-  filter: saturate(0.35) brightness(0.34) blur(2px);
+  opacity: 0.18;
+  filter: saturate(0.45) brightness(0.4) blur(2px);
 }
 
 .onyx-phase-moon {
@@ -705,19 +744,30 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   transition: opacity var(--onyx-settle);
 }
 .onyx-yy-wrap {
+  --yy-size: clamp(260px, 72vmin, 360px);
   inset: 0;
   bottom: 0;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   pointer-events: none;
+}
+.onyx-compass-stage.onyx-yy-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: grid;
+  place-items: center;
 }
 .onyx-yy-wrap .onyx-yy-gem { pointer-events: auto; }
 .onyx-yy-wrap .onyx-yy-dot,
 .onyx-yy-wrap .onyx-yy-phrase-btn { pointer-events: auto; }
 .onyx-yy-orb {
   position: relative;
-  width: min(60vmin, 380px);
-  height: min(60vmin, 380px);
+  width: var(--yy-size);
+  height: var(--yy-size);
   flex-shrink: 0;
+  grid-area: 1 / 1;
 }
 .onyx-yy-arrows {
   position: absolute;
@@ -797,6 +847,14 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   z-index: 4;
   pointer-events: none;
 }
+.onyx-yy-stage > .onyx-yy-dirs {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  width: calc(var(--yy-size) * 1.3);
+  height: calc(var(--yy-size) * 1.3);
+  transform: translate(-50%, -50%);
+}
 .onyx-yy-dirs button {
   pointer-events: auto;
   padding: 8px 10px;
@@ -811,6 +869,12 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-dirs .d-down { bottom: -2px; }
 .onyx-yy-dirs .d-left { left: -2px; }
 .onyx-yy-dirs .d-right { right: -2px; }
+@media (min-width: 800px) {
+  .onyx-yy-wrap { --yy-size: clamp(330px, 42vmin, 460px); }
+}
+@media (orientation: landscape) and (max-height: 620px) {
+  .onyx-yy-wrap { --yy-size: clamp(220px, 58vmin, 330px); }
+}
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase,
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-dot,
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-arrows {
@@ -1065,8 +1129,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   filter: drop-shadow(0 16px 32px rgba(169, 156, 255, 0.48));
 }
 @keyframes onyx-compass-float {
-  0%, 100% { transform: translate3d(0, 0, 0); }
-  50% { transform: translate3d(0, -7px, 0); }
+  0%, 100% { transform: translate3d(0, 4px, 0); }
+  50% { transform: translate3d(0, -4px, 0); }
 }
 .onyx-compass .needle {
   transform-origin: 31px 31px;
