@@ -768,11 +768,12 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-wrap .onyx-yy-dot,
 .onyx-yy-wrap .onyx-yy-phrase-btn { pointer-events: auto; }
 .onyx-yy-orb {
-  position: relative;
+  position: absolute;
+  left: 50%;
+  top: 50%;
   width: var(--yy-size);
   height: var(--yy-size);
-  flex-shrink: 0;
-  grid-area: 1 / 1;
+  transform: translate(-50%, -50%);
 }
 .onyx-yy-arrows {
   position: absolute;
@@ -816,8 +817,11 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   z-index: 1;
   width: 100%;
   height: 100%;
+  display: block;
+  padding: 0;
+  margin: 0;
 }
-.onyx-yy-orb .onyx-yy-svg {
+.onyx-yy-orb .onyx-yy-gem .onyx-yy-svg {
   width: 100%;
   height: 100%;
 }
@@ -1053,9 +1057,13 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   transition: transform 80ms linear, filter 180ms ease;
   border-radius: 50%;
   overflow: hidden;
+  filter:
+    drop-shadow(0 22px 26px rgba(0, 0, 0, 0.62))
+    drop-shadow(-5px -7px 12px rgba(220, 211, 255, 0.15));
   box-shadow:
-    inset -14px -20px 32px rgba(0, 0, 0, 0.55),
-    inset 12px 10px 20px rgba(255, 255, 255, 0.22);
+    inset -18px -24px 38px rgba(0, 0, 0, 0.62),
+    inset 14px 12px 24px rgba(255, 255, 255, 0.26),
+    0 0 0 1px rgba(227, 220, 255, 0.16);
 }
 .onyx-yy-contact-shadow {
   transform: translate(var(--yy-sh-x, 0), var(--yy-sh-y, 2px));

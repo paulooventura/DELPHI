@@ -178,22 +178,25 @@ export function OnyxYinYang({
         <clipPath id={`${uid}-clip`}>
           <circle cx="50" cy="50" r="48" />
         </clipPath>
-        <radialGradient id={`${uid}-yang`} cx="40%" cy="32%" r="80%">
+        <radialGradient id={`${uid}-yang`} cx="31%" cy="20%" r="92%">
           <stop offset="0%" stopColor="#ffffff" />
-          <stop offset="55%" stopColor="#f3f1f8" />
-          <stop offset="100%" stopColor="#c9c4d8" />
+          <stop offset="38%" stopColor="#f7f5fb" />
+          <stop offset="72%" stopColor="#dedbea" />
+          <stop offset="100%" stopColor="#9690a8" />
         </radialGradient>
-        <radialGradient id={`${uid}-yin`} cx="62%" cy="70%" r="84%">
-          <stop offset="0%" stopColor="#2a2448" />
-          <stop offset="35%" stopColor="#0c0a14" />
+        <radialGradient id={`${uid}-yin`} cx="28%" cy="18%" r="96%">
+          <stop offset="0%" stopColor="#5e5965" />
+          <stop offset="12%" stopColor="#292631" />
+          <stop offset="46%" stopColor="#09080d" />
           <stop offset="100%" stopColor="#000000" />
         </radialGradient>
         <radialGradient id={`${uid}-shade`} ref={shadeRef} cx="34%" cy="28%" r="78%">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.7)" />
-          <stop offset="14%" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="42%" stopColor="rgba(0,0,0,0)" />
-          <stop offset="78%" stopColor="rgba(0,0,0,0.45)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,0.82)" />
+          <stop offset="0%" stopColor="rgba(255,255,255,0.76)" />
+          <stop offset="11%" stopColor="rgba(255,255,255,0.3)" />
+          <stop offset="39%" stopColor="rgba(0,0,0,0)" />
+          <stop offset="75%" stopColor="rgba(0,0,0,0.34)" />
+          <stop offset="94%" stopColor="rgba(0,0,0,0.72)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.9)" />
         </radialGradient>
         <radialGradient id={`${uid}-spec`} ref={specRef} cx="34%" cy="28%" r="18%">
           <stop offset="0%" stopColor="rgba(255,255,255,1)" />
@@ -204,11 +207,21 @@ export function OnyxYinYang({
           <stop offset="55%" stopColor="rgba(0,0,0,0)" />
           <stop offset="100%" stopColor="rgba(0,0,0,0.38)" />
         </radialGradient>
+        <linearGradient id={`${uid}-rim`} x1="12%" y1="8%" x2="88%" y2="92%">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.92)" />
+          <stop offset="18%" stopColor="rgba(198,190,214,0.44)" />
+          <stop offset="52%" stopColor="rgba(38,32,52,0.12)" />
+          <stop offset="82%" stopColor="rgba(6,4,12,0.9)" />
+          <stop offset="100%" stopColor="rgba(186,174,210,0.46)" />
+        </linearGradient>
         <filter id={`${uid}-soft`} x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="0.65" />
         </filter>
         <filter id={`${uid}-win`} x="-20%" y="-20%" width="140%" height="140%">
           <feGaussianBlur stdDeviation="0.35" />
+        </filter>
+        <filter id={`${uid}-gloss`} x="-30%" y="-30%" width="160%" height="160%">
+          <feGaussianBlur stdDeviation="1.15" />
         </filter>
       </defs>
 
@@ -262,6 +275,31 @@ export function OnyxYinYang({
           fill={`url(#${uid}-spec)`}
           filter={`url(#${uid}-soft)`}
         />
+        <path
+          d="M14 43 C18 20 34 8 57 7 C40 11 27 22 21 43"
+          fill="none"
+          stroke="rgba(255,255,255,0.5)"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          filter={`url(#${uid}-gloss)`}
+        />
+        <path
+          d="M72 13 C88 26 94 45 90 65"
+          fill="none"
+          stroke="rgba(255,255,255,0.2)"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          filter={`url(#${uid}-soft)`}
+        />
+        <ellipse
+          cx="29"
+          cy="20"
+          rx="11"
+          ry="4.2"
+          fill="rgba(255,255,255,0.2)"
+          transform="rotate(-24 29 20)"
+          filter={`url(#${uid}-gloss)`}
+        />
         <circle cx="50" cy="26" r="8" fill={shareFlash ? "#2fbf71" : `url(#${uid}-yin)`} />
         <circle cx="50" cy="74" r="8" fill={copyFlash ? "#2fbf71" : `url(#${uid}-yang)`} />
         {shareFlash && (
@@ -294,8 +332,8 @@ export function OnyxYinYang({
         cy="50"
         r="48.7"
         fill="none"
-        stroke="rgba(12,8,24,0.55)"
-        strokeWidth="0.85"
+        stroke={`url(#${uid}-rim)`}
+        strokeWidth="1.35"
       />
     </svg>
   );
