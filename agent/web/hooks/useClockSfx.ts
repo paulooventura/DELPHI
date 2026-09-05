@@ -1,6 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState, type MutableRefObject, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type MutableRefObject,
+  type RefObject,
+} from "react";
 import { marksKey, readClockLaneMarks, type ClockLaneMarks } from "../lib/clockLaneMarks";
 import {
   getClockAudio,
@@ -121,10 +128,10 @@ export function useClockSfx(
       }
       restore();
     };
+    // Only visibility/pagehide — blur/focus fires on mobile chrome (URL bar,
+    // notifications) and was mute→unmute thrashing the Schumann bed.
     document.addEventListener("visibilitychange", onVis);
     window.addEventListener("pagehide", silence);
-    window.addEventListener("blur", silence);
-    window.addEventListener("focus", restore);
 
     const existing = getClockAudio();
     if (
@@ -196,27 +203,26 @@ export function useClockSfx(
       window.removeEventListener("keydown", unlock);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pagehide", silence);
-      window.removeEventListener("blur", silence);
-      window.removeEventListener("focus", restore);
       muteClockAudio({ fadeMs: 120 });
     };
   }, [enabled]);
 
-  return {
-    active,
-    enable: () =>
-      void resumeClockAudio().then(ctx => {
-        if (!ctx || document.visibilityState === "hidden") return;
-        syncChimeRefs({
-          lastSec,
-          lastChimeKey,
-          lastMarks,
-          lastMarkMs,
-          observer: readObserver(),
-        });
-        unmuteClockAudio();
-        startSchumannAtmosphere(ctx);
-        setActive(true);
-      }),
-  };
+  const enable = useCallback(() => {
+    void resumeClockAudio().then(ctx => {
+      if (!ctx || document.visibilityState === "hidden") return;
+      if (!enabledRef.current) return;
+      syncChimeRefs({
+        lastSec,
+        lastChimeKey,
+        lastMarks,
+        lastMarkMs,
+        observer: readObserver(),
+      });
+      unmuteClockAudio();
+      startSchumannAtmosphere(ctx);
+      setActive(true);
+    });
+  }, []);
+
+  return { active, enable };
 }

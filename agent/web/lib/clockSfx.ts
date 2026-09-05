@@ -26,12 +26,14 @@ function masterBus(ctx: AudioContext): GainNode {
   if (!sharedMaster || sharedMaster.context !== ctx) {
     sharedMaster = ctx.createGain();
     sharedMaster.gain.value = MASTER_CEILING;
+    // Gentle ceiling — aggressive ratio/threshold was ducking the Schumann bed
+    // on every second tick (heard as play / cut / play).
     sharedLimiter = ctx.createDynamicsCompressor();
-    sharedLimiter.threshold.value = -20;
-    sharedLimiter.knee.value = 14;
-    sharedLimiter.ratio.value = 10;
-    sharedLimiter.attack.value = 0.003;
-    sharedLimiter.release.value = 0.18;
+    sharedLimiter.threshold.value = -10;
+    sharedLimiter.knee.value = 18;
+    sharedLimiter.ratio.value = 3;
+    sharedLimiter.attack.value = 0.012;
+    sharedLimiter.release.value = 0.35;
     sharedMaster.connect(sharedLimiter);
     sharedLimiter.connect(ctx.destination);
   }
@@ -622,6 +624,7 @@ export function muteClockAudio(opts?: { fadeMs?: number }): void {
 
 /** Restore master bus level after an intentional mute (stone back on / foreground). */
 export function unmuteClockAudio(): void {
+  const wasSilenced = audioSilenced;
   muteEpoch += 1;
   audioSilenced = false;
   const ctx = sharedCtx;
@@ -629,6 +632,18 @@ export function unmuteClockAudio(): void {
     void ctx.resume();
   }
   if (!sharedMaster) return;
+  // Already open — do not re-slam gain to ~0 (React re-renders used to pump
+  // unmute every second and sounded like the bed cutting in and out).
+  if (!wasSilenced && sharedMaster.gain.value > MASTER_CEILING * 0.45) {
+    try {
+      const t = sharedMaster.context.currentTime;
+      sharedMaster.gain.cancelScheduledValues(t);
+      sharedMaster.gain.setValueAtTime(MASTER_CEILING, t);
+    } catch {
+      /* ignore */
+    }
+    return;
+  }
   try {
     const t = sharedMaster.context.currentTime;
     sharedMaster.gain.cancelScheduledValues(t);

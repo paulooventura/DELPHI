@@ -18,6 +18,7 @@ import { OnyxStarfield } from "./OnyxStarfield";
 import { OnyxAudioStone } from "./OnyxAudioStone";
 import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
+import { OnyxDoorArrows } from "./OnyxDoorArrows";
 import { OnyxYinYang } from "./OnyxYinYang";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
 import {
@@ -723,6 +724,7 @@ export function OnyxHome({
         <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
             <div className="onyx-yy-orb">
+            <OnyxDoorArrows active={compassAim ?? gemSpin ?? null} />
             <button
               type="button"
               className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}

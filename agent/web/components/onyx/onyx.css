@@ -471,14 +471,15 @@
   display: flex; flex-direction: column; align-items: center; padding: 0 34px; text-align: center;
 }
 .onyx-yy-phrase {
+  /* Sit above the taijitu — between the moon and the marble, not on it. */
   position: absolute;
   left: 50%;
-  top: 50%;
-  transform: translate(-50%, -50%);
+  top: 0;
+  transform: translate(-50%, calc(-100% - 14px));
   z-index: 11;
-  width: 56%;
-  max-height: 42%;
-  padding: 0 4px;
+  width: min(78vw, 340px);
+  max-height: none;
+  padding: 0 8px;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -487,7 +488,7 @@
   text-align: center;
   background: none;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
 }
 .onyx-yy-street-meta {
   position: absolute;
@@ -521,13 +522,18 @@
   pointer-events: auto;
 }
 .onyx-yy-phrase-btn {
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.55) 0%, rgba(0, 0, 0, 0.28) 55%, rgba(0, 0, 0, 0) 100%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(0, 0, 0, 0.42) 0%,
+    rgba(0, 0, 0, 0.18) 58%,
+    rgba(0, 0, 0, 0) 100%
+  );
 }
 .onyx-yy-phrase .big {
   margin: 0 auto;
   width: 100%;
-  font-size: clamp(9px, 2.05vmin, 12.5px);
-  line-height: 1.28;
+  font-size: clamp(12px, 2.8vmin, 17px);
+  line-height: 1.35;
   text-align: center;
   text-wrap: balance;
   color: #f7f4ee;
@@ -650,6 +656,43 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   height: min(52vmin, 340px);
   flex-shrink: 0;
 }
+.onyx-yy-arrows {
+  position: absolute;
+  inset: -14%;
+  width: 128%;
+  height: 128%;
+  left: -14%;
+  top: -14%;
+  z-index: 2;
+  pointer-events: none;
+  overflow: visible;
+}
+.onyx-yy-arrow {
+  opacity: 0.62;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: onyx-yy-arrow-breathe 3.6s ease-in-out infinite;
+  transition: opacity 180ms ease, filter 180ms ease;
+  filter: drop-shadow(0 0 3px rgba(100, 70, 180, 0.35));
+}
+.onyx-yy-arrow-up { animation-delay: 0s; }
+.onyx-yy-arrow-right { animation-delay: 0.45s; }
+.onyx-yy-arrow-down { animation-delay: 0.9s; }
+.onyx-yy-arrow-left { animation-delay: 1.35s; }
+.onyx-yy-arrow.on {
+  opacity: 1;
+  filter:
+    drop-shadow(0 0 6px rgba(169, 156, 255, 0.7))
+    drop-shadow(0 0 14px rgba(108, 92, 255, 0.45));
+  animation: none;
+}
+.onyx-yy-wrap.holding .onyx-yy-arrow:not(.on) {
+  opacity: 0.38;
+}
+@keyframes onyx-yy-arrow-breathe {
+  0%, 100% { opacity: 0.48; }
+  50% { opacity: 0.78; }
+}
 .onyx-yy-orb .onyx-yy-gem {
   position: relative;
   z-index: 1;
@@ -706,7 +749,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-dirs .d-left { left: -2px; }
 .onyx-yy-dirs .d-right { right: -2px; }
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase,
-.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-dot {
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-dot,
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-arrows {
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.12s linear;
