@@ -62,6 +62,15 @@ export function OnyxOrrery({
   const lastTsRef = useRef(0);
 
   useEffect(() => {
+    if (!expanded) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setExpanded(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [expanded]);
+
+  useEffect(() => {
     visibleRef.current = true;
     const canvas = canvasRef.current;
     const wrap = wrapRef.current;
@@ -342,34 +351,49 @@ export function OnyxOrrery({
           />
         </div>
         {expanded && (
-          <div className="onyx-orrery-teach" role="dialog" aria-label={expanded.name}>
-            <p className="onyx-eyebrow">{expanded.name}</p>
-            <p className="onyx-layer-lead">{expanded.activeLabel}</p>
-            <p className="onyx-layer-meta">
-              Cycle · {expanded.cycle}
-              {" · "}
-              {expanded.tier === "display"
-                ? "display pulse"
-                : expanded.tier}
-            </p>
-            {expanded.lore && <p className="onyx-decomp-source">{expanded.lore}</p>}
-            {expanded.source && (
-              <p className="onyx-layer-meta">{expanded.source}</p>
-            )}
-            {expanded.cells[expanded.index]?.glyph && (
-              <p className="onyx-layer-lead" style={{ fontSize: 22 }}>
-                {expanded.cells[expanded.index]!.glyph}
-              </p>
-            )}
-            <button
-              type="button"
-              className="onyx-tool-btn"
-              style={{ marginTop: 8 }}
-              onClick={() => setExpanded(null)}
+          <div
+            className="onyx-orrery-teach-scrim"
+            onClick={() => setExpanded(null)}
+          >
+            <section
+              className="onyx-orrery-teach"
+              role="dialog"
+              aria-modal="true"
+              aria-label={expanded.name}
+              onClick={event => event.stopPropagation()}
             >
-              Close lane
-              <span>Back to the stack</span>
-            </button>
+              <div className="onyx-orrery-teach-center">
+                <p className="onyx-eyebrow">{expanded.name}</p>
+                {expanded.cells[expanded.index]?.glyph && (
+                  <p className="onyx-orrery-teach-glyph">
+                    {expanded.cells[expanded.index]!.glyph}
+                  </p>
+                )}
+                <p className="onyx-layer-lead">{expanded.activeLabel}</p>
+                <p className="onyx-layer-meta">
+                  Cycle · {expanded.cycle}
+                  {" · "}
+                  {expanded.tier === "display"
+                    ? "display pulse"
+                    : expanded.tier}
+                </p>
+                {expanded.lore && <p className="onyx-decomp-source">{expanded.lore}</p>}
+                {expanded.source && (
+                  <p className="onyx-layer-meta onyx-orrery-teach-source">
+                    {expanded.source}
+                  </p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="onyx-tool-btn onyx-orrery-teach-close"
+                autoFocus
+                onClick={() => setExpanded(null)}
+              >
+                Close lane
+                <span>Back to the stack</span>
+              </button>
+            </section>
           </div>
         )}
       </div>

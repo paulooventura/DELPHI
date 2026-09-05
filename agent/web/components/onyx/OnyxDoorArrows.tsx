@@ -111,11 +111,13 @@ export function OnyxDoorArrows({
       ? active
       : null;
 
-  const dirs: { dir: DoorArrowDir; rotate: number }[] = [
-    { dir: "up", rotate: 180 },
-    { dir: "right", rotate: -90 },
-    { dir: "down", rotate: 0 },
-    { dir: "left", rotate: 90 },
+  const dirs: { dir: DoorArrowDir; x: number; y: number; rotate: number }[] = [
+    // Position and heading are explicit: top points up, right points right,
+    // bottom points down, left points left.
+    { dir: "up", x: 50, y: 5.4, rotate: 180 },
+    { dir: "right", x: 94.6, y: 50, rotate: -90 },
+    { dir: "down", x: 50, y: 94.6, rotate: 0 },
+    { dir: "left", x: 5.4, y: 50, rotate: 90 },
   ];
 
   return (
@@ -125,16 +127,13 @@ export function OnyxDoorArrows({
       aria-hidden
       focusable="false"
     >
-      {dirs.map(({ dir, rotate }) => (
+      {dirs.map(({ dir, x, y, rotate }) => (
         <g
           key={dir}
           className={`onyx-yy-arrow onyx-yy-arrow-${dir}${lit === dir ? " on" : ""}`}
-          transform={`rotate(${rotate} 50 50)`}
+          transform={`translate(${x} ${y}) rotate(${rotate})`}
         >
-          {/* Just outside the marble rim */}
-          <g transform="translate(50 5.4)">
-            <CurvedOnyxHead id={`yy-arr-${dir}`} />
-          </g>
+          <CurvedOnyxHead id={`yy-arr-${dir}`} />
         </g>
       ))}
     </svg>
