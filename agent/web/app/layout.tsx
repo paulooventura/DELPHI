@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Space_Grotesk, Geist_Mono } from "next/font/google";
+import { Bodoni_Moda, Manrope, Geist_Mono } from "next/font/google";
 import { SITE_URL } from "../lib/site";
 import { DELPHI_BUILD } from "../lib/buildStamp";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const fashion = Bodoni_Moda({
+  variable: "--font-fashion",
   subsets: ["latin"],
-  axes: ["opsz"],
+  weight: ["400", "500", "600"],
 });
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+const clean = Manrope({
+  variable: "--font-clean",
   subsets: ["latin"],
-  weight: ["300", "400", "500"],
+  weight: ["300", "400", "500", "600"],
 });
 
 const geistMono = Geist_Mono({
@@ -75,13 +75,13 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fraunces.variable} ${spaceGrotesk.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${fashion.variable} ${clean.variable} ${geistMono.variable} h-full antialiased`}
     >
       <head>
         <meta httpEquiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
       </head>
-      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-space-grotesk), system-ui, sans-serif" }}>
+      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-clean), system-ui, sans-serif" }}>
         {children}
       </body>
     </html>
