@@ -2401,6 +2401,24 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   line-height: 1.65;
   color: var(--onyx-ink);
 }
+.onyx-orrery-lore-block {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.onyx-orrery-lore-label {
+  margin: 0;
+  font-size: 9px;
+  line-height: 1;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--onyx-core);
+}
+.onyx-orrery-lore-block + .onyx-orrery-lore-block {
+  padding-top: 14px;
+  border-top: 0.5px solid rgba(140, 124, 255, 0.12);
+}
 .onyx-orrery-teach-glyph {
   margin: 0;
   min-height: 1em;

@@ -119,6 +119,107 @@ export type OrreryLaneState = {
   source?: string;
   /** Why this cycle exists — shown when the lane is opened. */
   lore?: string;
+  /** Historical birthplace / lineage of the unit or cycle. */
+  origin?: string;
+  /** Cautious period when the convention is attested or standardized. */
+  usedSince?: string;
+  /** A memorable, relevant fact rather than another definition. */
+  curious?: string;
+};
+
+type LaneLore = Pick<OrreryLaneState, "origin" | "usedSince" | "curious">;
+
+/**
+ * Historical teaching copy for every visible lane.
+ * Dates are deliberately cautious ("attested", "standardized") because a
+ * convention's ancestry is often older than its surviving written record.
+ */
+const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
+  year: {
+    origin: "Astronomical calendars grew from watching the Sun return through the seasons; the modern civil year is the Gregorian calendar's arithmetic approximation.",
+    usedSince: "Seasonal year-counting is prehistoric. The Gregorian reform has governed most international civil time since 1582, spreading gradually by country.",
+    curious: "A tropical year is about 365.2422 days, which is why the Gregorian rule keeps most century years common but retains years divisible by 400 as leap years.",
+  },
+  month: {
+    origin: "The word month descends from Moon. Early month systems followed lunations; the modern Gregorian months preserve a reshaped Roman calendar.",
+    usedSince: "Lunar month-counting is ancient. The present twelve-month Gregorian arrangement dates to 1582 but inherited the Julian calendar of 45 BCE.",
+    curious: "Our unequal 28–31 day months no longer track one lunar phase cycle, which averages about 29.53 days.",
+  },
+  season: {
+    origin: "This lane divides the tropical year into twelve equal 30° sectors, following the zodiacal framework developed in Babylonian astronomy and adopted by Hellenistic astrologers.",
+    usedSince: "A standardized twelve-sign zodiac is attested in Babylonia by the 5th century BCE and was elaborated in the Hellenistic world.",
+    curious: "A tropical sign is anchored to the equinoxes and solstices, so precession slowly separates it from the same-named star constellation.",
+  },
+  "wuku-tzolkin": {
+    origin: "Two independent sacred/social counts share this visual speed band: the Javanese-Balinese Pawukon and the Maya 260-day Tzolk'in.",
+    usedSince: "The Maya 260-day count is attested in Mesoamerica before the Common Era. Pawukon has deep Javanese-Balinese roots and remains culturally active.",
+    curious: "The Maya count interlocks 20 day names with 13 numbers; Pawukon layers ten simultaneous week cycles inside a repeating 210-day whole.",
+  },
+  moon: {
+    origin: "A synodic month measures the Moon's repeating phase relationship with the Sun, one of humanity's oldest visible clocks.",
+    usedSince: "Lunar phase tallies appear in prehistoric artifacts; written lunar calendars are documented in early Mesopotamia and many other ancient cultures.",
+    curious: "The phase cycle averages about 29.53 days, while the Moon returns to the same stars in only about 27.32 days—the Sun moved meanwhile.",
+  },
+  pancawara: {
+    origin: "Pancawara is the five-day market week of the Javanese-Balinese calendrical family, with each day carrying a traditional name and social quality.",
+    usedSince: "Its exact beginning is not recoverable; it is inherited through the old Javanese and Balinese Pawukon traditions and remains in use.",
+    curious: "Pancawara meets the seven-day week every 35 days; in Javanese practice that pairing helps identify a person's weton.",
+  },
+  day: {
+    origin: "The physical day comes from Earth's rotation; the civil day turns that changing solar motion into a shared social count.",
+    usedSince: "Day-counting predates writing. The twenty-four-part day traces through ancient Egyptian hour systems and later Hellenistic astronomy.",
+    curious: "Apparent solar days are not perfectly equal. Mechanical clocks keep a mean solar day, smoothing seasonal variation caused by Earth's orbit and tilt.",
+  },
+  shi: {
+    origin: "Traditional Chinese time divided the day into twelve shí, each named for an Earthly Branch and later paired with its zodiac animal.",
+    usedSince: "The branch cycle is ancient and the twelve double-hour system is firmly attested in imperial China, including the Han era.",
+    curious: "The Zǐ hour straddles midnight, roughly 11 p.m.–1 a.m.; therefore a named shí does not begin on the modern even-hour boundary everywhere.",
+  },
+  "planetary-hour": {
+    origin: "Hellenistic astrologers assigned daylight and night to seven wandering lights in the repeating Chaldean order, beginning each day with its ruling planet.",
+    usedSince: "Planetary-hour schemes are attested in the Greco-Roman world in the early centuries of the Common Era.",
+    curious: "The first-hour ruler generates the weekday sequence: Sun-day, Moon-day, Mars-day and so on—the same planetary ancestry survives in many languages.",
+  },
+  muhurta: {
+    origin: "Muhūrta is an Indic division of the day used in astronomy, ritual timing, and electional traditions; a conventional day contains thirty.",
+    usedSince: "The term and related divisions occur in ancient Sanskrit literature and were systematized across classical Indian astronomical traditions.",
+    curious: "A muhūrta is conventionally 48 modern minutes, but its cultural meaning can depend on sunrise and context rather than a wall-clock timestamp alone.",
+  },
+  ghati: {
+    origin: "Ghaṭī or ghaṭikā is an Indic time unit associated with water clocks: sixty ghaṭī complete a day, making each about 24 modern minutes.",
+    usedSince: "Water-clock timekeeping is described in classical Indian sources and ghaṭī remained practical into medieval and early-modern South Asia.",
+    curious: "A common device was a small bowl with a calibrated hole; the bowl sank when full, physically turning flowing water into elapsed time.",
+  },
+  min: {
+    origin: "The minute is the Latin pars minuta prima—the first small part—created by applying inherited Babylonian base-60 fractions to an hour.",
+    usedSince: "Ptolemy used sexagesimal first fractions in the 2nd century CE; minutes became everyday clock readings as precision clocks and minute hands spread after the late Middle Ages.",
+    curious: "Minute originally meant a mathematical fraction, not necessarily a displayed clock unit; early public clocks often had only an hour hand.",
+  },
+  pala: {
+    origin: "Pala, also called vighaṭī in timekeeping contexts, subdivides the Indic ghaṭī: sixty pala make one ghaṭī.",
+    usedSince: "It belongs to classical and medieval Indian astronomical time-reckoning, though exact historical values could vary by text and locality.",
+    curious: "Under the common 60-ghaṭī day convention, one pala equals 24 modern seconds—an ancient rung between our minute and second.",
+  },
+  prana: {
+    origin: "Prāṇa means breath or vital breath; some Indic time systems used one respiration as a small unit, conventionally six prāṇa to a pala.",
+    usedSince: "Breath-based measures occur in classical Indian astronomical and yogic traditions; Delphi uses the common approximate four-second convention.",
+    curious: "It joins body and clock directly: six measured breaths form a pala, so physiology becomes the metaphor and instrument of subdivision.",
+  },
+  helek: {
+    origin: "The Hebrew ḥeleq—'part'—is the fine unit used in traditional Jewish molad arithmetic: 1/1080 of an hour.",
+    usedSince: "The system preserves ancient Near Eastern sexagesimal mathematics and is documented in medieval Jewish calendrical calculation.",
+    curious: "There are exactly 18 ḥalakim in a modern minute and 76 rega'im in one ḥeleq; 1080 is useful because it has many divisors.",
+  },
+  sec: {
+    origin: "The second is the Latin pars minuta secunda—the second small part of an hour—built by dividing an hour by 60, then dividing that result by 60 again.",
+    usedSince: "Ptolemy used sexagesimal second fractions in the 2nd century CE. Seconds became practical clock units in the 16th–17th centuries and an SI base unit in 1960.",
+    curious: "Since 1967, one SI second is not defined by the Sun: it is exactly 9,192,631,770 transitions of the caesium-133 atom.",
+  },
+  ms: {
+    origin: "A millisecond is the metric prefix milli—one thousandth—applied to the SI second.",
+    usedSince: "The prefix was created with the metric system in the late 18th century; milliseconds became everyday engineering units with electrical and electronic timing.",
+    curious: "Light travels almost 300 kilometres in one millisecond, while a 60 Hz screen frame lasts about 16.7 milliseconds.",
+  },
 };
 
 export type SlowSkyItem = {
@@ -560,7 +661,12 @@ export function computeOrreryState(
     },
   ];
 
-  return { lanes: lanesNorthToSouth, slowSky };
+  const lanesWithLore = lanesNorthToSouth.map(lane => ({
+    ...lane,
+    ...LANE_LORE[lane.id],
+  }));
+
+  return { lanes: lanesWithLore, slowSky };
 }
 
 /** Map speedT 0..1 → CSS/canvas colour (red hot → deep blue). */

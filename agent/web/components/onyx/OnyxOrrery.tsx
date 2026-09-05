@@ -377,7 +377,30 @@ export function OnyxOrrery({
                     ? "display pulse"
                     : expanded.tier}
                 </p>
-                {expanded.lore && <p className="onyx-decomp-source">{expanded.lore}</p>}
+                {expanded.lore && (
+                  <div className="onyx-orrery-lore-block">
+                    <p className="onyx-orrery-lore-label">What it keeps</p>
+                    <p className="onyx-decomp-source">{expanded.lore}</p>
+                  </div>
+                )}
+                {expanded.origin && (
+                  <div className="onyx-orrery-lore-block">
+                    <p className="onyx-orrery-lore-label">Origin</p>
+                    <p className="onyx-decomp-source">{expanded.origin}</p>
+                  </div>
+                )}
+                {expanded.usedSince && (
+                  <div className="onyx-orrery-lore-block">
+                    <p className="onyx-orrery-lore-label">Used since</p>
+                    <p className="onyx-decomp-source">{expanded.usedSince}</p>
+                  </div>
+                )}
+                {expanded.curious && (
+                  <div className="onyx-orrery-lore-block">
+                    <p className="onyx-orrery-lore-label">Curious fact</p>
+                    <p className="onyx-decomp-source">{expanded.curious}</p>
+                  </div>
+                )}
                 {expanded.source && (
                   <p className="onyx-layer-meta onyx-orrery-teach-source">
                     {expanded.source}

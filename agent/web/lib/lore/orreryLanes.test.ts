@@ -30,6 +30,9 @@ describe("orrery lanes — CLOCK-SPEC", () => {
       expect(lane.progress).toBeGreaterThanOrEqual(0);
       expect(lane.progress).toBeLessThan(1.0001);
       expect(lane.cells.length).toBeGreaterThan(0);
+      expect(lane.origin?.length).toBeGreaterThan(30);
+      expect(lane.usedSince?.length).toBeGreaterThan(30);
+      expect(lane.curious?.length).toBeGreaterThan(30);
     }
   });
 
