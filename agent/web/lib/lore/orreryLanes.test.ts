@@ -28,8 +28,12 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(ids).toContain("nakshatra");
     expect(ids).toContain("age");
     expect(ids).toContain("date");
+    expect(ids).toContain("planetary-day");
+    expect(ids.filter(id => id !== "wuku-tzolkin")).toHaveLength(30);
     expect(ids.indexOf("month")).toBeLessThan(ids.indexOf("date"));
     expect(ids.indexOf("date")).toBeLessThan(ids.indexOf("moon"));
+    expect(ids.indexOf("wuku")).toBeLessThan(ids.indexOf("planetary-day"));
+    expect(ids.indexOf("planetary-day")).toBeLessThan(ids.indexOf("pancawara"));
     expect(ids).not.toContain("wuku-tzolkin");
     const dateLane = lanes.find(l => l.id === "date")!;
     expect(dateLane.activeLabel).toBe("24");
@@ -67,6 +71,25 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(muh.activeLabel.length).toBeGreaterThan(0);
     expect(shi.activeLabel.length).toBeGreaterThan(0);
     expect(ph.activeLabel.toLowerCase()).toMatch(/hour|saturn|jupiter|mars|sun|venus|mercury|moon/);
+  });
+
+  it("planetary day is the 30th lane and follows the local weekday", () => {
+    const { lanes } = computeOrreryState(
+      new Date("2026-07-24T18:00:00Z"),
+      36.16,
+      -86.78,
+    );
+    expect(lanes).toHaveLength(30);
+    const pd = lanes.find(l => l.id === "planetary-day")!;
+    expect(pd.cells).toHaveLength(7);
+    // 18:00 UTC Friday 24 Jul 2026 = 1:00 PM CDT Friday → Venus
+    expect(pd.activeLabel).toMatch(/Venus|Friday/i);
+    const saturday = computeOrreryState(
+      stepOrreryDate(new Date("2026-07-24T18:00:00Z"), "planetary-day", +1),
+      36.16,
+      -86.78,
+    ).lanes.find(l => l.id === "planetary-day")!;
+    expect(saturday.activeLabel).toMatch(/Saturn|Saturday/i);
   });
 
   it("phase offset vs fixed now-line is the reading (not force-centered)", () => {

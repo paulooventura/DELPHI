@@ -84,6 +84,7 @@ export const NATAL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
   "nakshatra",
   "decan",
   "wuku",
+  "planetary-day",
   "pancawara",
   "manzil",
   "numerology",

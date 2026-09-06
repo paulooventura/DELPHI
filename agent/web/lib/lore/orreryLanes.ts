@@ -61,6 +61,7 @@ export type OrreryLaneId =
   | "tzolkin"
   | "month"
   | "date"
+  | "planetary-day"
   | "moon"
   | "nakshatra"
   | "decan"
@@ -166,6 +167,11 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
     origin: "The numbered day inside a named month is the civil date — the Gregorian count of 1 through 28, 29, 30, or 31.",
     usedSince: "Numbered days inside months are inherited from the Roman calendar and kept by the Julian and Gregorian reforms.",
     curious: "This row grows and shrinks with the month you are in. February is the short one; leap years add the 29th.",
+  },
+  "planetary-day": {
+    origin: "The seven-day planetary week names each civil day for a wandering light — the same Chaldean cascade that generates the weekday words still spoken in many languages.",
+    usedSince: "A seven-day planetary week is attested in the Greco-Roman world by the early centuries of the Common Era and became the international civil week.",
+    curious: "Sunday through Saturday are the first-hour rulers of this sequence. The planetary-hour lane is the same order, running inside the day.",
   },
   season: {
     origin: "This lane divides the tropical year into twelve equal 30° sectors, following the zodiacal framework developed in Babylonian astronomy and adopted by Hellenistic astrologers.",
@@ -312,6 +318,10 @@ export type SlowSkyItem = {
 };
 
 const CHALDEAN = ["saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon"] as const;
+/** Sunday→Saturday planetary-day order — matches resolveMoment `PD`. */
+const PLANETARY_DAY_IDS = [
+  "pd-sun", "pd-moon", "pd-mars", "pd-mercury", "pd-jupiter", "pd-venus", "pd-saturn",
+] as const;
 const SHI = ["zi", "chou", "yin", "mao", "chen", "si", "wu", "wei", "shen", "you", "xu", "hai"] as const;
 const SHI_LABEL = [
   "Zi · Rat", "Chou · Ox", "Yin · Tiger", "Mao · Rabbit", "Chen · Dragon", "Si · Snake",
@@ -347,21 +357,33 @@ function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
-function localHourFrac(date: Date, timeZone: string): { dayFrac: number; hour: number; minute: number; second: number; ms: number } {
+function localHourFrac(date: Date, timeZone: string): {
+  dayFrac: number;
+  hour: number;
+  minute: number;
+  second: number;
+  ms: number;
+  weekday: number;
+} {
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone,
     hour: "numeric",
     minute: "numeric",
     second: "numeric",
+    weekday: "short",
     hourCycle: "h23",
   }).formatToParts(date);
-  const get = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0);
-  const hour = get("hour");
-  const minute = get("minute");
-  const second = get("second");
+  const num = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0);
+  const wdMap: Record<string, number> = {
+    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
+  };
+  const hour = num("hour");
+  const minute = num("minute");
+  const second = num("second");
   const ms = date.getMilliseconds();
   const dayFrac = (hour + minute / 60 + second / 3600 + ms / 3_600_000) / 24;
-  return { dayFrac, hour, minute, second, ms };
+  const weekday = wdMap[parts.find(p => p.type === "weekday")?.value ?? ""] ?? date.getUTCDay();
+  return { dayFrac, hour, minute, second, ms, weekday };
 }
 
 function zoneFor(lat: number, lon: number): string {
@@ -386,7 +408,7 @@ export function computeOrreryState(
   lon: number,
 ): { lanes: OrreryLaneState[]; slowSky: SlowSkyItem[] } {
   const timeZone = zoneFor(lat, lon);
-  const { dayFrac, hour, minute, second, ms } = localHourFrac(date, timeZone);
+  const { dayFrac, hour, minute, second, ms, weekday } = localHourFrac(date, timeZone);
   const jd = jdFromDate(date);
   const resolved = resolveMoment(jd, lat, lon);
   const meta = resolved.meta;
@@ -402,6 +424,10 @@ export function computeOrreryState(
     glyph: byId(`shi-${b}`)?.glyph,
   }));
   const pancaCells = cellsFromSystem("pancawara");
+  const pdCells = PLANETARY_DAY_IDS.map(id => {
+    const e = byId(id);
+    return { id, label: e?.name ?? id, glyph: e?.glyph };
+  });
   const moonCells = MP_IDS.map(id => {
     const e = byId(id);
     return { id, label: e?.name ?? id, glyph: e?.glyph };
@@ -722,6 +748,19 @@ export function computeOrreryState(
       lore: "One named week of the Javanese-Balinese Pawukon. Its own row now — no longer sharing the line with Tzolk'in.",
     },
     {
+      id: "planetary-day",
+      name: "Planetary day",
+      cycle: "7 days",
+      tier: "celebrated",
+      speedT: 0.78,
+      index: weekday,
+      progress: dayFrac,
+      cells: pdCells,
+      activeLabel: pdCells[weekday]?.label ?? "—",
+      source: byId(PLANETARY_DAY_IDS[weekday]!)?.source,
+      lore: "The seven-day planetary week — each civil day named for its first-hour ruler. Same cascade as the planetary-hour lane, one step slower.",
+    },
+    {
       id: "pancawara",
       name: "Pancawara",
       cycle: "5 days",
@@ -1012,7 +1051,7 @@ export function computeOrreryState(
 
 export const ALL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
   "precession", "age", "century", "year", "season", "tzolkin", "month", "date", "moon",
-  "nakshatra", "decan", "wuku", "pancawara", "manzil", "numerology", "day",
+  "nakshatra", "decan", "wuku", "planetary-day", "pancawara", "manzil", "numerology", "day",
   "shi", "planetary-hour", "muhurta", "ghati", "ke", "min", "beat", "pala",
   "prana", "helek", "sec", "rega", "ms",
 ];
@@ -1039,6 +1078,7 @@ export function stepOrreryDate(date: Date, id: OrreryLaneId, dir: number): Date 
       d.setMonth(d.getMonth() + step);
       return d;
     case "date":
+    case "planetary-day":
       d.setDate(d.getDate() + step);
       return d;
     case "tzolkin":

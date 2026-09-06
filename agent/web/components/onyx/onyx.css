@@ -12,11 +12,12 @@
   --onyx-edge-bright: rgba(140, 124, 255, 0.42);
   --onyx-edge: rgba(140, 124, 255, 0.16);
   --onyx-edge-faint: rgba(140, 124, 255, 0.1);
-  --onyx-ink-bright: #f2f0fb;
-  --onyx-ink: #d3d0e2;
-  --onyx-ink-soft: #c8c4d8;
-  --onyx-ink-quiet: #b4b0c4;
-  --onyx-ink-faint: #8f8ca3;
+  --onyx-ink-bright: #ffffff;
+  --onyx-ink: #ffffff;
+  --onyx-ink-soft: #ffffff;
+  --onyx-ink-quiet: #ffffff;
+  --onyx-ink-faint: #ffffff;
+  --word-outline: -0.55px -0.55px 0 #000, 0.55px -0.55px 0 #000, -0.55px 0.55px 0 #000, 0.55px 0.55px 0 #000, 0 1px 2px #000;
   --onyx-gem-green: #3d9b6a;
   --onyx-gem-yellow: #c9a227;
   --onyx-gem-red: #b54a4a;
@@ -33,7 +34,8 @@
   align-items: center;
   justify-content: center;
   background: #000;
-  color: var(--onyx-ink);
+  color: #fff;
+  text-shadow: var(--word-outline);
   font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
@@ -2614,9 +2616,10 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   font-family: ui-monospace, monospace;
   letter-spacing: 0.05em;
 }
-.onyx-orrery-laxis .p { color: #9ec8ff; }
-.onyx-orrery-laxis .z { color: #7ff0c8; font-weight: 700; }
-.onyx-orrery-laxis .r { color: #ff8a8a; }
+.onyx-orrery-laxis .p,
+.onyx-orrery-laxis .z,
+.onyx-orrery-laxis .r { color: #fff; }
+.onyx-orrery-laxis .z { font-weight: 700; }
 .onyx-orrery-laxis .bar {
   flex: 1;
   min-width: 28px;
@@ -3446,4 +3449,25 @@ html[data-sky="twilight"] .onyx-overlay-close {
   box-shadow:
     inset 0 2px 10px rgba(0, 0, 0, 0.5),
     inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* Word paint — every label is white with a thin dark outline (domain-button contrast). */
+.onyx-root :is(p, h1, h2, h3, h4, li, label, span, small, em, b, strong, a, button, td, th, input, textarea) {
+  color: #fff;
+  -webkit-text-fill-color: #fff;
+  text-shadow: var(--word-outline);
+}
+.onyx-yy-phrase .big,
+.onyx-orrery-axis-kicker,
+.onyx-orrery-laxis .p,
+.onyx-orrery-laxis .z,
+.onyx-orrery-laxis .r {
+  color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
+  text-shadow: var(--word-outline);
+}
+.onyx-root ::placeholder {
+  color: #fff;
+  opacity: 0.85;
+  text-shadow: var(--word-outline);
 }

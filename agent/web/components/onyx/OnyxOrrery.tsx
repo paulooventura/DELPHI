@@ -48,6 +48,7 @@ const LANE_LABEL: Record<OrreryLaneId, string> = {
   decan: "Decan",
   wuku: "Wuku",
   "wuku-tzolkin": "Wuku · Tzolk'in",
+  "planetary-day": "Planetary day",
   pancawara: "Pancawara",
   manzil: "Manzil",
   numerology: "Number",
