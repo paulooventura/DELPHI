@@ -754,22 +754,25 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-yy-wrap {
   --yy-size: clamp(240px, 64vmin, 320px);
-  top: 50%;
-  left: 50%;
-  right: auto;
-  bottom: auto;
-  width: 100%;
-  height: 100%;
-  transform: translate(-50%, -50%);
+  /* Full street, no 50%/translate — that pair walked off-screen on iOS viewport shift. */
+  inset: 0;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  transform: none;
   display: grid;
   place-items: center;
   pointer-events: none;
+  overflow: hidden;
 }
 .onyx-compass-stage.onyx-yy-stage {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+  position: relative;
+  inset: auto;
+  width: var(--yy-size);
+  height: var(--yy-size);
   display: grid;
   place-items: center;
 }
@@ -777,15 +780,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-wrap .onyx-yy-dot,
 .onyx-yy-wrap .onyx-yy-phrase-btn { pointer-events: auto; }
 .onyx-yy-orb {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: var(--yy-size);
-  height: var(--yy-size);
+  position: relative;
+  left: auto;
+  top: auto;
+  width: 100%;
+  height: 100%;
   display: grid;
   place-items: center;
-  /* Pinned to screen center — dial rotates in place; never translate off-axis. */
-  transform: translate(-50%, -50%);
+  /* Grid-centered on the street. Dial may rotate; this box never translates. */
+  transform: none;
   transform-origin: center center;
   filter:
     drop-shadow(0 28px 36px rgba(0, 0, 0, 0.55))
@@ -830,7 +833,10 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   letter-spacing: 0.16em;
 }
 .onyx-compass-dial {
-  transform-origin: 50px 50px;
+  /* SVG rotate() already pivots on viewBox (50 50). A CSS 50px origin
+     is device pixels — walking/heading updates then orbit the ring off the marble. */
+  transform: none;
+  transform-origin: unset;
 }
 .onyx-compass-needle {
   transition: opacity 180ms ease;
@@ -957,12 +963,13 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   pointer-events: none;
 }
 .onyx-yy-stage > .onyx-yy-dirs {
-  inset: auto;
-  left: 50%;
-  top: 50%;
-  width: calc(var(--yy-size) * 1.38);
-  height: calc(var(--yy-size) * 1.38);
-  transform: translate(-50%, -50%);
+  position: absolute;
+  inset: -19%;
+  left: auto;
+  top: auto;
+  width: auto;
+  height: auto;
+  transform: none;
 }
 .onyx-yy-dirs button {
   pointer-events: auto;
@@ -1514,7 +1521,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-ribbon {
   position: absolute; top: 0; left: 0; height: 100%; display: flex; align-items: center;
-  transition: transform var(--onyx-lift);
+  will-change: transform;
 }
 .onyx-tick {
   width: 44px; text-align: center; flex-shrink: 0; font-size: 11px;

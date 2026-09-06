@@ -285,6 +285,34 @@ function drawHorizonRing(
   ctx.restore();
 }
 
+const HORIZON_CARDINALS: { az: number; label: string }[] = [
+  { az: 0, label: "N" },
+  { az: 90, label: "E" },
+  { az: 180, label: "S" },
+  { az: 270, label: "W" },
+];
+
+/** True-north letters on the same alt/az the moon uses — not the HUD ribbon. */
+function drawHorizonCardinals(
+  ctx: CanvasRenderingContext2D,
+  project: (az: number, alt: number) => [number, number],
+  w: number,
+  h: number,
+) {
+  ctx.save();
+  ctx.font = `600 12px ${MICRO}`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  for (const { az, label } of HORIZON_CARDINALS) {
+    const [x, y] = project(az, 0);
+    if (x < -40 || x > w + 40 || y < -40 || y > h + 40) continue;
+    const north = label === "N";
+    ctx.fillStyle = north ? "rgba(255, 107, 107, 0.92)" : "rgba(226, 220, 255, 0.78)";
+    ctx.fillText(label, x, y + 14);
+  }
+  ctx.restore();
+}
+
 /**
  * Steep magnitude → size + opacity. Mag −1.5 dominant; mag ≥4 barely a whisper.
  * Widens brightness range so depth reads on an onyx field.
@@ -1104,6 +1132,7 @@ export function CelestialSkyView({
         OBS.celestial.horizon,
         OBS.vector.strokeMin,
       );
+      drawHorizonCardinals(ctx, project.toXY, w, h);
 
       // Milky Way + constellations + bright field at every zoom (night-weighted).
       const nightWayfinding = sky.isDay ? 0.18 : 1;

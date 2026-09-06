@@ -6,10 +6,11 @@ import {
   type LiveAttitude,
 } from "../CelestialSkyView";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
+import { enuToAltAz } from "../../lib/sphericalView";
+import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
 import { OnyxAudioStone } from "./OnyxAudioStone";
 import { cardinalFromHeading } from "./onyxCopy";
 
-const DIRS = ["N", "·", "NE", "·", "E", "·", "SE", "·", "S", "·", "SW", "·", "W", "·", "NW", "·", "N", "·", "NE", "·", "E"];
 const CARD = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
 const EXIT_MS = 480;
 
@@ -75,11 +76,34 @@ export function OnyxSky({
   onBack: () => void;
 }) {
   const live = liveHeading || livePitch || Boolean(liveAttitudeRef);
-  const look = cardinalFromHeading(headingDeg);
+  const ribbonRef = useRef<HTMLDivElement>(null);
+  const [lookAz, setLookAz] = useState(() => ((headingDeg % 360) + 360) % 360);
+  const [lookAlt, setLookAlt] = useState(() => pitchDeg);
+
+  useEffect(() => {
+    let raf = 0;
+    let lastLabel = 0;
+    const tick = (t: number) => {
+      const view = liveAttitudeRef?.current?.view;
+      const look = view ? enuToAltAz(view) : { az: headingDeg, alt: pitchDeg };
+      const el = ribbonRef.current;
+      const bar = el?.parentElement?.clientWidth || 390;
+      if (el) el.style.transform = `translateX(${skyRibbonTranslateX(look.az, bar).toFixed(2)}px)`;
+      if (t - lastLabel > 120) {
+        lastLabel = t;
+        setLookAz(look.az);
+        setLookAlt(look.alt);
+      }
+      raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [headingDeg, pitchDeg, liveAttitudeRef]);
+
+  const look = cardinalFromHeading(lookAz);
   const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
-  const pitchLabel = Number.isFinite(pitchDeg) ? Math.round(pitchDeg) : 0;
-  const az = ((headingDeg % 360) + 360) % 360;
-  const ribbonX = -(az / 360) * (DIRS.length * 44) + 195 - 22;
+  const pitchLabel = Number.isFinite(lookAlt) ? Math.round(lookAlt) : 0;
+  const az = ((lookAz % 360) + 360) % 360;
   const locLine = formatLatLon(lat, lon);
   const accLabel =
     locationLive && locationAccuracyM != null && Number.isFinite(locationAccuracyM)
@@ -288,8 +312,11 @@ export function OnyxSky({
           </svg>
         </div>
         <div className="onyx-heading" aria-hidden>
-          <div className="onyx-ribbon" style={{ transform: `translateX(${ribbonX}px)` }}>
-            {DIRS.map((d, i) => (
+          <div
+            ref={ribbonRef}
+            className="onyx-ribbon"
+          >
+            {SKY_RIBBON_DIRS.map((d, i) => (
               <span key={`${d}-${i}`} className={`onyx-tick${CARD.includes(d) ? " card" : ""}`}>
                 {d}
               </span>
