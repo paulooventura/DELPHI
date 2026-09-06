@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-05i -->
+<!-- build: 2026-09-06g -->
 <script>
 (function(){
-  var BUILD='2026-09-05i';
+  var BUILD='2026-09-06g';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -336,22 +336,41 @@
   .scale-legend span{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--fogd);text-align:center}
   .scale-legend .yl{color:var(--cool)}.scale-legend .nl{color:var(--node)}.scale-legend .gl{color:var(--red)}
   .scalerow{display:grid;grid-template-columns:44px repeat(7,1fr);gap:6px;margin:0 0 6px;cursor:pointer;align-items:stretch}
-  .scalerow:hover .cell{border-color:#3b4457}
   .scalerow .idx{font-family:ui-monospace,monospace;font-size:11px;color:var(--fogd);display:flex;align-items:center;justify-content:center;background:var(--card);border:1px solid var(--line);border-radius:8px}
-  .cell{border:1px solid var(--line);border-radius:8px;padding:9px 6px;font-size:11.5px;text-align:center;line-height:1.25;display:flex;align-items:center;justify-content:center;min-height:46px;transition:.15s;background:var(--card)}
-  .cell.y3{background:rgba(90,169,255,.16);border-color:rgba(90,169,255,.34);color:#cfe3ff}
-  .cell.y2{background:rgba(90,169,255,.10);border-color:rgba(90,169,255,.24);color:#bcd6f5}
-  .cell.y1{background:rgba(90,169,255,.05);color:#a9c4e8}
-  .cell.node{background:rgba(124,240,208,.14);border-color:rgba(124,240,208,.4);color:#bff3e3;font-weight:700;box-shadow:0 0 18px rgba(124,240,208,.14)}
-  .cell.g1{background:rgba(255,91,91,.05);color:#f0b8b8}
-  .cell.g2{background:rgba(255,91,91,.10);border-color:rgba(255,91,91,.24);color:#ffc4c4}
-  .cell.g3{background:rgba(255,91,91,.16);border-color:rgba(255,91,91,.34);color:#ffd4d4}
+  .cell,.fullaxis .lvl{
+    --cut:6px;--lx:28%;--ly:20%;--fill:var(--card);--rim:var(--line);
+    position:relative;isolation:isolate;overflow:hidden;border:0;border-radius:0;
+    padding:9px 6px;font-size:11.5px;text-align:center;line-height:1.25;
+    display:flex;align-items:center;justify-content:center;min-height:46px;
+    color:var(--paper);
+    background:
+      radial-gradient(160% 130% at var(--lx) var(--ly),rgba(255,255,255,.42),rgba(255,255,255,.06) 32%,transparent 58%),
+      linear-gradient(155deg,rgba(255,255,255,.18),transparent 40%),
+      var(--fill);
+    clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.4),
+      inset 0 0 0 1px var(--rim),
+      inset 0 0 0 4px rgba(0,0,0,.22),
+      inset 0 0 0 5px rgba(255,255,255,.1),
+      inset 0 -12px 18px rgba(0,0,0,.35);
+    filter:drop-shadow(0 5px 8px rgba(0,0,0,.38));
+    transition:filter .15s ease;
+  }
+  .scalerow:hover .cell{filter:drop-shadow(0 7px 12px rgba(0,0,0,.46)) brightness(1.08)}
+  .cell.y3,.fullaxis .lvl.y3{--fill:rgba(90,169,255,.16);--rim:rgba(90,169,255,.42);color:#cfe3ff}
+  .cell.y2,.fullaxis .lvl.y2{--fill:rgba(90,169,255,.10);--rim:rgba(90,169,255,.28);color:#bcd6f5}
+  .cell.y1,.fullaxis .lvl.y1{--fill:rgba(90,169,255,.05);--rim:rgba(90,169,255,.18);color:#a9c4e8}
+  .cell.node,.fullaxis .lvl.node{--fill:rgba(124,240,208,.14);--rim:rgba(124,240,208,.45);color:#bff3e3;font-weight:700;filter:drop-shadow(0 0 14px rgba(124,240,208,.22))}
+  .cell.g1,.fullaxis .lvl.g1{--fill:rgba(255,91,91,.05);--rim:rgba(255,91,91,.18);color:#f0b8b8}
+  .cell.g2,.fullaxis .lvl.g2{--fill:rgba(255,91,91,.10);--rim:rgba(255,91,91,.28);color:#ffc4c4}
+  .cell.g3,.fullaxis .lvl.g3{--fill:rgba(255,91,91,.16);--rim:rgba(255,91,91,.42);color:#ffd4d4}
   @media(max-width:720px){
     .scale-legend{display:none}
     .scalerow{grid-template-columns:1fr;gap:3px;border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;background:var(--card)}
     .scalerow .idx{justify-content:flex-start;border:none;background:none;padding:0 0 4px}
-    .cell{min-height:0;border-radius:6px;justify-content:flex-start;text-align:left;padding:7px 10px}
-    .cell::before{content:attr(data-lv);font-family:ui-monospace,monospace;font-size:9px;color:var(--fogd);margin-right:8px;min-width:22px}
+    .cell{min-height:0;justify-content:flex-start;text-align:left;padding:7px 10px;--cut:5px}
+    .cell::before{content:attr(data-lv);font-family:ui-monospace,monospace;font-size:9px;color:var(--fogd);margin-right:8px;min-width:22px;position:relative;z-index:1}
   }
 
   /* materia / medica mini cards */
@@ -423,13 +442,8 @@
   .sec.wrong .respond{color:#fff;font-size:13px}
   /* full polarity axis in modal */
   .fullaxis{padding:22px}.fullaxis .rail{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
-  .fullaxis .lvl{text-align:center;font-size:11.5px;padding:12px 6px;border-radius:10px;border:1px solid var(--line);min-height:74px;display:flex;flex-direction:column;justify-content:center;gap:6px}
-  .fullaxis .lvl .n{font-family:ui-monospace,monospace;font-size:9px;color:var(--fogd)}
-  .fullaxis .lvl.y3{background:rgba(90,169,255,.16);border-color:rgba(90,169,255,.34);color:#cfe3ff}
-  .fullaxis .lvl.y2{background:rgba(90,169,255,.10);color:#bcd6f5}.fullaxis .lvl.y1{background:rgba(90,169,255,.05);color:#a9c4e8}
-  .fullaxis .lvl.node{background:rgba(124,240,208,.15);border-color:rgba(124,240,208,.45);color:#bff3e3;font-weight:700;box-shadow:0 0 18px rgba(124,240,208,.2)}
-  .fullaxis .lvl.g1{background:rgba(255,91,91,.05);color:#f0b8b8}.fullaxis .lvl.g2{background:rgba(255,91,91,.10);color:#ffc4c4}
-  .fullaxis .lvl.g3{background:rgba(255,91,91,.16);border-color:rgba(255,91,91,.34);color:#ffd4d4}
+  .fullaxis .lvl{min-height:74px;flex-direction:column;gap:6px;padding:12px 6px}
+  .fullaxis .lvl .n{font-family:ui-monospace,monospace;font-size:9px;color:var(--fogd);position:relative;z-index:1}
   .polepair{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-top:14px;color:var(--fogd)}
   .polepair .yn{color:var(--cool)}.polepair .yg{color:var(--red)}
 </style>
@@ -1877,6 +1891,7 @@ window.openPolarity=n=>{const s=polarity.find(x=>x.n===n);
   <div class="sec"><p style="color:var(--fog);font-size:13px">The glowing center — <b style="color:var(--node)">${esc(s.node)}</b> — isn't the absence of both poles but a third quality of its own: the zero-crossing where the system is most alive and self-correcting.</p></div></div>`);};
 document.querySelectorAll("#p-domains .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.dom;pState.doms.has(v)?(pState.doms.delete(v),b.setAttribute("aria-pressed","false")):(pState.doms.add(v),b.setAttribute("aria-pressed","true"));pRender();}));
 document.getElementById("p-search").oninput=e=>{pState.q=e.target.value.toLowerCase().trim();pRender();};
+(()=>{let px=0,py=0,live=false,raf=0;const tick=()=>{raf=0;if(!live)return;document.querySelectorAll(".cell,.fullaxis .lvl").forEach(el=>{const r=el.getBoundingClientRect();if(r.bottom<-40||r.top>innerHeight+40||r.right<0||r.left>innerWidth)return;el.style.setProperty("--lx",((px-r.left)/Math.max(1,r.width)*100)+"%");el.style.setProperty("--ly",((py-r.top)/Math.max(1,r.height)*100)+"%");});};const move=e=>{px=e.clientX;py=e.clientY;live=true;if(!raf)raf=requestAnimationFrame(tick);};document.addEventListener("pointermove",move,{passive:true});})();
 
 /* ===== MATERIA ===== */
 const mState={bands:new Set(),lins:new Set(),q:""};document.getElementById("n-materia").textContent=String(materia.length+medica.length);
