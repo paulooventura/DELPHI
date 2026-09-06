@@ -48,20 +48,27 @@ export function CastGems({
 
 function GemSvg({ fill }: { fill: string }) {
   return (
-    <svg className="onyx-gem-svg" width="28" height="32" viewBox="0 0 28 32" aria-hidden>
+    <svg className="onyx-gem-svg" width="36" height="22" viewBox="0 0 36 22" aria-hidden>
       <polygon
-        points="14,2 26,10 26,22 14,30 2,22 2,10"
+        points="5,1 31,1 35,6 35,16 31,21 5,21 1,16 1,6"
         fill={fill}
-        stroke="rgba(233,214,168,0.55)"
-        strokeWidth="1"
-      />
-      <polygon
-        points="14,6 22,11 22,19 14,24 6,19 6,11"
-        fill="none"
-        stroke="rgba(255,255,255,0.28)"
+        stroke="rgba(255,255,255,0.45)"
         strokeWidth="0.7"
       />
-      <circle cx="14" cy="14" r="2.2" fill="rgba(255,255,255,0.35)" />
+      <polygon
+        points="8,4 28,4 31,7 31,15 28,18 8,18 5,15 5,7"
+        fill="none"
+        stroke="rgba(255,255,255,0.32)"
+        strokeWidth="0.55"
+      />
+      <polygon
+        points="11,7 25,7 27,9 27,13 25,15 11,15 9,13 9,9"
+        fill="rgba(255,255,255,0.16)"
+        stroke="rgba(255,255,255,0.22)"
+        strokeWidth="0.4"
+      />
+      <path d="M5 1 L12 7" stroke="rgba(255,255,255,0.5)" strokeWidth="0.45" />
+      <path d="M31 1 L24 7" stroke="rgba(255,255,255,0.28)" strokeWidth="0.45" />
     </svg>
   );
 }

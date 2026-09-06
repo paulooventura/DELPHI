@@ -579,17 +579,17 @@ export function OnyxApp({
               INSTRUMENTS
             </p>
             <div className="onyx-tools-grid">
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("rings")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("rings")}>
                 Orrery
                 <span>Stacked lanes · read the now-line</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("atlas")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={() => setMode("atlas")}>
                 Atlas
                 <span>World cycle calendars</span>
               </button>
               <button
                 type="button"
-                className="onyx-tool-btn"
+                className="onyx-tool-btn onyx-cut-citrine"
                 onClick={() => {
                   const preset = presetById("time_compendium");
                   if (preset) {
@@ -605,35 +605,35 @@ export function OnyxApp({
                 Time units
                 <span>Helek · ghaṭi · kè · .beat</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("senses")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-topaz" onClick={() => setMode("senses")}>
                 Senses
                 <span>Device instruments</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("oracle")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("oracle")}>
                 Oracle
                 <span>Ask / research</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={openSky}>
+              <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={openSky}>
                 Sky
                 <span>Live sky with object details</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("you")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => setMode("you")}>
                 You
                 <span>Natal chord — local only, never sent</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("cast")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-ruby" onClick={() => setMode("cast")}>
                 Cast
                 <span>Draw — colours a labeled reading layer</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => { window.location.href = "/studies"; }}>
+              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => { window.location.href = "/studies"; }}>
                 Studies
                 <span>Polarity · Materia · Medica</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => { window.location.href = "/tonal"; }}>
+              <button type="button" className="onyx-tool-btn onyx-cut-citrine" onClick={() => { window.location.href = "/tonal"; }}>
                 Tonal
                 <span>Covenant · roles · the ground</span>
               </button>
-              <button type="button" className="onyx-tool-btn" onClick={() => setMode("about")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("about")}>
                 About
                 <span>Honesty tiers & integrity</span>
               </button>
