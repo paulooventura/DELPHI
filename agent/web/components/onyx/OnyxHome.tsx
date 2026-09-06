@@ -727,7 +727,15 @@ export function OnyxHome({
 
         <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
-            <div className="onyx-yy-orb">
+            <div
+              className="onyx-yy-orb"
+              style={
+                {
+                  ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
+                  ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
+                } as React.CSSProperties
+              }
+            >
               <OnyxCompassRose
                 active={compassAim ?? gemSpin ?? null}
                 follow={compassFollow}
@@ -738,12 +746,6 @@ export function OnyxHome({
                 <button
                   type="button"
                   className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
-                  style={
-                    {
-                      ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
-                      ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
-                    } as React.CSSProperties
-                  }
                   aria-label="Hold and drag: up sky map, down tonal, right orrery, left studies. Tap the glass for you."
                   disabled={Boolean(gemSpin)}
                   onPointerDown={e => {

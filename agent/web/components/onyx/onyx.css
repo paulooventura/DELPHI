@@ -782,19 +782,34 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   top: 50%;
   width: var(--yy-size);
   height: var(--yy-size);
-  transform: translate(-50%, -50%);
+  --onyx-compass-x: 0px;
+  --onyx-compass-y: 0px;
+  display: grid;
+  place-items: center;
+  /* One axis for rose + marble — follow drag moves the whole orb together. */
+  transform:
+    translate(-50%, -50%)
+    translate3d(var(--onyx-compass-x), var(--onyx-compass-y), 0);
+  transform-origin: center center;
   filter:
     drop-shadow(0 28px 36px rgba(0, 0, 0, 0.55))
     drop-shadow(0 0 40px rgba(108, 92, 255, 0.12));
+  will-change: transform;
+}
+.onyx-yy-wrap.holding .onyx-yy-orb {
+  transition: none;
 }
 .onyx-compass-rose {
-  position: absolute;
-  inset: 0;
+  grid-area: 1 / 1;
+  position: relative;
   width: 100%;
   height: 100%;
   z-index: 1;
   pointer-events: none;
   overflow: visible;
+  margin: 0;
+  padding: 0;
+  display: block;
 }
 .onyx-compass-letter {
   font-family: var(--font-ui);
@@ -840,13 +855,28 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   fill: #f4f0ff;
 }
 .onyx-yy-gem-nest {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+  grid-area: 1 / 1;
+  position: relative;
+  left: auto;
+  top: auto;
   width: 58%;
   height: 58%;
-  transform: translate(-50%, -50%);
+  transform: none;
   z-index: 3;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 0;
+  /* Keep marble dead-center inside the rose — no independent float/drag. */
+}
+.onyx-yy-gem-nest .onyx-yy-gem {
+  width: 100%;
+  height: 100%;
+  padding: 0 !important;
+  margin: 0;
+  transform: none !important;
+  animation: none !important;
+  will-change: auto;
 }
 .onyx-yy-arrows {
   position: absolute;
@@ -894,11 +924,14 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   display: block;
   padding: 0;
   margin: 0;
+  box-sizing: border-box;
 }
 .onyx-yy-orb .onyx-yy-gem .onyx-yy-svg,
 .onyx-yy-gem-nest .onyx-yy-gem .onyx-yy-svg {
   width: 100%;
   height: 100%;
+  display: block;
+  margin: 0;
 }
 .onyx-yy-dot {
   position: absolute;
