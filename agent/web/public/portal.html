@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06p -->
+<!-- build: 2026-09-06q -->
 <script>
 (function(){
-  var BUILD='2026-09-06p';
+  var BUILD='2026-09-06q';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -483,7 +483,7 @@
   .studies-deck .tabpanel[hidden]{display:none!important;flex:none;min-width:0;width:0}
   .studies-hero{padding-top:8px}
   .studies-sticky{position:sticky;top:68px;z-index:40;background:rgba(1,5,4,.96);backdrop-filter:blur(14px);padding:6px 0 10px;margin:0 0 8px}
-  .studies-sticky .title{display:none}
+  .studies-sticky .title{display:block;font-size:clamp(22px,4.6vw,34px);margin:4px 0 10px;text-align:center}
   .studies-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:420px;margin:0 auto 10px}
   .studies-tab{
     --cut:8px;min-height:44px;border:0;cursor:pointer;color:#fff;font:inherit;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
@@ -504,7 +504,15 @@
   .ledge.quiet .ldetail{max-height:0}
   .ledge.quiet.open .ldetail{max-height:720px}
   .ledge.quiet .ldinner{grid-template-columns:1fr;padding:8px 4px 16px}
-  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:10px;max-height:28vh;overflow-y:auto}
+  .domain-box{
+    --cut:10px;margin:8px 4px 0;padding:10px 8px;
+    background:
+      radial-gradient(160% 130% at 28% 18%,rgba(255,255,255,.16),rgba(255,255,255,.04) 32%,transparent 58%),
+      linear-gradient(180deg,hsla(272,42%,38%,.38) 0%,hsla(268,24%,8%,.92) 72%);
+    clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(220,210,255,.16);
+  }
+  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:0;max-height:28vh;overflow-y:auto}
   .cat-cols{grid-template-columns:1fr 1fr 1fr}
   .domain-cols .pill,.cat-cols .pill{width:100%;justify-content:flex-start;white-space:normal;text-align:left;--cut:6px}
   .searchwrap .search{width:min(420px,94%)}
@@ -875,10 +883,10 @@
     color:#fff;
     text-shadow:var(--word-outline);
   }
-  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.studies-tab):not(.backhome),
-  #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.backhome),
-  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.studies-tab):not(.backhome),
-  .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.backhome),
+  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.studies-tab):not(.backhome):not(.pill),
+  #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.backhome):not(.pill),
+  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.studies-tab):not(.backhome):not(.pill),
+  .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.backhome):not(.pill),
   #screen-studies .kicker, #screen-studies h1.title, #screen-studies .sub, #screen-studies .axis-kicker,
   #screen-tonal .kicker, #screen-tonal h1.ttitle, #screen-tonal .tsub,
   .ledge .laxis .p, .ledge .laxis .z, .ledge .laxis .r, .ledge .lthesis p, .ledge .lnote p,
@@ -1016,6 +1024,7 @@
 
   <div class="studies-sticky" id="studies-sticky">
     <button type="button" class="studies-up" id="studies-up" hidden onclick="studiesToTop()" aria-label="Back to title">↑</button>
+    <h1 class="title" id="studies-page-title">Polarity Scales</h1>
     <div class="studies-tabs" role="tablist">
       <button type="button" class="studies-tab is-on" id="tab-scales" onclick="showStudiesPage('polarity')">Scales</button>
       <button type="button" class="studies-tab" id="tab-substances" onclick="showStudiesPage('hr')">Substances</button>
@@ -1026,12 +1035,14 @@
         <button type="button" class="laxis" onclick="toggleLedge('polarity')" aria-expanded="false">
           <span class="p">Yin</span><span class="bar"></span><span class="z">0</span><span class="bar"></span><span class="r">Yang</span>
         </button>
+        <div class="domain-box">
+          <div class="domain-cols" id="p-domain-grid"></div>
+        </div>
         <div class="ldetail"><div class="ldinner">
           <div class="lnote method"><p>Levels run −3 → 0 → +3. The glowing 0 is the zero-crossing — a third quality, not the absence of both poles.</p></div>
         </div></div>
       </div>
       <div class="searchwrap"><input class="search" id="p-search" placeholder="Search Scales" aria-label="Search Scales"></div>
-      <div class="domain-cols" id="p-domain-grid"></div>
     </div>
     <div id="sticky-hr" hidden>
       <div class="ledge quiet" id="ledge-materia">
@@ -1039,13 +1050,15 @@
         <button type="button" class="laxis" onclick="toggleLedge('materia')" aria-expanded="false">
           <span class="p">pole</span><span class="bar"></span><span class="z">node</span><span class="bar"></span><span class="r">overshoot</span>
         </button>
+        <div class="domain-box">
+          <div class="cat-cols" id="m-lins"></div>
+        </div>
         <div class="ldetail"><div class="ldinner">
           <div class="lnote floor"><h3>The floor</h3><p><span class="tel">911 · 988 · 1-800-222-1222</span><br>Test the supply, carry naloxone, never use alone.<br><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
           <div class="lnote method"><h3>Method</h3><p>No “safe number.” A direction the body is pushed, and a point past which it cannot self-correct. Consumption doses are absent by design — on an adulterated supply a printed threshold reads as protection and works as permission.</p></div>
         </div></div>
       </div>
       <div class="searchwrap"><input class="search" id="m-search" placeholder="What substance are you looking to dive into?" aria-label="Search substances"></div>
-      <div class="cat-cols" id="m-lins"></div>
     </div>
   </div>
 
@@ -2169,6 +2182,8 @@ window.showStudiesPage=page=>{
   const su=document.getElementById("tab-substances");
   if(sc)sc.classList.toggle("is-on",page!=="hr");
   if(su)su.classList.toggle("is-on",page==="hr");
+  const heading=document.getElementById("studies-page-title");
+  if(heading)heading.textContent=page==="hr"?"Harm Reduction":"Polarity Scales";
   syncStudiesSticky();
 };
 window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
