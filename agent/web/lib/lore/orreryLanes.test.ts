@@ -29,7 +29,10 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(ids).toContain("age");
     expect(ids).toContain("date");
     expect(ids).toContain("planetary-day");
-    expect(ids.filter(id => id !== "wuku-tzolkin")).toHaveLength(30);
+    expect(ids.filter(id => id !== "wuku-tzolkin")).toHaveLength(33);
+    expect(ids).toContain("dreamspell-kin");
+    expect(ids).toContain("dreamspell-tone");
+    expect(ids).toContain("dreamspell-wavespell");
     expect(ids.indexOf("month")).toBeLessThan(ids.indexOf("date"));
     expect(ids.indexOf("date")).toBeLessThan(ids.indexOf("moon"));
     expect(ids.indexOf("wuku")).toBeLessThan(ids.indexOf("planetary-day"));
@@ -73,13 +76,13 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(ph.activeLabel.toLowerCase()).toMatch(/hour|saturn|jupiter|mars|sun|venus|mercury|moon/);
   });
 
-  it("planetary day is the 30th lane and follows the local weekday", () => {
+  it("planetary day is a weekday lane and follows the local weekday", () => {
     const { lanes } = computeOrreryState(
       new Date("2026-07-24T18:00:00Z"),
       36.16,
       -86.78,
     );
-    expect(lanes).toHaveLength(30);
+    expect(lanes).toHaveLength(33);
     const pd = lanes.find(l => l.id === "planetary-day")!;
     expect(pd.cells).toHaveLength(7);
     // 18:00 UTC Friday 24 Jul 2026 = 1:00 PM CDT Friday → Venus

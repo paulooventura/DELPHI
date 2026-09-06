@@ -108,8 +108,7 @@ html.chorus-embed .onyx-root {
 
 /* ── Device access gate ─────────────────────────────────────────────────── */
 .onyx-access-gate {
-  display: grid;
-  place-items: center;
+  display: block;
   padding: 0;
   text-align: center;
   overflow: hidden;
@@ -117,35 +116,50 @@ html.chorus-embed .onyx-root {
 }
 .onyx-access-cta {
   appearance: none;
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 3;
-  width: min(86vw, 420px);
+  width: 100%;
+  height: 100%;
   padding: 0;
   margin: 0;
   display: block;
-  background: transparent;
+  background: #000;
   border: 0;
+  outline: none;
+  box-shadow: none;
   cursor: pointer;
   color: inherit;
   font-family: inherit;
   -webkit-tap-highlight-color: transparent;
 }
+.onyx-access-cta:focus,
+.onyx-access-cta:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
 .onyx-access-gem {
+  position: absolute;
+  inset: 0;
   width: 100%;
-  height: auto;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.08);
   display: block;
   pointer-events: none;
   border: 0;
   border-radius: 0;
   clip-path: none;
   box-shadow: none;
+  outline: none;
   background: none;
-  transition: transform 320ms ease, filter 320ms ease;
+  filter: none;
 }
 .onyx-access-cta:not(:disabled):hover .onyx-access-gem,
 .onyx-access-cta:not(:disabled):focus-visible .onyx-access-gem {
-  transform: scale(1.02);
-  filter: brightness(1.06);
+  transform: none;
+  filter: brightness(1.04);
 }
 .onyx-access-cta:not(:disabled):active .onyx-access-gem {
   transform: scale(0.99);
@@ -1503,9 +1517,22 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-reticle svg { display: block; animation: onyx-ret 6s ease-in-out infinite; }
 @keyframes onyx-ret { 0%, 100% { opacity: 0.34; } 50% { opacity: 0.6; } }
 
-.onyx-sky-top { position: absolute; top: 22px; left: 0; right: 0; z-index: 8; text-align: center; }
+.onyx-sky-top {
+  position: absolute;
+  top: 18px;
+  left: 0;
+  right: 0;
+  z-index: 8;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 76px;
+  text-align: center;
+  pointer-events: none;
+}
 .onyx-sky-coords {
-  position: absolute; top: 52px; left: 18px; right: 18px; z-index: 8;
+  position: absolute; top: 58px; left: 18px; right: 18px; z-index: 8;
   display: flex; justify-content: space-between; gap: 10px; font-size: 9px;
   letter-spacing: 0.1em; color: var(--onyx-ink-faint);
 }
@@ -1515,7 +1542,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-sky-coords-meta { letter-spacing: 0.08em; opacity: 0.85; }
 .onyx-sky-coords-warn { color: #e8c48a; }
 .onyx-sky-meta {
-  position: absolute; top: 68px; left: 18px; right: 18px; z-index: 8;
+  position: absolute; top: 76px; left: 18px; right: 18px; z-index: 8;
   font-size: 9px; letter-spacing: 0.1em; color: var(--onyx-ink-faint);
   text-align: left; opacity: 0.9;
 }
@@ -1633,7 +1660,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-overlay {
   position: absolute; inset: 0; z-index: 20;
   background: rgba(0, 0, 0, 0.55); overflow: auto;
-  padding: 56px 12px calc(24px + env(safe-area-inset-bottom, 0px));
+  padding: 18px 12px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.onyx-overlay > .onyx-eyebrow:first-of-type {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 76px 14px;
+  letter-spacing: 0.42em;
 }
 .onyx-overlay-close {
   position: absolute; top: 18px; left: 18px; right: auto; z-index: 21;
@@ -2563,7 +2598,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-device .onyx-stars { z-index: 0; }
 .onyx-orrery-header {
   position: absolute;
-  top: 56px;
+  top: 18px;
   left: 0; right: 0;
   z-index: 8;
   display: flex;
@@ -2583,7 +2618,11 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-orrery-title {
   position: static;
-  margin: 0;
+  height: 32px;
+  margin: 0 76px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.42em;
@@ -2665,15 +2704,26 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   color: var(--onyx-ink-soft);
   pointer-events: none;
 }
-.onyx-orrery-picker {
+.onyx-orrery-teach.onyx-orrery-picker {
+  width: min(90%, 380px);
   max-height: min(82vh, 720px);
   overflow: auto;
+  margin: 0 auto;
+  justify-self: center;
+  align-self: center;
+  text-align: center;
+}
+.onyx-orrery-picker .onyx-eyebrow,
+.onyx-orrery-picker .onyx-layer-lead {
+  text-align: center;
 }
 .onyx-orrery-picker-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   justify-content: center;
-  margin: 10px 0 14px;
+  margin: 10px auto 14px;
+  max-width: 360px;
 }
 .onyx-orrery-picker-list {
   list-style: none;
@@ -2708,7 +2758,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-wrap {
   flex: 1;
   min-height: 0;
-  margin-top: 162px;
+  margin-top: 118px;
   margin-bottom: 8px;
   position: relative;
   z-index: 2;
@@ -2741,7 +2791,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   animation: onyx-orrery-teach-in 240ms ease-out both;
 }
 .onyx-orrery-teach {
-  width: min(92vw, 560px);
+  width: min(92%, 560px);
   height: min(86dvh, 760px);
   max-height: 100%;
   overflow-y: auto;
@@ -3370,13 +3420,21 @@ html[data-sky="twilight"] .onyx-overlay-close {
   --cut: 6px;
   --steps: 4px;
 }
-.onyx-root .onyx-overlay-close {
+.onyx-root .onyx-overlay-close,
+.onyx-root .onyx-sky-back {
   position: absolute;
   top: 18px;
   left: 18px;
   right: auto;
   z-index: 30;
   width: max-content;
+  height: 32px;
+  padding: 0 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  letter-spacing: 0.08em;
 }
 .onyx-access-cta,
 .onyx-access-gem {

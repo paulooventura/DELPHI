@@ -20,13 +20,14 @@ import {
 } from "../../lib/clockSfx";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
-  ALL_ORRERY_LANE_IDS,
   CENTER_ONLY_LANE_IDS,
+  ORRERY_LANE_GROUPS,
   computeOrreryState,
   laneColor,
   laneMotion,
   laneScrollStartX,
   stepOrreryDate,
+  visibleOrreryLaneIds,
   type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
@@ -41,6 +42,9 @@ const LANE_LABEL: Record<OrreryLaneId, string> = {
   year: "Year",
   season: "Solar season",
   tzolkin: "Tzolk'in",
+  "dreamspell-kin": "Dreamspell kin",
+  "dreamspell-tone": "Dreamspell tone",
+  "dreamspell-wavespell": "Wavespell",
   month: "Month",
   date: "Day of month",
   moon: "Moon phase",
@@ -399,11 +403,41 @@ export function OnyxOrrery({
     setExpanded(prev => (prev?.id === lane.id ? null : lane));
   };
 
-  const visibleCount = ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin" && !hidden.has(id)).length;
+  const showGroup = (group: readonly OrreryLaneId[]) => {
+    const keep = new Set<OrreryLaneId>(group);
+    setHidden(new Set(visibleOrreryLaneIds().filter(id => !keep.has(id))));
+  };
+
+  const swipeRef = useRef<{ x: number; y: number; ignore: boolean } | null>(null);
+  const onSwipeDown = (e: React.PointerEvent) => {
+    const el = e.target as HTMLElement | null;
+    if (el?.closest?.("button, input, label, .onyx-orrery-teach-scrim")) {
+      swipeRef.current = { x: e.clientX, y: e.clientY, ignore: true };
+      return;
+    }
+    swipeRef.current = { x: e.clientX, y: e.clientY, ignore: frozen };
+  };
+  const onSwipeUp = (e: React.PointerEvent) => {
+    const start = swipeRef.current;
+    swipeRef.current = null;
+    if (!start || start.ignore) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (dx < -72 && Math.abs(dx) > Math.abs(dy)) onBack();
+  };
+
+  const visibleCount = visibleOrreryLaneIds().filter(id => !hidden.has(id)).length;
 
   return (
     <div className="onyx-root">
-      <div className="onyx-device onyx-orrery-device">
+      <div
+        className="onyx-device onyx-orrery-device"
+        onPointerDown={onSwipeDown}
+        onPointerUp={onSwipeUp}
+        onPointerCancel={() => {
+          swipeRef.current = null;
+        }}
+      >
         <OnyxStarfield />
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
           HOME
@@ -491,15 +525,34 @@ export function OnyxOrrery({
                 <button
                   type="button"
                   className="onyx-orrery-filter-btn"
-                  onClick={() =>
-                    setHidden(new Set(ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin")))
-                  }
+                  onClick={() => setHidden(new Set(visibleOrreryLaneIds()))}
                 >
                   Hide all
                 </button>
+                <button
+                  type="button"
+                  className="onyx-orrery-filter-btn"
+                  onClick={() => showGroup(ORRERY_LANE_GROUPS.scientific)}
+                >
+                  Scientific
+                </button>
+                <button
+                  type="button"
+                  className="onyx-orrery-filter-btn"
+                  onClick={() => showGroup(ORRERY_LANE_GROUPS.cultural)}
+                >
+                  Cultural
+                </button>
+                <button
+                  type="button"
+                  className="onyx-orrery-filter-btn"
+                  onClick={() => showGroup(ORRERY_LANE_GROUPS.mystical)}
+                >
+                  Mystical
+                </button>
               </div>
               <ul className="onyx-orrery-picker-list">
-                {ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin").map(id => (
+                {visibleOrreryLaneIds().map(id => (
                   <li key={id}>
                     <label>
                       <input

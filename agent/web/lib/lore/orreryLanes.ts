@@ -8,6 +8,12 @@
 
 import { computeSolarDayEvents } from "../cosmic/astronomy";
 import { MUHURTA_COUNT, MUHURTA_MINUTES } from "../cosmic/math";
+import {
+  CREATION_TONES,
+  TRIBES_OF_TIME,
+  dreamspellKinFromDate,
+  galacticDayFromKin,
+} from "../galacticFrequency";
 import { jdFromDate } from "../phase/timeResolution";
 import { QUALIA, byId } from "./qualia";
 import { resolveMoment } from "./resolveMoment";
@@ -59,6 +65,9 @@ export type OrreryLaneId =
   | "year"
   | "season"
   | "tzolkin"
+  | "dreamspell-kin"
+  | "dreamspell-tone"
+  | "dreamspell-wavespell"
   | "month"
   | "date"
   | "planetary-day"
@@ -106,8 +115,29 @@ export const CONTINUOUS_LANE_IDS: readonly OrreryLaneId[] = [
   "day",
 ];
 
-/** Fast breath-scale lanes — only the cell on the now-line is drawn. */
-export const CENTER_ONLY_LANE_IDS: readonly OrreryLaneId[] = ["prana"];
+/** Reserved — Prāṇa now draws the same scrolling box row as every other lane. */
+export const CENTER_ONLY_LANE_IDS: readonly OrreryLaneId[] = [];
+
+/** Visible lanes only (legacy combined row stays out of the picker). */
+export function visibleOrreryLaneIds(): OrreryLaneId[] {
+  return ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin");
+}
+
+/** Cycle-picker presets — Show all / Hide all plus these three cuts. */
+export const ORRERY_LANE_GROUPS = {
+  scientific: [
+    "century", "year", "season", "month", "date", "day", "min", "sec", "ms",
+  ] as const satisfies readonly OrreryLaneId[],
+  cultural: [
+    "tzolkin", "wuku", "planetary-day", "pancawara", "nakshatra", "decan", "manzil",
+    "moon", "shi", "planetary-hour", "muhurta", "ghati", "ke", "pala", "helek", "rega",
+    "beat",
+  ] as const satisfies readonly OrreryLaneId[],
+  mystical: [
+    "precession", "age", "numerology", "prana",
+    "dreamspell-kin", "dreamspell-tone", "dreamspell-wavespell",
+  ] as const satisfies readonly OrreryLaneId[],
+} as const;
 
 export function laneMotion(id: OrreryLaneId): OrreryMotion {
   return CONTINUOUS_LANE_IDS.includes(id) ? "continuous" : "discrete-tick";
@@ -187,6 +217,21 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
     origin: "The Maya Tzolk'in is a 260-day sacred count pairing twenty day-signs with thirteen tones, independent of the solar year.",
     usedSince: "The 260-day count is attested in Mesoamerica before the Common Era and remains a living calendar among Maya communities.",
     curious: "Twenty signs times thirteen tones equals 260 unique days; the count does not try to stay locked to the tropical year.",
+  },
+  "dreamspell-kin": {
+    origin: "Dreamspell kin is José Argüelles' 13:20 count (1987): 260 named days on its own leap-skipping anchor, not the Maya GMT Tzolk'in.",
+    usedSince: "Published in 1987 as the Dreamspell / 13 Moon calendar; Delphi uses the well-known 26 July 2013 = Kin 164 Galactic Seed year.",
+    curious: "February 29 is a Day Out of Time and carries no kin, so the count does not advance across a leap day the way the GMT Tzolk'in does.",
+  },
+  "dreamspell-tone": {
+    origin: "The thirteen Tones of Creation are Dreamspell's 13-day pulse — Magnetic through Cosmic — each with power, action, and essence words.",
+    usedSince: "Argüelles named the tones in the 1987 Dreamspell; they walk with the twenty tribes to make the 260-kin matrix.",
+    curious: "Tone number is ((kin − 1) mod 13) + 1. It is the same 13-beat as Maya tones, but the names and code-words are Dreamspell's.",
+  },
+  "dreamspell-wavespell": {
+    origin: "A wavespell is thirteen consecutive kin, twenty of them filling the 260-day Dreamspell round, each named by the tribe that opens it.",
+    usedSince: "Wavespell is a Dreamspell teaching unit from 1987, used to group the 13:20 matrix into twenty shorter journeys.",
+    curious: "Wavespell number is ceil(kin / 13). The opening seal of wavespell n is the tribe of kin (n − 1) × 13 + 1.",
   },
   "wuku-tzolkin": {
     origin: "Legacy combined row: Javanese-Balinese Pawukon beside the Maya 260-day Tzolk'in. Kept so older marks still resolve.",
@@ -528,6 +573,28 @@ export function computeOrreryState(
   const calYear = calGet("year");
   const calMonth = calGet("month"); // 1-12
   const calDay = calGet("day");
+  const dsKin = dreamspellKinFromDate(calYear, calMonth, calDay);
+  const dsDay = galacticDayFromKin(dsKin);
+  const dsToneIndex = dsDay.tone.tone - 1;
+  const dsWavespell = Math.ceil(dsKin / 13);
+  const dsWavespellIndex = dsWavespell - 1;
+  const dsWavespellProg = (((dsKin - 1) % 13) + dayFrac) / 13;
+  const dsKinCells = Array.from({ length: 260 }, (_, i) => ({
+    id: `dsk-${i + 1}`,
+    label: String(i + 1),
+  }));
+  const dsToneCells = CREATION_TONES.map(t => ({
+    id: `dst-${t.tone}`,
+    label: t.name,
+  }));
+  const dsWavespellCells = Array.from({ length: 20 }, (_, i) => {
+    const startKin = i * 13 + 1;
+    const tribe = TRIBES_OF_TIME[(startKin - 1) % 20]!;
+    return {
+      id: `dsw-${i + 1}`,
+      label: tribe.name,
+    };
+  });
   const daysThisMonth = new Date(calYear, calMonth, 0).getDate();
   const monthProg = (calDay - 1 + dayFrac) / daysThisMonth;
 
@@ -667,6 +734,42 @@ export function computeOrreryState(
       activeLabel: `${meta.tzolkinTone} ${meta.tzolkinSign}`,
       source: byId(tzSignId)?.source,
       lore: "The Maya 260-day count — twenty day-signs walking with thirteen tones. Its own row, not folded into wuku.",
+    },
+    {
+      id: "dreamspell-kin",
+      name: "Dreamspell kin",
+      cycle: "260 days",
+      tier: "celebrated",
+      speedT: 1.01,
+      index: dsKin - 1,
+      progress: dayFrac,
+      cells: dsKinCells,
+      activeLabel: `Kin ${dsKin}`,
+      lore: "Dreamspell's 260-kin count — Argüelles 13:20, not the GMT Tzolk'in. Leap days are skipped.",
+    },
+    {
+      id: "dreamspell-tone",
+      name: "Dreamspell tone",
+      cycle: "13 days",
+      tier: "celebrated",
+      speedT: 0.99,
+      index: dsToneIndex,
+      progress: dayFrac,
+      cells: dsToneCells,
+      activeLabel: `${dsDay.tone.tone} ${dsDay.tone.name}`,
+      lore: "Thirteen Tones of Creation walking one per day. Magnetic through Cosmic, independent of the Maya tone names.",
+    },
+    {
+      id: "dreamspell-wavespell",
+      name: "Dreamspell wavespell",
+      cycle: "13 days × 20",
+      tier: "celebrated",
+      speedT: 1.0,
+      index: dsWavespellIndex,
+      progress: dsWavespellProg,
+      cells: dsWavespellCells,
+      activeLabel: `Wavespell ${dsWavespell} · ${dsWavespellCells[dsWavespellIndex]?.label ?? ""}`,
+      lore: "Twenty wavespells of thirteen kin. Each is named by the tribe that opens it.",
     },
     {
       id: "month",
@@ -1050,7 +1153,9 @@ export function computeOrreryState(
 }
 
 export const ALL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
-  "precession", "age", "century", "year", "season", "tzolkin", "month", "date", "moon",
+  "precession", "age", "century", "year", "season", "tzolkin",
+  "dreamspell-kin", "dreamspell-tone", "dreamspell-wavespell",
+  "month", "date", "moon",
   "nakshatra", "decan", "wuku", "planetary-day", "pancawara", "manzil", "numerology", "day",
   "shi", "planetary-hour", "muhurta", "ghati", "ke", "min", "beat", "pala",
   "prana", "helek", "sec", "rega", "ms",
@@ -1082,6 +1187,8 @@ export function stepOrreryDate(date: Date, id: OrreryLaneId, dir: number): Date 
       d.setDate(d.getDate() + step);
       return d;
     case "tzolkin":
+    case "dreamspell-kin":
+    case "dreamspell-tone":
     case "wuku":
     case "wuku-tzolkin":
     case "pancawara":
@@ -1090,6 +1197,9 @@ export function stepOrreryDate(date: Date, id: OrreryLaneId, dir: number): Date 
     case "nakshatra":
     case "decan":
       d.setDate(d.getDate() + step);
+      return d;
+    case "dreamspell-wavespell":
+      d.setDate(d.getDate() + step * 13);
       return d;
     case "moon":
       d.setTime(d.getTime() + step * 3.69 * 86_400_000);

@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06o -->
+<!-- build: 2026-09-06p -->
 <script>
 (function(){
-  var BUILD='2026-09-06o';
+  var BUILD='2026-09-06p';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -156,7 +156,18 @@
       radial-gradient(1px 1px at 73% 9%, rgba(255,255,255,.45) 50%, transparent 51%),
       radial-gradient(1.2px 1.2px at 91% 61%, rgba(244,240,255,.5) 50%, transparent 51%),
       radial-gradient(1px 1px at 33% 91%, rgba(255,255,255,.4) 50%, transparent 51%);}
-  .screen > *:not(.backhome){position:relative;z-index:1}
+  .screen > *:not(.screen-chrome){position:relative;z-index:1}
+  .screen-chrome{
+    position:sticky;top:0;z-index:70;height:68px;pointer-events:none;
+    background:linear-gradient(180deg,rgba(1,5,4,.98),rgba(1,5,4,.72) 70%,transparent);
+  }
+  .screen-mast{
+    position:absolute;top:18px;left:0;right:0;height:32px;
+    display:flex;align-items:center;justify-content:center;
+    margin:0;padding:0 76px;text-align:center;
+    font-size:11px;letter-spacing:.42em;text-transform:uppercase;
+    color:#fff;pointer-events:none;font-weight:600;
+  }
   .screen.active{display:block;animation:screenin .5s cubic-bezier(.2,.8,.3,1) forwards}
   @keyframes screenin{from{opacity:0}to{opacity:1}}
   .screen.from-left.active{animation-name:fromleft}.screen.from-up.active{animation-name:fromup}
@@ -169,9 +180,13 @@
   @keyframes fromcenter{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 
   /* back-to-portal compass button, always present on a screen */
-  .backhome{position:fixed;top:16px;left:16px;z-index:60;color:#f6f2ff;
-    font:inherit;font-size:12px;font-weight:600;padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:8px}
-  .backhome .compassmark{width:14px;height:14px;color:var(--node)}
+  .backhome{position:absolute;top:18px;left:18px;z-index:60;color:#f6f2ff;pointer-events:auto;
+    font:inherit;font-size:11px;font-weight:600;letter-spacing:.08em;
+    height:32px;padding:0 12px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+    width:max-content;--cut:6px;--steps:4px;--gem:272 54% 46%;
+    border:0;border-radius:0;clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    background:linear-gradient(125deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.08) 16%,transparent 34%),linear-gradient(180deg,hsl(var(--gem)/.42) 0%,transparent 36%),linear-gradient(180deg,hsl(var(--gem)/.92) 0%,hsl(var(--gem)/.38) 46%,hsl(268 28% 7%) 100%)}
+  .backhome .compassmark{display:none}
 
   /* placeholder screens (ME/SKY/CLOCK/TONAL) — evocative, not yet built */
   .soon{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px}
@@ -277,7 +292,7 @@
     margin:0;color:rgba(244,240,255,.72);font:500 9px/1.2 ui-monospace,monospace;letter-spacing:.24em;
     text-transform:uppercase;white-space:nowrap;text-shadow:0 2px 12px #000;
   }
-  #screen-studies .wrap{max-width:1200px;margin:0 auto;padding:64px 22px 80px;overflow-x:hidden}
+  #screen-studies .wrap{max-width:1200px;margin:0 auto;padding:8px 16px 80px;overflow:visible}
   #screen-studies .kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.42em;color:var(--fog);text-transform:uppercase;margin:0 0 14px;text-align:center}
   #screen-studies h1.title{font-family:var(--serif);font-weight:500;font-size:clamp(30px,6vw,52px);margin:0;text-align:center;letter-spacing:.01em}
   #screen-studies .sub{color:var(--fog);max-width:64ch;margin:13px auto 0;font-size:14.5px;text-align:center}
@@ -320,8 +335,8 @@
   .ctl-band{display:flex;flex-direction:column;align-items:center;gap:6px}
   .btnrow{display:flex;justify-content:center;gap:6px;flex-wrap:wrap;max-width:1000px;margin:0 auto}
   .searchwrap{display:flex;justify-content:center;margin:9px 0 0}
-  .search{background:var(--card);border:1px solid var(--line);border-radius:999px;padding:7px 16px;color:var(--paper);font:inherit;font-size:12.5px;width:min(360px,92%);text-align:center}
-  .search:focus{outline:2px solid var(--cool);outline-offset:1px;text-align:left}
+  .search{background:rgba(4,6,8,.88);border:1px solid rgba(220,210,255,.16);border-radius:0;padding:9px 16px;color:#fff;font:inherit;font-size:12.5px;width:min(360px,92%);text-align:center;--cut:7px;clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));box-shadow:inset 0 1px 0 rgba(255,255,255,.08),inset 0 2px 10px rgba(0,0,0,.45)}
+  .search:focus{outline:none;border-color:rgba(220,210,255,.42);text-align:left}
   .ctl-lin{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin:9px auto 0;max-width:1040px}
   #p-domains{display:flex;flex-direction:column;align-items:center;gap:5px;max-width:920px;margin-left:auto;margin-right:auto}
   #p-domains .flabel{text-align:center;margin-bottom:2px}
@@ -467,8 +482,19 @@
   .studies-deck .tabpanel{display:block!important;flex:0 0 50%;width:50%;min-width:0;overflow:hidden}
   .studies-deck .tabpanel[hidden]{display:none!important;flex:none;min-width:0;width:0}
   .studies-hero{padding-top:8px}
-  .studies-sticky{position:sticky;top:0;z-index:40;background:rgba(1,5,4,.94);backdrop-filter:blur(14px);padding:8px 0 10px;margin:0 0 8px}
-  .studies-sticky .title{margin:0 0 8px}
+  .studies-sticky{position:sticky;top:68px;z-index:40;background:rgba(1,5,4,.96);backdrop-filter:blur(14px);padding:6px 0 10px;margin:0 0 8px}
+  .studies-sticky .title{display:none}
+  .studies-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;max-width:420px;margin:0 auto 10px}
+  .studies-tab{
+    --cut:8px;min-height:44px;border:0;cursor:pointer;color:#fff;font:inherit;font-size:11px;letter-spacing:.16em;text-transform:uppercase;
+    background:
+      radial-gradient(160% 130% at 28% 18%,rgba(255,255,255,.28),rgba(255,255,255,.05) 32%,transparent 58%),
+      linear-gradient(180deg,hsla(272,42%,38%,.55) 0%,hsla(268,24%,8%,.96) 72%);
+    clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(220,210,255,.18);
+  }
+  .studies-tab.is-on{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(220,210,255,.4),0 0 16px rgba(140,120,255,.28)}
+  #screen-studies .searchwrap .search{width:min(420px,94%);background:rgba(4,6,8,.9);border:1px solid rgba(220,210,255,.16)}
   .panel-sticky{position:static;background:transparent;padding:0;margin:0}
   .studies-up{display:block;margin:0 auto 8px;width:44px;height:36px;border:0;background:transparent;color:var(--paper);font-size:20px;letter-spacing:.12em;cursor:pointer}
   .studies-up[hidden]{display:none}
@@ -478,7 +504,7 @@
   .ledge.quiet .ldetail{max-height:0}
   .ledge.quiet.open .ldetail{max-height:720px}
   .ledge.quiet .ldinner{grid-template-columns:1fr;padding:8px 4px 16px}
-  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:10px}
+  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:10px;max-height:28vh;overflow-y:auto}
   .cat-cols{grid-template-columns:1fr 1fr 1fr}
   .domain-cols .pill,.cat-cols .pill{width:100%;justify-content:flex-start;white-space:normal;text-align:left;--cut:6px}
   .searchwrap .search{width:min(420px,94%)}
@@ -529,7 +555,7 @@
   #screen-tonal .forkcard:hover,#screen-tonal .forkcard:focus-visible{
     transform:translateY(-2px)!important;filter:brightness(1.1) drop-shadow(0 7px 12px rgba(0,0,0,.46));
   }
-  #screen-tonal .twrap{max-width:1120px;margin:0 auto;padding:64px 22px 90px}
+  #screen-tonal .twrap{max-width:1120px;margin:0 auto;padding:8px 22px 90px}
   #screen-tonal .kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.42em;color:var(--amber);text-transform:uppercase;margin:0 0 14px;text-align:center}
   #screen-tonal h1.ttitle{font-family:var(--serif);font-weight:500;font-size:clamp(30px,6vw,52px);margin:0;text-align:center;letter-spacing:.01em}
   #screen-tonal .tsub{color:var(--fog);max-width:66ch;margin:13px auto 0;font-size:14.5px;text-align:center}
@@ -849,10 +875,10 @@
     color:#fff;
     text-shadow:var(--word-outline);
   }
-  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar),
-  #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar),
-  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar),
-  .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar),
+  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.studies-tab):not(.backhome),
+  #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.backhome),
+  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.studies-tab):not(.backhome),
+  .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.backhome),
   #screen-studies .kicker, #screen-studies h1.title, #screen-studies .sub, #screen-studies .axis-kicker,
   #screen-tonal .kicker, #screen-tonal h1.ttitle, #screen-tonal .tsub,
   .ledge .laxis .p, .ledge .laxis .z, .ledge .laxis .r, .ledge .lthesis p, .ledge .lnote p,
@@ -939,7 +965,7 @@
 
 <!-- ===== ME (placeholder) ===== -->
 <section class="screen" id="screen-me">
-  <button class="backhome" onclick="home()"><span class="compassmark">✳</span> HOME</button>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">YOU</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--node)">☉</div>
     <p class="eye">Center · The Self</p>
@@ -952,7 +978,7 @@
 
 <!-- ===== SKY (placeholder) ===== -->
 <section class="screen" id="screen-sky">
-  <button class="backhome" onclick="home()"><span class="compassmark">✳</span> HOME</button>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">SKY</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--cool)">✦</div>
     <p class="eye">Above · Scroll Up</p>
@@ -964,7 +990,7 @@
 
 <!-- ===== CLOCK (placeholder) ===== -->
 <section class="screen" id="screen-clock">
-  <button class="backhome" onclick="home()"><span class="compassmark">✳</span> HOME</button>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">ORRERY</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--violet)">◷</div>
     <p class="eye">Right · Time</p>
@@ -976,25 +1002,25 @@
 
 <!-- ===== TONAL (the ground — builders & backers) ===== -->
 <section class="screen" id="screen-tonal">
-  <button class="backhome" onclick="home()"><span class="compassmark">✳</span> HOME</button>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">TONAL</p></div>
   <div id="tonal-root"></div>
 </section>
 
 <!-- ===== STUDIES (the folded-in atlas) ===== -->
 <section class="screen" id="screen-studies">
-  <button class="backhome" id="studies-home" onclick="home()"><span class="compassmark">✳</span> HOME</button>
+  <div class="screen-chrome"><button class="backhome" id="studies-home" onclick="home()">HOME</button><p class="screen-mast">STUDIES</p></div>
   <div id="studies-root">
 <div class="wrap">
-  <header class="studies-hero" id="studies-hero">
-    <p class="kicker">Delphi · The Studies</p>
-  </header>
   <span hidden id="n-polarity"></span><span hidden id="n-materia"></span>
   <span hidden id="p-count"></span><span hidden id="m-count"></span>
 
   <div class="studies-sticky" id="studies-sticky">
     <button type="button" class="studies-up" id="studies-up" hidden onclick="studiesToTop()" aria-label="Back to title">↑</button>
+    <div class="studies-tabs" role="tablist">
+      <button type="button" class="studies-tab is-on" id="tab-scales" onclick="showStudiesPage('polarity')">Scales</button>
+      <button type="button" class="studies-tab" id="tab-substances" onclick="showStudiesPage('hr')">Substances</button>
+    </div>
     <div id="sticky-polarity">
-      <h1 class="title">Polarity Scales</h1>
       <div class="ledge quiet" id="ledge-polarity">
         <p class="axis-kicker">every quality is an axis</p>
         <button type="button" class="laxis" onclick="toggleLedge('polarity')" aria-expanded="false">
@@ -1002,13 +1028,12 @@
         </button>
         <div class="ldetail"><div class="ldinner">
           <div class="lnote method"><p>Levels run −3 → 0 → +3. The glowing 0 is the zero-crossing — a third quality, not the absence of both poles.</p></div>
-          <div class="domain-cols" id="p-domain-grid"></div>
         </div></div>
       </div>
       <div class="searchwrap"><input class="search" id="p-search" placeholder="Search Scales" aria-label="Search Scales"></div>
+      <div class="domain-cols" id="p-domain-grid"></div>
     </div>
     <div id="sticky-hr" hidden>
-      <h1 class="title">Harm Reduction</h1>
       <div class="ledge quiet" id="ledge-materia">
         <p class="axis-kicker">Safety is the note</p>
         <button type="button" class="laxis" onclick="toggleLedge('materia')" aria-expanded="false">
@@ -1020,18 +1045,13 @@
         </div></div>
       </div>
       <div class="searchwrap"><input class="search" id="m-search" placeholder="What substance are you looking to dive into?" aria-label="Search substances"></div>
+      <div class="cat-cols" id="m-lins"></div>
     </div>
   </div>
 
   <div class="studies-deck" id="studies-deck">
   <div class="studies-track" id="studies-track">
   <div class="tabpanel" id="panel-materia">
-    <div class="ledge quiet" id="ledge-categories">
-      <button type="button" class="research-open" onclick="toggleLedge('categories')">Categories</button>
-      <div class="ldetail"><div class="ldinner">
-        <div class="cat-cols" id="m-lins"></div>
-      </div></div>
-    </div>
     <div class="grid" id="m-grid"></div>
     <div hidden id="m-bands"></div>
   </div>
@@ -2145,6 +2165,10 @@ window.showStudiesPage=page=>{
   if(!deck)return;
   if(page==="hr")deck.classList.add("is-hr");
   else deck.classList.remove("is-hr");
+  const sc=document.getElementById("tab-scales");
+  const su=document.getElementById("tab-substances");
+  if(sc)sc.classList.toggle("is-on",page!=="hr");
+  if(su)su.classList.toggle("is-on",page==="hr");
   syncStudiesSticky();
 };
 window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
@@ -2153,7 +2177,9 @@ window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
   const screen=document.getElementById("screen-studies");
   const up=document.getElementById("studies-up");
   if(!deck||!screen)return;
-  screen.addEventListener("scroll",()=>{if(up)up.hidden=screen.scrollTop<72;},{passive:true});
+  const pinUp=()=>{if(up)up.hidden=screen.scrollTop<40;};
+  screen.addEventListener("scroll",pinUp,{passive:true});
+  pinUp();
   const ignore=(el)=>el&&el.closest&&el.closest("input,textarea,select,[contenteditable]");
   let sx=0,sy=0;
   screen.addEventListener("touchstart",e=>{
@@ -2176,6 +2202,22 @@ window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
     else if(e.deltaX>8)home();
   },{passive:false});
   requestAnimationFrame(pinStudiesDeck);
+})();
+(function bindTonalSwipe(){
+  const screen=document.getElementById("screen-tonal");
+  if(!screen)return;
+  const ignore=(el)=>el&&el.closest&&el.closest("input,textarea,select,button,a,[contenteditable]");
+  let sx=0,sy=0;
+  screen.addEventListener("touchstart",e=>{
+    if(ignore(e.target))return;
+    const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;
+  },{passive:true});
+  screen.addEventListener("touchend",e=>{
+    if(ignore(e.target))return;
+    const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;
+    if(Math.abs(dy)<72||Math.abs(dy)<Math.abs(dx))return;
+    if(dy<-72)home();
+  },{passive:true});
 })();
 pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }

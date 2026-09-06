@@ -22,7 +22,6 @@ export function DeviceAccessGate({
           className={`onyx-access-cta${busy ? " busy" : ""}`}
           disabled={busy}
           onClick={onAllow}
-          autoFocus
         >
           <img
             className="onyx-access-gem"
