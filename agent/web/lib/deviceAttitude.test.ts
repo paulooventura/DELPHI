@@ -4,10 +4,13 @@ import {
   cameraAzimuthAltitude,
   deviceCameraVectorEnu,
   deviceToEnuRotationMatrix,
-  horizonGammaFactor,
   mat3MulVec,
 } from "./deviceAttitude";
 import { enuToAltAz } from "./sphericalView";
+
+function shortest(a: number, b: number): number {
+  return Math.abs(((a - b + 540) % 360) - 180);
+}
 
 describe("DEVICE_CAMERA_AXIS", () => {
   it("is the back/camera direction (0, 0, -1), not screen +Z or top +Y", () => {
@@ -55,28 +58,50 @@ describe("camera pointing — W3C R · (0,0,−1)", () => {
   });
 });
 
-describe("horizonGammaFactor", () => {
-  it("zeros roll at horizontal sight line (β ≈ 90°)", () => {
-    expect(horizonGammaFactor(90)).toBe(0);
-    expect(horizonGammaFactor(88)).toBeLessThan(0.15);
-    expect(horizonGammaFactor(68)).toBe(1);
+/**
+ * At β = 90° the Z-X'-Y'' chain is gimbal locked: only α + γ sets the azimuth,
+ * so (α, 90, γ) and (α + t, 90, γ − t) are the same physical attitude. Reading
+ * yaw from α alone made those read up to 2t apart — the horizon drag.
+ */
+describe("horizon gimbal lock", () => {
+  it("treats equal-sum (α + γ) triples at the horizon as one attitude", () => {
+    const a = cameraAzimuthAltitude(40, 90, 0);
+    const b = cameraAzimuthAltitude(20, 90, 20);
+    const c = cameraAzimuthAltitude(0, 90, 40);
+    expect(shortest(a.az, b.az)).toBeLessThan(0.001);
+    expect(shortest(a.az, c.az)).toBeLessThan(0.001);
+    expect(Math.abs(a.alt)).toBeLessThan(0.001);
+    expect(Math.abs(c.alt)).toBeLessThan(0.001);
   });
 
-  it("zeros γ at horizontal sight line so azimuth does not spin", () => {
-    const ref = cameraAzimuthAltitude(0, 90, 0);
-    const withGamma = enuToAltAz(deviceCameraVectorEnu(0, 90, 8));
-    expect(withGamma.az).toBeCloseTo(ref.az, 0);
-    expect(withGamma.alt).toBeCloseTo(ref.alt, 0);
+  it("stays consistent just off the lock, where devices trade α against γ", () => {
+    const straight = cameraAzimuthAltitude(40, 88, 0);
+    const traded = cameraAzimuthAltitude(25, 88, 15);
+    expect(shortest(straight.az, traded.az)).toBeLessThan(0.6);
+    expect(Math.abs(straight.alt - traded.alt)).toBeLessThan(0.6);
   });
 
-  it("ignores γ entirely — pitching through the horizon does not yank azimuth", () => {
-    // Phone rolled 12° while pitching from +12° to −12° altitude (β 102→78).
-    let prevAz = cameraAzimuthAltitude(40, 102, 12).az;
-    for (const beta of [100, 96, 92, 90, 88, 84, 80, 78]) {
-      const { az } = cameraAzimuthAltitude(40, beta, 12);
-      const dAz = Math.abs(((az - prevAz + 540) % 360) - 180);
-      expect(dAz).toBeLessThan(0.5);
-      prevAz = az;
+  it("does not jump azimuth while a rolled phone pitches through the horizon", () => {
+    // Real devices hold α + γ steady through the sweep and swap between them.
+    const sum = 52;
+    let prev = cameraAzimuthAltitude(sum - 12, 104, 12).az;
+    for (const [beta, gamma] of [
+      [100, 12], [96, 14], [93, 16], [91, 18], [90, 20],
+      [89, 18], [87, 16], [84, 14], [80, 12], [76, 10],
+    ] as const) {
+      const { az } = cameraAzimuthAltitude(sum - gamma, beta, gamma);
+      expect(shortest(az, prev)).toBeLessThan(2);
+      prev = az;
+    }
+    expect(shortest(prev, cameraAzimuthAltitude(sum - 12, 104, 12).az)).toBeLessThan(4);
+  });
+
+  it("keeps altitude monotonic across the horizon", () => {
+    let prev = Infinity;
+    for (const beta of [110, 105, 100, 95, 92, 90, 88, 85, 80, 75, 70]) {
+      const { alt } = cameraAzimuthAltitude(40, beta, 10);
+      expect(alt).toBeLessThan(prev);
+      prev = alt;
     }
   });
 });

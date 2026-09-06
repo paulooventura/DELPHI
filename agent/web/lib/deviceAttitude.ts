@@ -1,19 +1,26 @@
 /**
  * Device attitude → camera pointing ray in world ENU.
  *
- * Device frame (screen in portrait, looking at display):
+ * Device frame (screen in portrait, looking at the display):
  *   +X right, +Y top, +Z toward the user (screen normal).
  * Camera / back axis = (0, 0, -1) — exits through the cameras on the back.
  *
- * Attitude: W3C DeviceOrientation Tait–Bryan Rz(α) · Rx(β) · Ry(γ), referenced to
- * true north via resolveDeviceAlphaDeg() (iOS webkit calibration + absolute α on Android).
- * worldVec = R · deviceVec  →  (east, north, up).
+ * Attitude is the W3C DeviceOrientation Tait-Bryan product Rz(α)·Rx(β)·Ry(γ),
+ * so worldVec = R · deviceVec → (east, north, up).
+ *
+ * All three angles are used. Near β = ±90° — the phone upright, camera on the
+ * horizon — the Z-X'-Y'' parametrisation is gimbal locked: azimuth depends only
+ * on α + γ, and the device is free to trade one for the other between frames.
+ * Reading yaw from α alone throws away half of it, which is what dragged the
+ * sky sideways every time the camera crossed the horizon. The rotation matrix
+ * stays continuous through the lock, so the ray is taken from the matrix and
+ * true north is applied afterwards as a rotation about world up.
  */
 
-import { clamp, normalize, type Vec3 } from "./sphericalView";
-import { resolveCompassHeadingDeg, resolveDeviceAlphaDeg } from "./orientationCalibration";
+import type { Vec3 } from "./sphericalView";
 
 const DEG = Math.PI / 180;
+const RAD = 180 / Math.PI;
 
 /** Camera axis in device coordinates — back of phone / lens direction. */
 export const DEVICE_CAMERA_AXIS: Vec3 = [0, 0, -1];
@@ -23,6 +30,16 @@ export type Mat3 = readonly [
   readonly [number, number, number],
   readonly [number, number, number],
 ];
+
+function clampLocal(n: number, lo: number, hi: number): number {
+  return Math.max(lo, Math.min(hi, n));
+}
+
+function normalizeLocal([x, y, z]: Vec3): Vec3 {
+  const len = Math.hypot(x, y, z);
+  if (len < 1e-12) return [0, 0, 1];
+  return [x / len, y / len, z / len];
+}
 
 /** W3C DeviceOrientation rotation: device frame → ENU (east, north, up). */
 export function deviceToEnuRotationMatrix(
@@ -57,30 +74,18 @@ export function mat3MulVec(m: Mat3, [x, y, z]: Vec3): Vec3 {
 }
 
 /**
- * Legacy damp curve — kept for tests / callers that still want a soft fade.
- * Look-vector construction no longer uses γ at all (see deviceCameraVectorEnu).
- */
-export function horizonGammaFactor(betaDeg: number): number {
-  const d = Math.abs(betaDeg - 90);
-  if (d >= 22) return 1;
-  return clamp(d / 22, 0, 1);
-}
-
-/**
- * Unit look vector in ENU along the camera axis.
+ * Unit look vector in ENU along the camera axis, from the full attitude.
  *
- * γ (device roll) is intentionally ignored: the sky screen basis is rebuilt
- * roll-free from WORLD_UP, and even a horizon-damped γ still yanks azimuth as
- * you pitch through alt≈0 — the residual "horizon glitch." Diagonal tilt is
- * avoided by never feeding roll into buildStableViewBasis.
+ * Roll about the camera axis leaves this vector fixed on its own, so the sky
+ * never spins with the phone; the screen basis is rebuilt roll-free elsewhere.
  */
 export function deviceCameraVectorEnu(
   alphaDeg: number,
   betaDeg: number,
-  _gammaDeg: number,
+  gammaDeg: number,
 ): Vec3 {
-  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, 0);
-  return normalize(mat3MulVec(R, DEVICE_CAMERA_AXIS));
+  const R = deviceToEnuRotationMatrix(alphaDeg, betaDeg, gammaDeg);
+  return normalizeLocal(mat3MulVec(R, DEVICE_CAMERA_AXIS));
 }
 
 export function cameraAzimuthAltitude(
@@ -89,46 +94,8 @@ export function cameraAzimuthAltitude(
   gammaDeg: number,
 ): { az: number; alt: number } {
   const [east, north, up] = deviceCameraVectorEnu(alphaDeg, betaDeg, gammaDeg);
-  const alt = Math.asin(clamp(up, -1, 1)) * (180 / Math.PI);
-  let az = Math.atan2(east, north) * (180 / Math.PI);
+  const alt = Math.asin(clampLocal(up, -1, 1)) * RAD;
+  let az = Math.atan2(east, north) * RAD;
   if (az < 0) az += 360;
   return { az, alt };
-}
-
-type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
-
-/** Elevation from camera axis (γ=0) with roll-heavy β fallback. */
-export function resolveStablePitchDeg(event: CompassEvent): number | null {
-  const beta = event.beta;
-  if (beta == null || !Number.isFinite(beta)) return null;
-
-  const alpha = resolveDeviceAlphaDeg(event);
-  if (alpha == null) return null;
-
-  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
-  const { alt: cameraAlt } = cameraAzimuthAltitude(alpha, beta, 0);
-
-  const roll = Math.abs(gamma);
-  if (roll <= 22) return clamp(cameraAlt, -89.5, 89.5);
-
-  const portraitAlt = clamp((beta - 90) * Math.cos(gamma * DEG), -89.5, 89.5);
-  const w = clamp((roll - 22) / 35, 0, 0.55);
-  return clamp(cameraAlt * (1 - w) + portraitAlt * w, -89.5, 89.5);
-}
-
-/** Topocentric look direction: true-north az + stable pitch (roll ignored). */
-export function resolveStableLookAzAlt(event: CompassEvent): { az: number; alt: number } | null {
-  const az = resolveCompassHeadingDeg(event);
-  const alt = resolveStablePitchDeg(event);
-  if (az == null || alt == null) return null;
-  return { az, alt };
-}
-
-export function deviceOrientationToStableViewEnu(event: CompassEvent): Vec3 | null {
-  const look = resolveStableLookAzAlt(event);
-  if (look == null) return null;
-  const az = look.az * DEG;
-  const alt = look.alt * DEG;
-  const c = Math.cos(alt);
-  return normalize([c * Math.sin(az), c * Math.cos(az), Math.sin(alt)]);
 }

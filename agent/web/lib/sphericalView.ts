@@ -230,11 +230,12 @@ import {
   deviceToEnuRotationMatrix,
   mat3MulVec,
   DEVICE_CAMERA_AXIS,
+} from "./deviceAttitude";
+import {
   deviceOrientationToStableViewEnu,
   resolveStableLookAzAlt,
   resolveStablePitchDeg,
-} from "./deviceAttitude";
-import { resolveDeviceAlphaDeg } from "./orientationCalibration";
+} from "./orientationCalibration";
 
 export {
   resetOrientationCalibration,
@@ -245,9 +246,11 @@ export {
   resolveDeviceAlphaDeg,
   resolveDevicePitchDeg,
   resolveCompassHeadingDeg,
+  rawLookAzAltDeg,
+  resolveLookAzAltDeg,
   setMagneticDeclinationDeg,
   getMagneticDeclinationDeg,
-  getIosAlphaOffset,
+  getCompassYawOffsetDeg,
   compassNeedsPortraitLock,
   type SkyPoseHint,
   type CompassReadyState,
@@ -257,6 +260,9 @@ export {
   deviceOrientationToStableViewEnu,
   resolveStableLookAzAlt,
   resolveStablePitchDeg,
+};
+
+export {
   deviceCameraVectorEnu,
   deviceToEnuRotationMatrix,
   mat3MulVec,
@@ -273,29 +279,24 @@ export function deviceBackVectorEnu(
   return normalize(mat3MulVec(R, [0, 0, 1]));
 }
 
-/** Physical camera axis in ENU — roll (γ) is ignored in the look vector. */
-export function deviceOrientationToCameraViewEnu(
-  event: DeviceOrientationEvent & { webkitCompassHeading?: number },
-): Vec3 | null {
-  const beta = event.beta;
-  if (beta == null || !Number.isFinite(beta)) return null;
-  const alpha = resolveDeviceAlphaDeg(event);
-  if (alpha == null) return null;
-  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
-  return deviceCameraVectorEnu(alpha, beta, gamma);
-}
-
 /**
- * Topocentric look vector — camera attitude matrix with γ forced to 0.
- * Do not blend compass heading near alt≈0: mismatched az yanked the sky sideways
- * through the horizon. Compass path is fallback only when camera is unavailable.
+ * Topocentric look vector — full attitude matrix, then a rigid yaw to true north.
+ *
+ * The old path rebuilt the matrix from a north-corrected α with γ dropped. That
+ * is only equivalent away from β ≈ 90°, so the sky dragged sideways whenever the
+ * camera crossed the horizon (the gimbal lock trades α against γ there).
  */
 export function deviceOrientationToViewEnu(
   event: DeviceOrientationEvent & { webkitCompassHeading?: number },
 ): Vec3 | null {
-  const camera = deviceOrientationToCameraViewEnu(event);
-  if (camera) return camera;
   return deviceOrientationToStableViewEnu(event);
+}
+
+/** @deprecated Same ray as deviceOrientationToViewEnu. */
+export function deviceOrientationToCameraViewEnu(
+  event: DeviceOrientationEvent & { webkitCompassHeading?: number },
+): Vec3 | null {
+  return deviceOrientationToViewEnu(event);
 }
 
 /** Level horizon basis — no device roll (gamma) so pan/tilt stay axis-aligned. */

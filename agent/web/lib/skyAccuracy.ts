@@ -20,8 +20,9 @@ import {
   HOME_OBSERVER,
 } from "./observerHome";
 import {
+  rawLookAzAltDeg,
   resetOrientationCalibration,
-  resolveDeviceAlphaDeg,
+  resolveLookAzAltDeg,
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
 } from "./orientationCalibration";
@@ -129,7 +130,31 @@ export function sunOnMeridian(date: Date): { time: Date; az: number; alt: number
 
 type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
 
-/** First upright sample locks iOS α-offset, then pitch to the target. */
+/** The device's raw yaw origin is arbitrary on iOS — the app must never assume it. */
+const DEVICE_YAW_ORIGIN = 137;
+
+/**
+ * Euler angles whose camera ray sits at (raw azimuth, altitude) for a given roll.
+ * Inverts az = −α + arg(sinβ·cosγ − i·sinγ), alt = asin(−cosβ·cosγ).
+ */
+export function eulerForRawLook(
+  azRawDeg: number,
+  altDeg: number,
+  gammaDeg: number,
+): { alpha: number; beta: number; gamma: number } {
+  const cosG = Math.cos(gammaDeg * RAD);
+  const sinG = Math.sin(gammaDeg * RAD);
+  const cosB = Math.max(-1, Math.min(1, -Math.sin(altDeg * RAD) / (cosG || 1e-9)));
+  const beta = Math.acos(cosB) * DEG;
+  const phase = Math.atan2(-sinG, Math.sin(beta * RAD) * cosG) * DEG;
+  return {
+    alpha: ((phase - azRawDeg) % 360 + 360) % 360,
+    beta,
+    gamma: gammaDeg,
+  };
+}
+
+/** First upright sample locks the iOS yaw offset, then pitch/roll to the target. */
 export function simulateIosLookAt(
   trueAz: number,
   trueAlt: number,
@@ -139,30 +164,20 @@ export function simulateIosLookAt(
   setMagneticDeclinationDeg(declinationDeg);
   setUserAzimuthOffsetDeg(0);
 
-  const magHeading = ((trueAz - declinationDeg) % 360 + 360) % 360;
-  const deviceAlpha = 40;
-  // webkit is the magnetic heading of the camera while upright — not α + heading.
-  const webkitUpright = magHeading;
+  // Calibrate upright: webkit is the magnetic heading of the camera right then.
+  const upright = { alpha: 40, beta: 90, gamma: 0, absolute: false } as CompassEvent;
+  const uprightRaw = rawLookAzAltDeg(upright)!;
+  const webkitUpright = ((uprightRaw.az + DEVICE_YAW_ORIGIN - declinationDeg) % 360 + 360) % 360;
+  const uprightSample = { ...upright, webkitCompassHeading: webkitUpright } as CompassEvent;
+  resolveLookAzAltDeg(uprightSample);
 
-  // Calibrate at the horizon, same yaw — webkit = magnetic heading of the camera.
-  const upright = {
-    alpha: deviceAlpha,
-    beta: 90,
-    gamma: 0,
-    webkitCompassHeading: webkitUpright,
-    absolute: false,
-  } as CompassEvent;
-  // Force offset lock (pitch-steady requires a previous β).
-  resolveDeviceAlphaDeg(upright);
-  resolveDeviceAlphaDeg(upright);
-
-  const beta = Math.max(0.5, Math.min(179.5, 90 + trueAlt));
+  // Steep targets already leave the upright band; near the horizon add roll so a
+  // lying webkit sample cannot refresh the lock — and so roll is actually exercised.
+  const gamma = Math.abs(trueAlt) >= 22 ? 0 : 26;
+  const euler = eulerForRawLook(trueAz - DEVICE_YAW_ORIGIN, trueAlt, gamma);
   return {
-    alpha: deviceAlpha,
-    beta,
-    // Leave the upright band so a lying webkit sample cannot refresh the offset.
-    gamma: 26,
-    webkitCompassHeading: webkitUpright + 40,
+    ...euler,
+    webkitCompassHeading: (webkitUpright + 40) % 360,
     absolute: false,
   } as CompassEvent;
 }

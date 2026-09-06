@@ -8,7 +8,7 @@ import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, Confide
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
 import { hasAccessThisSession, requestDeviceAccessPermissions } from "../lib/deviceAccess";
-import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getIosAlphaOffset, compassNeedsPortraitLock, type SkyPoseHint } from "../lib/sphericalView";
+import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getCompassYawOffsetDeg, compassNeedsPortraitLock, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
@@ -241,7 +241,7 @@ export default function Home() {
     return 0;
   });
   const [declinationDeg, setDeclinationDeg] = useState(0);
-  const [compassCalibrated, setCompassCalibrated] = useState(() => getIosAlphaOffset() != null);
+  const [compassCalibrated, setCompassCalibrated] = useState(() => getCompassYawOffsetDeg() != null);
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
   const [focusRingData, setFocusRingData] = useState<ClockRingData | null>(null);
@@ -713,7 +713,7 @@ export default function Home() {
       if (h != null && (t.heading || t.location)) {
         setHeadingLive(true);
         if (p != null) setPitchLive(true);
-        setCompassCalibrated(getIosAlphaOffset() != null && !compassNeedsPortraitLock());
+        setCompassCalibrated(getCompassYawOffsetDeg() != null && !compassNeedsPortraitLock());
         setSignals(prev =>
           prev
             ? { ...prev, heading: h, pitch: p ?? prev.pitch }

@@ -1,3 +1,16 @@
+/**
+ * True-north correction for the device look ray.
+ *
+ * The pointing ray comes from the full attitude matrix (see deviceAttitude.ts).
+ * North is then applied as a single rotation about world up: raw azimuth plus a
+ * yaw offset. That keeps the correction rigid and continuous at every attitude,
+ * including the β ≈ 90° gimbal lock at the horizon, where injecting a corrected
+ * α back into the matrix used to swing the sky sideways.
+ */
+
+import { cameraAzimuthAltitude } from "./deviceAttitude";
+import type { Vec3 } from "./sphericalView";
+
 function normalizeHeading(deg: number): number {
   return ((deg % 360) + 360) % 360;
 }
@@ -6,53 +19,54 @@ function clamp(n: number, lo: number, hi: number): number {
   return Math.max(lo, Math.min(hi, n));
 }
 
-const IOS_OFFSET_KEY = "cp-ios-alpha-offset";
+/** Session key. Renamed from the α-space value so stale locks cannot leak in. */
+const YAW_OFFSET_KEY = "cp-compass-yaw-offset";
 
-/** iOS: webkitCompassHeading is only valid near portrait-upright; store alpha offset there. */
-let iosAlphaOffset: number | null = null;
-/** Last β used while refreshing the α offset — skips updates during pitch sweeps. */
-let iosOffsetLastBeta: number | null = null;
+/** Magnetic yaw lock: webkit heading − raw camera azimuth, learned while upright. */
+let compassYawOffset: number | null = null;
+/** Last β used while refreshing the lock — skips updates during pitch sweeps. */
+let yawOffsetLastBeta: number | null = null;
 /** Whether iOS webkit heading has been seen (needs a portrait lock). */
-let iosWebkitSeen = false;
-/** East-positive magnetic declination for non-absolute / magnetic compass paths. */
+let webkitSeen = false;
+/** East-positive magnetic declination for magnetic compass paths. */
 let magneticDeclinationDeg = 0;
-/** User fine-tune after sun / landmark alignment (degrees, shortest-path east positive). */
+/** User fine-tune after sun / landmark alignment (degrees, east positive). */
 let userAzimuthOffsetDeg = 0;
 
-function persistIosAlphaOffset(): void {
-  if (iosAlphaOffset == null) return;
+function persistYawOffset(): void {
+  if (compassYawOffset == null) return;
   try {
-    sessionStorage.setItem(IOS_OFFSET_KEY, String(iosAlphaOffset));
+    sessionStorage.setItem(YAW_OFFSET_KEY, String(compassYawOffset));
   } catch {
     /* ignore */
   }
 }
 
-/** Restore portrait α offset from this session — avoids re-pointing at sky after tab switch. */
+/** Restore the yaw lock from this session — avoids re-pointing after a tab switch. */
 export function restoreOrientationCalibration(): void {
   try {
-    const raw = sessionStorage.getItem(IOS_OFFSET_KEY);
+    const raw = sessionStorage.getItem(YAW_OFFSET_KEY);
     if (raw == null) return;
     const v = Number(raw);
-    if (Number.isFinite(v)) iosAlphaOffset = v;
+    if (Number.isFinite(v)) compassYawOffset = v;
   } catch {
     /* ignore */
   }
 }
 
 export function resetOrientationCalibration(): void {
-  iosAlphaOffset = null;
-  iosOffsetLastBeta = null;
-  iosWebkitSeen = false;
+  compassYawOffset = null;
+  yawOffsetLastBeta = null;
+  webkitSeen = false;
   try {
-    sessionStorage.removeItem(IOS_OFFSET_KEY);
+    sessionStorage.removeItem(YAW_OFFSET_KEY);
   } catch {
     /* ignore */
   }
 }
 
 export function compassNeedsPortraitLock(): boolean {
-  return iosWebkitSeen && iosAlphaOffset == null;
+  return webkitSeen && compassYawOffset == null;
 }
 
 export type CompassReadyState = "ready" | "needs-portrait" | "no-sensor";
@@ -63,7 +77,7 @@ export function compassReadyState(event?: CompassEvent | null): CompassReadyStat
   const hasWebkit = "DeviceOrientationEvent" in window;
   if (!hasWebkit) return "no-sensor";
   if (event?.webkitCompassHeading != null) {
-    return iosAlphaOffset != null ? "ready" : "needs-portrait";
+    return compassYawOffset != null ? "ready" : "needs-portrait";
   }
   return "ready";
 }
@@ -91,16 +105,9 @@ export function getUserAzimuthOffsetDeg(): number {
   return userAzimuthOffsetDeg;
 }
 
-function finalizeTrueHeading(heading: number, applyDeclination: boolean): number {
-  let out = heading;
-  if (applyDeclination) {
-    out = normalizeHeading(out + magneticDeclinationDeg);
-  }
-  return normalizeHeading(out + userAzimuthOffsetDeg);
-}
-
-export function getIosAlphaOffset(): number | null {
-  return iosAlphaOffset;
+/** Magnetic yaw lock in azimuth space, or null until the portrait lock happens. */
+export function getCompassYawOffsetDeg(): number | null {
+  return compassYawOffset;
 }
 
 type CompassEvent = DeviceOrientationEvent & { webkitCompassHeading?: number };
@@ -112,86 +119,121 @@ export function isUprightPortrait(beta: number | null, gamma: number | null): bo
   return Math.abs(beta - 90) < 20 && Math.abs(g) < 25;
 }
 
-/**
- * Softest shortest-path blend toward a new compass sample (degrees).
- * Keeps α-offset from jumping when webkit briefly spikes near the horizon.
- */
-function blendHeadingToward(from: number, to: number, t: number): number {
-  const delta = ((to - from + 540) % 360) - 180;
-  return normalizeHeading(from + delta * t);
+/** Softest shortest-path blend toward a new lock sample (degrees). */
+function blendOffsetToward(from: number, to: number, t: number): number {
+  return shortestOffsetDeg(from + shortestOffsetDeg(to - from) * t);
 }
 
 /**
- * Resolve compass azimuth for decoupled pan/tilt sky view.
- *
- * iOS webkitCompassHeading is only trustworthy for calibrating α↔north while
- * roughly upright — and even then it drifts while you pitch through β≈90°
- * (the horizon). Never feed live webkit into the look vector after calibration:
- * update the α offset only when upright and pitch is steady, always drive
- * heading from α + offset.
+ * Camera azimuth / altitude straight off the attitude matrix.
+ * Yaw origin is arbitrary on relative streams; absolute streams are earth-referenced.
  */
-export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
-  const beta = event.beta;
-  const gamma = event.gamma ?? 0;
+export function rawLookAzAltDeg(event: CompassEvent): { az: number; alt: number } | null {
   const alpha = event.alpha;
+  const beta = event.beta;
+  if (typeof alpha !== "number" || !Number.isFinite(alpha)) return null;
+  if (typeof beta !== "number" || !Number.isFinite(beta)) return null;
+  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
+  return cameraAzimuthAltitude(alpha, beta, gamma);
+}
+
+/**
+ * Look direction in true-north topocentric terms.
+ *
+ * iOS webkitCompassHeading is only trustworthy while roughly upright, and it
+ * drifts as you pitch through the horizon — so it is used to learn a yaw offset
+ * while upright and never fed into the live ray afterwards.
+ */
+export function resolveLookAzAltDeg(event: CompassEvent): { az: number; alt: number } | null {
+  const raw = rawLookAzAltDeg(event);
+  if (raw == null) return null;
+
+  const beta = typeof event.beta === "number" && Number.isFinite(event.beta) ? event.beta : null;
+  const gamma = typeof event.gamma === "number" && Number.isFinite(event.gamma) ? event.gamma : 0;
   const webkit =
     typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)
       ? event.webkitCompassHeading
       : null;
+  const alt = clamp(raw.alt, -89.5, 89.5);
 
-  if (webkit != null && typeof alpha === "number" && Number.isFinite(alpha)) {
-    iosWebkitSeen = true;
-    if (isUprightPortrait(beta, gamma) && beta != null) {
-      const sample = normalizeHeading(webkit - alpha);
-      if (iosAlphaOffset == null) {
-        iosAlphaOffset = sample;
-        persistIosAlphaOffset();
+  if (webkit != null) {
+    webkitSeen = true;
+    if (beta != null && isUprightPortrait(beta, gamma)) {
+      const sample = shortestOffsetDeg(webkit - raw.az);
+      if (compassYawOffset == null) {
+        compassYawOffset = sample;
+        persistYawOffset();
       } else {
-        // Skip offset refresh while pitching — horizon sweeps fire β≈90 with
-        // lying webkit samples and used to yank the sky sideways.
+        // Skip refresh while pitching — horizon sweeps fire β ≈ 90 with lying
+        // webkit samples and used to yank the sky sideways.
         const pitchSteady =
-          iosOffsetLastBeta != null && Math.abs(beta - iosOffsetLastBeta) < 1.25;
-        if (pitchSteady && Math.abs(gamma) < 12) {
-          iosAlphaOffset = blendHeadingToward(iosAlphaOffset, sample, 0.06);
-          persistIosAlphaOffset();
+          yawOffsetLastBeta != null && Math.abs(beta - yawOffsetLastBeta) < 1.25;
+        if (pitchSteady && Math.abs(gamma) < 20) {
+          compassYawOffset = blendOffsetToward(compassYawOffset, sample, 0.06);
+          persistYawOffset();
         }
       }
-      iosOffsetLastBeta = beta;
-    } else if (beta != null && Number.isFinite(beta)) {
-      iosOffsetLastBeta = beta;
+      yawOffsetLastBeta = beta;
+    } else if (beta != null) {
+      yawOffsetLastBeta = beta;
     }
-    if (iosAlphaOffset != null) {
-      // α is gyro-stable through the horizon; offset carries true-north lock.
-      return finalizeTrueHeading(normalizeHeading(alpha + iosAlphaOffset), true);
+
+    if (compassYawOffset == null) {
+      // Before the portrait lock there is no north claim — track raw yaw only.
+      return { az: normalizeHeading(raw.az + userAzimuthOffsetDeg), alt };
     }
-    // Before portrait calibration: alpha-only track (no declination yet).
-    return finalizeTrueHeading(normalizeHeading(alpha), false);
+    return {
+      az: normalizeHeading(
+        raw.az + compassYawOffset + magneticDeclinationDeg + userAzimuthOffsetDeg,
+      ),
+      alt,
+    };
   }
 
-  if (typeof alpha !== "number" || !Number.isFinite(alpha)) return null;
-
-  const absolute = event.absolute === true;
-  // Absolute streams already use an Earth frame. Adding screen.orientation.angle
-  // double-counts landscape on Chrome/Android and yanks the sky by ~90°.
-  const base = absolute ? alpha : normalizeHeading(360 - alpha);
-  const heading = absolute
-    ? normalizeHeading(base)
-    : normalizeHeading(base + (typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0));
-  // Most mobile "absolute" streams are still magnetic — apply declination for ephemeris alignment.
-  return finalizeTrueHeading(heading, true);
+  // Absolute streams already carry the earth frame in α, but are still magnetic.
+  return {
+    az: normalizeHeading(raw.az + magneticDeclinationDeg + userAzimuthOffsetDeg),
+    alt,
+  };
 }
 
-/**
- * Camera elevation from forward/back tilt (β) only — ignores roll (γ).
- * Portrait upright (β ≈ 90°) → 0°; top toward sky (β > 90) → positive; toward ground → negative.
- */
+export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
+  return resolveLookAzAltDeg(event)?.az ?? null;
+}
+
+/** Camera elevation from the full attitude — exact at any roll. */
 export function resolveDevicePitchDeg(event: CompassEvent): number | null {
+  const raw = rawLookAzAltDeg(event);
+  if (raw != null) return clamp(raw.alt, -89.5, 89.5);
   const beta = event.beta;
   if (beta == null || !Number.isFinite(beta)) return null;
   return clamp(beta - 90, -89.5, 89.5);
 }
 
-/** W3C α for Rz(α)·Rx(β)·Ry(γ) — opposite sense to compass azimuth; true north via resolveCompassHeadingDeg. */
+/** @deprecated Elevation now comes from the same resolved ray. */
+export function resolveStablePitchDeg(event: CompassEvent): number | null {
+  return resolveDevicePitchDeg(event);
+}
+
+/** Topocentric look direction: true-north az + camera altitude. */
+export function resolveStableLookAzAlt(event: CompassEvent): { az: number; alt: number } | null {
+  return resolveLookAzAltDeg(event);
+}
+
+export function deviceOrientationToStableViewEnu(event: CompassEvent): Vec3 | null {
+  const look = resolveLookAzAltDeg(event);
+  if (look == null) return null;
+  const DEG = Math.PI / 180;
+  const az = look.az * DEG;
+  const alt = look.alt * DEG;
+  const c = Math.cos(alt);
+  return [c * Math.sin(az), c * Math.cos(az), Math.sin(alt)];
+}
+
+/**
+ * @deprecated North is applied to the resolved ray, not by rebuilding α.
+ * Kept so older call sites still compile; α no longer round-trips the matrix.
+ */
 export function resolveDeviceAlphaDeg(event: CompassEvent): number | null {
   const heading = resolveCompassHeadingDeg(event);
   if (heading == null) return null;

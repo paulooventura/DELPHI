@@ -8,6 +8,7 @@ import {
   HOME_LON,
   HOME_OBSERVER,
   angularSeparationDeg,
+  eulerForRawLook,
   formatHomeSkyDump,
   homeSkyTargets,
   hourAngleAltAz,
@@ -21,7 +22,9 @@ import {
 import {
   resetOrientationCalibration,
   setMagneticDeclinationDeg,
+  setUserAzimuthOffsetDeg,
 } from "./orientationCalibration";
+import { deviceOrientationToViewEnu, enuToAltAz } from "./sphericalView";
 import { bodyEquatorHorizon, j2000ToOfDateRaDec, raDecToAltAz } from "./skyPositions";
 
 const NASHVILLE_EVENING = new Date("2026-08-19T01:00:00Z"); // 8pm CDT Aug 18
@@ -30,6 +33,7 @@ describe("home observer sky accuracy (Nashville)", () => {
   beforeEach(() => {
     resetOrientationCalibration();
     setMagneticDeclinationDeg(HOME_DECLINATION_DEG);
+    setUserAzimuthOffsetDeg(0);
   });
 
   it("dumps the live home sky so the agent can check it", () => {
@@ -106,6 +110,35 @@ describe("home observer sky accuracy (Nashville)", () => {
     const event = simulateIosLookAt(vega.az, vega.alt, HOME_DECLINATION_DEG);
     const miss = lookErrorDeg(event, vega.az, vega.alt);
     expect(miss.errorDeg).toBeLessThan(1.0);
+  });
+
+  it("iOS look vector hits a target sitting just above the horizon", () => {
+    // Near the horizon the harness rolls the phone 26°, so this also proves roll
+    // is carried through the gimbal lock instead of being thrown away.
+    const az = 118;
+    const alt = 3.5;
+    const event = simulateIosLookAt(az, alt, HOME_DECLINATION_DEG);
+    const miss = lookErrorDeg(event, az, alt);
+    expect(miss.errorDeg).toBeLessThan(0.8);
+  });
+
+  it("a star does not slide on screen while the phone crosses the horizon", () => {
+    const targetAz = 96;
+    const targetAlt = 0;
+    // One physical attitude, described the way a real device describes it as it
+    // pitches through β ≈ 90° and trades α against γ. Screen position must hold
+    // still; any spread across the family is the drag the user sees.
+    const hits = [0, 6, 12, 18, 24, 30].map(gamma => {
+      const euler = eulerForRawLook(targetAz, targetAlt, gamma);
+      const view = deviceOrientationToViewEnu({ ...euler, absolute: true } as DeviceOrientationEvent)!;
+      const look = enuToAltAz(view);
+      return projectTargetToCrosshair(look.az, look.alt, targetAz, targetAlt);
+    });
+    const spread = Math.max(
+      ...hits.map(h => Math.hypot(h.dx - hits[0]!.dx, h.dy - hits[0]!.dy)),
+    );
+    // Reading yaw from α alone spread this across hundreds of pixels.
+    expect(spread).toBeLessThan(1);
   });
 
   it("a target on the look ray lands on the canvas crosshair", () => {
