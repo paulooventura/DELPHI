@@ -2563,7 +2563,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-device .onyx-stars { z-index: 0; }
 .onyx-orrery-header {
   position: absolute;
-  top: 12px;
+  top: 56px;
   left: 0; right: 0;
   z-index: 8;
   display: flex;
@@ -2571,13 +2571,14 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   align-items: stretch;
   gap: 0;
   padding: 0 12px;
+  pointer-events: none;
 }
 .onyx-orrery-mast {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  padding: 2px 64px 0;
+  padding: 0 12px;
   pointer-events: none;
 }
 .onyx-orrery-title {
@@ -2707,7 +2708,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-wrap {
   flex: 1;
   min-height: 0;
-  margin-top: 118px;
+  margin-top: 162px;
   margin-bottom: 8px;
   position: relative;
   z-index: 2;
@@ -3368,6 +3369,14 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-ghost-btn {
   --cut: 6px;
   --steps: 4px;
+}
+.onyx-root .onyx-overlay-close {
+  position: absolute;
+  top: 18px;
+  left: 18px;
+  right: auto;
+  z-index: 30;
+  width: max-content;
 }
 .onyx-access-cta,
 .onyx-access-gem {

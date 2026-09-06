@@ -405,10 +405,10 @@ export function OnyxOrrery({
     <div className="onyx-root">
       <div className="onyx-device onyx-orrery-device">
         <OnyxStarfield />
+        <button type="button" className="onyx-overlay-close" onClick={onBack}>
+          HOME
+        </button>
         <div className="onyx-orrery-header">
-          <button type="button" className="onyx-overlay-close" onClick={onBack}>
-            HOME
-          </button>
           <div className="onyx-orrery-mast">
             <p className="onyx-orrery-title">ORRERY</p>
             <div className="onyx-orrery-controls">

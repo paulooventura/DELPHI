@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06n -->
+<!-- build: 2026-09-06o -->
 <script>
 (function(){
-  var BUILD='2026-09-06n';
+  var BUILD='2026-09-06o';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -849,10 +849,10 @@
     color:#fff;
     text-shadow:var(--word-outline);
   }
-  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th),
-  #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th),
-  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button),
-  .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button),
+  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar),
+  #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar),
+  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar),
+  .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar),
   #screen-studies .kicker, #screen-studies h1.title, #screen-studies .sub, #screen-studies .axis-kicker,
   #screen-tonal .kicker, #screen-tonal h1.ttitle, #screen-tonal .tsub,
   .ledge .laxis .p, .ledge .laxis .z, .ledge .laxis .r, .ledge .lthesis p, .ledge .lnote p,
@@ -864,6 +864,20 @@
     -webkit-background-clip:border-box;
     background-clip:border-box;
     text-shadow:var(--word-outline);
+  }
+  /* Keep the Yin—0—Yang colored rail. Word-paint only owns type, not this chrome. */
+  #screen-studies .laxis .bar,
+  #screen-tonal .laxis .bar,
+  .ledge .laxis .bar {
+    flex:1;
+    min-width:36px;
+    height:2px;
+    border-radius:2px;
+    background:linear-gradient(90deg,rgba(90,169,255,.55),rgba(124,240,208,.85) 50%,rgba(255,91,91,.6)) !important;
+    background-image:linear-gradient(90deg,rgba(90,169,255,.55),rgba(124,240,208,.85) 50%,rgba(255,91,91,.6)) !important;
+    color:transparent !important;
+    -webkit-text-fill-color:transparent !important;
+    text-shadow:none !important;
   }
   #screen-studies h1.title, #screen-tonal h1.ttitle, .soon h2, .phrase h1 {
     background:none !important;
