@@ -15,6 +15,7 @@ import {
   playHelekMark,
   playPalaMark,
   playPranaMark,
+  playScrubTick,
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
 import { OnyxStarfield } from "./OnyxStarfield";
@@ -70,13 +71,11 @@ export function OnyxOrrery({
   lat,
   lon,
   onBack,
-  onOpenTonal,
   hapticsEnabled = true,
 }: {
   lat: number;
   lon: number;
   onBack: () => void;
-  onOpenTonal?: () => void;
   /** Master stone toggle — escapement ticks respect this. */
   hapticsEnabled?: boolean;
 }) {
@@ -102,7 +101,13 @@ export function OnyxOrrery({
   const nowPulseRef = useRef(0);
   const lastTsRef = useRef(0);
   const scrubAccRef = useRef(0);
-  const pointerRef = useRef<{ id: number; x: number } | null>(null);
+  const pointerRef = useRef<{
+    id: number;
+    x: number;
+    y: number;
+    laneId: OrreryLaneId | null;
+    dragged: boolean;
+  } | null>(null);
 
   useEffect(() => {
     frozenRef.current = frozen;
@@ -330,44 +335,58 @@ export function OnyxOrrery({
     return lanesRef.current.find(l => l.id === hit.id) ?? null;
   };
 
+  const stepScrub = (laneId: OrreryLaneId, dir: number) => {
+    viewDateRef.current = stepOrreryDate(viewDateRef.current, laneId, dir);
+    const audio = getClockAudio();
+    if (audio) playScrubTick(audio);
+    if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
+  };
+
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!frozen) return;
     e.currentTarget.setPointerCapture(e.pointerId);
-    pointerRef.current = { id: e.pointerId, x: e.clientX };
-    scrubAccRef.current = 0;
     const lane = hitLane(e.clientY, e.currentTarget);
-    if (lane) setSelectedLane(lane.id);
+    pointerRef.current = {
+      id: e.pointerId,
+      x: e.clientX,
+      y: e.clientY,
+      laneId: lane?.id ?? null,
+      dragged: false,
+    };
+    scrubAccRef.current = 0;
+    if (frozen && lane) setSelectedLane(lane.id);
   };
 
   const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!frozen || !pointerRef.current || pointerRef.current.id !== e.pointerId) return;
-    const dx = e.clientX - pointerRef.current.x;
-    pointerRef.current.x = e.clientX;
-    const laneId = selectedRef.current;
+    const ptr = pointerRef.current;
+    if (!ptr || ptr.id !== e.pointerId) return;
+    const dx = e.clientX - ptr.x;
+    const dy = e.clientY - ptr.y;
+    if (!ptr.dragged && Math.hypot(dx, dy) > 12) ptr.dragged = true;
+    if (!frozen || !ptr.dragged) return;
+    const laneId = ptr.laneId ?? selectedRef.current;
     if (!laneId) return;
+    ptr.x = e.clientX;
     scrubAccRef.current += dx;
     const cellW = 64;
     while (scrubAccRef.current <= -cellW) {
-      viewDateRef.current = stepOrreryDate(viewDateRef.current, laneId, +1);
+      stepScrub(laneId, +1);
       scrubAccRef.current += cellW;
     }
     while (scrubAccRef.current >= cellW) {
-      viewDateRef.current = stepOrreryDate(viewDateRef.current, laneId, -1);
+      stepScrub(laneId, -1);
       scrubAccRef.current -= cellW;
     }
   };
 
   const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const ptr = pointerRef.current;
     pointerRef.current = null;
     try {
       e.currentTarget.releasePointerCapture(e.pointerId);
     } catch {
       /* already released */
     }
-  };
-
-  const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (frozen) return;
+    if (!ptr || ptr.dragged) return;
     const lane = hitLane(e.clientY, e.currentTarget);
     if (!lane) {
       setExpanded(null);
@@ -383,54 +402,48 @@ export function OnyxOrrery({
       <div className="onyx-device onyx-orrery-device">
         <OnyxStarfield />
         <div className="onyx-orrery-header">
-          <button type="button" className="onyx-orrery-close" onClick={onBack}>
-            close
+          <button type="button" className="onyx-overlay-close" onClick={onBack}>
+            HOME
           </button>
-          <p className="onyx-orrery-title">ORRERY</p>
-          <div className="onyx-orrery-controls">
-            <button
-              type="button"
-              className={`onyx-orrery-filter-btn${frozen ? " is-on" : ""}`}
-              onClick={() => {
-                setFrozen(f => !f);
-                setExpanded(null);
-              }}
-              title="Freeze time, then click a lane and scroll left (future) or right (past)"
-            >
-              {frozen ? "Time frozen" : "Freeze time"}
-            </button>
-            <button
-              type="button"
-              className="onyx-orrery-filter-btn"
-              onClick={() => setPickerOpen(true)}
-              title="Choose which cycles are displayed"
-            >
-              Cycles · {visibleCount}
-            </button>
-            {onOpenTonal && (
+          <div className="onyx-orrery-mast">
+            <p className="onyx-orrery-title">ORRERY</p>
+            <div className="onyx-orrery-controls">
+              <button
+                type="button"
+                className={`onyx-orrery-filter-btn${frozen ? " is-on" : ""}`}
+                onClick={() => {
+                  setFrozen(f => !f);
+                  setExpanded(null);
+                }}
+                title="Freeze the running clock. Tap a box for details. Hold and drag to move time."
+              >
+                {frozen ? "Time frozen" : "Freeze time"}
+              </button>
               <button
                 type="button"
                 className="onyx-orrery-filter-btn"
-                onClick={onOpenTonal}
-                title="Open Tonal"
+                onClick={() => setPickerOpen(true)}
+                title="Choose which cycles are displayed"
               >
-                Tonal ↗
+                Cycles · {visibleCount}
               </button>
-            )}
+            </div>
+            <div className="onyx-orrery-axis" aria-hidden="true">
+              <p className="onyx-orrery-axis-kicker">every quality is an axis</p>
+              <div className="onyx-orrery-laxis">
+                <span className="p">Yin</span>
+                <span className="bar" />
+                <span className="z">0</span>
+                <span className="bar" />
+                <span className="r">Yang</span>
+              </div>
+            </div>
           </div>
         </div>
-        {frozen && (
-          <p className="onyx-orrery-freeze-hint">
-            {selectedLane
-              ? `Scrub ${LANE_LABEL[selectedLane]} — left future, right past`
-              : "Click a lane, then drag left or right"}
-          </p>
-        )}
         <div className="onyx-orrery-wrap" ref={wrapRef}>
           <canvas
             ref={canvasRef}
-            className="onyx-orrery-canvas"
-            onClick={onCanvasClick}
+            className={`onyx-orrery-canvas${frozen ? " is-frozen" : ""}`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}

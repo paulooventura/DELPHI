@@ -14,9 +14,9 @@
   --onyx-edge-faint: rgba(140, 124, 255, 0.1);
   --onyx-ink-bright: #f2f0fb;
   --onyx-ink: #d3d0e2;
-  --onyx-ink-soft: #8f8ca3;
-  --onyx-ink-quiet: #5a5770;
-  --onyx-ink-faint: #37343f;
+  --onyx-ink-soft: #c8c4d8;
+  --onyx-ink-quiet: #b4b0c4;
+  --onyx-ink-faint: #8f8ca3;
   --onyx-gem-green: #3d9b6a;
   --onyx-gem-yellow: #c9a227;
   --onyx-gem-red: #b54a4a;
@@ -1630,7 +1630,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   padding: 56px 12px calc(24px + env(safe-area-inset-bottom, 0px));
 }
 .onyx-overlay-close {
-  position: absolute; top: 18px; right: 18px; z-index: 21;
+  position: absolute; top: 18px; left: 18px; right: auto; z-index: 21;
   background: none; border: 0.5px solid var(--onyx-edge-bright); border-radius: 16px;
   padding: 6px 12px; color: var(--onyx-ink-bright); font-family: inherit;
   font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
@@ -2534,49 +2534,72 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-device .onyx-stars { z-index: 0; }
 .onyx-orrery-header {
   position: absolute;
-  top: 16px;
+  top: 12px;
   left: 0; right: 0;
   z-index: 8;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
   padding: 0 12px;
 }
+.onyx-orrery-mast {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 64px 0;
+  pointer-events: none;
+}
 .onyx-orrery-title {
-  position: absolute;
-  left: 0;
-  right: 0;
+  position: static;
   margin: 0;
   text-align: center;
   font-size: 11px;
   letter-spacing: 0.42em;
-  color: var(--onyx-ink-quiet);
+  color: var(--onyx-ink-soft);
   font-weight: 300;
   pointer-events: none;
-}
-.onyx-orrery-close {
-  position: relative;
-  z-index: 2;
-  background: rgba(100,90,160,0.18);
-  border: 0.5px solid rgba(140,124,255,0.28);
-  border-radius: 10px;
-  padding: 4px 9px;
-  font-family: inherit;
-  font-size: 9px;
-  letter-spacing: 0.06em;
-  color: var(--onyx-ink-soft);
-  cursor: pointer;
 }
 .onyx-orrery-controls {
   position: relative;
   z-index: 2;
   display: flex;
   flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 6px;
+  justify-content: center;
+  gap: 8px;
   margin-left: 0;
-  max-width: 62%;
+  max-width: none;
+  pointer-events: auto;
+}
+.onyx-orrery-axis {
+  width: min(100%, 280px);
+  pointer-events: none;
+}
+.onyx-orrery-axis-kicker {
+  margin: 0 0 4px;
+  text-align: center;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--onyx-ink-soft);
+}
+.onyx-orrery-laxis {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-family: ui-monospace, monospace;
+  letter-spacing: 0.05em;
+}
+.onyx-orrery-laxis .p { color: #9ec8ff; }
+.onyx-orrery-laxis .z { color: #7ff0c8; font-weight: 700; }
+.onyx-orrery-laxis .r { color: #ff8a8a; }
+.onyx-orrery-laxis .bar {
+  flex: 1;
+  min-width: 28px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(90,169,255,.55), rgba(124,240,208,.85) 50%, rgba(255,91,91,.6));
 }
 .onyx-orrery-filter-btn {
   background: rgba(100,90,160,0.18);
@@ -2654,7 +2677,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-wrap {
   flex: 1;
   min-height: 0;
-  margin-top: 64px;
+  margin-top: 118px;
   margin-bottom: 8px;
   position: relative;
   z-index: 2;
@@ -2665,6 +2688,10 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   height: 100%;
   cursor: pointer;
   touch-action: manipulation;
+}
+.onyx-orrery-canvas.is-frozen {
+  touch-action: none;
+  cursor: grab;
 }
 .onyx-orrery-teach-scrim {
   position: absolute;
@@ -3134,8 +3161,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-sky-align-btn,
   .onyx-you-chip,
   .onyx-why,
-  .onyx-filt,
-  .onyx-access-cta
+  .onyx-filt
 ) {
   --cut: 10px;
   --gem: 272 54% 46%;
@@ -3191,8 +3217,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-sky-align-btn,
   .onyx-you-chip,
   .onyx-why,
-  .onyx-filt,
-  .onyx-access-cta
+  .onyx-filt
 )::before {
   content: "";
   position: absolute;
@@ -3234,8 +3259,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-sky-align-btn,
   .onyx-you-chip,
   .onyx-why,
-  .onyx-filt,
-  .onyx-access-cta
+  .onyx-filt
 )::after {
   content: "";
   position: absolute;
@@ -3273,8 +3297,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-sky-align-btn,
   .onyx-you-chip,
   .onyx-why,
-  .onyx-filt,
-  .onyx-access-cta
+  .onyx-filt
 ):is(:hover, :focus-visible) {
   transform: translateY(-1px);
   filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.52)) brightness(1.12);
@@ -3297,8 +3320,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-sky-align-btn,
   .onyx-you-chip,
   .onyx-why,
-  .onyx-filt,
-  .onyx-access-cta
+  .onyx-filt
 ):active {
   transform: translateY(1px) scale(0.99);
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) brightness(0.94);
@@ -3317,10 +3339,9 @@ html[data-sky="twilight"] .onyx-overlay-close {
   --cut: 6px;
   --steps: 4px;
 }
-.onyx-access-cta {
-  --cut: 22px;
-  --gem: 272 48% 40%;
-  --steps: 10px;
+.onyx-access-cta,
+.onyx-access-gem {
+  clip-path: none;
 }
 .onyx-cut-amethyst { --gem: 272 54% 46%; }
 .onyx-cut-sapphire { --gem: 218 68% 44%; }

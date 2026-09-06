@@ -240,7 +240,7 @@ export function OnyxSky({
         tabIndex={0}
       >
         <button type="button" className="onyx-sky-back" onClick={leave}>
-          ← home
+          HOME
         </button>
         <OnyxAudioStone enabled={hapticsEnabled} onEnabledChange={onPulseEnabledChange} />
 

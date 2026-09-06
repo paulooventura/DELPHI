@@ -5,7 +5,7 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          close
+          HOME
         </button>
         <div className="onyx-overlay">
           <p className="onyx-eyebrow">ABOUT</p>

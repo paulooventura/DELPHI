@@ -128,8 +128,9 @@ function keyedTick(
   scale = 1,
   gain = 1,
   dur = 1,
+  force = false,
 ) {
-  if (audioSilenced || audioParked || clockTimeFrozen) return;
+  if (audioSilenced || audioParked || (clockTimeFrozen && !force)) return;
   if (ctx.state !== "running") void ctx.resume();
   const t = ctx.currentTime;
   const out = masterBus(ctx);
@@ -184,6 +185,13 @@ function keyedTick(
 /** Clear two-tone tick / tock on each second — original wood in the 32.5 key. */
 export function playSecondTick(ctx: AudioContext, second: number) {
   keyedTick(ctx, second % 2 === 0, 1, 1, 1);
+}
+
+/** Tick while scrubbing a frozen orrery — allowed even when running-clock ticks are muted. */
+let scrubHigh = false;
+export function playScrubTick(ctx: AudioContext) {
+  scrubHigh = !scrubHigh;
+  keyedTick(ctx, scrubHigh, 1, 0.95, 0.9, true);
 }
 
 /** Deep harmonious gong strike with long resonant tail. */

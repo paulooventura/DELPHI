@@ -574,7 +574,6 @@ export function OnyxApp({
         lat={lat}
         lon={lon}
         onBack={() => setMode("home")}
-        onOpenTonal={() => { window.location.href = "/tonal"; }}
         hapticsEnabled={pulseEnabled}
       />
     );
@@ -586,7 +585,7 @@ export function OnyxApp({
         <div className="onyx-device">
           <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            close
+            HOME
           </button>
           <div className="onyx-overlay" style={{ position: "relative", background: "transparent" }}>
             <p className="onyx-eyebrow" style={{ marginTop: 8 }}>
@@ -712,7 +711,7 @@ export function OnyxApp({
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            close
+            HOME
           </button>
           <div className="onyx-overlay">
             <OnyxTimeCompendium prefs={cyclePrefs} onChange={onCyclePrefsChange} />
@@ -729,7 +728,7 @@ export function OnyxApp({
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            close
+            HOME
           </button>
           <div className="onyx-overlay">
             <EmfReader
@@ -752,7 +751,7 @@ export function OnyxApp({
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
           <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            close
+            HOME
           </button>
           <div className="onyx-overlay">
             <PauloVenturaHub className="cp-card" />

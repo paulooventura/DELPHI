@@ -513,7 +513,7 @@ export function OnyxLanesClock({
     <div className="onyx-root">
       <div className="onyx-device onyx-device-scroll onyx-lanes-device">
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          close
+          HOME
         </button>
 
         <div className="onyx-lanes">

@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06k -->
+<!-- build: 2026-09-06l -->
 <script>
 (function(){
-  var BUILD='2026-09-06k';
+  var BUILD='2026-09-06l';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -20,7 +20,7 @@
 <title>DELPHI</title>
 <style>
   :root{--void:#000000;--ink:#050506;--card:#0c0c12;--card2:#12121a;--line:rgba(140,124,255,0.16);--lsoft:rgba(140,124,255,0.1);
-    --fog:#8f8ca3;--fogd:#5a5770;--paper:#d3d0e2;--green:#4fd1a1;--yellow:#f5c451;--red:#ff5b5b;--cool:#8a7bff;--violet:#a99cff;--node:#a99cff;--amber:#c4b8ff;
+    --fog:#d4d0e4;--fogd:#b8b4c8;--paper:#f4f1fb;--green:#4fd1a1;--yellow:#f5c451;--red:#ff5b5b;--cool:#8a7bff;--violet:#a99cff;--node:#a99cff;--amber:#c4b8ff;
     --serif:"Bodoni 72","Bodoni MT",Didot,Georgia,"Times New Roman",serif;}
   *{box-sizing:border-box}html,body{margin:0;height:100%}
   body{background:var(--void);color:var(--paper);font-family:"Avenir Next","Helvetica Neue",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased;overflow:hidden}
@@ -167,9 +167,8 @@
   @keyframes fromcenter{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
 
   /* back-to-portal compass button, always present on a screen */
-  .backhome{position:fixed;top:16px;left:16px;z-index:60;background:rgba(20,24,36,.8);backdrop-filter:blur(8px);border:1px solid var(--line);color:var(--paper);
-    font:inherit;font-size:12px;font-weight:600;padding:9px 14px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:8px}
-  .backhome:hover{border-color:#3b4457}
+  .backhome{position:fixed;top:16px;left:16px;z-index:60;color:#f6f2ff;
+    font:inherit;font-size:12px;font-weight:600;padding:9px 14px;cursor:pointer;display:flex;align-items:center;gap:8px}
   .backhome .compassmark{width:14px;height:14px;color:var(--node)}
 
   /* placeholder screens (ME/SKY/CLOCK/TONAL) — evocative, not yet built */
@@ -214,30 +213,36 @@
   .phrase.charging-target{animation:pulseglow .5s ease infinite}
   /* Gemstone couture — depth and polish shared by every portal screen. */
   .screen button,.backhome,.modal button,.gate button{
-    border:1px solid rgba(188,174,255,.34)!important;border-radius:14px;
+    --cut:8px;
+    border:0!important;border-radius:0!important;
     background:
-      linear-gradient(145deg,rgba(255,255,255,.16),rgba(200,187,255,.03) 30%,transparent 48%),
-      radial-gradient(circle at 22% 5%,rgba(204,192,255,.16),transparent 42%),
-      linear-gradient(155deg,rgba(38,30,66,.92),rgba(10,7,22,.97) 60%,rgba(2,2,7,.99))!important;
-    color:var(--paper);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),inset 0 -9px 20px rgba(0,0,0,.34),0 9px 22px rgba(0,0,0,.34);
-    backdrop-filter:blur(16px) saturate(1.2);transition:transform .18s,border-color .18s,filter .18s,box-shadow .18s;
+      radial-gradient(160% 130% at 28% 18%,rgba(255,255,255,.42),rgba(255,255,255,.06) 32%,transparent 58%),
+      linear-gradient(155deg,rgba(255,255,255,.18),transparent 40%),
+      linear-gradient(180deg,hsla(272,42%,38%,.62) 0%,hsla(268,24%,8%,.96) 72%)!important;
+    color:#f6f2ff;clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 0 0 1px rgba(220,210,255,.28),inset 0 -12px 18px rgba(0,0,0,.35),0 9px 22px rgba(0,0,0,.34);
+    backdrop-filter:none;transition:transform .18s,filter .18s,box-shadow .18s;
   }
   .screen button:hover,.screen button:focus-visible,.backhome:hover,.backhome:focus-visible,.modal button:hover,.gate button:hover{
-    transform:translateY(-2px);border-color:rgba(220,211,255,.7)!important;filter:brightness(1.14);
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -8px 20px rgba(0,0,0,.28),0 13px 28px rgba(0,0,0,.44),0 0 18px rgba(140,116,235,.2);
+    transform:translateY(-2px);filter:brightness(1.14);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.5),inset 0 0 0 1px rgba(240,230,255,.45),0 13px 28px rgba(0,0,0,.44);
   }
   .screen button:active,.backhome:active,.modal button:active,.gate button:active{transform:translateY(1px) scale(.985)}
-  .screen :is(.ledge,.card,.controls,.panel-card),.modal,.gate .box,.covcard,.scalerow .idx{
+  .screen :is(.ledge,.card,.controls,.panel-card,.mcard,.forkcard,.ttab,.endcard,.rolecard,.evcard,.pgcard,.covcard,.pgphase,.pgpromise,.pgvolunteer,.scalerow .idx),.modal,.gate .box{
     --cut:12px;
     border:0!important;border-radius:0!important;
     background:
+      radial-gradient(160% 130% at 28% 18%,rgba(255,255,255,.36),rgba(255,255,255,.05) 32%,transparent 58%),
       linear-gradient(125deg,rgba(255,255,255,.28) 0%,transparent 22%),
       linear-gradient(180deg,hsla(272,42%,38%,.55) 0%,hsla(268,24%,8%,.96) 72%)!important;
     clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -28px 48px rgba(0,0,0,.4),0 16px 36px rgba(0,0,0,.5);
-    backdrop-filter:none;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(220,210,255,.22),inset 0 -28px 48px rgba(0,0,0,.4),0 16px 36px rgba(0,0,0,.5);
+    backdrop-filter:none;color:#f4f1fb;
   }
   .scalerow .idx{--cut:6px}
+  .ledge.quiet,.ledge.quiet .laxis,.studies-up,.research-open{
+    clip-path:none!important;background:transparent!important;box-shadow:none!important;filter:none!important;border:0!important;
+  }
 </style>
 <style id="studies-css">
   #screen-studies{background:#010504}
@@ -423,7 +428,7 @@
   .dial-labels .v{color:var(--paper);font-weight:600}.dial-labels .top{color:var(--violet)}.dial-labels .bot{color:var(--green)}
   .sec{padding:15px 22px;border-top:1px solid var(--lsoft);text-align:center}.sec:first-child{border-top:0}
   .sec .lbl{font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.16em;text-transform:uppercase;margin:0 0 8px;display:flex;align-items:center;gap:7px;justify-content:center}
-  .sec p{margin:0;font-size:13.5px}.sec .num{width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font-size:9px;font-weight:700;background:var(--card2);color:var(--fogd)}
+  .sec p{margin:0;font-size:13.5px;color:var(--paper)}.sec .num{width:18px;height:18px;border-radius:5px;display:inline-grid;place-items:center;font-size:9px;font-weight:700;background:var(--card2);color:var(--paper)}
   .sec.roots .lbl{color:var(--violet)}.sec.roots .arc{color:var(--paper);line-height:1.62}
   .sec.roots .celeb{font-size:12px;color:var(--fog);margin-top:9px;padding-top:9px;border-top:1px dashed var(--line)}
   .sec.roots .celeb b{color:var(--violet);font-family:ui-monospace,monospace;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase}
@@ -1998,12 +2003,40 @@ function signs(rec){return esc(rec).split(/[;·]/).filter(s=>s.trim()).map(s=>`<
 function dial(c){c=Math.max(0,Math.min(100,c||0));return `<div class="dial"><div class="marker" style="bottom:calc(${c}% - 2px)"></div></div><div class="dial-labels"><div class="top">molecule</div><div class="v">${c}<span style="color:var(--fogd)">/100</span></div><div class="bot">plant</div></div>`;}
 const substances=(function(){
   const by=new Map();
-  medica.forEach(d=>{by.set(d.name.toLowerCase(),{...d,kind:"d"});});
-  materia.forEach(d=>{
-    const k=d.name.toLowerCase();
-    const prev=by.get(k)||{};
-    by.set(k,{...prev,...d,kind:"m",yinyang:d.yinyang||prev.yinyang,caution:d.caution||prev.caution,measured:d.measured||prev.measured,celebrated:d.celebrated||prev.celebrated});
-  });
+  const alias={cacao:"cacao",chocolate:"cacao","cacao chocolate":"cacao",cocoa:"cacao"};
+  const norm=s=>String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  const latinKey=s=>{const k=norm(s);return /^[a-z]+ [a-z]+/.test(k)?k:"";};
+  const keyOf=d=>{
+    const n=norm(d.name);
+    if(n) return "N:"+(alias[n]||n);
+    const lat=latinKey(d.latin);
+    return lat?"L:"+lat:"X:"+d.name;
+  };
+  const longer=(a,b)=>!a?b:!b?a:String(a).length>=String(b).length?a:b;
+  const foldText=(a,b)=>{
+    if(!b) return a||"";
+    if(!a) return b;
+    if(a===b||String(a).includes(b)) return a;
+    if(String(b).includes(a)) return b;
+    return a+" · "+b;
+  };
+  const fold=(prev,d,kind)=>{
+    if(!prev) return {...d,kind};
+    const out={...prev,...d,kind};
+    for(const k of Object.keys(d)){
+      if(k==="name") continue;
+      const v=d[k], o=prev[k];
+      if(typeof v==="string"&&typeof o==="string") out[k]=foldText(o,v);
+    }
+    out.name=longer(prev.name,d.name);
+    out.yinyang=foldText(prev.yinyang,d.yinyang);
+    out.caution=foldText(prev.caution,d.caution);
+    out.measured=foldText(prev.measured,d.measured);
+    out.celebrated=foldText(prev.celebrated,d.celebrated);
+    return out;
+  };
+  medica.forEach(d=>by.set(keyOf(d),fold(by.get(keyOf(d)),d,"d")));
+  materia.forEach(d=>by.set(keyOf(d),fold(by.get(keyOf(d)),d,"m")));
   return [...by.values()].sort((a,b)=>a.name.localeCompare(b.name));
 })();
 document.getElementById("n-materia").textContent=String(substances.length);
