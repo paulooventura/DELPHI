@@ -77,9 +77,14 @@ export function getMagneticDeclinationDeg(): number {
   return magneticDeclinationDeg;
 }
 
+/** Fold any degree value into (−180, 180] — full-circle sun/moon align, not ±20°. */
+export function shortestOffsetDeg(deg: number): number {
+  return ((deg + 540) % 360) - 180;
+}
+
 export function setUserAzimuthOffsetDeg(deg: number): void {
   if (!Number.isFinite(deg)) return;
-  userAzimuthOffsetDeg = clamp(deg, -20, 20);
+  userAzimuthOffsetDeg = shortestOffsetDeg(deg);
 }
 
 export function getUserAzimuthOffsetDeg(): number {
@@ -165,10 +170,13 @@ export function resolveCompassHeadingDeg(event: CompassEvent): number | null {
 
   if (typeof alpha !== "number" || !Number.isFinite(alpha)) return null;
 
-  const orient = typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0;
   const absolute = event.absolute === true;
+  // Absolute streams already use an Earth frame. Adding screen.orientation.angle
+  // double-counts landscape on Chrome/Android and yanks the sky by ~90°.
   const base = absolute ? alpha : normalizeHeading(360 - alpha);
-  const heading = normalizeHeading(base + orient);
+  const heading = absolute
+    ? normalizeHeading(base)
+    : normalizeHeading(base + (typeof screen !== "undefined" ? screen.orientation?.angle ?? 0 : 0));
   // Most mobile "absolute" streams are still magnetic — apply declination for ephemeris alignment.
   return finalizeTrueHeading(heading, true);
 }

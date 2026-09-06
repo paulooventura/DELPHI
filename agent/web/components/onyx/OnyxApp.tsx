@@ -135,6 +135,16 @@ export function OnyxApp({
   lat,
   lon,
   altM,
+  locationLive = false,
+  locationAccuracyM = null,
+  locationDenied = false,
+  magneticDeclinationDeg = 0,
+  skyAzOffsetDeg = 0,
+  sunAboveHorizon = false,
+  moonAboveHorizon = false,
+  onCalibrateSun,
+  onCalibrateMoon,
+  onResetSkyCalibration,
   headingDeg,
   pitchDeg,
   liveAttitudeRef,
@@ -177,6 +187,17 @@ export function OnyxApp({
   lat: number;
   lon: number;
   altM: number | null;
+  /** True when lat/lon came from the device GPS (not Nashville fallback). */
+  locationLive?: boolean;
+  locationAccuracyM?: number | null;
+  locationDenied?: boolean;
+  magneticDeclinationDeg?: number;
+  skyAzOffsetDeg?: number;
+  sunAboveHorizon?: boolean;
+  moonAboveHorizon?: boolean;
+  onCalibrateSun?: () => void;
+  onCalibrateMoon?: () => void;
+  onResetSkyCalibration?: () => void;
   headingDeg: number;
   pitchDeg: number;
   liveAttitudeRef?: RefObject<LiveAttitude>;
@@ -501,6 +522,16 @@ export function OnyxApp({
         lat={lat}
         lon={lon}
         altM={altM ?? 0}
+        locationLive={locationLive}
+        locationAccuracyM={locationAccuracyM}
+        locationDenied={locationDenied}
+        magneticDeclinationDeg={magneticDeclinationDeg}
+        skyAzOffsetDeg={skyAzOffsetDeg}
+        sunAboveHorizon={sunAboveHorizon}
+        moonAboveHorizon={moonAboveHorizon}
+        onCalibrateSun={onCalibrateSun}
+        onCalibrateMoon={onCalibrateMoon}
+        onResetSkyCalibration={onResetSkyCalibration}
         headingDeg={headingDeg}
         pitchDeg={pitchDeg}
         liveAttitudeRef={liveAttitudeRef}

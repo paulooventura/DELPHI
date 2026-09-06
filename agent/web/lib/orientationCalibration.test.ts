@@ -5,12 +5,16 @@ import {
   resetOrientationCalibration,
   resolveCompassHeadingDeg,
   resolveDeviceAlphaDeg,
+  setMagneticDeclinationDeg,
+  setUserAzimuthOffsetDeg,
 } from "./orientationCalibration";
 import { deviceOrientationToViewEnu, dot, enuToAltAz } from "./sphericalView";
 
 describe("resolveCompassHeadingDeg", () => {
   beforeEach(() => {
     resetOrientationCalibration();
+    setMagneticDeclinationDeg(0);
+    setUserAzimuthOffsetDeg(0);
   });
 
   it("calibrates iOS alpha offset when upright and uses alpha when tilted", () => {
@@ -86,6 +90,17 @@ describe("resolveCompassHeadingDeg", () => {
       absolute: false,
     } as DeviceOrientationEvent & { webkitCompassHeading: number };
     expect(resolveDeviceAlphaDeg(upright)).toBe(246);
+  });
+
+  it("does not add screen.orientation to absolute streams (landscape double-count)", () => {
+    // Absolute path uses α alone — never α + screen.orientation.angle.
+    const heading = resolveCompassHeadingDeg({
+      alpha: 40,
+      beta: 88,
+      gamma: 0,
+      absolute: true,
+    } as DeviceOrientationEvent);
+    expect(heading).toBe(40);
   });
 });
 

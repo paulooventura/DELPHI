@@ -570,6 +570,17 @@ export default function Home() {
       (fix) => {
         if (fix.latitude == null || fix.longitude == null) return;
         setLocDenied(false);
+        // Large geo jump (travel / stale Nashville → real GPS): drop session compass
+        // offsets so a leftover α / sun-align from another city doesn't yank the sky.
+        const prevLat = observerRef.current.lat;
+        const prevLon = observerRef.current.lon;
+        if (
+          Number.isFinite(prevLat) &&
+          Number.isFinite(prevLon) &&
+          geoDistanceM(prevLat, prevLon, fix.latitude, fix.longitude) > 80_000
+        ) {
+          clearSkyCalibration();
+        }
         setSignals(prev => applyGeoFix(prev, fix));
         const acc = fix.accuracyM ?? lastAcc;
         lastAcc = acc;
@@ -907,10 +918,16 @@ export default function Home() {
   observerRef.current = { lat: mapLat, lon: mapLon };
 
   function applySkyAzOffset(value: number) {
-    const v = Math.max(-20, Math.min(20, value));
+    // Full-circle shortest path — the old ±20° clamp left sun/moon align half-fixed.
+    const v = ((value + 540) % 360) - 180;
     setSkyAzOffset(v);
     setUserAzimuthOffsetDeg(v);
     try { localStorage.setItem(SKY_AZ_OFFSET_KEY, String(v)); } catch { /* ignore */ }
+  }
+
+  function clearSkyCalibration() {
+    applySkyAzOffset(0);
+    resetOrientationCalibration();
   }
 
   /** Camera look azimuth for sun/moon alignment — matches live AR sky view, not throttled HUD heading. */
@@ -1172,6 +1189,16 @@ export default function Home() {
       lat={mapLat}
       lon={mapLon}
       altM={signals?.altM ?? null}
+      locationLive={hasLiveLocation}
+      locationAccuracyM={signals?.accuracyM ?? null}
+      locationDenied={locDenied}
+      magneticDeclinationDeg={magneticDeclination}
+      skyAzOffsetDeg={skyAzOffset}
+      sunAboveHorizon={sunAboveHorizon}
+      moonAboveHorizon={moonAboveHorizon}
+      onCalibrateSun={calibrateCompassToSun}
+      onCalibrateMoon={calibrateCompassToMoon}
+      onResetSkyCalibration={clearSkyCalibration}
       headingDeg={activeHeading}
       pitchDeg={activePitch}
       liveAttitudeRef={liveAttitudeRef}
@@ -1182,9 +1209,10 @@ export default function Home() {
       skyWarmth={spectrumWarmth}
       sensorDiag={sensorDiag}
       onEnterSky={() => {
-        // Retry watches if already primed; do not re-prompt from here.
+        // Fresh GPS + orientation on the open gesture — avoid stale Nashville/declination.
         if (toggles.heading || toggles.location) void startOrientationWatch();
         void captureSensors();
+        startLocationWatch();
       }}
       cycles={cycles}
       cosmic={cosmic}

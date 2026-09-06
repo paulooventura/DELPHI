@@ -13,11 +13,27 @@ const DIRS = ["N", "·", "NE", "·", "E", "·", "SE", "·", "S", "·", "SW", "·
 const CARD = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
 const EXIT_MS = 480;
 
+function formatLatLon(lat: number, lon: number): string {
+  const ns = lat >= 0 ? "N" : "S";
+  const ew = lon >= 0 ? "E" : "W";
+  return `${Math.abs(lat).toFixed(4)}°${ns} ${Math.abs(lon).toFixed(4)}°${ew}`;
+}
+
 export function OnyxSky({
   now,
   lat,
   lon,
   altM,
+  locationLive = false,
+  locationAccuracyM = null,
+  locationDenied = false,
+  magneticDeclinationDeg = 0,
+  skyAzOffsetDeg = 0,
+  sunAboveHorizon = false,
+  moonAboveHorizon = false,
+  onCalibrateSun,
+  onCalibrateMoon,
+  onResetSkyCalibration,
   headingDeg,
   pitchDeg,
   liveAttitudeRef,
@@ -35,6 +51,16 @@ export function OnyxSky({
   lat: number;
   lon: number;
   altM: number;
+  locationLive?: boolean;
+  locationAccuracyM?: number | null;
+  locationDenied?: boolean;
+  magneticDeclinationDeg?: number;
+  skyAzOffsetDeg?: number;
+  sunAboveHorizon?: boolean;
+  moonAboveHorizon?: boolean;
+  onCalibrateSun?: () => void;
+  onCalibrateMoon?: () => void;
+  onResetSkyCalibration?: () => void;
   headingDeg: number;
   pitchDeg: number;
   liveAttitudeRef?: RefObject<LiveAttitude>;
@@ -54,6 +80,23 @@ export function OnyxSky({
   const pitchLabel = Number.isFinite(pitchDeg) ? Math.round(pitchDeg) : 0;
   const az = ((headingDeg % 360) + 360) % 360;
   const ribbonX = -(az / 360) * (DIRS.length * 44) + 195 - 22;
+  const locLine = formatLatLon(lat, lon);
+  const accLabel =
+    locationLive && locationAccuracyM != null && Number.isFinite(locationAccuracyM)
+      ? `±${Math.max(1, Math.round(locationAccuracyM))}m`
+      : null;
+  const locStatus = locationLive
+    ? accLabel
+      ? `GPS ${accLabel}`
+      : "GPS"
+    : locationDenied
+      ? "approx · GPS denied"
+      : "approx Nashville";
+  const declLabel = `${magneticDeclinationDeg >= 0 ? "+" : ""}${magneticDeclinationDeg.toFixed(1)}° decl`;
+  const offsetLabel =
+    Math.abs(skyAzOffsetDeg) >= 0.15
+      ? `align ${skyAzOffsetDeg >= 0 ? "+" : ""}${skyAzOffsetDeg.toFixed(1)}°`
+      : null;
 
   const [phase, setPhase] = useState<"enter" | "live" | "exit">("enter");
   const leavingRef = useRef(false);
@@ -102,7 +145,7 @@ export function OnyxSky({
     const el = t as HTMLElement | null;
     if (!el?.closest) return false;
     // Detail sheet / chrome controls own their gestures.
-    return Boolean(el.closest(".onyx-sky-back, .onyx-stone-track, .cp-sky-object-panel, button, a, input, textarea"));
+    return Boolean(el.closest(".onyx-sky-back, .onyx-stone-track, .onyx-sky-align, .cp-sky-object-panel, button, a, input, textarea"));
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -140,6 +183,14 @@ export function OnyxSky({
 
   const phaseClass =
     phase === "enter" ? " onyx-sky-enter" : phase === "exit" ? " onyx-sky-exit" : "";
+
+  const hint = !locationLive
+    ? "Waiting on GPS — stars use approx location until a fix lands"
+    : live
+      ? arPoseReady
+        ? "Aim at the sun or moon, then tap Align · swipe down for home"
+        : "Hold the phone more upright to lock AR pose"
+      : "Allow motion & location — then aim the phone at the sky";
 
   return (
     <div className={`onyx-root${phaseClass}`}>
@@ -220,10 +271,15 @@ export function OnyxSky({
           <span className="onyx-wordmark">DELPHI</span>
         </div>
         <div className="onyx-sky-coords">
-          <span>
-            {Math.abs(lat).toFixed(2)}°{lat >= 0 ? "N" : "S"} · looking {look} · {pitchLabel}°
+          <span className={!locationLive ? "onyx-sky-coords-warn" : undefined}>
+            {locLine}
+            <span className="onyx-sky-coords-meta"> · {locStatus}</span>
           </span>
           <span>{time}</span>
+        </div>
+        <div className="onyx-sky-meta" aria-live="polite">
+          looking {look} · {Math.round(az)}° · pitch {pitchLabel}° · {declLabel}
+          {offsetLabel ? ` · ${offsetLabel}` : ""}
         </div>
 
         <div className="onyx-heading-mark" aria-hidden>
@@ -241,13 +297,37 @@ export function OnyxSky({
           </div>
         </div>
 
-        <p className="onyx-sky-hint">
-          {live
-            ? arPoseReady
-              ? "Live AR — aim the phone · swipe down for home"
-              : "Hold the phone more upright to lock AR pose"
-            : "Allow motion & location — then aim the phone at the sky"}
-        </p>
+        <div className="onyx-sky-align" role="group" aria-label="Compass alignment">
+          <button
+            type="button"
+            className="onyx-sky-align-btn"
+            disabled={!sunAboveHorizon || !onCalibrateSun}
+            onClick={() => onCalibrateSun?.()}
+            title="Point at the sun, then tap — snaps compass to true azimuth"
+          >
+            Align sun
+          </button>
+          <button
+            type="button"
+            className="onyx-sky-align-btn"
+            disabled={!moonAboveHorizon || !onCalibrateMoon}
+            onClick={() => onCalibrateMoon?.()}
+            title="Point at the moon, then tap — snaps compass to true azimuth"
+          >
+            Align moon
+          </button>
+          {onResetSkyCalibration && Math.abs(skyAzOffsetDeg) >= 0.15 ? (
+            <button
+              type="button"
+              className="onyx-sky-align-btn ghost"
+              onClick={() => onResetSkyCalibration()}
+            >
+              Reset
+            </button>
+          ) : null}
+        </div>
+
+        <p className="onyx-sky-hint">{hint}</p>
         {sensorDiag ? (
           <p className="onyx-sky-sensor" aria-live="polite">
             sensor: {sensorDiag.events} events · {sensorDiag.status}

@@ -727,15 +727,7 @@ export function OnyxHome({
 
         <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
-            <div
-              className="onyx-yy-orb"
-              style={
-                {
-                  ["--onyx-compass-x" as string]: `${compassFollow.x}px`,
-                  ["--onyx-compass-y" as string]: `${compassFollow.y}px`,
-                } as React.CSSProperties
-              }
-            >
+            <div className="onyx-yy-orb">
               <OnyxCompassRose
                 active={compassAim ?? gemSpin ?? null}
                 follow={compassFollow}

@@ -782,22 +782,14 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   top: 50%;
   width: var(--yy-size);
   height: var(--yy-size);
-  --onyx-compass-x: 0px;
-  --onyx-compass-y: 0px;
   display: grid;
   place-items: center;
-  /* One axis for rose + marble — follow drag moves the whole orb together. */
-  transform:
-    translate(-50%, -50%)
-    translate3d(var(--onyx-compass-x), var(--onyx-compass-y), 0);
+  /* Pinned to screen center — dial rotates in place; never translate off-axis. */
+  transform: translate(-50%, -50%);
   transform-origin: center center;
   filter:
     drop-shadow(0 28px 36px rgba(0, 0, 0, 0.55))
     drop-shadow(0 0 40px rgba(108, 92, 255, 0.12));
-  will-change: transform;
-}
-.onyx-yy-wrap.holding .onyx-yy-orb {
-  transition: none;
 }
 .onyx-compass-rose {
   grid-area: 1 / 1;
@@ -1479,9 +1471,41 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 
 .onyx-sky-top { position: absolute; top: 22px; left: 0; right: 0; z-index: 8; text-align: center; }
 .onyx-sky-coords {
-  position: absolute; top: 52px; left: 26px; right: 26px; z-index: 8;
-  display: flex; justify-content: space-between; font-size: 10px;
-  letter-spacing: 0.16em; color: var(--onyx-ink-faint);
+  position: absolute; top: 52px; left: 18px; right: 18px; z-index: 8;
+  display: flex; justify-content: space-between; gap: 10px; font-size: 9px;
+  letter-spacing: 0.1em; color: var(--onyx-ink-faint);
+}
+.onyx-sky-coords > span:first-child {
+  flex: 1; min-width: 0; text-align: left;
+}
+.onyx-sky-coords-meta { letter-spacing: 0.08em; opacity: 0.85; }
+.onyx-sky-coords-warn { color: #e8c48a; }
+.onyx-sky-meta {
+  position: absolute; top: 68px; left: 18px; right: 18px; z-index: 8;
+  font-size: 9px; letter-spacing: 0.1em; color: var(--onyx-ink-faint);
+  text-align: left; opacity: 0.9;
+}
+.onyx-sky-align {
+  position: absolute; bottom: 52px; left: 0; right: 0; z-index: 9;
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+  padding: 0 16px; pointer-events: auto;
+}
+.onyx-sky-align-btn {
+  background: rgba(6, 6, 10, 0.45); border: 0.5px solid var(--onyx-edge);
+  border-radius: 16px; padding: 7px 12px; color: var(--onyx-ink-soft);
+  font-family: inherit; font-size: 10px; letter-spacing: 0.08em; cursor: pointer;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  transition: border-color var(--onyx-lift), color var(--onyx-lift), opacity var(--onyx-lift);
+}
+.onyx-sky-align-btn:hover:not(:disabled),
+.onyx-sky-align-btn:focus-visible:not(:disabled) {
+  border-color: var(--onyx-edge-bright); color: var(--onyx-ink-bright);
+}
+.onyx-sky-align-btn:disabled {
+  opacity: 0.35; cursor: default;
+}
+.onyx-sky-align-btn.ghost {
+  border-color: transparent; background: transparent; opacity: 0.7;
 }
 .onyx-heading {
   position: absolute; bottom: 120px; left: 0; right: 0; z-index: 7; height: 34px; overflow: hidden;
@@ -1546,8 +1570,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-sheet .more:active { background: rgba(120, 108, 200, 0.12); }
 .onyx-sky-hint {
-  position: absolute; bottom: 24px; left: 0; right: 0; z-index: 8; text-align: center;
-  font-size: 10px; letter-spacing: 0.12em; color: var(--onyx-ink-faint);
+  position: absolute; bottom: 24px; left: 12px; right: 12px; z-index: 8; text-align: center;
+  font-size: 10px; letter-spacing: 0.1em; color: var(--onyx-ink-faint);
   animation: onyx-ret 6s ease-in-out infinite;
 }
 .onyx-sky-sensor {
