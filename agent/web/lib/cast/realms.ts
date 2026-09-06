@@ -86,8 +86,9 @@ export type CastSymbolSpec =
   | { kind: "rune"; strokes: Stroke[] }
   | { kind: "odu"; nUp: number }
   | { kind: "cowrie-emblem" }
-  | { kind: "tarot-major"; numeral: string }
-  | { kind: "tarot-suit"; suit: "Wands" | "Cups" | "Swords" | "Pentacles" }
+  | { kind: "orisha-emblem"; id: string }
+  | { kind: "tarot-major"; id: string; numeral: string }
+  | { kind: "tarot-suit"; suit: "Wands" | "Cups" | "Swords" | "Pentacles"; rank?: string }
   | { kind: "empty" };
 
 export function symbolForCastEntry(system: string, id: string, glyph?: string): CastSymbolSpec {
@@ -109,8 +110,7 @@ export function symbolForCastEntry(system: string, id: string, glyph?: string): 
     return { kind: "empty" };
   }
   if (system === "orisha-cast") {
-    // Deity pool — emblem, not a fake odu count.
-    return { kind: "cowrie-emblem" };
+    return { kind: "orisha-emblem", id };
   }
   if (system === "orisha-odu") {
     const m = /^od-(\d+)$/.exec(id);
@@ -119,7 +119,17 @@ export function symbolForCastEntry(system: string, id: string, glyph?: string): 
     return { kind: "empty" };
   }
   if (system === "tarot-major") {
-    return { kind: "tarot-major", numeral: glyph ?? "" };
+    return { kind: "tarot-major", id, numeral: glyph ?? "" };
+  }
+  if (system === "tarot-minor") {
+    const m = /^ta-(wands|cups|swords|pentacles)-(.+)$/.exec(id);
+    if (m) {
+      const suit =
+        m[1] === "wands" ? "Wands" :
+        m[1] === "cups" ? "Cups" :
+        m[1] === "swords" ? "Swords" : "Pentacles";
+      return { kind: "tarot-suit", suit, rank: m[2] };
+    }
   }
   return { kind: "empty" };
 }

@@ -201,4 +201,22 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
     // At least two distinct readings across the four fields
     expect(new Set(phrases).size).toBeGreaterThanOrEqual(2);
   });
+
+  it("accepted-cast lean and natal seed change the spoken line without naming them", () => {
+    const chord = compose([
+      mk("Bright", "western-zodiac", {
+        light: 0.85, warm: 0.7, gentle: 0.5, steady: 0.55,
+      }),
+      mk("Settled", "moon-phase", {
+        light: 0.75, warm: 0.55, gentle: 0.4, steady: 0.6,
+      }),
+    ]);
+    const base = speak(chord);
+    const withCast = speak(chord, { castLean: ["peregrine", "umbra"] });
+    const withNatal = speak(chord, { natalSeed: "moon:WaxingGibbous|year:1947" });
+    expect(withCast).not.toBe(base);
+    expect(withNatal).not.toBe(base);
+    expect(withCast).not.toMatch(/peregrine|umbra|tarot|fool/i);
+    expect(withNatal).not.toMatch(/WaxingGibbous|1947|nakshatra/i);
+  });
 });

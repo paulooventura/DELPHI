@@ -230,7 +230,7 @@ const EMPTY: string[] = [
 
 /* ---- Seeded pick (deterministic per moment) ------------------------------ */
 
-function seedFrom(o: Orchestration): number {
+function seedFrom(o: Orchestration, opts?: DistillOptions): number {
   const r = o.root
     ? o.root.axis.charCodeAt(0) * 7 + Math.round(o.root.pole * 100) + o.root.axis.length * 3
     : 0;
@@ -244,7 +244,10 @@ function seedFrom(o: Orchestration): number {
     Math.round(o.tone.warmth * 40) +
     Math.round(o.tone.clarity * 40) +
     Math.round(o.tone.charge * 60);
-  return Math.abs(r * 31 + t * 17 + i * 23 + tone * 5 + o.fieldSize * 9) % 9973;
+  const lean = (opts?.castLean ?? []).reduce((s, q) => s + q.charCodeAt(0), 0)
+    + (opts?.colorLean ? opts.colorLean.length * 11 : 0);
+  const natal = (opts?.natalSeed ?? "").split("").reduce((s, ch) => s + ch.charCodeAt(0), 0);
+  return Math.abs(r * 31 + t * 17 + i * 23 + tone * 5 + o.fieldSize * 9 + lean * 29 + natal * 19) % 9973;
 }
 
 function pick<T>(arr: T[], seed: number, salt: number): T {
@@ -320,7 +323,7 @@ export type PhraseReason = {
 /** The same orchestration that made the street line — for the tap-to-see window. */
 export function phraseReason(c: Composition, opts?: DistillOptions): PhraseReason {
   const o = orchestrate(c);
-  const seed = seedFrom(o);
+  const seed = seedFrom(o, opts);
   const register =
     opts?.voice && opts.voice !== "field" ? opts.voice : o.tone.register;
   return {
@@ -342,7 +345,7 @@ export function phraseReason(c: Composition, opts?: DistillOptions): PhraseReaso
  */
 export function speak(c: Composition, opts?: DistillOptions): string {
   const o = orchestrate(c);
-  const seed = seedFrom(o);
+  const seed = seedFrom(o, opts);
 
   if (!o.root) {
     return pick(EMPTY, seed, 0);

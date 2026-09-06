@@ -146,5 +146,13 @@ geometric and animate better in code). That's the highest-impact art, and the
 line-based realms stay crisp and consistent for free.
 
 The app is built to drop these into named slots — as each asset lands, it appears.
-Nothing blocks on having them all; placeholder onyx glyphs render until the real
-art arrives.
+Nothing blocks on having them all; illustrated onyx SVG faces render until the
+PNG lands (`CastArt` → `CastSymbol`).
+
+**Shipped 2026-09-06m (Palotino):** unique SVG tablet for every major, every
+minor (suit + rank), every Elder Futhark rune, and every Orisha emblem.
+PNG plates in `public/cast/`: I Ching yang/yin coins, cowrie open/closed,
+Orisha emblems for Ogun / Yemoja / Oshun / Shango / Oya (symbolic, not
+figurative), and four tarot suit plates. Eshu / Obatala / Orunmila stay
+SVG so we do not ship figurative portraits. Rank-specific minor PNGs and
+the remaining major/rune plates can drop in later without code changes.

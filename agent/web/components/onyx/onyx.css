@@ -2063,6 +2063,29 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   font-size: 18px;
   color: rgba(245, 230, 190, 0.85);
   line-height: 1;
+  display: grid;
+  place-items: center;
+}
+.onyx-coin-art,
+.onyx-cast-art-img,
+.onyx-cowrie-art {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: inherit;
+}
+.onyx-cowrie-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 10px 0 4px;
+}
+.onyx-cowrie-row .onyx-cowrie-art,
+.onyx-cowrie-row .onyx-cast-symbol {
+  width: 28px;
+  height: 28px;
 }
 .onyx-coin-surface.phase-shake .onyx-coin {
   animation: onyx-coin-rattle 0.16s ease-in-out infinite;

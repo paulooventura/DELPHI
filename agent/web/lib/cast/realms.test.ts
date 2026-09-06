@@ -20,14 +20,26 @@ describe("cast realms patterns", () => {
     expect(kun).toEqual({ kind: "trigram", pattern: "000" });
   });
 
-  it("keeps Orisha deities as cowrie emblems (not fake odu counts)", () => {
-    expect(symbolForCastEntry("orisha-cast", "or-oshun")).toEqual({ kind: "cowrie-emblem" });
+  it("keeps Orisha deities as unique emblems (not fake odu counts)", () => {
+    expect(symbolForCastEntry("orisha-cast", "or-oshun")).toEqual({
+      kind: "orisha-emblem",
+      id: "or-oshun",
+    });
   });
 
-  it("renders tarot majors as numerals", () => {
-    expect(symbolForCastEntry("tarot-major", "ta-0", "0")).toEqual({
+  it("renders tarot majors as pictorial tablets", () => {
+    expect(symbolForCastEntry("tarot-major", "ta-maj-0", "0")).toEqual({
       kind: "tarot-major",
+      id: "ta-maj-0",
       numeral: "0",
+    });
+  });
+
+  it("renders tarot minors as suit plus rank", () => {
+    expect(symbolForCastEntry("tarot-minor", "ta-wands-ace")).toEqual({
+      kind: "tarot-suit",
+      suit: "Wands",
+      rank: "ace",
     });
   });
 });

@@ -1,8 +1,7 @@
 "use client";
 
 import type { QualiaEntry } from "../../lib/lore/qualia";
-import { symbolForCastEntry } from "../../lib/cast/realms";
-import { CastSymbol } from "./CastSymbol";
+import { CastArt } from "./CastArt";
 
 export function CastCard({
   entry,
@@ -15,7 +14,6 @@ export function CastCard({
   frame: string;
   reversed?: boolean;
 }) {
-  const spec = symbolForCastEntry(system, entry.id, entry.glyph);
   const title = entry.name.toUpperCase();
 
   return (
@@ -26,7 +24,7 @@ export function CastCard({
       <div className="onyx-cast-card-face">
         <div className="onyx-cast-card-aura" aria-hidden />
         <div className="onyx-cast-card-symbol-wrap">
-          <CastSymbol spec={spec} size={168} />
+          <CastArt system={system} id={entry.id} glyph={entry.glyph} size={168} />
         </div>
         <div className="onyx-cast-card-band">
           <p className="onyx-cast-card-title">{title}</p>

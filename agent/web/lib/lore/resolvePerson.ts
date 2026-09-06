@@ -9,6 +9,10 @@ import { birthToDate, type BirthRecord } from "./birthStore";
 import { resolveMoment } from "./resolveMoment";
 import { compose } from "./compose";
 import {
+  computeOrreryState,
+  type OrreryLaneId,
+} from "./orreryLanes";
+import {
   dreamspellKinFromDate,
   galacticDayFromKin,
   type GalacticDayReading,
@@ -68,6 +72,44 @@ export function resolvePerson(birth: BirthRecord): {
   return { entries, ids: entries.map(e => e.id), jd, timeIsApproximate, warnings };
 }
 
+/** Orrery lanes that belong on a birthday chart — scored cycles plus civil date. */
+export const NATAL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
+  "age",
+  "year",
+  "season",
+  "tzolkin",
+  "month",
+  "date",
+  "moon",
+  "nakshatra",
+  "decan",
+  "wuku",
+  "pancawara",
+  "manzil",
+  "numerology",
+  "shi",
+  "planetary-hour",
+  "muhurta",
+];
+
+export type NatalCycleRow = {
+  id: OrreryLaneId;
+  name: string;
+  label: string;
+};
+
+/** Freeze the orrery at the natal instant — same lanes the clock would show. */
+export function natalOrreryCycles(birth: BirthRecord): NatalCycleRow[] {
+  const date = birthToDate(birth);
+  const lat = birth.lat ?? 0;
+  const lon = birth.lon ?? 0;
+  const { lanes } = computeOrreryState(date, lat, lon);
+  const want = new Set<OrreryLaneId>(NATAL_ORRERY_LANE_IDS);
+  return lanes
+    .filter(l => want.has(l.id))
+    .map(l => ({ id: l.id, name: l.name, label: l.activeLabel }));
+}
+
 export function natalGalactic(birth: BirthRecord): GalacticDayReading {
   const kin = dreamspellKinFromDate(birth.year, birth.month, birth.day);
   return galacticDayFromKin(kin);
@@ -81,6 +123,7 @@ export function composePerson(birth: BirthRecord) {
   return {
     chord: compose(forChord),
     entries: forChord,
+    cycles: natalOrreryCycles(birth),
     galactic,
     timeIsApproximate,
     warnings,

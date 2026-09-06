@@ -19,6 +19,7 @@ import {
   type RuneSpreadId,
   type TarotSpreadId,
 } from "../../lib/lore/cast";
+import { CastCoin } from "./CastArt";
 
 type Pt = { x: number; y: number; t: number };
 
@@ -436,7 +437,9 @@ export function CoinTossStage({
               className={`onyx-coin${heads ? " heads" : " tails"}${phase === "flight" ? " flying" : ""}`}
               style={{ animationDelay: `${i * 70}ms` }}
             >
-              <span className="onyx-coin-face">{heads ? "陽" : "陰"}</span>
+              <span className="onyx-coin-face">
+                <CastCoin yang={heads} size={48} />
+              </span>
             </span>
           ))}
         </div>

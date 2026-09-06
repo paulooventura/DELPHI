@@ -20,7 +20,7 @@ export function phraseCacheKey(
   const rLon = Math.round(lon * 10) / 10;
   const lean = colorLean ?? "none";
   // v14: mouth (voice/depth/brain) is part of the cache identity.
-  return `delphi-phrase:v15:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  return `delphi-phrase:v16:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 export function readCachedPhrase(key: string): string | null {
@@ -51,12 +51,13 @@ export function phraseCacheKeyFrom(
 ): string {
   const castKey = (opts?.castLean ?? []).slice(0, 6).join("+") || "none";
   const voice = opts?.voice ?? "field";
+  const natalKey = opts?.natalSeed ? opts.natalSeed.slice(0, 48) : "none";
   return phraseCacheKey(
     civilYmd,
     lat,
     lon,
     opts?.colorLean,
-    `${castKey}:${voice}:${mouthKey}`,
+    `${castKey}:${voice}:${mouthKey}:${natalKey}`,
     layerKey,
   );
 }

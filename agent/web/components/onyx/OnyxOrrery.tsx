@@ -71,11 +71,14 @@ export function OnyxOrrery({
   lat,
   lon,
   onBack,
+  natalDate = null,
   hapticsEnabled = true,
 }: {
   lat: number;
   lon: number;
   onBack: () => void;
+  /** Saved You-tab birth instant — freeze and jump the lanes there. */
+  natalDate?: Date | null;
   /** Master stone toggle — escapement ticks respect this. */
   hapticsEnabled?: boolean;
 }) {
@@ -419,6 +422,20 @@ export function OnyxOrrery({
               >
                 {frozen ? "Time frozen" : "Freeze time"}
               </button>
+              {natalDate && (
+                <button
+                  type="button"
+                  className="onyx-orrery-filter-btn"
+                  onClick={() => {
+                    viewDateRef.current = new Date(natalDate.getTime());
+                    setFrozen(true);
+                    setExpanded(null);
+                  }}
+                  title="Freeze at the birthday saved in You — date, hour, and minute."
+                >
+                  Birth
+                </button>
+              )}
               <button
                 type="button"
                 className="onyx-orrery-filter-btn"

@@ -22,7 +22,7 @@ import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareShee
 import { OnyxCompassRose } from "./OnyxCompassRose";
 import { OnyxYinYang } from "./OnyxYinYang";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
-import { decompose, poleWord, type Composition } from "../../lib/lore/compose";
+import { decompose, poleWord, type Composition, type DistillOptions } from "../../lib/lore/compose";
 import { phraseReason } from "../../lib/lore/phrase";
 import {
   COMPASS_AIM_PX,
@@ -56,6 +56,14 @@ export type OnyxHomeProps = {
   momentLine: string;
   /** Active chord — tap the phrase to see how the line was distilled. */
   phraseChord?: Composition | null;
+  /** Same leans the street line used (natal seed + accepted draws). */
+  phraseOpts?: DistillOptions;
+  /** Named sources for the tap-why details — never printed on the street line. */
+  phraseField?: {
+    birthCycles: string[];
+    birthVoices: string[];
+    heldNames: string[];
+  };
   /** Tier-honest provenance for the locked snapshot (measured vs celebrated). */
   provenanceLine?: string | null;
   /** Active layer label — names exactly what's folded in. */
@@ -104,6 +112,8 @@ export function OnyxHome({
   zodiacSign,
   momentLine,
   phraseChord = null,
+  phraseOpts,
+  phraseField,
   provenanceLine,
   readingLayerLabel,
   readingLayers = [],
@@ -856,8 +866,11 @@ export function OnyxHome({
               onClick={e => e.stopPropagation()}
             >
               {(() => {
-                const why = phraseReason(phraseChord, distillPrefs ? { voice: distillPrefs.voice } : undefined);
+                const why = phraseReason(phraseChord, phraseOpts ?? (distillPrefs ? { voice: distillPrefs.voice } : undefined));
                 const voices = decompose(phraseChord).slice(0, 8);
+                const birthCycles = phraseField?.birthCycles ?? [];
+                const birthVoices = phraseField?.birthVoices ?? [];
+                const heldNames = phraseField?.heldNames ?? [];
                 return (
                   <>
                     <p className="onyx-share-kicker">How this line was made</p>
@@ -882,6 +895,42 @@ export function OnyxHome({
                         <span>Hour</span>
                         {poleWord(why.inflection[0].axis, why.inflection[0].pole) || why.inflection[0].axis}
                       </p>
+                    )}
+                    {birthCycles.length > 0 && (
+                      <>
+                        <p className="onyx-share-kicker onyx-distill-kicker-2">Birth clock</p>
+                        <ul className="onyx-phrase-why-voices">
+                          {birthCycles.map(row => (
+                            <li key={row}>
+                              <span>{row}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {birthVoices.length > 0 && (
+                      <>
+                        <p className="onyx-share-kicker onyx-distill-kicker-2">Through your birth field</p>
+                        <ul className="onyx-phrase-why-voices">
+                          {birthVoices.map(name => (
+                            <li key={name}>
+                              <b>{name}</b>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                    {heldNames.length > 0 && (
+                      <>
+                        <p className="onyx-share-kicker onyx-distill-kicker-2">Held with what you accepted</p>
+                        <ul className="onyx-phrase-why-voices">
+                          {heldNames.map(name => (
+                            <li key={name}>
+                              <b>{name}</b>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
                     )}
                     <p className="onyx-share-kicker onyx-distill-kicker-2">Voices in the chord</p>
                     <ul className="onyx-phrase-why-voices">

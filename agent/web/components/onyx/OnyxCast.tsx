@@ -20,6 +20,7 @@ import {
 import { embraceCast, type EmbracedCast } from "../../lib/lore/castStore";
 import { CAST_SYSTEMS } from "../../lib/lore/qualia";
 import { CastCard } from "./CastCard";
+import { CastCowrie } from "./CastArt";
 import { CastGems, type CastGemChoice } from "./CastGems";
 import { CoinTossStage, RuneBagStage, TarotDeckStage } from "./CastGestureStages";
 
@@ -425,9 +426,14 @@ export function OnyxCast({
               <p className="onyx-cast-frame">{result.framing.frame}</p>
 
               {result.cowrieUp != null && (
-                <p className="onyx-layer-meta">
-                  Shells mouth-up · {result.cowrieUp} of 16
-                </p>
+                <div className="onyx-cowrie-row" aria-label={`${result.cowrieUp} of 16 cowries mouth-up`}>
+                  {Array.from({ length: 16 }, (_, i) => (
+                    <CastCowrie key={i} open={i < result.cowrieUp!} size={28} />
+                  ))}
+                  <p className="onyx-layer-meta">
+                    Shells mouth-up · {result.cowrieUp} of 16
+                  </p>
+                </div>
               )}
               {result.changingLines && result.changingLines.length > 0 && (
                 <p className="onyx-layer-meta">

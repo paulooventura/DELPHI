@@ -18,14 +18,14 @@ import {
 } from "../../lib/lore/compose";
 import { resolveMoment } from "../../lib/lore/resolveMoment";
 import { phraseCacheKeyFrom, phraseForMoment, requestBrainAvailability, requestPhraseBrain, writeCachedPhrase } from "../../lib/lore/distillPhrase";
-import { loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
+import { birthToDate, loadBirth, type BirthRecord } from "../../lib/lore/birthStore";
 import {
   clearEmbraced,
   loadEmbraced,
   releaseEmbraced,
   type EmbracedCast,
 } from "../../lib/lore/castStore";
-import { natalGalactic, resolvePerson } from "../../lib/lore/resolvePerson";
+import { natalGalactic, natalOrreryCycles, resolvePerson } from "../../lib/lore/resolvePerson";
 import {
   anyBrain,
   loadDistillPrefs,
@@ -387,16 +387,19 @@ export function OnyxApp({
 
   const distillOpts = useMemo<DistillOptions>(() => {
     const opts: DistillOptions = { voice: distillPrefs.voice };
-    if (layered.active !== "moment" && colorLean) opts.colorLean = colorLean;
-    if (layered.active === "with-drawn") {
-      const held = [...new Set(embraced.flatMap(c => c.qualities ?? []))]
-        .map(q => q.trim().toLowerCase())
-        .filter(Boolean)
-        .slice(0, 8);
-      if (held.length) opts.castLean = held;
+    if (birth && colorLean) opts.colorLean = colorLean;
+    const held = [...new Set(embraced.flatMap(c => c.qualities ?? []))]
+      .map(q => q.trim().toLowerCase())
+      .filter(Boolean)
+      .slice(0, 8);
+    if (held.length) opts.castLean = held;
+    if (birth) {
+      opts.natalSeed = natalOrreryCycles(birth)
+        .map(r => `${r.id}:${r.label}`)
+        .join("|");
     }
     return opts;
-  }, [layered.active, colorLean, embraced, distillPrefs.voice]);
+  }, [birth, colorLean, embraced, distillPrefs.voice]);
 
   const mouthKey = `${distillPrefs.voice}:${distillPrefs.depth}:${distillPrefs.brain}`;
 
@@ -574,6 +577,7 @@ export function OnyxApp({
         lat={lat}
         lon={lon}
         onBack={() => setMode("home")}
+        natalDate={birth ? birthToDate(birth) : null}
         hapticsEnabled={pulseEnabled}
       />
     );
@@ -781,6 +785,12 @@ export function OnyxApp({
       zodiacSign={zodiacSign}
       momentLine={momentLine}
       phraseChord={activeReading.chord}
+      phraseOpts={distillOpts}
+      phraseField={{
+        birthCycles: birth ? natalOrreryCycles(birth).map(r => `${r.name} · ${r.label}`) : [],
+        birthVoices: natalEntries.map(e => e.name).slice(0, 12),
+        heldNames: embraced.map(c => c.names.join(" · ")).filter(Boolean),
+      }}
       provenanceLine={snapProvenance?.line}
       readingLayerLabel={activeReading.label}
       readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}

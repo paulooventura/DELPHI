@@ -48,6 +48,11 @@ export type DistillOptions = {
    * Any other value changes VOICE only — never the chord.
    */
   voice?: DistillVoice;
+  /**
+   * Natal orrery fingerprint (lane labels at the birth instant). Changes the
+   * mouth via seed only — never named on the street phrase.
+   */
+  natalSeed?: string;
 };
 
 /** Soft natal bias on axis ranking for the offline template. */

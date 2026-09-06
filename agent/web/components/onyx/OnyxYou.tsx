@@ -8,7 +8,8 @@ import {
   type BirthRecord,
 } from "../../lib/lore/birthStore";
 import { composePerson } from "../../lib/lore/resolvePerson";
-import { distillTemplate, type Composition } from "../../lib/lore/compose";
+import { type Composition } from "../../lib/lore/compose";
+import { speak } from "../../lib/lore/phrase";
 import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
 import type { EmbracedCast } from "../../lib/lore/castStore";
 import { OnyxStarfield } from "./OnyxStarfield";
@@ -241,7 +242,10 @@ export function OnyxYou({
   }, [personal]);
 
   const personalPhrase = personal
-    ? distillTemplate(personal.chord, { colorLean: personal.galactic.tribe.color })
+    ? speak(personal.chord, {
+        colorLean: personal.galactic.tribe.color,
+        natalSeed: personal.cycles.map(c => `${c.id}:${c.label}`).join("|"),
+      })
     : null;
 
   return (
@@ -426,8 +430,8 @@ export function OnyxYou({
               <p className="onyx-eyebrow">WHAT THIS UNLOCKS</p>
               <ul className="onyx-about-list onyx-you-unlocks">
                 <li>
-                  <b>Natal chord</b> — calendar and sky signs for your birth moment, scored with the
-                  same honesty tiers as Now.
+                  <b>Natal chord</b> — every scored orrery cycle at your birth date, hour, and
+                  place, plus calendar and sky signs, scored with the same honesty tiers as Now.
                 </li>
                 <li>
                   <b>Your color</b> — Dreamspell tribe color retunes the distilled phrase toward your
@@ -474,6 +478,26 @@ export function OnyxYou({
                   {w}
                 </p>
               ))}
+
+              {personal.cycles.length > 0 && (
+                <>
+                  <p className="onyx-eyebrow" style={{ marginTop: 20 }}>
+                    BIRTH CLOCK
+                  </p>
+                  <p className="onyx-layer-meta">
+                    The orrery frozen at this birthday — hour, minute, and place included when you
+                    saved them. Open ORRERY and tap Birth to stand there.
+                  </p>
+                  {personal.cycles.map(row => (
+                    <article key={row.id} className="onyx-decomp-card onyx-you-voice">
+                      <p className="onyx-decomp-name">
+                        {row.label}
+                        <span>{row.name}</span>
+                      </p>
+                    </article>
+                  ))}
+                </>
+              )}
 
               {natalBySystem.length > 0 && (
                 <>
