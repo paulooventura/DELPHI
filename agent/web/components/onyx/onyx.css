@@ -643,9 +643,12 @@
 .onyx-yy-phrase .big {
   margin: 0 auto;
   width: 100%;
-  font-size: clamp(18px, 4.6vmin, 28px);
-  line-height: 1.32;
-  letter-spacing: -0.02em;
+  font-family: var(--font-fashion), Didot, "Bodoni MT", "Bodoni Moda", Georgia, serif;
+  font-weight: 400;
+  font-style: italic;
+  font-size: clamp(20px, 5.2vmin, 32px);
+  line-height: 1.28;
+  letter-spacing: 0.012em;
   text-align: center;
   text-wrap: balance;
   color: #f7f4ee;
@@ -835,9 +838,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   letter-spacing: 0.16em;
 }
 .onyx-compass-dial {
-  /* Nested 100×100 svg — fill-box 50% is the marble, never 50 device-px. */
-  transform-box: fill-box;
-  transform-origin: 50% 50%;
+  /* SVG attribute rotate(θ 50 50) only — no CSS transform (WebKit device-px origin). */
 }
 .onyx-compass-needle {
   transition: opacity 180ms ease;

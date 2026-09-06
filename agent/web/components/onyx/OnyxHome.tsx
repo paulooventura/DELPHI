@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
+import type { Vec3 } from "../../lib/sphericalView";
 import type { CycleReading } from "../../lib/worldCycles";
 import {
   cancelHaptic,
@@ -90,6 +91,7 @@ export type OnyxHomeProps = {
   sensorsUnlocked?: boolean;
   /** Live device look azimuth (0 = north). Drives the home compass dial. */
   headingDeg?: number | null;
+  attitudeRef?: RefObject<{ view: Vec3; roll: number } | null>;
 };
 
 export function OnyxHome({
@@ -125,6 +127,7 @@ export function OnyxHome({
   onPulseEnabledChange,
   sensorsUnlocked = false,
   headingDeg = null,
+  attitudeRef,
 }: OnyxHomeProps) {
   const [depth, setDepth] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
@@ -746,6 +749,7 @@ export function OnyxHome({
                 follow={compassFollow}
                 holding={compassLocked || Boolean(gemSpin)}
                 headingDeg={headingDeg}
+                attitudeRef={attitudeRef}
               />
               <div className="onyx-yy-gem-nest">
                 <button

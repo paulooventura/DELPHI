@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06h -->
+<!-- build: 2026-09-06i -->
 <script>
 (function(){
-  var BUILD='2026-09-06h';
+  var BUILD='2026-09-06i';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -451,6 +451,45 @@
   .fullaxis .lvl .n{font-family:ui-monospace,monospace;font-size:9px;color:var(--fogd);position:relative;z-index:1}
   .polepair{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-top:14px;color:var(--fogd)}
   .polepair .yn{color:var(--cool)}.polepair .yg{color:var(--red)}
+
+  /* Quiet Studies — swipe deck, sticky axis, horizontal scales */
+  #screen-studies .tabs{display:none}
+  .studies-deck{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -22px;padding:0 22px}
+  .studies-deck::-webkit-scrollbar{display:none}
+  .studies-deck .tabpanel{display:block;flex:0 0 100%;width:100%;scroll-snap-align:start;min-width:100%}
+  .studies-deck .tabpanel[hidden]{display:none!important;flex:none;min-width:0;width:0}
+  .studies-hero{padding-top:8px}
+  .panel-sticky{position:sticky;top:0;z-index:40;background:rgba(1,5,4,.92);backdrop-filter:blur(14px);padding:8px 0 10px;margin:0 0 8px}
+  .studies-up{display:block;margin:0 auto 8px;width:44px;height:36px;border:0;background:transparent;color:var(--paper);font-size:20px;letter-spacing:.12em;cursor:pointer}
+  .ledge.quiet{margin:0 auto;max-width:640px;background:transparent;border:0;box-shadow:none;filter:none;clip-path:none}
+  .axis-kicker{margin:0 0 8px;text-align:center;font-size:13px;color:var(--fog);letter-spacing:.04em}
+  .ledge.quiet .laxis{width:100%;border:0;background:transparent;cursor:pointer;min-width:0;padding:8px 10px;justify-content:center}
+  .ledge.quiet .ldetail{max-height:0}
+  .ledge.quiet.open .ldetail{max-height:720px}
+  .ledge.quiet .ldinner{grid-template-columns:1fr;padding:8px 4px 16px}
+  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin-top:10px}
+  .cat-cols{grid-template-columns:1fr 1fr 1fr}
+  .domain-cols .pill,.cat-cols .pill{width:100%;justify-content:flex-start;white-space:normal;text-align:left;--cut:6px}
+  .searchwrap .search{width:min(420px,94%)}
+  .scale-stack{margin-top:8px}
+  .scale-stack .scalerow{grid-template-columns:36px repeat(7,1fr)}
+  @media(max-width:720px){
+    .scale-legend{display:none}
+    .scalerow,.scale-stack .scalerow{grid-template-columns:28px repeat(7,minmax(0,1fr));gap:3px;border:0;border-radius:0;padding:0;margin:0 0 6px;background:transparent}
+    .scalerow .idx{justify-content:center;border:none;background:var(--card);padding:0;font-size:9px}
+    .cell{min-height:44px;justify-content:center;text-align:center;padding:6px 3px;--cut:4px;font-size:9.5px}
+    .cell::before{content:none}
+  }
+  .research-box{margin:36px auto 24px;max-width:640px}
+  .research-open{width:100%;border:0;background:transparent;color:var(--paper);font:inherit;font-size:13px;letter-spacing:.16em;text-transform:uppercase;padding:14px 12px;cursor:pointer}
+  .research-copy p{color:var(--fog);font-size:13.5px;line-height:1.55;margin:0 0 12px}
+  .request-row{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+  .request-row .req{color:var(--node);text-align:center;text-decoration:none;border-bottom:1px solid rgba(124,240,208,.35);padding:6px 0}
+  .mcard{grid-template-columns:1fr;justify-items:center;text-align:center;padding:16px 12px;gap:6px}
+  .mcard .linrow,.mcard .latin,.mcard .snap{display:none}
+  .mcard h3{white-space:normal;font-size:16px;letter-spacing:.02em}
+  .mcard .em-only{font-size:22px;line-height:1}
+  @media(max-width:720px){.domain-cols{grid-template-columns:1fr 1fr}.cat-cols{grid-template-columns:1fr 1fr 1fr;gap:6px}.cat-cols .pill{font-size:9.5px;padding:5px 6px}}
 </style>
 
 <style id="tonal-css">
@@ -856,55 +895,72 @@
 
 <!-- ===== STUDIES (the folded-in atlas) ===== -->
 <section class="screen" id="screen-studies">
-  <button class="backhome" onclick="home()"><span class="compassmark">✳</span> Portal</button>
+  <button class="backhome" id="studies-home" onclick="home()"><span class="compassmark">✳</span> Portal</button>
   <div id="studies-root">
 <div class="wrap">
-  <p class="kicker">Delphi · The Studies</p>
-  <h1 class="title">One knowledge, many lenses</h1>
-  <p class="sub">The principle first — how polarity works — then the pharmacology and the practice that grow from it. Every quality is an axis; the glowing center is the node.</p>
-  <div class="tabs" role="tablist">
-    <button class="tab" role="tab" data-tab="polarity" aria-selected="true">☯️ Polarity Scales <span class="sub-n" id="n-polarity"></span></button>
-    <button class="tab" role="tab" data-tab="materia" aria-selected="false">⚗️ Substances <span class="sub-n" id="n-materia"></span></button>
-  </div>
+  <header class="studies-hero" id="studies-hero">
+    <p class="kicker">Delphi · The Studies</p>
+  </header>
+  <span hidden id="n-polarity"></span><span hidden id="n-materia"></span>
+  <span hidden id="p-count"></span><span hidden id="m-count"></span>
 
+  <div class="studies-deck" id="studies-deck">
   <div class="tabpanel active" id="panel-polarity">
-    <div class="ledge" id="ledge-polarity">
-      <div class="lmain">
-        <div class="lthesis"><h2>Every quality is an <span class="nw">axis</span></h2><p>Levels run −3 → 0 → +3, like an oscillator's displacement — the glowing 0 is the zero-crossing where the aliveness is.</p></div>
-        <div class="laxis"><span class="p">yin −3</span><span class="bar"></span><span class="z">0</span><span class="bar"></span><span class="r">yang +3</span></div>
-        <div class="lstat"><span class="n">164</span><span class="l">scales · 20 domains</span></div>
+    <h1 class="title">Polarity Scales</h1>
+    <div class="panel-sticky">
+      <button type="button" class="studies-up" onclick="studiesToTop()" aria-label="Back to title">↑</button>
+      <div class="ledge quiet" id="ledge-polarity">
+        <p class="axis-kicker">every quality is an axis</p>
+        <button type="button" class="laxis" onclick="toggleLedge('polarity')" aria-expanded="false">
+          <span class="p">Yin</span><span class="bar"></span><span class="z">0</span><span class="bar"></span><span class="r">Yang</span>
+        </button>
+        <div class="ldetail"><div class="ldinner">
+          <div class="lnote method"><p>Levels run −3 → 0 → +3. The glowing 0 is the zero-crossing — a third quality, not the absence of both poles.</p></div>
+          <div class="domain-cols" id="p-domain-grid"></div>
+        </div></div>
       </div>
-      <button class="lmore" onclick="toggleLedge('polarity')"><span>Method &amp; scope</span><span class="chev">▾</span></button>
-      <div class="ldetail"><div class="ldinner">
-        <div class="lnote floor"><h3>🧭 Innermost to outermost</h3><p>From body and self to society and cosmos — and the unity that holds them all.</p></div>
-        <div class="lnote method"><h3>A note on method</h3><p>Grounded in the studied science of coupled oscillation — synchronization, entrainment, complex systems. A bounded lens, never a mystical claim.</p></div>
+      <div class="searchwrap"><input class="search" id="p-search" placeholder="Search Scales" aria-label="Search Scales"></div>
+    </div>
+    <div id="p-list" class="scale-stack"></div>
+    <div class="ledge quiet research-box" id="ledge-research">
+      <button type="button" class="research-open" onclick="toggleLedge('research')">Research details</button>
+      <div class="ldetail"><div class="ldinner research-copy">
+        <p>The polarity scales began as a long reading of how qualities actually move — not as opposites that cancel, but as coupled oscillators that share a node. Each scale is one axis: yin pole, three steps in, the living zero, three steps out, yang pole. One hundred sixty-four of them, grouped into twenty domains, from Aesthetic to Technological / Informational.</p>
+        <p>The work sits on three sources you can request: the living polarity sheet (the working atlas), the coupled-oscillation white paper (the physics of why a node is not a compromise), and the Resonant Consent paper (how this lens meets bodies, rooms, and agreement).</p>
+        <div class="request-row">
+          <a class="req" href="mailto:hello@pauloventura.org?subject=Delphi%20Studies%20access%20%E2%80%94%20polarity%20sheet">Request the sheet</a>
+          <a class="req" href="mailto:hello@pauloventura.org?subject=Delphi%20Studies%20access%20%E2%80%94%20coupled%20oscillation">Coupled oscillation paper</a>
+          <a class="req" href="mailto:hello@pauloventura.org?subject=Delphi%20Studies%20access%20%E2%80%94%20resonant%20consent">Resonant Consent paper</a>
+        </div>
       </div></div>
     </div>
-    <div class="controls"><div class="searchwrap"><input class="search" id="p-search" placeholder="Search scales (feminine, inside, fear, trust)..."></div>
-      <div class="ctl-lin" id="p-domains"><span class="flabel">Filter by domain</span></div>
-      <div class="toolbar2"><span class="count-tag" id="p-count"></span></div></div>
-    <div id="p-list" style="margin-top:20px"></div>
   </div>
 
   <div class="tabpanel" id="panel-materia">
-    <div class="ledge" id="ledge-materia">
-      <div class="lmain">
-        <div class="lthesis"><h2>Safety is the <span class="nw">node</span></h2><p>No "safe number" — a direction it pushes the body, and a point past which the system can't self-correct. Read the overshoot, not a dose.</p></div>
-        <div class="laxis"><span class="p">pole</span><span class="bar"></span><span class="z">node</span><span class="bar"></span><span class="r">overshoot</span></div>
-        <div class="lstat"><span class="n">🛟</span><span class="l">harm reduction</span></div>
+    <h1 class="title">Harm Reduction</h1>
+    <div class="panel-sticky">
+      <button type="button" class="studies-up" onclick="studiesToTop()" aria-label="Back to title">↑</button>
+      <div class="ledge quiet" id="ledge-materia">
+        <p class="axis-kicker">Safety is the note</p>
+        <button type="button" class="laxis" onclick="toggleLedge('materia')" aria-expanded="false">
+          <span class="p">pole</span><span class="bar"></span><span class="z">node</span><span class="bar"></span><span class="r">overshoot</span>
+        </button>
+        <div class="ldetail"><div class="ldinner">
+          <div class="lnote floor"><h3>The floor</h3><p><span class="tel">911 · 988 · 1-800-222-1222</span><br>Test the supply, carry naloxone, never use alone.<br><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
+          <div class="lnote method"><h3>Method</h3><p>No “safe number.” A direction the body is pushed, and a point past which it cannot self-correct. Consumption doses are absent by design — on an adulterated supply a printed threshold reads as protection and works as permission.</p></div>
+        </div></div>
       </div>
-      <button class="lmore" onclick="toggleLedge('materia')"><span>The floor &amp; method</span><span class="chev">▾</span></button>
+      <div class="searchwrap"><input class="search" id="m-search" placeholder="What substance are you looking to dive into?" aria-label="Search substances"></div>
+    </div>
+    <div class="ledge quiet" id="ledge-categories">
+      <button type="button" class="research-open" onclick="toggleLedge('categories')">Categories</button>
       <div class="ldetail"><div class="ldinner">
-        <div class="lnote floor"><h3>🛟 The floor — tools</h3><p><span class="tel">911 · 988 · 1-800-222-1222</span><br>Test the supply, carry naloxone, never use alone.<br><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
-        <div class="lnote method"><h3>A note on method</h3><p>Consumption doses are absent by design. On an adulterated supply a printed threshold is false precision — it reads as protection and works as permission.</p></div>
+        <div class="cat-cols" id="m-lins"></div>
       </div></div>
     </div>
-    <div class="controls"><div class="ctl-band"><span class="flabel">Filter by band</span><div class="btnrow" id="m-bands">
-      <button class="pill r" data-band="RED" aria-pressed="false"><span class="d"></span>Red</button><button class="pill y" data-band="YELLOW" aria-pressed="false"><span class="d"></span>Yellow</button><button class="pill g" data-band="GREEN" aria-pressed="false"><span class="d"></span>Green</button></div></div>
-      <div class="searchwrap"><input class="search" id="m-search" placeholder="What substance are you looking to dive into?"></div>
-      <div class="ctl-lin" id="m-lins"><span class="flabel">Filter by lineage</span></div>
-      <div class="toolbar2"><span class="count-tag" id="m-count"></span></div></div>
     <div class="grid" id="m-grid"></div>
+    <div hidden id="m-bands"></div>
+  </div>
   </div>
 
   <div class="tabpanel" id="panel-medica" hidden>
@@ -1060,7 +1116,8 @@ const backdrop=document.getElementById("backdrop");
 function modal(html){document.getElementById("modalHost").innerHTML=`<div class="modal" onclick="event.stopPropagation()">${html}</div>`;backdrop.classList.add("open");document.body.style.overflow="hidden";}
 window.closeModal=()=>{backdrop.classList.remove("open");document.body.style.overflow="";};
 backdrop.addEventListener("click",window.closeModal);
-window.toggleLedge=(id)=>{const el=document.getElementById("ledge-"+id);if(el)el.classList.toggle("open");};
+window.toggleLedge=(id)=>{const el=document.getElementById("ledge-"+id);if(!el)return;el.classList.toggle("open");el.querySelectorAll("[aria-expanded]").forEach(b=>b.setAttribute("aria-expanded",el.classList.contains("open")?"true":"false"));};
+window.studiesToTop=()=>{const home=document.getElementById("studies-home");(home||document.getElementById("studies-hero"))?.scrollIntoView({behavior:"smooth",block:"start"});};
 
 /* ===== TONAL — the ground: covenant, roles, economics, doors ===== */
 let _tonalMounted=false;
@@ -1876,25 +1933,20 @@ function lc(l){return LIN_COLORS[l]||"#828da3";}
 
 /* ===== POLARITY (first) — PDF-style rows grouped by domain ===== */
 const pState={doms:new Set(),q:""};document.getElementById("n-polarity").textContent=polarity.length;
-(()=>{const host=document.getElementById("p-domains");const perRow=Math.ceil(pdomains.length/3);pdomains.forEach((dm,i)=>{if(i%perRow===0){const r=document.createElement("div");r.className="pdrow";host.appendChild(r);}const b=document.createElement("button");b.className="pill";b.dataset.dom=dm.name;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${dm.emoji}</span>${esc(dm.name)}`;host.lastChild.appendChild(b);});})();
+(()=>{const host=document.getElementById("p-domain-grid");if(!host)return;[...pdomains].sort((a,b)=>a.name.localeCompare(b.name)).forEach(dm=>{const b=document.createElement("button");b.className="pill";b.dataset.dom=dm.name;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${dm.emoji}</span>${esc(dm.name)}`;host.appendChild(b);});})();
 const CELLCLASS=["y3","y2","y1","node","g1","g2","g3"];const LVN=["−3","−2","−1","0","+1","+2","+3"];
 function scaleRow(s){const cells=s.levels.map((t,i)=>`<div class="cell ${CELLCLASS[i]}" data-lv="${LVN[i]}">${esc(t)}</div>`).join("");
   return `<div class="scalerow" onclick='openPolarity(${s.n})'><div class="idx">${s.n}</div>${cells}</div>`;}
 function pRender(){const host=document.getElementById("p-list");
   let f=polarity.filter(s=>{if(pState.doms.size&&!pState.doms.has(s.domain))return false;if(pState.q&&!(s.levels.join(" ")+" "+s.domain).toLowerCase().includes(pState.q))return false;return true;});
-  let html="";const byDom={};f.forEach(s=>{(byDom[s.domain]=byDom[s.domain]||[]).push(s);});
-  pdomains.forEach(dm=>{const rows=byDom[dm.name];if(!rows)return;
-    html+=`<div class="domainhead"><span class="em">${dm.emoji}</span><h3>${esc(dm.name)}</h3><span class="cnt">${rows.length} ${rows.length>1?"scales":"scale"}</span></div>`;
-    html+=`<div class="scale-legend"><span></span><span class="yl">yin −3</span><span class="yl">−2</span><span class="yl">−1</span><span class="nl">0 · node</span><span class="gl">+1</span><span class="gl">+2</span><span class="gl">yang +3</span></div>`;
-    html+=rows.map(scaleRow).join("");});
-  host.innerHTML=html||`<p style="color:var(--fog);text-align:center;padding:40px">No scales match.</p>`;
-  document.getElementById("p-count").textContent=`${f.length} of ${polarity.length} scales`;}
+  host.innerHTML=f.map(scaleRow).join("")||`<p style="color:var(--fog);text-align:center;padding:40px">No scales match.</p>`;
+  const pc=document.getElementById("p-count");if(pc)pc.textContent=`${f.length} of ${polarity.length} scales`;}
 window.openPolarity=n=>{const s=polarity.find(x=>x.n===n);
   const bars=s.levels.map((t,i)=>`<div class="lvl ${CELLCLASS[i]}">${esc(t)}<span class="n">${LVN[i]}</span></div>`).join("");
   modal(`<div class="mhead" onclick="closeModal()"><span class="emj">${s.emoji}</span><div class="t"><h3>Scale #${s.n}</h3><div class="latin">${esc(s.domain)} domain</div></div><span class="closehint">✕</span></div>
   <div class="mbody"><div class="fullaxis"><div class="polepair"><span class="yn">◀ yin pole</span><span style="color:var(--node)">the node</span><span class="yg">yang pole ▶</span></div><div class="rail">${bars}</div></div>
   <div class="sec"><p style="color:var(--fog);font-size:13px">The glowing center — <b style="color:var(--node)">${esc(s.node)}</b> — isn't the absence of both poles but a third quality of its own: the zero-crossing where the system is most alive and self-correcting.</p></div></div>`);};
-document.querySelectorAll("#p-domains .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.dom;pState.doms.has(v)?(pState.doms.delete(v),b.setAttribute("aria-pressed","false")):(pState.doms.add(v),b.setAttribute("aria-pressed","true"));pRender();}));
+document.querySelectorAll("#p-domain-grid .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.dom;pState.doms.has(v)?(pState.doms.delete(v),b.setAttribute("aria-pressed","false")):(pState.doms.add(v),b.setAttribute("aria-pressed","true"));pRender();}));
 document.getElementById("p-search").oninput=e=>{pState.q=e.target.value.toLowerCase().trim();pRender();};
 (()=>{let px=0,py=0,live=false,raf=0;const tick=()=>{raf=0;if(!live)return;document.querySelectorAll(".cell,.fullaxis .lvl").forEach(el=>{const r=el.getBoundingClientRect();if(r.bottom<-40||r.top>innerHeight+40||r.right<0||r.left>innerWidth)return;el.style.setProperty("--lx",((px-r.left)/Math.max(1,r.width)*100)+"%");el.style.setProperty("--ly",((py-r.top)/Math.max(1,r.height)*100)+"%");});};const move=e=>{px=e.clientX;py=e.clientY;live=true;if(!raf)raf=requestAnimationFrame(tick);};document.addEventListener("pointermove",move,{passive:true});})();
 
@@ -1904,8 +1956,8 @@ const mState={bands:new Set(),lins:new Set(),q:""};document.getElementById("n-ma
 function axisTrack(d){const l=esc((d.axis||"").split("←")[0].trim()),r=esc((d.axis||"").split("→").pop().trim());return `<div class="track"><span class="p">${l}</span><span class="bar"></span><span class="z">node</span><span class="bar"></span><span class="r">${r}</span></div><div class="push">Pushes toward: ${esc(d.pushes_toward)}</div>`;}
 function signs(rec){return esc(rec).split(/[;·]/).filter(s=>s.trim()).map(s=>`<span>${s.trim()}</span>`).join("");}
 function dial(c){c=Math.max(0,Math.min(100,c||0));return `<div class="dial"><div class="marker" style="bottom:calc(${c}% - 2px)"></div></div><div class="dial-labels"><div class="top">molecule</div><div class="v">${c}<span style="color:var(--fogd)">/100</span></div><div class="bot">plant</div></div>`;}
-function mMini(d){return `<div class="mcard" onclick='openMateria(${materia.indexOf(d)})'><span class="band ${d.band}">${d.band}</span><div class="linrow"><span class="em">${d.emoji||"•"}</span>${esc(d.lineage)}</div><div class="main-info"><h3>${esc(d.name)}</h3><div class="latin">${esc(d.latin)}</div></div><div class="snap">${esc((d.snapshot||"").substring(0,80))}</div></div>`;}
-function dMini(d){return `<div class="mcard" onclick='openMedica(${medica.indexOf(d)})'><span class="band ${d.band}">${d.band}</span><div class="linrow"><span class="em">${d.emoji||"•"}</span>${esc(d.lineage)}</div><div class="main-info"><h3>${esc(d.name)}</h3><div class="latin">${esc(d.latin)}</div></div><div class="snap">${esc(((d.measured||"").split("→")[0]||"").substring(0,80))}</div></div>`;}
+function mMini(d){return `<div class="mcard" onclick='openMateria(${materia.indexOf(d)})'><span class="em-only">${d.emoji||"•"}</span><h3>${esc(d.name)}</h3><span class="band ${d.band}">${d.band}</span></div>`;}
+function dMini(d){return `<div class="mcard" onclick='openMedica(${medica.indexOf(d)})'><span class="em-only">${d.emoji||"•"}</span><h3>${esc(d.name)}</h3><span class="band ${d.band}">${d.band}</span></div>`;}
 window.openMateria=i=>{const d=materia[i];const isW=(d.ceiling||"").startsWith(WP);const mol=mols[d.mol]||mols["plant"];const ceil=d.ceiling?`<span class="ceiling ${isW?"withheld":"real"}">${isW?"dose withheld by design":esc(d.ceiling)}</span>`:"";
   modal(`<div class="mhead" onclick="closeModal()"><span class="emj">${d.emoji||"•"}</span><div class="t"><h3>${esc(d.name)}</h3><div class="latin">${esc(d.latin)}</div><div class="formula">${esc(d.formula||"")}</div></div><div class="molbox">${mol}</div><span class="band ${d.band}">${d.band}</span><span class="closehint">✕</span></div>
   <div class="mbody"><div class="dialstrip">${dial(d.complexity)}<div style="font-size:11px;color:var(--fog);text-align:left">Simple → complex<br><span style="color:var(--fogd)">raw plant → isolated molecule</span></div></div>
@@ -1917,13 +1969,13 @@ window.openMateria=i=>{const d=materia[i];const isW=(d.ceiling||"").startsWith(W
   <div class="sec test"><div class="lbl"><span class="num">6</span>Test it</div><p>${esc(D(d.test))}</p></div>
   <div class="sec overshoot"><div class="lbl"><span class="num">7</span>The overshoot</div><p>${esc(D(d.overshoot))}</p></div>
   <div class="sec wrong"><div class="lbl"><span class="num">8</span>If it goes wrong</div><div class="rz"><span class="k">Recognize</span><div class="signs">${signs(d.recognize)}</div></div><div class="rz"><span class="k">Respond</span><div class="respond">${esc(D(d.respond))}</div></div></div></div>`);};
-function mRender(){const g=document.getElementById("m-grid");const match=d=>{if(mState.bands.size&&!mState.bands.has(d.band))return false;if(mState.lins.size&&!mState.lins.has(d.lineage))return false;if(mState.q&&!(d.name+" "+(d.latin||"")+" "+(d.lineage||"")+" "+(d.snapshot||"")+" "+(d.measured||"")).toLowerCase().includes(mState.q))return false;return true;};const fm=materia.filter(match);const fd=medica.filter(match);const o={RED:0,YELLOW:1,GREEN:2};fm.sort((a,b)=>(o[a.band]-o[b.band])||a.name.localeCompare(b.name));fd.sort((a,b)=>(o[a.band]-o[b.band])||a.name.localeCompare(b.name));const html=[...fm.map(mMini),...fd.map(dMini)].join("");g.innerHTML=html||empty();document.getElementById("m-count").textContent=`${fm.length+fd.length} of ${materia.length+medica.length} shown`;}
+function mRender(){const g=document.getElementById("m-grid");const match=d=>{if(mState.bands.size&&!mState.bands.has(d.band))return false;if(mState.lins.size&&!mState.lins.has(d.lineage))return false;if(mState.q&&!(d.name+" "+(d.latin||"")+" "+(d.lineage||"")+" "+(d.snapshot||"")+" "+(d.measured||"")).toLowerCase().includes(mState.q))return false;return true;};const items=[...materia.filter(match).map(d=>({kind:"m",d})),...medica.filter(match).map(d=>({kind:"d",d}))];items.sort((a,b)=>a.d.name.localeCompare(b.d.name));const html=items.map(x=>x.kind==="m"?mMini(x.d):dMini(x.d)).join("");g.innerHTML=html||empty();const mc=document.getElementById("m-count");if(mc)mc.textContent=`${items.length} of ${materia.length+medica.length} shown`;}
 bindBands("m-bands",mState,mRender);bindLins("m-lins",mState,mRender);document.getElementById("m-search").oninput=e=>{mState.q=e.target.value.toLowerCase().trim();mRender();};
 
 /* ===== MEDICA ===== */
 const dState={bands:new Set(),lins:new Set(),q:""};
 [...new Set(medica.map(d=>d.lineage))].sort().forEach(l=>{const em=(medica.find(x=>x.lineage===l)||{}).emoji||"•";const b=document.createElement("button");b.className="pill";b.dataset.lin=l;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${em}</span>${esc(l)}`;document.getElementById("d-lins").appendChild(b);});
-function dMini(d){return `<div class="mcard" onclick='openMedica(${medica.indexOf(d)})'><span class="band ${d.band}">${d.band}</span><div class="linrow"><span class="em">${d.emoji||"•"}</span>${esc(d.lineage)}</div><div class="main-info"><h3>${esc(d.name)}</h3><div class="latin">${esc(d.latin)}</div></div><div class="snap">${esc(((d.measured||"").split("→")[0]||"").substring(0,80))}</div></div>`;}
+function dMini(d){return `<div class="mcard" onclick='openMedica(${medica.indexOf(d)})'><span class="em-only">${d.emoji||"•"}</span><h3>${esc(d.name)}</h3><span class="band ${d.band}">${d.band}</span></div>`;}
 window.openMedica=i=>{const d=medica[i];modal(`<div class="mhead" onclick="closeModal()"><span class="emj">${d.emoji||"•"}</span><div class="t"><h3>${esc(d.name)}</h3><div class="latin">${esc(d.latin)} · ${esc(d.lineage)}</div></div><span class="band ${d.band}">${d.band}</span><span class="closehint">✕</span></div><div class="mbody"><div class="sec body-brain"><div class="lbl"><span class="num">◈</span>Measured</div><p>${esc(d.measured)}</p></div><div class="sec roots"><div class="lbl"><span class="num">❧</span>Celebrated</div><p class="arc">${esc(d.celebrated)}</p></div><div class="sec know"><div class="lbl"><span class="num">!</span>Caution</div><p>${esc(d.caution)}</p></div><div class="sec axis"><div class="lbl"><span class="num">☯</span>Yin / Yang</div><p style="color:var(--node)">${esc(d.yinyang)}</p></div><div class="sec standing"><div class="lbl"><span class="num">§</span>Legal</div><span class="legal">${esc(d.legal)}</span></div></div>`);};
 function dRender(){const g=document.getElementById("d-grid");let f=medica.filter(d=>{if(dState.bands.size&&!dState.bands.has(d.band))return false;if(dState.lins.size&&!dState.lins.has(d.lineage))return false;if(dState.q&&!(d.name+" "+d.latin+" "+d.lineage).toLowerCase().includes(dState.q))return false;return true;});const o={RED:0,YELLOW:1,GREEN:2};f.sort((a,b)=>(o[a.band]-o[b.band])||a.name.localeCompare(b.name));g.innerHTML=f.map(dMini).join("")||empty();document.getElementById("d-count").textContent=`${f.length} of ${medica.length} shown`;}
 bindBands("d-bands",dState,dRender);bindLins("d-lins",dState,dRender);document.getElementById("d-search").oninput=e=>{dState.q=e.target.value.toLowerCase().trim();dRender();};
@@ -1931,8 +1983,9 @@ bindBands("d-bands",dState,dRender);bindLins("d-lins",dState,dRender);document.g
 function bindBands(id,st,rf){document.querySelectorAll("#"+id+" .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.band;st.bands.has(v)?(st.bands.delete(v),b.setAttribute("aria-pressed","false")):(st.bands.add(v),b.setAttribute("aria-pressed","true"));rf();}));}
 function bindLins(id,st,rf){document.querySelectorAll("#"+id+" .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.lin;st.lins.has(v)?(st.lins.delete(v),b.setAttribute("aria-pressed","false")):(st.lins.add(v),b.setAttribute("aria-pressed","true"));rf();}));}
 function empty(){return `<p style="color:var(--fog);text-align:center;padding:40px;grid-column:1/-1">Nothing matches these filters.</p>`;}
+window.studiesToTop=()=>{const home=document.getElementById("studies-home");const hero=document.getElementById("studies-hero");(home||hero)?.scrollIntoView({behavior:"smooth",block:"start"});};
 document.querySelectorAll("#screen-studies .tab").forEach(t=>t.addEventListener("click",()=>{document.querySelectorAll("#screen-studies .tab").forEach(x=>x.setAttribute("aria-selected","false"));t.setAttribute("aria-selected","true");document.querySelectorAll("#screen-studies .tabpanel").forEach(p=>p.classList.remove("active"));document.getElementById("panel-"+t.dataset.tab).classList.add("active");}));
-pRender();mRender();dRender();
+pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 

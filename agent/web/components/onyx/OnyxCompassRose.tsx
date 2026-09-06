@@ -5,12 +5,16 @@
  *
  * Geographic dial (N/E/S/W + ticks) rotates from device heading so aiming
  * the phone north brings N under the fixed lubber line at the top.
- * Rotation is CSS on a nested svg (fill-box, 50% 50%) — WebKit promotes
- * SVG rotate(θ cx cy) to CSS and then applies a device-pixel origin, which
- * made the ring orbit off the marble.
+ * Rotation is an SVG attribute on <g> (rotate(θ 50 50) in viewBox space).
+ * A RAF loop reads the live attitude ref so the dial tracks the phone
+ * even when React heading state is throttled. Do not put CSS transform
+ * on the dial — WebKit then pivots in device pixels and the ring orbits.
  */
 
-import { useId, useMemo } from "react";
+import { useEffect, useId, useMemo, useRef, type RefObject } from "react";
+import { enuToAltAz, type Vec3 } from "../../lib/sphericalView";
+
+type Attitude = { view: Vec3; roll: number };
 
 export type CompassRoseDir = "up" | "down" | "left" | "right";
 
@@ -37,20 +41,24 @@ export function OnyxCompassRose({
   follow = { x: 0, y: 0 },
   holding = false,
   headingDeg = null,
+  attitudeRef,
 }: {
   active?: CompassRoseDir | "center" | null;
   follow?: { x: number; y: number };
   holding?: boolean;
   /** Device look azimuth in degrees — 0 = geographic north, clockwise. */
   headingDeg?: number | null;
+  attitudeRef?: RefObject<Attitude | null>;
 }) {
   const uid = useId().replace(/:/g, "");
+  const dialRef = useRef<SVGGElement>(null);
   const lit: CompassRoseDir | null =
     active === "up" || active === "down" || active === "left" || active === "right"
       ? active
       : null;
 
-  const live = headingDeg != null && Number.isFinite(headingDeg);
+  const live =
+    (headingDeg != null && Number.isFinite(headingDeg)) || Boolean(attitudeRef);
   const heading = live ? normalizeHeading(headingDeg!) : 0;
   // Dial rotates opposite the phone turn so world-north stays world-north.
   const dialDeg = live ? -heading : 0;
@@ -59,6 +67,23 @@ export function OnyxCompassRose({
   const dragNeedleDeg =
     dist > 2 ? (Math.atan2(follow.x, -follow.y) * 180) / Math.PI : 0;
   const dragOn = holding && dist > 6;
+
+  useEffect(() => {
+    let raf = 0;
+    const apply = (az: number) => {
+      const deg = -(((az % 360) + 360) % 360);
+      dialRef.current?.setAttribute("transform", `rotate(${deg.toFixed(2)} 50 50)`);
+    };
+    if (headingDeg != null && Number.isFinite(headingDeg)) apply(headingDeg);
+    const tick = () => {
+      const view = attitudeRef?.current?.view;
+      if (view) apply(enuToAltAz(view).az);
+      else if (headingDeg != null && Number.isFinite(headingDeg)) apply(headingDeg);
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [attitudeRef, headingDeg]);
 
   const ticks = useMemo(
     () =>
@@ -135,20 +160,10 @@ export function OnyxCompassRose({
       />
       <circle cx="50" cy="50" r="46" fill={`url(#${uid}-glass)`} />
 
-      {/* Nested svg so fill-box origin is the marble, not a 50px device origin. */}
-      <svg
+      <g
+        ref={dialRef}
         className="onyx-compass-dial"
-        x="0"
-        y="0"
-        width="100"
-        height="100"
-        viewBox="0 0 100 100"
-        overflow="visible"
-        style={{
-          transform: `rotate(${dialDeg}deg)`,
-          transformOrigin: "50% 50%",
-          transformBox: "fill-box",
-        }}
+        transform={`rotate(${dialDeg.toFixed(2)} 50 50)`}
       >
         {ticks.map(t => (
           <line
@@ -187,7 +202,7 @@ export function OnyxCompassRose({
           fill="#ff6b6b"
           opacity={live ? 0.95 : 0.4}
         />
-      </svg>
+      </g>
 
       {/* Inner aperture framing the marble */}
       <circle

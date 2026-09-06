@@ -131,7 +131,7 @@ export function useScreenWakeLock(enabled = true) {
     heartbeat = window.setInterval(() => {
       if (!wantedRef.current || document.visibilityState !== "visible") return;
       void acquire();
-    }, 25_000);
+    }, 8_000);
 
     return () => {
       cancelled = true;

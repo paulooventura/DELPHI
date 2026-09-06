@@ -8,6 +8,7 @@ const fashion = Bodoni_Moda({
   variable: "--font-fashion",
   subsets: ["latin"],
   weight: ["400", "500", "600"],
+  style: ["normal", "italic"],
 });
 
 const clean = Manrope({

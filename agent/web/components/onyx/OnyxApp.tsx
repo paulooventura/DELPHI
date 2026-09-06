@@ -802,7 +802,8 @@ export function OnyxApp({
       pulseEnabled={pulseEnabled}
       onPulseEnabledChange={onPulseEnabledChange}
       sensorsUnlocked={sensorsUnlocked}
-      headingDeg={liveHeading ? headingDeg : null}
+      headingDeg={headingDeg}
+      attitudeRef={liveAttitudeRef}
     />
   );
 }
