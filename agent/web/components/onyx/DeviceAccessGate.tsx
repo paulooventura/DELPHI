@@ -7,6 +7,7 @@
  * open skips this screen.
  */
 
+import { useEffect, useRef } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { OnyxCrystal } from "./OnyxCrystal";
 
@@ -17,19 +18,39 @@ export function DeviceAccessGate({
   onAllow: () => void;
   busy?: boolean;
 }) {
+  const filmRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const v = filmRef.current;
+    if (!v) return;
+    const holdLastFrame = () => {
+      if (!Number.isFinite(v.duration) || v.duration <= 0) return;
+      v.currentTime = Math.max(0, v.duration - 0.04);
+      v.pause();
+    };
+    v.muted = true;
+    if (v.readyState >= 1) holdLastFrame();
+    v.addEventListener("loadedmetadata", holdLastFrame);
+    v.addEventListener("durationchange", holdLastFrame);
+    return () => {
+      v.removeEventListener("loadedmetadata", holdLastFrame);
+      v.removeEventListener("durationchange", holdLastFrame);
+    };
+  }, []);
+
   return (
     <div className="onyx-root" role="dialog" aria-label="Allow location and sensors">
       <div className="onyx-device onyx-access-gate">
-        <div className="onyx-access-copy">
-          <p className="onyx-access-phrase">
-            Delphi reads the sky from where you are.
-          </p>
-          <p className="onyx-access-lead">
-            Allow location and device sensors so the compass, sky map, and moment
-            stay live. This screen shows once after you open Delphi, until you
-            close the page or uninstall. Tap the crystal once to continue.
-          </p>
+        <div className="onyx-access-film" aria-hidden>
+          <video
+            ref={filmRef}
+            muted
+            playsInline
+            preload="auto"
+            src="/delphi-intro.mp4"
+          />
         </div>
+        <div className="onyx-access-dim" aria-hidden />
 
         <button
           type="button"
@@ -44,17 +65,10 @@ export function DeviceAccessGate({
           <span className="onyx-access-cta-label">
             {busy ? "Requesting…" : "Allow access"}
           </span>
-          <span className="onyx-access-cta-sub">
-            Location · orientation · motion
-          </span>
         </button>
 
         <p className="onyx-access-build">
           build {DELPHI_BUILD}
-          {" · "}
-          <a href={`/portal?b=${DELPHI_BUILD}`} className="onyx-access-portal-link">
-            Portal (Tonal &amp; Studies)
-          </a>
         </p>
       </div>
     </div>

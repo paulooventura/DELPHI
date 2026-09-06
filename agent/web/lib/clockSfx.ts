@@ -315,7 +315,7 @@ function harmonicPulse(
   overtone.frequency.setValueAtTime(hz * 2, t);
   overtoneGain.gain.setValueAtTime(0.16, t);
   filter.type = "lowpass";
-  filter.frequency.setValueAtTime(Math.min(1400, hz * 5), t);
+  filter.frequency.setValueAtTime(Math.min(3400, hz * 6), t);
   panner.pan.setValueAtTime(pan, t);
 
   gain.gain.setValueAtTime(0.0001, t);
@@ -335,19 +335,31 @@ function harmonicPulse(
   overtone.stop(t + dur + 0.02);
 }
 
-/** Helek — 3⅓ s, the highest and lightest fast gear. */
+const lastFastMarkAt = new Map<string, number>();
+function fastMarkGuard(id: string, ms = 90): boolean {
+  const now = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const prev = lastFastMarkAt.get(id) ?? 0;
+  if (now - prev < ms) return false;
+  lastFastMarkAt.set(id, now);
+  return true;
+}
+
+/** Helek — 3⅓ s glass tick. Audible mid-high, not a sub-harmonic thump. */
 export function playHelekMark(ctx: AudioContext) {
-  harmonicPulse(ctx, SCHUMANN_HZ * 6, 0.018, 0.12, -0.18);
+  if (!fastMarkGuard("helek")) return;
+  harmonicPulse(ctx, 784, 0.11, 0.14, -0.2);
 }
 
-/** Prāṇa — ~4 s breath pulse, warm fifth above the bed. */
+/** Prāṇa — ~4 s breath chime. */
 export function playPranaMark(ctx: AudioContext) {
-  harmonicPulse(ctx, SCHUMANN_HZ * 4, 0.022, 0.2, 0.16);
+  if (!fastMarkGuard("prana")) return;
+  harmonicPulse(ctx, 523, 0.12, 0.22, 0.18);
 }
 
-/** Pala — ~24 s, a slightly fuller low harmonic. */
+/** Pala — ~24 s fuller stone. */
 export function playPalaMark(ctx: AudioContext) {
-  harmonicPulse(ctx, SCHUMANN_HZ * 3, 0.03, 0.34);
+  if (!fastMarkGuard("pala")) return;
+  harmonicPulse(ctx, 329, 0.14, 0.4, 0);
 }
 
 /** Ghaṭi — ~24 min from sunrise. Clay / wood, quieter than the minute gong. */

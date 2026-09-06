@@ -2,10 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const FADE_MS = 720;
-
 /**
- * Boot: pure black → intro film → fade to black → home.
+ * Boot: pure black → intro film → last frame holds into the access gate.
  * Nothing on screen except the film and centered DELPHI. No corners, tagline,
  * coords, land ack, enter chrome, or seeds.
  *
@@ -32,8 +30,7 @@ export function OnyxSplash({
     entered.current = true;
     if (fromGesture) onPrimeAccess?.();
     setMarkOn(false);
-    setVeilOn(true);
-    window.setTimeout(() => onEnter(), FADE_MS);
+    onEnter();
   };
 
   useEffect(() => {

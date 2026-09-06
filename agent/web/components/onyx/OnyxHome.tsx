@@ -725,6 +725,19 @@ export function OnyxHome({
           </div>
         </div>
 
+        <div className="onyx-yy-phrase">
+          <button
+            type="button"
+            className="onyx-yy-phrase-btn"
+            onClick={e => {
+              e.stopPropagation();
+              enterDoor("center");
+            }}
+          >
+            <p className="big">{momentLine}</p>
+          </button>
+        </div>
+
         <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
             <div className="onyx-yy-orb">
@@ -778,18 +791,6 @@ export function OnyxHome({
                   onClick={openShareSheet}
                   onPointerDown={e => e.stopPropagation()}
                 />
-              </div>
-              <div className="onyx-yy-phrase">
-                <button
-                  type="button"
-                  className="onyx-yy-phrase-btn"
-                  onClick={e => {
-                    e.stopPropagation();
-                    enterDoor("center");
-                  }}
-                >
-                  <p className="big">{momentLine}</p>
-                </button>
               </div>
             </div>
             <div className="onyx-compass-dirs onyx-yy-dirs">

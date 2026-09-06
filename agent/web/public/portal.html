@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06g -->
+<!-- build: 2026-09-06h -->
 <script>
 (function(){
-  var BUILD='2026-09-06g';
+  var BUILD='2026-09-06h';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -227,12 +227,17 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.3),inset 0 -8px 20px rgba(0,0,0,.28),0 13px 28px rgba(0,0,0,.44),0 0 18px rgba(140,116,235,.2);
   }
   .screen button:active,.backhome:active,.modal button:active,.gate button:active{transform:translateY(1px) scale(.985)}
-  .screen :is(.ledge,.card,.controls,.panel-card),.modal,.gate .box{
-    border:1px solid rgba(183,168,255,.25)!important;
-    background:linear-gradient(145deg,rgba(255,255,255,.09),transparent 24%),radial-gradient(circle at 18% 0,rgba(151,128,226,.14),transparent 45%),linear-gradient(160deg,rgba(23,18,41,.94),rgba(4,3,10,.97))!important;
-    box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -22px 40px rgba(0,0,0,.25),0 16px 44px rgba(0,0,0,.42);
-    backdrop-filter:blur(20px) saturate(1.16);
+  .screen :is(.ledge,.card,.controls,.panel-card),.modal,.gate .box,.covcard,.scalerow .idx{
+    --cut:12px;
+    border:0!important;border-radius:0!important;
+    background:
+      linear-gradient(125deg,rgba(255,255,255,.28) 0%,transparent 22%),
+      linear-gradient(180deg,hsla(272,42%,38%,.55) 0%,hsla(268,24%,8%,.96) 72%)!important;
+    clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 -28px 48px rgba(0,0,0,.4),0 16px 36px rgba(0,0,0,.5);
+    backdrop-filter:none;
   }
+  .scalerow .idx{--cut:6px}
 </style>
 <style id="studies-css">
   #screen-studies{background:#010504}

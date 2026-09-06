@@ -102,48 +102,49 @@
 
 /* ── Device access gate ─────────────────────────────────────────────────── */
 .onyx-access-gate {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 28px;
-  padding: 48px 28px calc(32px + env(safe-area-inset-bottom, 0px));
+  display: grid;
+  place-items: center;
+  padding: 0;
   text-align: center;
   overflow: hidden;
 }
-.onyx-access-copy {
-  max-width: 320px;
+.onyx-access-film {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  background: #000;
+}
+.onyx-access-film video {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  min-width: 100%;
+  min-height: 100%;
+  width: auto;
+  height: auto;
+  transform: translate(-50%, -50%) scale(1.16);
+  object-fit: cover;
+  filter: grayscale(0.45) contrast(1.08) brightness(0.42) saturate(0.85);
+}
+.onyx-access-dim {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(0, 0, 0, 0.52);
+  pointer-events: none;
+}
+.onyx-access-cta {
+  appearance: none;
+  position: relative;
+  z-index: 3;
+  width: min(72vw, 280px);
+  padding: 28px 22px 26px;
+  margin: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 14px;
-}
-.onyx-access-phrase {
-  font-family: var(--font-voice);
-  font-size: 24px;
-  line-height: 1.3;
-  color: var(--onyx-ink-bright);
-  margin: 0;
-  text-wrap: balance;
-}
-.onyx-access-lead {
-  font-family: var(--font-voice);
-  font-size: 15px;
-  line-height: 1.45;
-  color: var(--onyx-ink-soft);
-  margin: 0;
-  text-wrap: pretty;
-}
-.onyx-access-cta {
-  appearance: none;
-  background: none;
-  border: 0;
-  padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 10px;
   cursor: pointer;
   color: inherit;
   font-family: inherit;
@@ -155,8 +156,9 @@
 }
 .onyx-access-cta-gem {
   position: relative;
-  width: 168px;
-  height: 236px;
+  z-index: 1;
+  width: 132px;
+  height: 176px;
   display: grid;
   place-items: center;
   transition: transform 320ms ease, filter 320ms ease;
@@ -186,22 +188,20 @@
   pointer-events: none;
 }
 .onyx-access-cta-gem .onyx-crystal {
-  width: 148px;
-  height: 208px;
+  width: 118px;
+  height: 166px;
 }
 .onyx-access-cta-label {
+  position: relative;
+  z-index: 1;
   font-size: 13px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--onyx-ink-bright);
-}
-.onyx-access-cta-sub {
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--onyx-ink-quiet);
+  color: #f6f2ff;
 }
 .onyx-access-build {
   position: absolute;
+  z-index: 3;
   bottom: max(18px, env(safe-area-inset-bottom));
   left: 0;
   right: 0;
@@ -582,15 +582,15 @@
   display: flex; flex-direction: column; align-items: center; padding: 0 34px; text-align: center;
 }
 .onyx-yy-phrase {
-  /* Sit above the taijitu — between the moon and the marble, not on it. */
+  /* Screen axis: center = 50%, top = 100% → sit at 75% (CSS top 25%). */
   position: absolute;
   left: 50%;
-  top: 0;
-  transform: translate(-50%, calc(-100% - 14px));
+  top: 25%;
+  transform: translate(-50%, -50%);
   z-index: 11;
-  width: min(78vw, 340px);
+  width: min(86vw, 420px);
   max-height: none;
-  padding: 0 8px;
+  padding: 0 12px;
   margin: 0;
   display: flex;
   flex-direction: column;
@@ -643,13 +643,14 @@
 .onyx-yy-phrase .big {
   margin: 0 auto;
   width: 100%;
-  font-size: clamp(12px, 2.8vmin, 17px);
-  line-height: 1.35;
+  font-size: clamp(18px, 4.6vmin, 28px);
+  line-height: 1.32;
+  letter-spacing: -0.02em;
   text-align: center;
   text-wrap: balance;
   color: #f7f4ee;
   text-shadow:
-    0 0 14px rgba(0, 0, 0, 0.95),
+    0 0 18px rgba(0, 0, 0, 0.95),
     0 1px 3px rgba(0, 0, 0, 1),
     0 0 2px #000;
 }
@@ -801,7 +802,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   height: 100%;
   z-index: 1;
   pointer-events: none;
-  overflow: visible;
+  /* Clip the dial to the rose so a bad origin cannot paint across the street. */
+  overflow: hidden;
   margin: 0;
   padding: 0;
   display: block;
@@ -833,10 +835,9 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   letter-spacing: 0.16em;
 }
 .onyx-compass-dial {
-  /* SVG rotate() already pivots on viewBox (50 50). A CSS 50px origin
-     is device pixels — walking/heading updates then orbit the ring off the marble. */
-  transform: none;
-  transform-origin: unset;
+  /* Nested 100×100 svg — fill-box 50% is the marble, never 50 device-px. */
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
 }
 .onyx-compass-needle {
   transition: opacity 180ms ease;
@@ -3028,6 +3029,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
 }
 
 :is(
+  .onyx-cut,
   .onyx-tool-btn,
   .onyx-primary-btn,
   .onyx-ghost-btn,
@@ -3038,10 +3040,16 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-share-row,
   .onyx-share-cancel,
   .onyx-distill-pick,
+  .onyx-distill-chip,
   .onyx-time-filter,
   .onyx-orrery-filter-btn,
   .onyx-overlay-close,
-  .onyx-sky-back
+  .onyx-sky-back,
+  .onyx-sky-align-btn,
+  .onyx-you-chip,
+  .onyx-why,
+  .onyx-filt,
+  .onyx-access-cta
 ) {
   --cut: 10px;
   --gem: 272 54% 46%;
@@ -3078,6 +3086,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   transition: filter 180ms ease, transform 180ms ease;
 }
 :is(
+  .onyx-cut,
   .onyx-tool-btn,
   .onyx-primary-btn,
   .onyx-ghost-btn,
@@ -3088,10 +3097,16 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-share-row,
   .onyx-share-cancel,
   .onyx-distill-pick,
+  .onyx-distill-chip,
   .onyx-time-filter,
   .onyx-orrery-filter-btn,
   .onyx-overlay-close,
-  .onyx-sky-back
+  .onyx-sky-back,
+  .onyx-sky-align-btn,
+  .onyx-you-chip,
+  .onyx-why,
+  .onyx-filt,
+  .onyx-access-cta
 )::before {
   content: "";
   position: absolute;
@@ -3114,6 +3129,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
     inset 0 0 0 11px rgba(0, 0, 0, 0.22);
 }
 :is(
+  .onyx-cut,
   .onyx-tool-btn,
   .onyx-primary-btn,
   .onyx-ghost-btn,
@@ -3124,10 +3140,16 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-share-row,
   .onyx-share-cancel,
   .onyx-distill-pick,
+  .onyx-distill-chip,
   .onyx-time-filter,
   .onyx-orrery-filter-btn,
   .onyx-overlay-close,
-  .onyx-sky-back
+  .onyx-sky-back,
+  .onyx-sky-align-btn,
+  .onyx-you-chip,
+  .onyx-why,
+  .onyx-filt,
+  .onyx-access-cta
 )::after {
   content: "";
   position: absolute;
@@ -3149,6 +3171,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   mix-blend-mode: soft-light;
 }
 :is(
+  .onyx-cut,
   .onyx-tool-btn,
   .onyx-primary-btn,
   .onyx-ghost-btn,
@@ -3158,14 +3181,21 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-share-row,
   .onyx-share-cancel,
   .onyx-distill-pick,
+  .onyx-distill-chip,
   .onyx-time-filter,
-  .onyx-orrery-filter-btn
+  .onyx-orrery-filter-btn,
+  .onyx-sky-align-btn,
+  .onyx-you-chip,
+  .onyx-why,
+  .onyx-filt,
+  .onyx-access-cta
 ):is(:hover, :focus-visible) {
   transform: translateY(-1px);
   filter: drop-shadow(0 14px 22px rgba(0, 0, 0, 0.52)) brightness(1.12);
   outline: none;
 }
 :is(
+  .onyx-cut,
   .onyx-tool-btn,
   .onyx-primary-btn,
   .onyx-ghost-btn,
@@ -3175,8 +3205,14 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-share-row,
   .onyx-share-cancel,
   .onyx-distill-pick,
+  .onyx-distill-chip,
   .onyx-time-filter,
-  .onyx-orrery-filter-btn
+  .onyx-orrery-filter-btn,
+  .onyx-sky-align-btn,
+  .onyx-you-chip,
+  .onyx-why,
+  .onyx-filt,
+  .onyx-access-cta
 ):active {
   transform: translateY(1px) scale(0.99);
   filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4)) brightness(0.94);
@@ -3187,9 +3223,18 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orrery-filter-btn,
 .onyx-overlay-close,
 .onyx-sky-back,
+.onyx-sky-align-btn,
+.onyx-you-chip,
+.onyx-distill-chip,
+.onyx-filt,
 .onyx-ghost-btn {
   --cut: 6px;
   --steps: 4px;
+}
+.onyx-access-cta {
+  --cut: 22px;
+  --gem: 272 48% 40%;
+  --steps: 10px;
 }
 .onyx-cut-amethyst { --gem: 272 54% 46%; }
 .onyx-cut-sapphire { --gem: 218 68% 44%; }
@@ -3210,6 +3255,10 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-about-block,
   .onyx-held,
   .onyx-cast-frame,
+  .onyx-cast-result,
+  .onyx-cast-card-face,
+  .onyx-cast-spread-slot,
+  .onyx-you-divinations-body,
   .onyx-place-field
 ) {
   --cut: 14px;

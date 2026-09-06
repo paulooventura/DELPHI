@@ -10,6 +10,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
+import {
+  getClockAudio,
+  playHelekMark,
+  playPalaMark,
+  playPranaMark,
+} from "../../lib/clockSfx";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
   computeOrreryState,
@@ -19,6 +25,8 @@ import {
   type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
+
+const SONIC_LANES = new Set<OrreryLaneId>(["helek", "prana", "pala"]);
 
 type LaneFilter = "full" | "clock" | "calendar";
 
@@ -125,38 +133,17 @@ export function OnyxOrrery({
       ctx.rect(0, 0, w, h);
       ctx.clip();
 
-      const padX = 12;
-      const padTop = 8;
-      const slowH = 52;
-      const laneGap = 2;
+      const padX = 8;
+      const padTop = 6;
+      const laneGap = 3;
       // Single shared centerline for every lane — fixed, unmoving.
       const nowX = w * 0.5;
-      const avail = h - padTop - slowH - 8;
-      const laneH = Math.max(18, (avail - laneGap * (lanes.length - 1)) / lanes.length);
+      const avail = h - padTop - 8;
+      const laneH = Math.max(22, (avail - laneGap * (lanes.length - 1)) / lanes.length);
       const hits: { y0: number; y1: number; id: string }[] = [];
+      void slowSky;
 
-      ctx.fillStyle = "rgba(40, 55, 140, 0.22)";
-      ctx.fillRect(padX, padTop, w - padX * 2, slowH - 4);
-      ctx.strokeStyle = "rgba(90, 120, 220, 0.35)";
-      ctx.lineWidth = 0.5;
-      ctx.strokeRect(padX + 0.5, padTop + 0.5, w - padX * 2 - 1, slowH - 5);
-      ctx.font = "600 8px ui-sans-serif, system-ui, sans-serif";
-      ctx.fillStyle = "rgba(160, 175, 255, 0.55)";
-      ctx.textAlign = "left";
-      ctx.fillText("SLOW SKY", padX + 8, padTop + 12);
-      ctx.font = "10px ui-sans-serif, system-ui, sans-serif";
-      slowSky.forEach((s, i) => {
-        const col = i % 2;
-        const row = Math.floor(i / 2);
-        const x = padX + 8 + col * ((w - padX * 2) / 2);
-        const y = padTop + 26 + row * 14;
-        ctx.fillStyle = s.tier === "measured"
-          ? "rgba(220, 225, 255, 0.85)"
-          : "rgba(180, 190, 230, 0.65)";
-        ctx.fillText(`${s.label} · ${s.value}`, x, y);
-      });
-
-      let y = padTop + slowH;
+      let y = padTop;
       for (const lane of lanes) {
         const y0 = y;
         const y1 = y + laneH;
@@ -165,29 +152,31 @@ export function OnyxOrrery({
         const isMs = lane.id === "ms";
         const isFast = lane.speedT < 0.25;
         const discrete = laneMotion(lane.id) === "discrete-tick";
-        const band = laneColor(lane.speedT, lane.tier === "measured" ? 0.2 : 0.14);
-        ctx.fillStyle = band;
-        ctx.fillRect(padX, y0, w - padX * 2, laneH);
-
-        const cellW = isFast ? 28 : Math.max(52, Math.min(88, (w - padX * 2) / 5.5));
+        const cellW = isFast ? 32 : Math.max(56, Math.min(92, (w - padX * 2) / 5.2));
         const n = lane.cells.length || 1;
 
         // True phase offset — never hold at cell-start.
         const startX = laneScrollStartX(nowX, lane.index, lane.progress, cellW);
 
-        if (discrete) {
-          const prevIdx = lastIndex.get(lane.id);
-          if (prevIdx !== undefined && prevIdx !== lane.index) {
-            if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
-            nowPulseRef.current = Math.max(nowPulseRef.current, 0.7);
-          } else if (lane.progress > 0.92) {
-            nowPulseRef.current = Math.max(
-              nowPulseRef.current,
-              0.35 + (lane.progress - 0.92) * 4,
-            );
+        const prevIdx = lastIndex.get(lane.id);
+        if (prevIdx !== undefined && prevIdx !== lane.index) {
+          if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
+          nowPulseRef.current = Math.max(nowPulseRef.current, 0.7);
+          if (SONIC_LANES.has(lane.id)) {
+            const audio = getClockAudio();
+            if (audio?.state === "running") {
+              if (lane.id === "helek") playHelekMark(audio);
+              else if (lane.id === "prana") playPranaMark(audio);
+              else playPalaMark(audio);
+            }
           }
-          lastIndex.set(lane.id, lane.index);
+        } else if (discrete && lane.progress > 0.92) {
+          nowPulseRef.current = Math.max(
+            nowPulseRef.current,
+            0.35 + (lane.progress - 0.92) * 4,
+          );
         }
+        lastIndex.set(lane.id, lane.index);
 
         const first = Math.floor((-startX - cellW) / cellW);
         const last = Math.ceil((w - startX) / cellW) + 1;
@@ -201,64 +190,35 @@ export function OnyxOrrery({
           const atNow = ci === underLine;
 
           if (isMs) {
-            const g = ctx.createLinearGradient(x, y0, x + cellW, y0);
-            g.addColorStop(0, laneColor(0, 0.05));
-            g.addColorStop(0.5, laneColor(0, 0.55));
-            g.addColorStop(1, laneColor(0, 0.05));
-            ctx.fillStyle = g;
-            ctx.fillRect(x + 1, y0 + 2, cellW - 2, laneH - 4);
+            drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, true);
             continue;
           }
 
-          if (atNow) {
-            ctx.fillStyle = laneColor(lane.speedT, 0.45);
-            ctx.fillRect(x + 1, y0 + 2, cellW - 2, laneH - 4);
-            if (lane.tier === "measured") {
-              ctx.strokeStyle = "rgba(240, 245, 255, 0.55)";
-              ctx.lineWidth = 1;
-              ctx.strokeRect(x + 1.5, y0 + 2.5, cellW - 3, laneH - 5);
-            }
-          } else {
-            ctx.fillStyle = "rgba(255,255,255,0.03)";
-            ctx.fillRect(x + 1, y0 + 3, cellW - 2, laneH - 6);
-          }
+          drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, atNow, false);
 
-          if (!isFast || atNow) {
-            ctx.fillStyle = atNow
-              ? "rgba(255,255,255,0.92)"
-              : "rgba(200,205,230,0.4)";
-            ctx.font = atNow
-              ? "600 10px ui-sans-serif, system-ui, sans-serif"
-              : "10px ui-sans-serif, system-ui, sans-serif";
+          if (atNow) {
+            ctx.fillStyle = "rgba(255,255,255,0.94)";
+            ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            const label = cell.glyph && cellW > 60
-              ? `${cell.glyph} ${short(cell.label, 10)}`
-              : short(cell.label || cell.glyph || "", cellW > 70 ? 12 : 6);
-            ctx.fillText(label, x + cellW / 2, y0 + laneH / 2 + 0.5);
+            const label = short(cell.label || cell.glyph || lane.name, cellW > 70 ? 12 : 8);
+            ctx.fillText(label, x + cellW / 2, y0 + laneH / 2 + 1);
           }
-        }
-
-        ctx.textAlign = "left";
-        ctx.textBaseline = "alphabetic";
-        ctx.font = "600 8px ui-sans-serif, system-ui, sans-serif";
-        ctx.fillStyle = laneColor(lane.speedT, 0.75);
-        const nameY = y0 + 10;
-        const name = lane.name.toUpperCase();
-        ctx.fillText(name, padX + 6, nameY);
-        if (lane.tier === "measured") {
-          ctx.fillStyle = "rgba(230,235,255,0.45)";
-          ctx.font = "7px ui-sans-serif, system-ui, sans-serif";
-          ctx.fillText("MEASURED", padX + 6 + ctx.measureText(name).width + 6, nameY);
-        } else if (lane.tier === "celebrated") {
-          ctx.fillStyle = "rgba(200,180,140,0.4)";
-          ctx.font = "7px ui-sans-serif, system-ui, sans-serif";
-          ctx.fillText("CELEBRATED", padX + 6 + ctx.measureText(name).width + 6, nameY);
         }
 
         y = y1 + laneGap;
       }
       hitRef.current = hits;
+
+      const fade = ctx.createLinearGradient(0, 0, w, 0);
+      fade.addColorStop(0, "rgba(0,0,0,0.94)");
+      fade.addColorStop(0.16, "rgba(0,0,0,0.55)");
+      fade.addColorStop(0.34, "rgba(0,0,0,0)");
+      fade.addColorStop(0.66, "rgba(0,0,0,0)");
+      fade.addColorStop(0.84, "rgba(0,0,0,0.55)");
+      fade.addColorStop(1, "rgba(0,0,0,0.94)");
+      ctx.fillStyle = fade;
+      ctx.fillRect(0, 0, w, h);
 
       const pulse = nowPulseRef.current;
       const lineA = 0.75 + pulse * 0.25;
@@ -341,7 +301,6 @@ export function OnyxOrrery({
             )}
           </div>
         </div>
-        <p className="onyx-orrery-sub">Read down the now-line · tap a lane</p>
         <div className="onyx-orrery-wrap" ref={wrapRef}>
           <canvas
             ref={canvasRef}
@@ -431,4 +390,71 @@ function mod(n: number, m: number): number {
 function short(s: string, max: number): string {
   if (s.length <= max) return s;
   return `${s.slice(0, max - 1)}…`;
+}
+
+function gemCutPath(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  cut: number,
+) {
+  ctx.beginPath();
+  ctx.moveTo(x + cut, y);
+  ctx.lineTo(x + w - cut, y);
+  ctx.lineTo(x + w, y + cut);
+  ctx.lineTo(x + w, y + h - cut);
+  ctx.lineTo(x + w - cut, y + h);
+  ctx.lineTo(x + cut, y + h);
+  ctx.lineTo(x, y + h - cut);
+  ctx.lineTo(x, y + cut);
+  ctx.closePath();
+}
+
+function drawGemCell(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  speedT: number,
+  atNow: boolean,
+  streak: boolean,
+) {
+  if (w < 4 || h < 4) return;
+  const cut = Math.min(7, w * 0.2, h * 0.32);
+  const g = ctx.createLinearGradient(x, y, x + w, y + h);
+  if (streak) {
+    g.addColorStop(0, laneColor(0, 0.04));
+    g.addColorStop(0.5, laneColor(0, 0.5));
+    g.addColorStop(1, laneColor(0, 0.04));
+  } else if (atNow) {
+    g.addColorStop(0, "rgba(255,255,255,0.42)");
+    g.addColorStop(0.18, laneColor(speedT, 0.72));
+    g.addColorStop(0.55, laneColor(speedT, 0.38));
+    g.addColorStop(1, "rgba(8,6,16,0.92)");
+  } else {
+    g.addColorStop(0, "rgba(255,255,255,0.1)");
+    g.addColorStop(0.22, laneColor(speedT, 0.16));
+    g.addColorStop(1, "rgba(6,4,12,0.7)");
+  }
+  ctx.save();
+  gemCutPath(ctx, x, y, w, h, cut);
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.clip();
+  const inset = Math.max(2, cut * 0.45);
+  gemCutPath(ctx, x + inset, y + inset, w - inset * 2, h - inset * 2, cut * 0.7);
+  ctx.strokeStyle = atNow ? "rgba(255,255,255,0.38)" : "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  if (atNow) {
+    const table = ctx.createLinearGradient(x, y, x + w * 0.55, y + h * 0.45);
+    table.addColorStop(0, "rgba(255,255,255,0.34)");
+    table.addColorStop(1, "rgba(255,255,255,0)");
+    ctx.fillStyle = table;
+    ctx.fillRect(x, y, w, h * 0.55);
+  }
+  ctx.restore();
 }

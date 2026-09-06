@@ -5,7 +5,9 @@
  *
  * Geographic dial (N/E/S/W + ticks) rotates from device heading so aiming
  * the phone north brings N under the fixed lubber line at the top.
- * Door labels stay screen-fixed; drag aim still lights UI doors.
+ * Rotation is CSS on a nested svg (fill-box, 50% 50%) — WebKit promotes
+ * SVG rotate(θ cx cy) to CSS and then applies a device-pixel origin, which
+ * made the ring orbit off the marble.
  */
 
 import { useId, useMemo } from "react";
@@ -17,13 +19,6 @@ const GEO_CARDINALS: { letter: string; angle: number }[] = [
   { letter: "E", angle: 90 },
   { letter: "S", angle: 180 },
   { letter: "W", angle: 270 },
-];
-
-const DOOR_LABELS: { dir: CompassRoseDir; label: string; angle: number }[] = [
-  { dir: "up", label: "sky", angle: 0 },
-  { dir: "right", label: "orrery", angle: 90 },
-  { dir: "down", label: "tonal", angle: 180 },
-  { dir: "left", label: "studies", angle: 270 },
 ];
 
 function normalizeHeading(deg: number): number {
@@ -59,8 +54,6 @@ export function OnyxCompassRose({
   const heading = live ? normalizeHeading(headingDeg!) : 0;
   // Dial rotates opposite the phone turn so world-north stays world-north.
   const dialDeg = live ? -heading : 0;
-  const facing = live ? facingCardinal(heading) : "—";
-  const facingDeg = live ? Math.round(heading) : null;
 
   const dist = Math.hypot(follow.x, follow.y);
   const dragNeedleDeg =
@@ -69,9 +62,9 @@ export function OnyxCompassRose({
 
   const ticks = useMemo(
     () =>
-      Array.from({ length: 72 }, (_, i) => {
-        const a = (i * 5 * Math.PI) / 180;
-        const major = i % 6 === 0;
+      Array.from({ length: 36 }, (_, i) => {
+        const a = (i * 10 * Math.PI) / 180;
+        const major = i % 3 === 0;
         const r0 = major ? 42.2 : 43.6;
         const r1 = 45.4;
         return {
@@ -142,10 +135,20 @@ export function OnyxCompassRose({
       />
       <circle cx="50" cy="50" r="46" fill={`url(#${uid}-glass)`} />
 
-      {/* Geographic dial — rotates with device heading */}
-      <g
+      {/* Nested svg so fill-box origin is the marble, not a 50px device origin. */}
+      <svg
         className="onyx-compass-dial"
-        transform={`rotate(${dialDeg.toFixed(2)} 50 50)`}
+        x="0"
+        y="0"
+        width="100"
+        height="100"
+        viewBox="0 0 100 100"
+        overflow="visible"
+        style={{
+          transform: `rotate(${dialDeg}deg)`,
+          transformOrigin: "50% 50%",
+          transformBox: "fill-box",
+        }}
       >
         {ticks.map(t => (
           <line
@@ -173,21 +176,18 @@ export function OnyxCompassRose({
               dominantBaseline="central"
               className={`onyx-compass-letter${isN ? " north" : ""}`}
               fill={isN ? "#ff6b6b" : "rgba(210,200,240,0.78)"}
-              // Counter-rotate so letters stay upright while the dial turns.
-              transform={`rotate(${(-dialDeg).toFixed(2)} ${lx} ${ly})`}
             >
               {letter}
             </text>
           );
         })}
 
-        {/* North tip painted on the dial */}
         <path
           d="M 50 16.2 L 51.4 20.4 L 48.6 20.4 Z"
           fill="#ff6b6b"
           opacity={live ? 0.95 : 0.4}
         />
-      </g>
+      </svg>
 
       {/* Inner aperture framing the marble */}
       <circle
@@ -207,28 +207,6 @@ export function OnyxCompassRose({
         strokeWidth="1.1"
       />
 
-      {/* Screen-fixed door labels (UI doors, not geography) */}
-      {DOOR_LABELS.map(({ dir, label, angle }) => {
-        const rad = (angle * Math.PI) / 180;
-        const tx = 50 + 34.0 * Math.sin(rad);
-        const ty = 50 - 34.0 * Math.cos(rad);
-        const on = lit === dir;
-        return (
-          <text
-            key={dir}
-            x={tx}
-            y={ty}
-            textAnchor="middle"
-            dominantBaseline="central"
-            className={`onyx-compass-door${on ? " on" : ""}`}
-            fill={on ? "rgba(200,188,255,0.95)" : "rgba(140,130,180,0.4)"}
-            filter={on ? `url(#${uid}-glow)` : undefined}
-          >
-            {label}
-          </text>
-        );
-      })}
-
       {/* Fixed lubber line — top of the phone = direction you face */}
       <g className="onyx-compass-lubber">
         <path
@@ -245,18 +223,6 @@ export function OnyxCompassRose({
           strokeWidth="0.55"
         />
       </g>
-
-      {/* Facing readout */}
-      <text
-        x="50"
-        y="27.2"
-        textAnchor="middle"
-        dominantBaseline="central"
-        className="onyx-compass-facing"
-        fill={live ? "rgba(244,240,255,0.92)" : "rgba(160,150,190,0.45)"}
-      >
-        {live ? `${facing} · ${facingDeg}°` : "aim phone"}
-      </text>
 
       {/* Door-aim wedge (screen-fixed) */}
       {lit && (
