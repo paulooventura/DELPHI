@@ -88,6 +88,8 @@ export type OnyxHomeProps = {
   pulseEnabled?: boolean;
   onPulseEnabledChange?: (on: boolean) => void;
   sensorsUnlocked?: boolean;
+  /** Live device look azimuth (0 = north). Drives the home compass dial. */
+  headingDeg?: number | null;
 };
 
 export function OnyxHome({
@@ -122,6 +124,7 @@ export function OnyxHome({
   pulseEnabled = true,
   onPulseEnabledChange,
   sensorsUnlocked = false,
+  headingDeg = null,
 }: OnyxHomeProps) {
   const [depth, setDepth] = useState(0);
   const [datesOpen, setDatesOpen] = useState(false);
@@ -729,6 +732,7 @@ export function OnyxHome({
                 active={compassAim ?? gemSpin ?? null}
                 follow={compassFollow}
                 holding={compassLocked || Boolean(gemSpin)}
+                headingDeg={headingDeg}
               />
               <div className="onyx-yy-gem-nest">
                 <button

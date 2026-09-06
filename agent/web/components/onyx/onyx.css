@@ -798,16 +798,32 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-compass-letter {
   font-family: var(--font-ui);
-  font-size: 4.6px;
+  font-size: 4.8px;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
+.onyx-compass-letter.north {
+  font-size: 5.4px;
+}
 .onyx-compass-door {
   font-family: var(--font-ui);
-  font-size: 2.35px;
+  font-size: 2.2px;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
+}
+.onyx-compass-door.on {
+  font-size: 2.45px;
+  font-weight: 700;
+}
+.onyx-compass-facing {
+  font-family: var(--font-ui);
+  font-size: 3.1px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+}
+.onyx-compass-dial {
+  transform-origin: 50px 50px;
 }
 .onyx-compass-needle {
   transition: opacity 180ms ease;
@@ -817,11 +833,11 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   opacity: 1;
   transition: opacity 80ms linear;
 }
-.onyx-compass-rose.holding .onyx-compass-cardinal:not(.on) .onyx-compass-letter {
-  fill: rgba(180, 170, 220, 0.42);
+.onyx-compass-rose.idle .onyx-compass-dial {
+  opacity: 0.72;
 }
-.onyx-compass-cardinal.on .onyx-compass-letter {
-  font-size: 5.2px;
+.onyx-compass-rose.live .onyx-compass-lubber path {
+  fill: #f4f0ff;
 }
 .onyx-yy-gem-nest {
   position: absolute;

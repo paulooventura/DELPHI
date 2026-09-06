@@ -1,73 +1,120 @@
 "use client";
 
 /**
- * Glossy compass bezel that envelops the home taijitu.
- * Needle tracks the drag vector; cardinals light when a door is aimed.
+ * Glossy compass bezel around the home taijitu.
+ *
+ * Geographic dial (N/E/S/W + ticks) rotates from device heading so aiming
+ * the phone north brings N under the fixed lubber line at the top.
+ * Door labels stay screen-fixed; drag aim still lights UI doors.
  */
+
+import { useId, useMemo } from "react";
 
 export type CompassRoseDir = "up" | "down" | "left" | "right";
 
-const CARDINALS: {
-  dir: CompassRoseDir;
-  letter: string;
-  label: string;
-  angle: number;
-}[] = [
-  { dir: "up", letter: "N", label: "sky", angle: 0 },
-  { dir: "right", letter: "E", label: "orrery", angle: 90 },
-  { dir: "down", letter: "S", label: "tonal", angle: 180 },
-  { dir: "left", letter: "W", label: "studies", angle: 270 },
+const GEO_CARDINALS: { letter: string; angle: number }[] = [
+  { letter: "N", angle: 0 },
+  { letter: "E", angle: 90 },
+  { letter: "S", angle: 180 },
+  { letter: "W", angle: 270 },
 ];
+
+const DOOR_LABELS: { dir: CompassRoseDir; label: string; angle: number }[] = [
+  { dir: "up", label: "sky", angle: 0 },
+  { dir: "right", label: "orrery", angle: 90 },
+  { dir: "down", label: "tonal", angle: 180 },
+  { dir: "left", label: "studies", angle: 270 },
+];
+
+function normalizeHeading(deg: number): number {
+  return ((deg % 360) + 360) % 360;
+}
+
+/** Short label for the direction the phone is facing. */
+export function facingCardinal(headingDeg: number): string {
+  const h = normalizeHeading(headingDeg);
+  const names = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"] as const;
+  return names[Math.round(h / 45) % 8]!;
+}
 
 export function OnyxCompassRose({
   active = null,
   follow = { x: 0, y: 0 },
   holding = false,
+  headingDeg = null,
 }: {
   active?: CompassRoseDir | "center" | null;
   follow?: { x: number; y: number };
   holding?: boolean;
+  /** Device look azimuth in degrees — 0 = geographic north, clockwise. */
+  headingDeg?: number | null;
 }) {
+  const uid = useId().replace(/:/g, "");
   const lit: CompassRoseDir | null =
     active === "up" || active === "down" || active === "left" || active === "right"
       ? active
       : null;
 
+  const live = headingDeg != null && Number.isFinite(headingDeg);
+  const heading = live ? normalizeHeading(headingDeg!) : 0;
+  // Dial rotates opposite the phone turn so world-north stays world-north.
+  const dialDeg = live ? -heading : 0;
+  const facing = live ? facingCardinal(heading) : "—";
+  const facingDeg = live ? Math.round(heading) : null;
+
   const dist = Math.hypot(follow.x, follow.y);
-  // 0° = up (N). Follows pointer even before a cardinal locks.
-  const needleDeg =
+  const dragNeedleDeg =
     dist > 2 ? (Math.atan2(follow.x, -follow.y) * 180) / Math.PI : 0;
-  const needleOn = holding && dist > 6;
+  const dragOn = holding && dist > 6;
+
+  const ticks = useMemo(
+    () =>
+      Array.from({ length: 72 }, (_, i) => {
+        const a = (i * 5 * Math.PI) / 180;
+        const major = i % 6 === 0;
+        const r0 = major ? 42.2 : 43.6;
+        const r1 = 45.4;
+        return {
+          i,
+          major,
+          x0: 50 + r0 * Math.sin(a),
+          y0: 50 - r0 * Math.cos(a),
+          x1: 50 + r1 * Math.sin(a),
+          y1: 50 - r1 * Math.cos(a),
+        };
+      }),
+    [],
+  );
 
   return (
     <svg
-      className={`onyx-compass-rose${holding ? " holding" : ""}${lit ? " aiming" : ""}`}
+      className={`onyx-compass-rose${holding ? " holding" : ""}${lit ? " aiming" : ""}${live ? " live" : " idle"}`}
       viewBox="0 0 100 100"
       aria-hidden
       focusable="false"
     >
       <defs>
-        <linearGradient id="ocr-bezel" x1="18%" y1="8%" x2="82%" y2="92%">
+        <linearGradient id={`${uid}-bezel`} x1="18%" y1="8%" x2="82%" y2="92%">
           <stop offset="0%" stopColor="#e8e0ff" stopOpacity="0.72" />
           <stop offset="28%" stopColor="#8a7bff" stopOpacity="0.55" />
           <stop offset="58%" stopColor="#2a1a48" stopOpacity="0.9" />
           <stop offset="100%" stopColor="#c8b8ff" stopOpacity="0.38" />
         </linearGradient>
-        <linearGradient id="ocr-rim" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id={`${uid}-rim`} x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#f4f0ff" stopOpacity="0.55" />
           <stop offset="45%" stopColor="#6c5cff" stopOpacity="0.25" />
           <stop offset="100%" stopColor="#0a0614" stopOpacity="0.85" />
         </linearGradient>
-        <radialGradient id="ocr-glass" cx="38%" cy="28%" r="68%">
+        <radialGradient id={`${uid}-glass`} cx="38%" cy="28%" r="68%">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.22" />
           <stop offset="42%" stopColor="#a99cff" stopOpacity="0.06" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0" />
         </radialGradient>
-        <radialGradient id="ocr-well" cx="50%" cy="50%" r="50%">
+        <radialGradient id={`${uid}-well`} cx="50%" cy="50%" r="50%">
           <stop offset="70%" stopColor="#000000" stopOpacity="0" />
           <stop offset="100%" stopColor="#000000" stopOpacity="0.45" />
         </radialGradient>
-        <filter id="ocr-glow" x="-40%" y="-40%" width="180%" height="180%">
+        <filter id={`${uid}-glow`} x="-40%" y="-40%" width="180%" height="180%">
           <feGaussianBlur stdDeviation="1.4" result="b" />
           <feMerge>
             <feMergeNode in="b" />
@@ -76,47 +123,71 @@ export function OnyxCompassRose({
         </filter>
       </defs>
 
-      {/* Outer bezel */}
+      {/* Fixed outer bezel (does not rotate) */}
       <circle
         cx="50"
         cy="50"
         r="49.2"
         fill="none"
-        stroke="url(#ocr-bezel)"
+        stroke={`url(#${uid}-bezel)`}
         strokeWidth="1.6"
       />
       <circle
         cx="50"
         cy="50"
         r="46.4"
-        fill="url(#ocr-well)"
-        stroke="url(#ocr-rim)"
+        fill={`url(#${uid}-well)`}
+        stroke={`url(#${uid}-rim)`}
         strokeWidth="0.7"
       />
-      <circle cx="50" cy="50" r="46" fill="url(#ocr-glass)" />
+      <circle cx="50" cy="50" r="46" fill={`url(#${uid}-glass)`} />
 
-      {/* Tick marks */}
-      {Array.from({ length: 72 }, (_, i) => {
-        const a = (i * 5 * Math.PI) / 180;
-        const major = i % 6 === 0;
-        const r0 = major ? 42.2 : 43.6;
-        const r1 = 45.4;
-        const x0 = 50 + r0 * Math.sin(a);
-        const y0 = 50 - r0 * Math.cos(a);
-        const x1 = 50 + r1 * Math.sin(a);
-        const y1 = 50 - r1 * Math.cos(a);
-        return (
+      {/* Geographic dial — rotates with device heading */}
+      <g
+        className="onyx-compass-dial"
+        transform={`rotate(${dialDeg.toFixed(2)} 50 50)`}
+      >
+        {ticks.map(t => (
           <line
-            key={i}
-            x1={x0}
-            y1={y0}
-            x2={x1}
-            y2={y1}
-            stroke={major ? "rgba(232,224,255,0.55)" : "rgba(160,148,220,0.28)"}
-            strokeWidth={major ? 0.55 : 0.3}
+            key={t.i}
+            x1={t.x0}
+            y1={t.y0}
+            x2={t.x1}
+            y2={t.y1}
+            stroke={t.major ? "rgba(232,224,255,0.55)" : "rgba(160,148,220,0.28)"}
+            strokeWidth={t.major ? 0.55 : 0.3}
           />
-        );
-      })}
+        ))}
+
+        {GEO_CARDINALS.map(({ letter, angle }) => {
+          const rad = (angle * Math.PI) / 180;
+          const lx = 50 + 38.8 * Math.sin(rad);
+          const ly = 50 - 38.8 * Math.cos(rad);
+          const isN = letter === "N";
+          return (
+            <text
+              key={letter}
+              x={lx}
+              y={ly}
+              textAnchor="middle"
+              dominantBaseline="central"
+              className={`onyx-compass-letter${isN ? " north" : ""}`}
+              fill={isN ? "#ff6b6b" : "rgba(210,200,240,0.78)"}
+              // Counter-rotate so letters stay upright while the dial turns.
+              transform={`rotate(${(-dialDeg).toFixed(2)} ${lx} ${ly})`}
+            >
+              {letter}
+            </text>
+          );
+        })}
+
+        {/* North tip painted on the dial */}
+        <path
+          d="M 50 16.2 L 51.4 20.4 L 48.6 20.4 Z"
+          fill="#ff6b6b"
+          opacity={live ? 0.95 : 0.4}
+        />
+      </g>
 
       {/* Inner aperture framing the marble */}
       <circle
@@ -136,92 +207,102 @@ export function OnyxCompassRose({
         strokeWidth="1.1"
       />
 
-      {/* Cardinal letters + door labels */}
-      {CARDINALS.map(({ dir, letter, label, angle }) => {
+      {/* Screen-fixed door labels (UI doors, not geography) */}
+      {DOOR_LABELS.map(({ dir, label, angle }) => {
         const rad = (angle * Math.PI) / 180;
-        const lx = 50 + 38.6 * Math.sin(rad);
-        const ly = 50 - 38.6 * Math.cos(rad);
-        const tx = 50 + 34.2 * Math.sin(rad);
-        const ty = 50 - 34.2 * Math.cos(rad);
+        const tx = 50 + 34.0 * Math.sin(rad);
+        const ty = 50 - 34.0 * Math.cos(rad);
         const on = lit === dir;
         return (
-          <g key={dir} className={`onyx-compass-cardinal${on ? " on" : ""}`}>
-            <text
-              x={lx}
-              y={ly}
-              textAnchor="middle"
-              dominantBaseline="central"
-              className="onyx-compass-letter"
-              fill={on ? "#f4f0ff" : "rgba(210,200,240,0.72)"}
-              filter={on ? "url(#ocr-glow)" : undefined}
-            >
-              {letter}
-            </text>
-            <text
-              x={tx}
-              y={ty}
-              textAnchor="middle"
-              dominantBaseline="central"
-              className="onyx-compass-door"
-              fill={on ? "rgba(200,188,255,0.95)" : "rgba(140,130,180,0.45)"}
-            >
-              {label}
-            </text>
-          </g>
+          <text
+            key={dir}
+            x={tx}
+            y={ty}
+            textAnchor="middle"
+            dominantBaseline="central"
+            className={`onyx-compass-door${on ? " on" : ""}`}
+            fill={on ? "rgba(200,188,255,0.95)" : "rgba(140,130,180,0.4)"}
+            filter={on ? `url(#${uid}-glow)` : undefined}
+          >
+            {label}
+          </text>
         );
       })}
 
-      {/* Aim wedge on locked cardinal */}
+      {/* Fixed lubber line — top of the phone = direction you face */}
+      <g className="onyx-compass-lubber">
+        <path
+          d="M 50 3.2 L 52.6 8.6 L 47.4 8.6 Z"
+          fill="#f4f0ff"
+          filter={`url(#${uid}-glow)`}
+        />
+        <line
+          x1="50"
+          y1="8.8"
+          x2="50"
+          y2="14.5"
+          stroke="rgba(244,240,255,0.55)"
+          strokeWidth="0.55"
+        />
+      </g>
+
+      {/* Facing readout */}
+      <text
+        x="50"
+        y="27.2"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="onyx-compass-facing"
+        fill={live ? "rgba(244,240,255,0.92)" : "rgba(160,150,190,0.45)"}
+      >
+        {live ? `${facing} · ${facingDeg}°` : "aim phone"}
+      </text>
+
+      {/* Door-aim wedge (screen-fixed) */}
       {lit && (
         <path
           className="onyx-compass-wedge"
           d={wedgePath(lit)}
-          fill="rgba(169,156,255,0.18)"
-          stroke="rgba(200,188,255,0.55)"
+          fill="rgba(169,156,255,0.16)"
+          stroke="rgba(200,188,255,0.5)"
           strokeWidth="0.4"
-          filter="url(#ocr-glow)"
+          filter={`url(#${uid}-glow)`}
         />
       )}
 
-      {/* Needle — tracks pointer while holding */}
+      {/* Drag needle — only while holding for a door */}
       <g
-        className={`onyx-compass-needle${needleOn ? " on" : ""}`}
-        transform={`rotate(${needleDeg.toFixed(1)} 50 50)`}
+        className={`onyx-compass-needle${dragOn ? " on" : ""}`}
+        transform={`rotate(${dragNeedleDeg.toFixed(1)} 50 50)`}
+        opacity={dragOn ? 1 : 0}
       >
         <line
           x1="50"
           y1="50"
           x2="50"
           y2="18.5"
-          stroke="rgba(232,224,255,0.15)"
-          strokeWidth="2.2"
-          strokeLinecap="round"
-        />
-        <line
-          x1="50"
-          y1="50"
-          x2="50"
-          y2="18.5"
-          stroke={needleOn ? "#f2eeff" : "rgba(180,168,230,0.35)"}
+          stroke="#f2eeff"
           strokeWidth="0.7"
           strokeLinecap="round"
-          filter={needleOn ? "url(#ocr-glow)" : undefined}
+          filter={`url(#${uid}-glow)`}
         />
-        <circle
-          cx="50"
-          cy="18.2"
-          r={needleOn ? 1.35 : 0.9}
-          fill={needleOn ? "#fff" : "rgba(200,188,255,0.5)"}
-        />
-        <circle cx="50" cy="50" r="1.8" fill="#1a1228" stroke="rgba(220,210,255,0.55)" strokeWidth="0.45" />
-        <circle cx="50" cy="50" r="0.7" fill="#e8e0ff" />
+        <circle cx="50" cy="18.2" r="1.2" fill="#fff" />
       </g>
+
+      <circle
+        cx="50"
+        cy="50"
+        r="1.8"
+        fill="#1a1228"
+        stroke="rgba(220,210,255,0.55)"
+        strokeWidth="0.45"
+      />
+      <circle cx="50" cy="50" r="0.7" fill="#e8e0ff" />
     </svg>
   );
 }
 
 function wedgePath(dir: CompassRoseDir): string {
-  // Soft pie slice toward the aimed cardinal, between inner and outer rings.
   const center = { up: -90, right: 0, down: 90, left: 180 }[dir];
   const a0 = ((center - 18) * Math.PI) / 180;
   const a1 = ((center + 18) * Math.PI) / 180;
