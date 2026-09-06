@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06j -->
+<!-- build: 2026-09-06k -->
 <script>
 (function(){
-  var BUILD='2026-09-06j';
+  var BUILD='2026-09-06k';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -270,7 +270,7 @@
     margin:0;color:rgba(244,240,255,.72);font:500 9px/1.2 ui-monospace,monospace;letter-spacing:.24em;
     text-transform:uppercase;white-space:nowrap;text-shadow:0 2px 12px #000;
   }
-  #screen-studies .wrap{max-width:1200px;margin:0 auto;padding:64px 22px 80px}
+  #screen-studies .wrap{max-width:1200px;margin:0 auto;padding:64px 22px 80px;overflow-x:hidden}
   #screen-studies .kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.42em;color:var(--fog);text-transform:uppercase;margin:0 0 14px;text-align:center}
   #screen-studies h1.title{font-family:var(--serif);font-weight:500;font-size:clamp(30px,6vw,52px);margin:0;text-align:center;letter-spacing:.01em}
   #screen-studies .sub{color:var(--fog);max-width:64ch;margin:13px auto 0;font-size:14.5px;text-align:center}
@@ -452,11 +452,12 @@
   .polepair{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;margin-top:14px;color:var(--fogd)}
   .polepair .yn{color:var(--cool)}.polepair .yg{color:var(--red)}
 
-  /* Quiet Studies — swipe deck, sticky axis, horizontal scales */
+  /* Quiet Studies — polarity first; swipe left for substances, right for home */
   #screen-studies .tabs{display:none}
-  .studies-deck{display:flex;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;margin:0 -22px;padding:0 22px}
-  .studies-deck::-webkit-scrollbar{display:none}
-  .studies-deck .tabpanel{display:block;flex:0 0 100%;width:100%;scroll-snap-align:start;min-width:100%}
+  .studies-deck{overflow:hidden;width:100%;margin:0;padding:0;touch-action:pan-y}
+  .studies-track{display:flex;width:200%;transform:translateX(-50%);transition:transform .36s cubic-bezier(.2,.8,.3,1)}
+  .studies-deck.is-hr .studies-track{transform:translateX(0)}
+  .studies-deck .tabpanel{display:block!important;flex:0 0 50%;width:50%;min-width:0;overflow:hidden}
   .studies-deck .tabpanel[hidden]{display:none!important;flex:none;min-width:0;width:0}
   .studies-hero{padding-top:8px}
   .studies-sticky{position:sticky;top:0;z-index:40;background:rgba(1,5,4,.94);backdrop-filter:blur(14px);padding:8px 0 10px;margin:0 0 8px}
@@ -498,7 +499,29 @@
 
 <style id="tonal-css">
   /* Tonal — the "down" audience: builders, backers, operators. Amber accent. */
-  #screen-tonal{overflow-y:auto}
+  #screen-tonal{overflow-y:auto;background:radial-gradient(120% 90% at 50% 42%,#121a2b 0%,#0a0d16 45%,#000 80%)}
+  #screen-tonal .forkcard{
+    --cut:14px;--lx:28%;--ly:20%;--rim:rgba(188,174,255,.4);
+    border:0!important;border-radius:0!important;backdrop-filter:none!important;
+    background:
+      radial-gradient(160% 130% at var(--lx) var(--ly),rgba(255,255,255,.42),rgba(255,255,255,.06) 32%,transparent 58%),
+      linear-gradient(155deg,rgba(255,255,255,.18),transparent 40%),
+      linear-gradient(180deg,hsla(272,42%,38%,.55) 0%,hsla(268,24%,8%,.96) 72%)!important;
+    clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:
+      inset 0 1px 0 rgba(255,255,255,.4),
+      inset 0 0 0 1px var(--rim),
+      inset 0 0 0 4px rgba(0,0,0,.22),
+      inset 0 0 0 5px rgba(255,255,255,.1),
+      inset 0 -12px 18px rgba(0,0,0,.35),
+      0 10px 28px rgba(0,0,0,.38)!important;
+    filter:drop-shadow(0 5px 8px rgba(0,0,0,.38));
+  }
+  #screen-tonal .forkcard.guest{--rim:rgba(124,240,208,.5)}
+  #screen-tonal .forkcard.builder{--rim:rgba(232,160,79,.5)}
+  #screen-tonal .forkcard:hover,#screen-tonal .forkcard:focus-visible{
+    transform:translateY(-2px)!important;filter:brightness(1.1) drop-shadow(0 7px 12px rgba(0,0,0,.46));
+  }
   #screen-tonal .twrap{max-width:1120px;margin:0 auto;padding:64px 22px 90px}
   #screen-tonal .kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.42em;color:var(--amber);text-transform:uppercase;margin:0 0 14px;text-align:center}
   #screen-tonal h1.ttitle{font-family:var(--serif);font-weight:500;font-size:clamp(30px,6vw,52px);margin:0;text-align:center;letter-spacing:.01em}
@@ -949,6 +972,7 @@
   </div>
 
   <div class="studies-deck" id="studies-deck">
+  <div class="studies-track" id="studies-track">
   <div class="tabpanel" id="panel-materia">
     <div class="ledge quiet" id="ledge-categories">
       <button type="button" class="research-open" onclick="toggleLedge('categories')">Categories</button>
@@ -973,6 +997,7 @@
         </div>
       </div></div>
     </div>
+  </div>
   </div>
   </div>
 
@@ -2024,41 +2049,51 @@ function bindBands(id,st,rf){document.querySelectorAll("#"+id+" .pill").forEach(
 function bindLins(id,st,rf){document.querySelectorAll("#"+id+" .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.lin;st.lins.has(v)?(st.lins.delete(v),b.setAttribute("aria-pressed","false")):(st.lins.add(v),b.setAttribute("aria-pressed","true"));rf();}));}
 function empty(){return `<p style="color:var(--fog);text-align:center;padding:40px;grid-column:1/-1">Nothing matches these filters.</p>`;}
 window.studiesToTop=()=>{const sc=document.getElementById("screen-studies");if(sc)sc.scrollTo({top:0,behavior:"smooth"});};
-function syncStudiesSticky(){
+function studiesOnHr(){
   const deck=document.getElementById("studies-deck");
-  const hr=document.getElementById("panel-materia");
+  return !!(deck&&deck.classList.contains("is-hr"));
+}
+function syncStudiesSticky(){
   const pol=document.getElementById("sticky-polarity");
   const hrs=document.getElementById("sticky-hr");
-  if(!deck||!hr||!pol||!hrs)return;
-  const onHr=deck.scrollLeft<hr.offsetWidth*0.5;
+  if(!pol||!hrs)return;
+  const onHr=studiesOnHr();
   pol.hidden=onHr;hrs.hidden=!onHr;
 }
-window.pinStudiesDeck=()=>{
+window.showStudiesPage=page=>{
   const deck=document.getElementById("studies-deck");
-  const hr=document.getElementById("panel-materia");
-  if(!deck||!hr)return;
-  deck.scrollLeft=hr.offsetWidth;
+  if(!deck)return;
+  if(page==="hr")deck.classList.add("is-hr");
+  else deck.classList.remove("is-hr");
   syncStudiesSticky();
 };
+window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
 (function bindStudiesChrome(){
   const deck=document.getElementById("studies-deck");
   const screen=document.getElementById("screen-studies");
   const up=document.getElementById("studies-up");
   if(!deck||!screen)return;
   screen.addEventListener("scroll",()=>{if(up)up.hidden=screen.scrollTop<72;},{passive:true});
-  deck.addEventListener("scroll",syncStudiesSticky,{passive:true});
-  let sx=0,sy=0,sl=0;
-  deck.addEventListener("touchstart",e=>{const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;sl=deck.scrollLeft;},{passive:true});
-  deck.addEventListener("touchend",e=>{
+  const ignore=(el)=>el&&el.closest&&el.closest("input,textarea,select,[contenteditable]");
+  let sx=0,sy=0;
+  screen.addEventListener("touchstart",e=>{
+    if(ignore(e.target))return;
+    const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;
+  },{passive:true});
+  screen.addEventListener("touchend",e=>{
+    if(ignore(e.target))return;
     const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;
     if(Math.abs(dx)<56||Math.abs(dx)<Math.abs(dy))return;
-    const max=deck.scrollWidth-deck.clientWidth;
-    if(sl>max*0.55&&dx>56)home();
+    if(studiesOnHr()){if(dx>56)window.showStudiesPage("polarity");return;}
+    if(dx<-56)window.showStudiesPage("hr");
+    else if(dx>56)home();
   },{passive:true});
-  deck.addEventListener("wheel",e=>{
+  screen.addEventListener("wheel",e=>{
     if(Math.abs(e.deltaX)<Math.abs(e.deltaY))return;
-    const max=deck.scrollWidth-deck.clientWidth;
-    if(deck.scrollLeft>=max-2&&e.deltaX>0){e.preventDefault();home();}
+    e.preventDefault();
+    if(studiesOnHr()){if(e.deltaX>8)window.showStudiesPage("polarity");return;}
+    if(e.deltaX<-8)window.showStudiesPage("hr");
+    else if(e.deltaX>8)home();
   },{passive:false});
   requestAnimationFrame(pinStudiesDeck);
 })();

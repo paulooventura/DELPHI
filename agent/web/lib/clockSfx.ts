@@ -12,6 +12,16 @@ let muteEpoch = 0;
 let audioSilenced = false;
 /** Soft park (tab flicker) — bed stays built; only hard mute tears it down. */
 let audioParked = false;
+/** Orrery freeze — ticks and lane marks stop; the Schumann bed can keep breathing. */
+let clockTimeFrozen = false;
+
+export function setClockTimeFrozen(frozen: boolean) {
+  clockTimeFrozen = frozen;
+}
+
+export function isClockTimeFrozen(): boolean {
+  return clockTimeFrozen;
+}
 
 type AudioContextCtor = typeof AudioContext;
 
@@ -119,7 +129,7 @@ function keyedTick(
   gain = 1,
   dur = 1,
 ) {
-  if (audioSilenced || audioParked) return;
+  if (audioSilenced || audioParked || clockTimeFrozen) return;
   if (ctx.state !== "running") void ctx.resume();
   const t = ctx.currentTime;
   const out = masterBus(ctx);

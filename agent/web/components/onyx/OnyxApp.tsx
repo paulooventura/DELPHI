@@ -237,8 +237,14 @@ export function OnyxApp({
   const [activeLayerChoice, setActiveLayerChoice] = useState<LayerId | undefined>();
   /** Locked Layer-0 reading — taken on home open / return, never per-tick. */
   const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
-  /** Clock-entry film — plays each time the user swipes into the orrery. */
-  const [orreryIntro, setOrreryIntro] = useState(true);
+  /** Clock-entry film — once per tab session, first time we open the orrery. */
+  const [orreryIntro, setOrreryIntro] = useState(() => {
+    try {
+      return sessionStorage.getItem("delphi-orrery-intro-seen") !== "1";
+    } catch {
+      return true;
+    }
+  });
   /** Cast opens as an expansion of You, not a home-compass door. */
   const [castReturn, setCastReturn] = useState<"home" | "you">("you");
   const [youExpandCast, setYouExpandCast] = useState(false);
@@ -550,16 +556,24 @@ export function OnyxApp({
 
   if (mode === "rings") {
     if (orreryIntro) {
-      return <OnyxOrrerySplash onEnter={() => setOrreryIntro(false)} />;
+      return (
+        <OnyxOrrerySplash
+          onEnter={() => {
+            try {
+              sessionStorage.setItem("delphi-orrery-intro-seen", "1");
+            } catch {
+              /* private mode */
+            }
+            setOrreryIntro(false);
+          }}
+        />
+      );
     }
     return (
       <OnyxOrrery
         lat={lat}
         lon={lon}
-        onBack={() => {
-          setOrreryIntro(true);
-          setMode("home");
-        }}
+        onBack={() => setMode("home")}
         onOpenTonal={() => { window.location.href = "/tonal"; }}
         hapticsEnabled={pulseEnabled}
       />

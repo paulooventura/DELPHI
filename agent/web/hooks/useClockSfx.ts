@@ -12,6 +12,7 @@ import { marksKey, readClockLaneMarks, type ClockLaneMarks } from "../lib/clockL
 import {
   getClockAudio,
   isClockAudioSilenced,
+  isClockTimeFrozen,
   isSchumannAtmosphereRunning,
   muteClockAudio,
   parkClockAudio,
@@ -172,8 +173,14 @@ export function useClockSfx(
       if (
         !enabledRef.current ||
         document.visibilityState === "hidden" ||
-        isClockAudioSilenced()
+        isClockAudioSilenced() ||
+        isClockTimeFrozen()
       ) {
+        if (isClockTimeFrozen()) {
+          const held = new Date();
+          lastSec.current = held.getSeconds();
+          lastMarkMs.current = held.getTime();
+        }
         raf = requestAnimationFrame(loop);
         return;
       }

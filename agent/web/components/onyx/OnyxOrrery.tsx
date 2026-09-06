@@ -15,6 +15,7 @@ import {
   playHelekMark,
   playPalaMark,
   playPranaMark,
+  setClockTimeFrozen,
 } from "../../lib/clockSfx";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
@@ -40,6 +41,7 @@ const LANE_LABEL: Record<OrreryLaneId, string> = {
   season: "Solar season",
   tzolkin: "Tzolk'in",
   month: "Month",
+  date: "Day of month",
   moon: "Moon phase",
   nakshatra: "Nakshatra",
   decan: "Decan",
@@ -104,10 +106,12 @@ export function OnyxOrrery({
 
   useEffect(() => {
     frozenRef.current = frozen;
+    setClockTimeFrozen(frozen);
     if (!frozen) {
       viewDateRef.current = new Date();
       scrubAccRef.current = 0;
     }
+    return () => setClockTimeFrozen(false);
   }, [frozen]);
 
   useEffect(() => {
@@ -203,7 +207,7 @@ export function OnyxOrrery({
         if (prevIdx !== undefined && prevIdx !== lane.index) {
           if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
           nowPulseRef.current = Math.max(nowPulseRef.current, 0.7);
-          if (SONIC_LANES.has(lane.id)) {
+          if (SONIC_LANES.has(lane.id) && !frozenRef.current) {
             const audio = getClockAudio();
             if (audio?.state === "running") {
               if (lane.id === "helek") playHelekMark(audio);
@@ -229,28 +233,39 @@ export function OnyxOrrery({
           ctx.fillRect(0, y0, w, laneH);
         }
 
-        for (let k = first; k <= last; k++) {
-          const ci = mod(k, n);
-          const x = startX + k * cellW;
-          if (x + cellW < 0 || x > w) continue;
-          const cell = lane.cells[ci]!;
-          const atNow = ci === underLine;
-          if (centerOnly && !atNow) continue;
+        if (centerOnly) {
+          const gx = nowX - cellW / 2;
+          const cell = lane.cells[lane.index] ?? lane.cells[underLine] ?? lane.cells[0];
+          drawGemCell(ctx, gx + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, false);
+          ctx.fillStyle = "rgba(255,255,255,0.94)";
+          ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          const label = short(cell?.label || cell?.glyph || lane.activeLabel || lane.name, cellW > 70 ? 12 : 8);
+          ctx.fillText(label, nowX, y0 + laneH / 2 + 1);
+        } else {
+          for (let k = first; k <= last; k++) {
+            const ci = mod(k, n);
+            const x = startX + k * cellW;
+            if (x + cellW < 0 || x > w) continue;
+            const cell = lane.cells[ci]!;
+            const atNow = ci === underLine;
 
-          if (isMs) {
-            drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, true);
-            continue;
-          }
+            if (isMs) {
+              drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, true);
+              continue;
+            }
 
-          drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, atNow, false);
+            drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, atNow, false);
 
-          if (atNow) {
-            ctx.fillStyle = "rgba(255,255,255,0.94)";
-            ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            const label = short(cell.label || cell.glyph || lane.name, cellW > 70 ? 12 : 8);
-            ctx.fillText(label, x + cellW / 2, y0 + laneH / 2 + 1);
+            if (atNow) {
+              ctx.fillStyle = "rgba(255,255,255,0.94)";
+              ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
+              ctx.textAlign = "center";
+              ctx.textBaseline = "middle";
+              const label = short(cell.label || cell.glyph || lane.name, cellW > 70 ? 12 : 8);
+              ctx.fillText(label, x + cellW / 2, y0 + laneH / 2 + 1);
+            }
           }
         }
 
@@ -367,10 +382,10 @@ export function OnyxOrrery({
     <div className="onyx-root">
       <div className="onyx-device onyx-orrery-device">
         <OnyxStarfield />
-        <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          close
-        </button>
         <div className="onyx-orrery-header">
+          <button type="button" className="onyx-orrery-close" onClick={onBack}>
+            close
+          </button>
           <p className="onyx-orrery-title">ORRERY</p>
           <div className="onyx-orrery-controls">
             <button

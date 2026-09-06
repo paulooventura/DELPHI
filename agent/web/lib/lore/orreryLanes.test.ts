@@ -6,6 +6,7 @@ import {
   laneColor,
   laneMotion,
   laneScrollStartX,
+  stepOrreryDate,
 } from "./orreryLanes";
 import { computeSolarDayEvents } from "../cosmic/astronomy";
 
@@ -26,7 +27,13 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(ids).toContain("wuku");
     expect(ids).toContain("nakshatra");
     expect(ids).toContain("age");
+    expect(ids).toContain("date");
+    expect(ids.indexOf("month")).toBeLessThan(ids.indexOf("date"));
+    expect(ids.indexOf("date")).toBeLessThan(ids.indexOf("moon"));
     expect(ids).not.toContain("wuku-tzolkin");
+    const dateLane = lanes.find(l => l.id === "date")!;
+    expect(dateLane.activeLabel).toBe("24");
+    expect(dateLane.cells).toHaveLength(31);
     expect(ids.indexOf("min")).toBeLessThan(ids.indexOf("pala"));
     expect(ids.indexOf("pala")).toBeLessThan(ids.indexOf("prana"));
     expect(ids.indexOf("prana")).toBeLessThan(ids.indexOf("helek"));
@@ -138,6 +145,12 @@ describe("orrery lanes — CLOCK-SPEC", () => {
     expect(Math.abs(centers[0]! - centers[1]!)).toBeGreaterThan(cellW * 0.15);
     expect(Math.abs(centers[1]! - centers[2]!)).toBeGreaterThan(cellW * 0.05);
     expect(Math.abs(centers[0]! - centers[2]!)).toBeGreaterThan(cellW * 0.1);
+
+    const dateLane = lanes.find(l => l.id === "date")!;
+    expect(dateLane.activeLabel).toBe("29");
+    const nextDay = computeOrreryState(stepOrreryDate(date, "date", +1), 36.16, -86.78)
+      .lanes.find(l => l.id === "date")!;
+    expect(nextDay.activeLabel).toBe("30");
 
     // Leo young → cell center right of the now-line
     expect(centers[0]!).toBeGreaterThan(nowX);

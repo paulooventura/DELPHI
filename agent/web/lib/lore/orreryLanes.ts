@@ -60,6 +60,7 @@ export type OrreryLaneId =
   | "season"
   | "tzolkin"
   | "month"
+  | "date"
   | "moon"
   | "nakshatra"
   | "decan"
@@ -160,6 +161,11 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
     origin: "The word month descends from Moon. Early month systems followed lunations; the modern Gregorian months preserve a reshaped Roman calendar.",
     usedSince: "Lunar month-counting is ancient. The present twelve-month Gregorian arrangement dates to 1582 but inherited the Julian calendar of 45 BCE.",
     curious: "Our unequal 28–31 day months no longer track one lunar phase cycle, which averages about 29.53 days.",
+  },
+  date: {
+    origin: "The numbered day inside a named month is the civil date — the Gregorian count of 1 through 28, 29, 30, or 31.",
+    usedSince: "Numbered days inside months are inherited from the Roman calendar and kept by the Julian and Gregorian reforms.",
+    curious: "This row grows and shrinks with the month you are in. February is the short one; leap years add the 29th.",
   },
   season: {
     origin: "This lane divides the tropical year into twelve equal 30° sectors, following the zodiacal framework developed in Babylonian astronomy and adopted by Hellenistic astrologers.",
@@ -649,6 +655,21 @@ export function computeOrreryState(
       lore: "The civil calendar month. Twelve Gregorian months advancing left as the year moves.",
     },
     {
+      id: "date",
+      name: "Day of month",
+      cycle: `${daysThisMonth} days`,
+      tier: "display",
+      speedT: 0.96,
+      index: Math.max(0, calDay - 1),
+      progress: dayFrac,
+      cells: Array.from({ length: daysThisMonth }, (_, i) => ({
+        id: `md-${i + 1}`,
+        label: String(i + 1),
+      })),
+      activeLabel: String(calDay),
+      lore: "The numbered civil day — 1 through the last date of this month. The month row names the month; this row is the day inside it.",
+    },
+    {
       id: "moon",
       name: "Moon phase",
       cycle: "~29.5 days",
@@ -990,7 +1011,7 @@ export function computeOrreryState(
 }
 
 export const ALL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
-  "precession", "age", "century", "year", "season", "tzolkin", "month", "moon",
+  "precession", "age", "century", "year", "season", "tzolkin", "month", "date", "moon",
   "nakshatra", "decan", "wuku", "pancawara", "manzil", "numerology", "day",
   "shi", "planetary-hour", "muhurta", "ghati", "ke", "min", "beat", "pala",
   "prana", "helek", "sec", "rega", "ms",
@@ -1016,6 +1037,9 @@ export function stepOrreryDate(date: Date, id: OrreryLaneId, dir: number): Date 
       return d;
     case "month":
       d.setMonth(d.getMonth() + step);
+      return d;
+    case "date":
+      d.setDate(d.getDate() + step);
       return d;
     case "tzolkin":
     case "wuku":

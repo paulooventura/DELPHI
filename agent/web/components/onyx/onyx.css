@@ -113,13 +113,10 @@
   appearance: none;
   position: relative;
   z-index: 3;
-  width: min(78vw, 320px);
+  width: min(86vw, 420px);
   padding: 0;
   margin: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 22px;
+  display: block;
   background: transparent;
   border: 0;
   cursor: pointer;
@@ -128,19 +125,24 @@
   -webkit-tap-highlight-color: transparent;
 }
 .onyx-access-gem {
-  width: min(72vw, 280px);
+  width: 100%;
   height: auto;
   display: block;
   pointer-events: none;
+  border: 0;
+  border-radius: 0;
+  clip-path: none;
+  box-shadow: none;
+  background: none;
   transition: transform 320ms ease, filter 320ms ease;
 }
 .onyx-access-cta:not(:disabled):hover .onyx-access-gem,
 .onyx-access-cta:not(:disabled):focus-visible .onyx-access-gem {
-  transform: scale(1.03);
-  filter: drop-shadow(0 0 28px rgba(160, 90, 200, 0.35));
+  transform: scale(1.02);
+  filter: brightness(1.06);
 }
 .onyx-access-cta:not(:disabled):active .onyx-access-gem {
-  transform: scale(0.98);
+  transform: scale(0.99);
 }
 .onyx-access-cta.busy .onyx-access-gem {
   animation: onyx-access-pulse 1.4s ease-in-out infinite;
@@ -150,16 +152,22 @@
   opacity: 0.72;
 }
 @keyframes onyx-access-pulse {
-  0%, 100% { filter: drop-shadow(0 0 10px rgba(120, 108, 200, 0.25)); }
-  50% { filter: drop-shadow(0 0 28px rgba(160, 140, 255, 0.55)); }
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.12); }
 }
 .onyx-access-cta-label {
-  position: relative;
+  position: absolute;
+  inset: 0;
   z-index: 1;
-  font-size: 13px;
-  letter-spacing: 0.16em;
+  display: grid;
+  place-items: center;
+  margin: 0;
+  font-size: 15px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: #f6f2ff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.75);
+  pointer-events: none;
 }
 .onyx-access-build {
   position: absolute;
@@ -2531,22 +2539,44 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   z-index: 8;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: space-between;
   gap: 10px;
   padding: 0 12px;
 }
 .onyx-orrery-title {
+  position: absolute;
+  left: 0;
+  right: 0;
   margin: 0;
+  text-align: center;
   font-size: 11px;
   letter-spacing: 0.42em;
   color: var(--onyx-ink-quiet);
   font-weight: 300;
   pointer-events: none;
 }
+.onyx-orrery-close {
+  position: relative;
+  z-index: 2;
+  background: rgba(100,90,160,0.18);
+  border: 0.5px solid rgba(140,124,255,0.28);
+  border-radius: 10px;
+  padding: 4px 9px;
+  font-family: inherit;
+  font-size: 9px;
+  letter-spacing: 0.06em;
+  color: var(--onyx-ink-soft);
+  cursor: pointer;
+}
 .onyx-orrery-controls {
+  position: relative;
+  z-index: 2;
   display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 6px;
-  margin-left: auto;
+  margin-left: 0;
+  max-width: 62%;
 }
 .onyx-orrery-filter-btn {
   background: rgba(100,90,160,0.18);
