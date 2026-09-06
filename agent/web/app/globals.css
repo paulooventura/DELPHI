@@ -71,6 +71,12 @@ html,body {
   font-feature-settings: "tnum" 1, "liga" 1;
 }
 
+/* Chorus iframe: keep Delphi the app, drop the black stage behind it. */
+html.chorus-embed,
+html.chorus-embed body {
+  background: transparent !important;
+}
+
 ::selection { background: rgba(140, 124, 255, 0.28); color: #fff; }
 
 /* Quiet scrollbar — light membrane, not a bright bar */

@@ -298,6 +298,7 @@ export default function Home() {
     try {
       const embed = new URLSearchParams(window.location.search).get("embed") === "1";
       setChorusEmbed(embed);
+      document.documentElement.classList.toggle("chorus-embed", embed);
       setNeedsAccessGate(!embed && !hasAccessThisSession());
     } catch {
       setNeedsAccessGate(true);

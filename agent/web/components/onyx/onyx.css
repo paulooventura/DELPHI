@@ -41,6 +41,10 @@
   overflow: hidden;
 }
 
+html.chorus-embed .onyx-root {
+  background: transparent;
+}
+
 .onyx-device {
   width: min(100vw, 402px);
   height: min(100dvh, 872px);
