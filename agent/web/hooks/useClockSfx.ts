@@ -138,7 +138,7 @@ export function useClockSfx(
           if (document.visibilityState !== "hidden") return;
           parkClockAudio({ fadeMs: 100 });
           setActive(false);
-        }, 450);
+        }, 2000);
         return;
       }
       restore();
@@ -196,19 +196,19 @@ export function useClockSfx(
               else playMinuteBell(ctx);
             }
           }
-
-          const obs = readObserver();
-          const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
-          const prev = lastMarks.current;
-          if (
-            prev &&
-            (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
-          ) {
-            fireLaneMarks(ctx, prev, next);
-          }
-          lastMarks.current = next;
-          lastMarkMs.current = d.getTime();
         }
+
+        const obs = readObserver();
+        const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
+        const prev = lastMarks.current;
+        if (
+          prev &&
+          (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
+        ) {
+          fireLaneMarks(ctx, prev, next);
+        }
+        lastMarks.current = next;
+        lastMarkMs.current = d.getTime();
       }
       raf = requestAnimationFrame(loop);
     };

@@ -99,7 +99,7 @@ export function readClockLaneMarks(
     beat: beatIndex(date),
     pancawara: laneIndex(lanes, "pancawara"),
     moon: laneIndex(lanes, "moon"),
-    wuku: laneIndex(lanes, "wuku-tzolkin"),
+    wuku: laneIndex(lanes, "wuku"),
     season: laneIndex(lanes, "season"),
     crossedSunrise: crossed(prevMs, nowMs, solar.sunrise),
     crossedSunset: crossed(prevMs, nowMs, solar.sunset),

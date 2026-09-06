@@ -43,6 +43,7 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
 
     const phrase = speak(chord);
     expect(phrase.length).toBeGreaterThan(12);
+    expect(phrase.split(/\s+/).length).toBeLessThanOrEqual(18);
     expect(phrase).toMatch(/[.!?]$/);
     expect(phrase).not.toMatch(/leo|fire|anthropic|api key/i);
     expect(fetchSpy).not.toHaveBeenCalled();

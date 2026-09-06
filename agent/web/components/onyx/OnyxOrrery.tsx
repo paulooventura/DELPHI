@@ -18,27 +18,51 @@ import {
 } from "../../lib/clockSfx";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
+  ALL_ORRERY_LANE_IDS,
+  CENTER_ONLY_LANE_IDS,
   computeOrreryState,
   laneColor,
   laneMotion,
   laneScrollStartX,
+  stepOrreryDate,
   type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
 
 const SONIC_LANES = new Set<OrreryLaneId>(["helek", "prana", "pala"]);
+const CENTER_ONLY = new Set<OrreryLaneId>(CENTER_ONLY_LANE_IDS);
 
-type LaneFilter = "full" | "clock" | "calendar";
-
-const CLOCK_LANE_IDS: OrreryLaneId[] = ["sec", "helek", "prana", "pala", "min", "ghati", "planetary-hour", "muhurta", "shi", "day"];
-const CALENDAR_LANE_IDS: OrreryLaneId[] = ["year", "month", "season", "wuku-tzolkin", "moon", "pancawara", "day"];
-
-function filterLabel(f: LaneFilter): string {
-  return f === "full" ? "All cycles" : f === "clock" ? "Clock only" : "Calendar only";
-}
-function nextFilter(f: LaneFilter): LaneFilter {
-  return f === "full" ? "clock" : f === "clock" ? "calendar" : "full";
-}
+const LANE_LABEL: Record<OrreryLaneId, string> = {
+  precession: "Great Year",
+  age: "Astrological age",
+  century: "Century",
+  year: "Year",
+  season: "Solar season",
+  tzolkin: "Tzolk'in",
+  month: "Month",
+  moon: "Moon phase",
+  nakshatra: "Nakshatra",
+  decan: "Decan",
+  wuku: "Wuku",
+  "wuku-tzolkin": "Wuku · Tzolk'in",
+  pancawara: "Pancawara",
+  manzil: "Manzil",
+  numerology: "Number",
+  day: "Hours",
+  shi: "Chinese shí",
+  "planetary-hour": "Planetary hour",
+  muhurta: "Muhūrta",
+  ghati: "Ghati",
+  ke: "Kè",
+  min: "Minutes",
+  beat: ".beat",
+  pala: "Pala",
+  prana: "Prāṇa",
+  helek: "Helek",
+  sec: "Seconds",
+  rega: "Rega",
+  ms: "Milliseconds",
+};
 
 export function OnyxOrrery({
   lat,
@@ -60,23 +84,43 @@ export function OnyxOrrery({
   const hapticsRef = useRef(hapticsEnabled);
   hapticsRef.current = hapticsEnabled;
   const [expanded, setExpanded] = useState<OrreryLaneState | null>(null);
-  const [laneFilter, setLaneFilter] = useState<LaneFilter>("full");
-  const laneFilterRef = useRef<LaneFilter>("full");
-  laneFilterRef.current = laneFilter;
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [frozen, setFrozen] = useState(false);
+  const [hidden, setHidden] = useState<Set<OrreryLaneId>>(new Set());
+  const [selectedLane, setSelectedLane] = useState<OrreryLaneId | null>(null);
+  const frozenRef = useRef(false);
+  const viewDateRef = useRef(new Date());
+  const hiddenRef = useRef(hidden);
+  hiddenRef.current = hidden;
+  const selectedRef = useRef<OrreryLaneId | null>(null);
+  selectedRef.current = selectedLane;
   const lanesRef = useRef<OrreryLaneState[]>([]);
   const hitRef = useRef<{ y0: number; y1: number; id: string }[]>([]);
   const lastIndexRef = useRef<Map<OrreryLaneId, number>>(new Map());
   const nowPulseRef = useRef(0);
   const lastTsRef = useRef(0);
+  const scrubAccRef = useRef(0);
+  const pointerRef = useRef<{ id: number; x: number } | null>(null);
 
   useEffect(() => {
-    if (!expanded) return;
+    frozenRef.current = frozen;
+    if (!frozen) {
+      viewDateRef.current = new Date();
+      scrubAccRef.current = 0;
+    }
+  }, [frozen]);
+
+  useEffect(() => {
+    if (!expanded && !pickerOpen) return;
     const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setExpanded(null);
+      if (event.key === "Escape") {
+        setExpanded(null);
+        setPickerOpen(false);
+      }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [expanded]);
+  }, [expanded, pickerOpen]);
 
   useEffect(() => {
     visibleRef.current = true;
@@ -116,11 +160,10 @@ export function OnyxOrrery({
 
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
-      const { lanes: allLanes, slowSky } = computeOrreryState(new Date(), lat, lon);
-      const activeFilter = laneFilterRef.current;
-      const lanes = activeFilter === "full" ? allLanes
-        : activeFilter === "clock" ? allLanes.filter(l => CLOCK_LANE_IDS.includes(l.id))
-        : allLanes.filter(l => CALENDAR_LANE_IDS.includes(l.id));
+      if (!frozenRef.current) viewDateRef.current = new Date();
+      const { lanes: allLanes } = computeOrreryState(viewDateRef.current, lat, lon);
+      const hide = hiddenRef.current;
+      const lanes = allLanes.filter(l => l.id !== "wuku-tzolkin" && !hide.has(l.id));
       lanesRef.current = lanes;
 
       nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
@@ -136,12 +179,10 @@ export function OnyxOrrery({
       const padX = 8;
       const padTop = 6;
       const laneGap = 3;
-      // Single shared centerline for every lane — fixed, unmoving.
       const nowX = w * 0.5;
       const avail = h - padTop - 8;
-      const laneH = Math.max(22, (avail - laneGap * (lanes.length - 1)) / lanes.length);
+      const laneH = Math.max(22, (avail - laneGap * Math.max(0, lanes.length - 1)) / Math.max(1, lanes.length));
       const hits: { y0: number; y1: number; id: string }[] = [];
-      void slowSky;
 
       let y = padTop;
       for (const lane of lanes) {
@@ -154,8 +195,8 @@ export function OnyxOrrery({
         const discrete = laneMotion(lane.id) === "discrete-tick";
         const cellW = isFast ? 32 : Math.max(56, Math.min(92, (w - padX * 2) / 5.2));
         const n = lane.cells.length || 1;
+        const selected = selectedRef.current === lane.id;
 
-        // True phase offset — never hold at cell-start.
         const startX = laneScrollStartX(nowX, lane.index, lane.progress, cellW);
 
         const prevIdx = lastIndex.get(lane.id);
@@ -181,6 +222,12 @@ export function OnyxOrrery({
         const first = Math.floor((-startX - cellW) / cellW);
         const last = Math.ceil((w - startX) / cellW) + 1;
         const underLine = mod(Math.floor((nowX - startX) / cellW), n);
+        const centerOnly = CENTER_ONLY.has(lane.id);
+
+        if (selected) {
+          ctx.fillStyle = "rgba(180, 160, 255, 0.08)";
+          ctx.fillRect(0, y0, w, laneH);
+        }
 
         for (let k = first; k <= last; k++) {
           const ci = mod(k, n);
@@ -188,6 +235,7 @@ export function OnyxOrrery({
           if (x + cellW < 0 || x > w) continue;
           const cell = lane.cells[ci]!;
           const atNow = ci === underLine;
+          if (centerOnly && !atNow) continue;
 
           if (isMs) {
             drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, true);
@@ -259,17 +307,61 @@ export function OnyxOrrery({
     };
   }, [lat, lon]);
 
-  const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const y = e.clientY - rect.top;
+  const hitLane = (clientY: number, target: HTMLCanvasElement) => {
+    const rect = target.getBoundingClientRect();
+    const y = clientY - rect.top;
     const hit = hitRef.current.find(h => y >= h.y0 && y < h.y1);
-    if (!hit) {
+    if (!hit) return null;
+    return lanesRef.current.find(l => l.id === hit.id) ?? null;
+  };
+
+  const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!frozen) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
+    pointerRef.current = { id: e.pointerId, x: e.clientX };
+    scrubAccRef.current = 0;
+    const lane = hitLane(e.clientY, e.currentTarget);
+    if (lane) setSelectedLane(lane.id);
+  };
+
+  const onPointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!frozen || !pointerRef.current || pointerRef.current.id !== e.pointerId) return;
+    const dx = e.clientX - pointerRef.current.x;
+    pointerRef.current.x = e.clientX;
+    const laneId = selectedRef.current;
+    if (!laneId) return;
+    scrubAccRef.current += dx;
+    const cellW = 64;
+    while (scrubAccRef.current <= -cellW) {
+      viewDateRef.current = stepOrreryDate(viewDateRef.current, laneId, +1);
+      scrubAccRef.current += cellW;
+    }
+    while (scrubAccRef.current >= cellW) {
+      viewDateRef.current = stepOrreryDate(viewDateRef.current, laneId, -1);
+      scrubAccRef.current -= cellW;
+    }
+  };
+
+  const onPointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    pointerRef.current = null;
+    try {
+      e.currentTarget.releasePointerCapture(e.pointerId);
+    } catch {
+      /* already released */
+    }
+  };
+
+  const onCanvasClick = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (frozen) return;
+    const lane = hitLane(e.clientY, e.currentTarget);
+    if (!lane) {
       setExpanded(null);
       return;
     }
-    const lane = lanesRef.current.find(l => l.id === hit.id) ?? null;
-    setExpanded(prev => (prev?.id === lane?.id ? null : lane));
+    setExpanded(prev => (prev?.id === lane.id ? null : lane));
   };
+
+  const visibleCount = ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin" && !hidden.has(id)).length;
 
   return (
     <div className="onyx-root">
@@ -283,11 +375,22 @@ export function OnyxOrrery({
           <div className="onyx-orrery-controls">
             <button
               type="button"
-              className="onyx-orrery-filter-btn"
-              onClick={() => setLaneFilter(f => nextFilter(f))}
-              title="Toggle cycle filter"
+              className={`onyx-orrery-filter-btn${frozen ? " is-on" : ""}`}
+              onClick={() => {
+                setFrozen(f => !f);
+                setExpanded(null);
+              }}
+              title="Freeze time, then click a lane and scroll left (future) or right (past)"
             >
-              {filterLabel(laneFilter)}
+              {frozen ? "Time frozen" : "Freeze time"}
+            </button>
+            <button
+              type="button"
+              className="onyx-orrery-filter-btn"
+              onClick={() => setPickerOpen(true)}
+              title="Choose which cycles are displayed"
+            >
+              Cycles · {visibleCount}
             </button>
             {onOpenTonal && (
               <button
@@ -301,14 +404,86 @@ export function OnyxOrrery({
             )}
           </div>
         </div>
+        {frozen && (
+          <p className="onyx-orrery-freeze-hint">
+            {selectedLane
+              ? `Scrub ${LANE_LABEL[selectedLane]} — left future, right past`
+              : "Click a lane, then drag left or right"}
+          </p>
+        )}
         <div className="onyx-orrery-wrap" ref={wrapRef}>
           <canvas
             ref={canvasRef}
             className="onyx-orrery-canvas"
             onClick={onCanvasClick}
+            onPointerDown={onPointerDown}
+            onPointerMove={onPointerMove}
+            onPointerUp={onPointerUp}
+            onPointerCancel={onPointerUp}
             aria-label="Live orrery clock — stacked cultural cycles"
           />
         </div>
+        {pickerOpen && (
+          <div className="onyx-orrery-teach-scrim" onClick={() => setPickerOpen(false)}>
+            <section
+              className="onyx-orrery-teach onyx-orrery-picker"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Choose cycles"
+              onClick={event => event.stopPropagation()}
+            >
+              <p className="onyx-eyebrow">Cycles</p>
+              <p className="onyx-layer-lead">Choose which lanes stay on the stack</p>
+              <div className="onyx-orrery-picker-actions">
+                <button
+                  type="button"
+                  className="onyx-orrery-filter-btn"
+                  onClick={() => setHidden(new Set())}
+                >
+                  Show all
+                </button>
+                <button
+                  type="button"
+                  className="onyx-orrery-filter-btn"
+                  onClick={() =>
+                    setHidden(new Set(ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin")))
+                  }
+                >
+                  Hide all
+                </button>
+              </div>
+              <ul className="onyx-orrery-picker-list">
+                {ALL_ORRERY_LANE_IDS.filter(id => id !== "wuku-tzolkin").map(id => (
+                  <li key={id}>
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={!hidden.has(id)}
+                        onChange={() => {
+                          setHidden(prev => {
+                            const next = new Set(prev);
+                            if (next.has(id)) next.delete(id);
+                            else next.add(id);
+                            return next;
+                          });
+                        }}
+                      />
+                      {LANE_LABEL[id]}
+                    </label>
+                  </li>
+                ))}
+              </ul>
+              <button
+                type="button"
+                className="onyx-tool-btn onyx-orrery-teach-close"
+                onClick={() => setPickerOpen(false)}
+              >
+                Done
+                <span>Back to the stack</span>
+              </button>
+            </section>
+          </div>
+        )}
         {expanded && (
           <div
             className="onyx-orrery-teach-scrim"

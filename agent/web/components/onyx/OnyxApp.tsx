@@ -767,6 +767,7 @@ export function OnyxApp({
       phaseFraction={phaseFraction}
       zodiacSign={zodiacSign}
       momentLine={momentLine}
+      phraseChord={activeReading.chord}
       provenanceLine={snapProvenance?.line}
       readingLayerLabel={activeReading.label}
       readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}

@@ -245,7 +245,13 @@ export default function Home() {
   const [hoverRing, setHoverRing] = useState<string | null>(null);
   const [focusRing, setFocusRing] = useState<string | null>(null);
   const [focusRingData, setFocusRingData] = useState<ClockRingData | null>(null);
-  const [clockSfxOn, setClockSfxOn] = useState(true);
+  const [clockSfxOn, setClockSfxOn] = useState(() => {
+    try {
+      return localStorage.getItem("delphi-clock-sfx") !== "0";
+    } catch {
+      return true;
+    }
+  });
   const [toggles, setToggles] = useState<SensorToggles>(DEFAULT_TOGGLES);
 
   const [query, setQuery]       = useState("");
@@ -1183,6 +1189,7 @@ export default function Home() {
       sensorsUnlocked={!needsAccessGate}
       onAllowAccess={() => {
         void primeDeviceAccess();
+        if (clockSfxOn) void enableSfx();
       }}
       accessBusy={accessBusy}
       now={cosmic?.now ?? animNow}
@@ -1231,6 +1238,9 @@ export default function Home() {
       pulseEnabled={clockSfxOn}
       onPulseEnabledChange={on => {
         setClockSfxOn(on);
+        try {
+          localStorage.setItem("delphi-clock-sfx", on ? "1" : "0");
+        } catch { /* ignore */ }
         if (on) void enableSfx();
         else muteClockAudio({ fadeMs: 120 });
       }}

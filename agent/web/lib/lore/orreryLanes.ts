@@ -53,24 +53,35 @@ export function activeCellCenterX(nowX: number, progress: number, cellW: number)
 export type LaneTier = "measured" | "celebrated" | "display";
 
 export type OrreryLaneId =
-  | "rega"
-  | "ms"
-  | "sec"
-  | "helek"
-  | "prana"
-  | "pala"
-  | "min"
-  | "ghati"
-  | "muhurta"
-  | "planetary-hour"
-  | "shi"
-  | "day"
-  | "pancawara"
-  | "moon"
-  | "wuku-tzolkin"
+  | "precession"
+  | "age"
+  | "century"
+  | "year"
   | "season"
+  | "tzolkin"
   | "month"
-  | "year";
+  | "moon"
+  | "nakshatra"
+  | "decan"
+  | "wuku"
+  | "wuku-tzolkin"
+  | "pancawara"
+  | "manzil"
+  | "numerology"
+  | "day"
+  | "shi"
+  | "planetary-hour"
+  | "muhurta"
+  | "ghati"
+  | "ke"
+  | "min"
+  | "beat"
+  | "pala"
+  | "prana"
+  | "helek"
+  | "sec"
+  | "rega"
+  | "ms";
 
 /**
  * Escapement haptic class — all lanes scroll by true phase; discrete-tick
@@ -86,10 +97,15 @@ export const CONTINUOUS_LANE_IDS: readonly OrreryLaneId[] = [
   "helek",
   "prana",
   "pala",
+  "beat",
   "min",
+  "ke",
   "ghati",
   "day",
 ];
+
+/** Fast breath-scale lanes — only the cell on the now-line is drawn. */
+export const CENTER_ONLY_LANE_IDS: readonly OrreryLaneId[] = ["prana"];
 
 export function laneMotion(id: OrreryLaneId): OrreryMotion {
   return CONTINUOUS_LANE_IDS.includes(id) ? "continuous" : "discrete-tick";
@@ -150,10 +166,70 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
     usedSince: "A standardized twelve-sign zodiac is attested in Babylonia by the 5th century BCE and was elaborated in the Hellenistic world.",
     curious: "A tropical sign is anchored to the equinoxes and solstices, so precession slowly separates it from the same-named star constellation.",
   },
+  wuku: {
+    origin: "Wuku is one week of the Javanese-Balinese Pawukon: thirty named seven-day weeks nested inside a 210-day whole.",
+    usedSince: "Pawukon has deep Javanese-Balinese roots and remains culturally active in Java and Bali for ceremony, market, and personal days.",
+    curious: "Ten simultaneous week-cycles of different lengths lock together every 210 days; wuku is the seven-day layer of that braid.",
+  },
+  tzolkin: {
+    origin: "The Maya Tzolk'in is a 260-day sacred count pairing twenty day-signs with thirteen tones, independent of the solar year.",
+    usedSince: "The 260-day count is attested in Mesoamerica before the Common Era and remains a living calendar among Maya communities.",
+    curious: "Twenty signs times thirteen tones equals 260 unique days; the count does not try to stay locked to the tropical year.",
+  },
   "wuku-tzolkin": {
-    origin: "Two independent sacred/social counts share this visual speed band: the Javanese-Balinese Pawukon and the Maya 260-day Tzolk'in.",
-    usedSince: "The Maya 260-day count is attested in Mesoamerica before the Common Era. Pawukon has deep Javanese-Balinese roots and remains culturally active.",
-    curious: "The Maya count interlocks 20 day names with 13 numbers; Pawukon layers ten simultaneous week cycles inside a repeating 210-day whole.",
+    origin: "Legacy combined row: Javanese-Balinese Pawukon beside the Maya 260-day Tzolk'in. Kept so older marks still resolve.",
+    usedSince: "Both counts are ancient; this combined row is a Delphi display convenience, not a historical pairing.",
+    curious: "The two calendars do not share an origin. They only looked similar in speed, which is why they were once stacked together.",
+  },
+  nakshatra: {
+    origin: "Nakshatras are the twenty-seven Vedic lunar mansions — equal 13°20′ sectors of the sidereal ecliptic the Moon occupies.",
+    usedSince: "The system is attested in Vedic literature and remains central to Indian astrology and electional timing.",
+    curious: "The Moon spends a little over a day in each nakshatra; some traditions add a twenty-eighth intercalary mansion.",
+  },
+  manzil: {
+    origin: "The twenty-eight manāzil al-qamar are Arabic lunar stations inherited from pre-Islamic anwā' star-calendars.",
+    usedSince: "Anwā' weather-stars are pre-Islamic; the 28-station list was standardized in medieval Arabic astronomy and navigation.",
+    curious: "Unlike the 27 nakshatras, the manzil count is twenty-eight, so each station is a slightly shorter slice of the sky.",
+  },
+  decan: {
+    origin: "Egyptian decans are thirty-six star-groups that marked ten-day weeks on Middle Kingdom coffin-lid star clocks.",
+    usedSince: "Coffin texts around 2100 BCE already name decans; Hellenistic astrology later turned them into 10° face-rulers.",
+    curious: "A decan is both a clock and a spirit: the same 10° band that timed the night became a named being in later astrology.",
+  },
+  numerology: {
+    origin: "Digital-root number-quality is a cross-cultural habit: reduce a civil date until one digit remains, then read its quality.",
+    usedSince: "Pythagorean, Vedic, and Chinese number-lore all reduce dates; Delphi uses the civil YMD digits of the site timezone.",
+    curious: "The digit changes at local midnight, so this lane is a cultural overlay on the civil day, not a sky measurement.",
+  },
+  century: {
+    origin: "A century is one hundred Gregorian years — a civil grouping that lets a life sit inside a numbered hundred.",
+    usedSince: "Century-numbering follows the Dionysian Anno Domini count; historians still argue whether a century starts at 00 or 01.",
+    curious: "Delphi treats 2000–2099 as the 21st hundred on the lane, matching how people say 'the twenty-first century' in casual speech.",
+  },
+  age: {
+    origin: "Astrological ages divide Earth's axial precession into twelve roughly 2,148-year chapters, one per zodiacal sign.",
+    usedSince: "The idea is modern Theosophical and astrological teaching built on Hipparchus' discovery of precession (~2nd century BCE).",
+    curious: "There is no agreed start-year for the Age of Aquarius; Delphi uses a cautious conventional hinge near 2150 CE.",
+  },
+  precession: {
+    origin: "Axial precession — the Great Year — is the slow wobble that walks the vernal point backward around the ecliptic.",
+    usedSince: "Hipparchus measured it in the 2nd century BCE; the period is about 25,772 years in modern IAU models.",
+    curious: "The vernal point slips about 50.3 arcseconds a year, so one degree of precession takes roughly seventy-two years.",
+  },
+  ke: {
+    origin: "The Chinese kè originally marked a water-clock notch; later civil practice used one hundred kè in a day (14.4 minutes).",
+    usedSince: "Ke timekeeping is attested in imperial China; the 100-kè day became standard in the Qing civil clock.",
+    curious: "Older systems used 96 or 108 kè; Delphi follows the later 100-kè day so each mark is a clean 14.4 modern minutes.",
+  },
+  beat: {
+    origin: "Swatch .beat Internet Time splits the day into a thousand beats of 86.4 seconds, counted from UTC+1 with no time zones.",
+    usedSince: "It was launched as a 1998 consumer experiment; the math is just a decimal day, older than the brand name.",
+    curious: "BMT (Biel Mean Time) ignores DST, so a .beat is the same length everywhere — a rare modern attempt at a world clock.",
+  },
+  rega: {
+    origin: "A rega is 1/76 of a ḥeleq in traditional Jewish molad arithmetic — the finest named splinter of that system.",
+    usedSince: "It belongs to medieval Jewish calendrical calculation, sitting under the ḥeleq the way a tick sits under a second.",
+    curious: "Seventy-six rega'im fill one ḥeleq (~43.86 ms each), which is why the molad can be written without SI milliseconds.",
   },
   moon: {
     origin: "A synodic month measures the Moon's repeating phase relationship with the Sun, one of humanity's oldest visible clocks.",
@@ -243,6 +319,23 @@ const WZ_IDS = [
   "wz-aries", "wz-taurus", "wz-gemini", "wz-cancer", "wz-leo", "wz-virgo",
   "wz-libra", "wz-scorpio", "wz-sagittarius", "wz-capricorn", "wz-aquarius", "wz-pisces",
 ] as const;
+const TZ_IDS = [
+  "tz-imix", "tz-ik", "tz-akbal", "tz-kan", "tz-chicchan", "tz-cimi", "tz-manik",
+  "tz-lamat", "tz-muluc", "tz-oc", "tz-chuen", "tz-eb", "tz-ben", "tz-ix",
+  "tz-men", "tz-cib", "tz-caban", "tz-etznab", "tz-cauac", "tz-ahau",
+] as const;
+const AGE_IDS = [
+  "wz-aries", "wz-pisces", "wz-aquarius", "wz-capricorn", "wz-sagittarius", "wz-scorpio",
+  "wz-libra", "wz-virgo", "wz-leo", "wz-cancer", "wz-gemini", "wz-taurus",
+] as const;
+/** IAU-ish Great Year; ages are 1/12 of that wobble. */
+export const PRECESSION_YEARS = 25772;
+export const AGE_YEARS = PRECESSION_YEARS / 12;
+/** Conventional Pisces→Aquarius hinge used for display, not a claim of fact. */
+const AGE_AQUARIUS_YEAR = 2150;
+const KE_MS = 14.4 * 60 * 1000;
+const BEAT_MS = 86.4 * 1000;
+const REGA_MS = HELEK_MS / REGA_PER_HELEK;
 
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
@@ -344,6 +437,43 @@ export function computeOrreryState(
   const pancaIndex = Math.max(0, meta.pancawara - 1);
   const pancaProg = dayFrac; // advances with the civil day
 
+  const tzCells = TZ_IDS.map(id => {
+    const e = byId(id);
+    return { id, label: e?.name ?? id, glyph: e?.glyph };
+  });
+  const tzSignId = TZ_IDS.find(id => id === (
+    {
+      Imix: "tz-imix", Ik: "tz-ik", Akbal: "tz-akbal", Kan: "tz-kan",
+      Chikchan: "tz-chicchan", Kimi: "tz-cimi", Manik: "tz-manik", Lamat: "tz-lamat",
+      Muluk: "tz-muluc", Ok: "tz-oc", Chuen: "tz-chuen", Eb: "tz-eb",
+      Ben: "tz-ben", Ix: "tz-ix", Men: "tz-men", Kib: "tz-cib",
+      Kaban: "tz-caban", Etznab: "tz-etznab", Kawak: "tz-cauac", Ajaw: "tz-ahau",
+    } as Record<string, (typeof TZ_IDS)[number]>
+  )[meta.tzolkinSign]) ?? "tz-imix";
+  const tzIndex = Math.max(0, TZ_IDS.indexOf(tzSignId));
+  const tzProg = dayFrac;
+
+  const nkCells = cellsFromSystem("nakshatra");
+  const nkId = resolved.ids.find(id => id.startsWith("nk-")) ?? nkCells[0]?.id ?? "";
+  const nkIndex = Math.max(0, nkCells.findIndex(c => c.id === nkId));
+  const nkProg = mod(meta.moonSiderealDeg / (360 / 27), 1);
+
+  const mzCells = cellsFromSystem("anwa-manzil");
+  const mzIndex = Math.max(0, (meta.manzil - 1) % Math.max(1, mzCells.length));
+  const mzProg = mod(meta.moonSiderealDeg / (360 / 28), 1);
+
+  const dcCells = cellsFromSystem("egyptian-decan");
+  const dcId = resolved.ids.find(id => id.startsWith("dc-")) ?? "";
+  const dcIndex = Math.max(0, dcCells.findIndex(c => c.id === dcId));
+  const dcProg = mod(meta.risingEclipticDeg / 10, 1);
+
+  const numCells = Array.from({ length: 10 }, (_, i) => {
+    const e = byId(`num-${i}`);
+    return { id: `num-${i}`, label: e?.name ?? String(i), glyph: e?.glyph };
+  });
+  const numIndex = Math.max(0, meta.numerology % 10);
+  const numProg = dayFrac;
+
   // Ghati — 60 × 24 min from local sunrise (not midnight).
   const solarToday = computeSolarDayEvents(date, lat, lon);
   let sunrise = solarToday.sunrise;
@@ -382,8 +512,92 @@ export function computeOrreryState(
   const yearInDecade = calYear - yearStart;
   const yearProg = (calMonth - 1 + (calDay - 1) / daysThisMonth) / 12;
 
+  const centuryStart = Math.floor(calYear / 100) * 100;
+  const centuryCells = Array.from({ length: 10 }, (_, i) => ({
+    id: `c-${centuryStart - 400 + i * 100}`,
+    label: String(centuryStart - 400 + i * 100),
+  }));
+  const centuryIndex = 4;
+  const centuryProg = (calYear - centuryStart + yearProg) / 100;
+
+  const yearsFromJ2000 = (date.getTime() - Date.UTC(2000, 0, 1)) / (365.2422 * 86_400_000);
+  const precDeg = mod(yearsFromJ2000 * (50.29 / 3600), 360);
+  const precCells = Array.from({ length: 12 }, (_, i) => ({
+    id: `prec-${i * 30}`,
+    label: `${i * 30}°`,
+  }));
+  const precIndex = Math.floor(precDeg / 30) % 12;
+  const precProg = (precDeg % 30) / 30;
+
+  const yearsToAquarius = AGE_AQUARIUS_YEAR - (calYear + yearProg);
+  const ageFloat = mod(1 - yearsToAquarius / AGE_YEARS, 12); // 1 = Pisces at the hinge
+  const ageIndex = Math.floor(ageFloat) % 12;
+  const ageProg = ageFloat - Math.floor(ageFloat);
+  const ageCells = AGE_IDS.map((id, i) => {
+    const e = byId(id);
+    return { id: `age-${id}`, label: e?.name?.split("·")[0]?.trim() ?? `Age ${i + 1}`, glyph: e?.glyph };
+  });
+
+  const keFloat = (hour * 3600 + minute * 60 + second + ms / 1000) / 864;
+  const keIndex = Math.floor(mod(keFloat, 100));
+  const keProg = mod(keFloat, 1);
+  const bmtMs = date.getTime() + 3_600_000;
+  const bmt = new Date(bmtMs);
+  const beatFloat =
+    (bmt.getUTCHours() * 3600 + bmt.getUTCMinutes() * 60 + bmt.getUTCSeconds() + bmt.getUTCMilliseconds() / 1000) /
+    86.4;
+  const beatIndex = Math.floor(mod(beatFloat, 1000));
+  const beatProg = mod(beatFloat, 1);
+  const beatCells = Array.from({ length: 100 }, (_, i) => ({
+    id: `bt-${i * 10}`,
+    label: String(i * 10).padStart(3, "0"),
+  }));
+  const beatLaneIndex = Math.floor(beatIndex / 10) % 100;
+  const beatLaneProg = (beatIndex % 10 + beatProg) / 10;
+
+  const helekFloat = (second + ms / 1000) / (10 / 3);
+  const regaFloat = (helekFloat - Math.floor(helekFloat)) * REGA_PER_HELEK;
+  const regaIndex = Math.floor(mod(regaFloat, REGA_PER_HELEK));
+  const regaProg = mod(regaFloat, 1);
+
   // Display order: north (slow) → south (fast). speedT 1 = blue/north, 0 = red/south.
   const lanesNorthToSouth: OrreryLaneState[] = [
+    {
+      id: "precession",
+      name: "Great Year",
+      cycle: "~25,772 years",
+      tier: "measured",
+      speedT: 1.2,
+      index: precIndex,
+      progress: precProg,
+      cells: precCells,
+      activeLabel: `+${(yearsFromJ2000 * 50.29).toFixed(1)}″ J2000`,
+      lore: "Earth's axial wobble — twelve 30° sectors of the Great Year. Slower than any civil calendar on this stack.",
+    },
+    {
+      id: "age",
+      name: "Astrological age",
+      cycle: `~${Math.round(AGE_YEARS)} years`,
+      tier: "celebrated",
+      speedT: 1.16,
+      index: ageIndex,
+      progress: ageProg,
+      cells: ageCells,
+      activeLabel: ageCells[ageIndex]?.label ?? "—",
+      lore: "One twelfth of precession. The Age of Aquarius hinge is a convention near 2150 — a teaching mark, not a proven start-gun.",
+    },
+    {
+      id: "century",
+      name: "Century",
+      cycle: "100 years",
+      tier: "display",
+      speedT: 1.12,
+      index: centuryIndex,
+      progress: centuryProg,
+      cells: centuryCells,
+      activeLabel: String(centuryStart),
+      lore: "Ten centuries in view, so this hundred sits among its neighbors. Civil counting — not a sky cycle.",
+    },
     {
       id: "year",
       name: "Year",
@@ -397,23 +611,11 @@ export function computeOrreryState(
       lore: "The Gregorian calendar year — ten years in view, so you can feel where this year sits in its decade.",
     },
     {
-      id: "month",
-      name: "Month",
-      cycle: "12 months",
-      tier: "display",
-      speedT: 1.04,
-      index: calMonth - 1,
-      progress: monthProg,
-      cells: monthCells,
-      activeLabel: MONTH_NAMES[calMonth - 1] ?? "—",
-      lore: "The civil calendar month. Twelve Gregorian months advancing left as the year moves.",
-    },
-    {
       id: "season",
       name: "Solar season",
       cycle: "~1 year",
       tier: "celebrated",
-      speedT: 1,
+      speedT: 1.06,
       index: seasonIndex,
       progress: seasonProg,
       cells: seasonCells,
@@ -422,24 +624,36 @@ export function computeOrreryState(
       lore: "The tropical year cut into twelve 30° signs. Celebrated Hellenistic season — one of several ways a sky can be named, not the only one.",
     },
     {
-      id: "wuku-tzolkin",
-      name: "Wuku · Tzolk'in",
-      cycle: "7 / 260 days",
+      id: "tzolkin",
+      name: "Tzolk'in",
+      cycle: "260 days",
       tier: "celebrated",
-      speedT: 0.91,
-      index: wukuIndex,
-      progress: mod(wukuProg, 1),
-      cells: wukuCells,
-      activeLabel: `${wukuCells[wukuIndex]?.label ?? "—"} · ${meta.tzolkinTone} ${meta.tzolkinSign}`,
-      source: byId(`wk-${String(meta.wuku).padStart(2, "0")}`)?.source,
-      lore: "Javanese pawukon week beside the Maya 260-day count. Two independent calendars sharing this row because both move slower than the moon.",
+      speedT: 1.02,
+      index: tzIndex,
+      progress: tzProg,
+      cells: tzCells,
+      activeLabel: `${meta.tzolkinTone} ${meta.tzolkinSign}`,
+      source: byId(tzSignId)?.source,
+      lore: "The Maya 260-day count — twenty day-signs walking with thirteen tones. Its own row, not folded into wuku.",
+    },
+    {
+      id: "month",
+      name: "Month",
+      cycle: "12 months",
+      tier: "display",
+      speedT: 1,
+      index: calMonth - 1,
+      progress: monthProg,
+      cells: monthCells,
+      activeLabel: MONTH_NAMES[calMonth - 1] ?? "—",
+      lore: "The civil calendar month. Twelve Gregorian months advancing left as the year moves.",
     },
     {
       id: "moon",
       name: "Moon phase",
       cycle: "~29.5 days",
       tier: "measured",
-      speedT: 0.82,
+      speedT: 0.92,
       index: moonIndex,
       progress: moonProg,
       cells: moonCells,
@@ -448,17 +662,81 @@ export function computeOrreryState(
       lore: "Eight equal synodic sectors of the real moon. Measured light — the face you can see, not a personality.",
     },
     {
+      id: "nakshatra",
+      name: "Nakshatra",
+      cycle: "~27.3 days",
+      tier: "measured",
+      speedT: 0.88,
+      index: nkIndex,
+      progress: nkProg,
+      cells: nkCells.length ? nkCells : [{ id: "nk-0", label: "—" }],
+      activeLabel: nkCells[nkIndex]?.label ?? "—",
+      source: byId(nkId)?.source,
+      lore: "Twenty-seven Vedic lunar mansions. The Moon's sidereal address — measured sky, named in Sanskrit.",
+    },
+    {
+      id: "decan",
+      name: "Decan",
+      cycle: "~10 days",
+      tier: "celebrated",
+      speedT: 0.84,
+      index: Math.max(0, dcIndex),
+      progress: dcProg,
+      cells: dcCells.length ? dcCells : [{ id: "dc-0", label: "—" }],
+      activeLabel: dcCells[dcIndex]?.label ?? "—",
+      source: byId(dcId)?.source,
+      lore: "Thirty-six Egyptian star-weeks of ten days. The rising 10° band — celebrated night-clock, later an astrological face.",
+    },
+    {
+      id: "wuku",
+      name: "Wuku",
+      cycle: "7 days",
+      tier: "celebrated",
+      speedT: 0.8,
+      index: wukuIndex,
+      progress: mod(wukuProg, 1),
+      cells: wukuCells,
+      activeLabel: wukuCells[wukuIndex]?.label ?? "—",
+      source: byId(`wk-${String(meta.wuku).padStart(2, "0")}`)?.source,
+      lore: "One named week of the Javanese-Balinese Pawukon. Its own row now — no longer sharing the line with Tzolk'in.",
+    },
+    {
       id: "pancawara",
       name: "Pancawara",
       cycle: "5 days",
       tier: "celebrated",
-      speedT: 0.73,
+      speedT: 0.76,
       index: pancaIndex,
       progress: pancaProg,
       cells: pancaCells,
       activeLabel: pancaCells[pancaIndex]?.label ?? "—",
       source: byId(`pc-${meta.pancawara}`)?.source,
       lore: "The Javanese five-day market week. Celebrated social time, not a measured orbit.",
+    },
+    {
+      id: "manzil",
+      name: "Manzil",
+      cycle: "~1 day",
+      tier: "celebrated",
+      speedT: 0.72,
+      index: mzIndex,
+      progress: mzProg,
+      cells: mzCells.length ? mzCells : [{ id: "mz-0", label: "—" }],
+      activeLabel: mzCells[mzIndex]?.label ?? "—",
+      source: byId(`mz-${String(meta.manzil).padStart(2, "0")}`)?.source,
+      lore: "Twenty-eight Arabic lunar stations. The Moon's nightly house in the anwā' / manāzil tradition.",
+    },
+    {
+      id: "numerology",
+      name: "Number",
+      cycle: "1 day",
+      tier: "celebrated",
+      speedT: 0.68,
+      index: numIndex,
+      progress: numProg,
+      cells: numCells,
+      activeLabel: numCells[numIndex]?.label ?? `Number ${meta.numerology}`,
+      lore: "The digital root of today's civil date. A cultural overlay that flips at local midnight.",
     },
     {
       id: "day",
@@ -532,6 +810,21 @@ export function computeOrreryState(
       lore: "The water-clock mark of the Indic day: sixty ghaṭi from sunrise, each about twenty-four minutes. Display pulse — it measures light, it does not name a mood.",
     },
     {
+      id: "ke",
+      name: "Kè",
+      cycle: "14.4 min",
+      tier: "display",
+      speedT: 0.24,
+      index: keIndex,
+      progress: keProg,
+      cells: Array.from({ length: 100 }, (_, i) => ({
+        id: `ke-${i}`,
+        label: String(i + 1),
+      })),
+      activeLabel: `Kè ${keIndex + 1}`,
+      lore: "One hundred notches of the later Chinese civil day. Each kè is 14.4 modern minutes from local midnight.",
+    },
+    {
       id: "min",
       name: "Minutes",
       cycle: "60 min",
@@ -545,6 +838,18 @@ export function computeOrreryState(
       })),
       activeLabel: `${String(minute).padStart(2, "0")}m`,
       lore: "Ptolemy's first small part of the hour — sixty of them make the civil hour you already know.",
+    },
+    {
+      id: "beat",
+      name: ".beat",
+      cycle: "86.4 s",
+      tier: "display",
+      speedT: 0.18,
+      index: beatLaneIndex,
+      progress: beatLaneProg,
+      cells: beatCells,
+      activeLabel: `@${String(beatIndex).padStart(3, "0")}`,
+      lore: "Internet Time: a thousand beats from UTC+1. Shown in tens so the row stays readable; the label is the true .beat.",
     },
     {
       id: "pala",
@@ -610,6 +915,21 @@ export function computeOrreryState(
       lore: "The second small part of the hour — SI's base unit, and the pulse you can hear. Display, not a named quality.",
     },
     {
+      id: "rega",
+      name: "Rega",
+      cycle: "~44 ms",
+      tier: "display",
+      speedT: 0.04,
+      index: regaIndex,
+      progress: regaProg,
+      cells: Array.from({ length: REGA_PER_HELEK }, (_, i) => ({
+        id: `rg-${i}`,
+        label: String(i + 1),
+      })),
+      activeLabel: `Rega ${regaIndex + 1}`,
+      lore: "Seventy-six rega'im fill one ḥeleq. The finest named splinter of the Jewish molad arithmetic.",
+    },
+    {
       id: "ms",
       name: "Milliseconds",
       cycle: "1000 ms",
@@ -667,6 +987,95 @@ export function computeOrreryState(
   }));
 
   return { lanes: lanesWithLore, slowSky };
+}
+
+export const ALL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
+  "precession", "age", "century", "year", "season", "tzolkin", "month", "moon",
+  "nakshatra", "decan", "wuku", "pancawara", "manzil", "numerology", "day",
+  "shi", "planetary-hour", "muhurta", "ghati", "ke", "min", "beat", "pala",
+  "prana", "helek", "sec", "rega", "ms",
+];
+
+/** Left = future (+1 unit), right = past (−1 unit). Calendar lanes use civil adders. */
+export function stepOrreryDate(date: Date, id: OrreryLaneId, dir: number): Date {
+  const d = new Date(date.getTime());
+  const step = dir < 0 ? -1 : 1;
+  switch (id) {
+    case "precession":
+      d.setUTCFullYear(d.getUTCFullYear() + step * 72);
+      return d;
+    case "age":
+      d.setUTCFullYear(d.getUTCFullYear() + step * Math.round(AGE_YEARS));
+      return d;
+    case "century":
+      d.setUTCFullYear(d.getUTCFullYear() + step * 100);
+      return d;
+    case "year":
+    case "season":
+      d.setFullYear(d.getFullYear() + step);
+      return d;
+    case "month":
+      d.setMonth(d.getMonth() + step);
+      return d;
+    case "tzolkin":
+    case "wuku":
+    case "wuku-tzolkin":
+    case "pancawara":
+    case "manzil":
+    case "numerology":
+    case "nakshatra":
+    case "decan":
+      d.setDate(d.getDate() + step);
+      return d;
+    case "moon":
+      d.setTime(d.getTime() + step * 3.69 * 86_400_000);
+      return d;
+    case "day":
+      d.setHours(d.getHours() + step);
+      return d;
+    case "shi":
+      d.setHours(d.getHours() + step * 2);
+      return d;
+    case "planetary-hour":
+      d.setHours(d.getHours() + step);
+      return d;
+    case "muhurta":
+      d.setTime(d.getTime() + step * 48 * 60 * 1000);
+      return d;
+    case "ghati":
+      d.setTime(d.getTime() + step * GHATI_MS);
+      return d;
+    case "ke":
+      d.setTime(d.getTime() + step * KE_MS);
+      return d;
+    case "min":
+      d.setMinutes(d.getMinutes() + step);
+      return d;
+    case "beat":
+      d.setTime(d.getTime() + step * BEAT_MS);
+      return d;
+    case "pala":
+      d.setTime(d.getTime() + step * PALA_MS);
+      return d;
+    case "prana":
+      d.setTime(d.getTime() + step * PRANA_MS);
+      return d;
+    case "helek":
+      d.setTime(d.getTime() + step * HELEK_MS);
+      return d;
+    case "sec":
+      d.setSeconds(d.getSeconds() + step);
+      return d;
+    case "rega":
+      d.setTime(d.getTime() + step * REGA_MS);
+      return d;
+    case "ms":
+      d.setTime(d.getTime() + step * 100);
+      return d;
+    default:
+      d.setTime(d.getTime() + step * 86_400_000);
+      return d;
+  }
 }
 
 /** Map speedT 0..1 → CSS/canvas colour (red hot → deep blue). */

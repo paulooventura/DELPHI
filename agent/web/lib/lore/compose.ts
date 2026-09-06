@@ -167,7 +167,7 @@ const POLE_WORDS: Record<string, [string, string]> = {
   light:   ["shadowed", "bright"],
 };
 
-function poleWord(axis: string, value: number): string {
+export function poleWord(axis: string, value: number): string {
   const pair = POLE_WORDS[axis];
   if (!pair) return "";
   return value >= 0 ? pair[1] : pair[0];
@@ -730,7 +730,7 @@ export function orchestratedPrompt(
 
   const system = [
     `This instant is read by ${o.fieldSize} independent traditions at once — many cultures, many timescales, all passing through one moment. You speak for the whole field, not any one voice.`,
-    "Write one or two sentences naming the single character that emerges from all of them together — a logic, not a mood board.",
+    "Write one short clause naming the single character that emerges from all of them together — a logic, not a mood board. Eight to fourteen words, then a two-to-four word dare. No second explanatory sentence.",
     "Structure: the ROOT (where the whole field agrees, weighted to slow/deep cycles) is your subject; the TENSION (its deepest split) is the turn — let the contradiction be the point, never resolve it into vague positivity; the INFLECTION (what the fast hour-cycles add) is texture on how it shows up right now.",
     "Distill ALL of the axis readings and qualities you are given. Do not cherry-pick two pretty notes and ignore the rest.",
     "End as a challenge to the reader (second person). Earn it from the chord.",
@@ -789,7 +789,7 @@ export function orchestratedPrompt(
     ...leanHint,
     ...castHint,
     "",
-    "Voice the one or two sentences this chord is signaling, in this register, naming nothing.",
+    "Voice this chord as one short sophisticated clause plus a brief dare. Naming nothing.",
   ].join("\n");
 
   return { system, user };

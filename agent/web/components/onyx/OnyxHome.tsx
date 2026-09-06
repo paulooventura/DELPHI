@@ -22,6 +22,8 @@ import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareShee
 import { OnyxCompassRose } from "./OnyxCompassRose";
 import { OnyxYinYang } from "./OnyxYinYang";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
+import { decompose, poleWord, type Composition } from "../../lib/lore/compose";
+import { phraseReason } from "../../lib/lore/phrase";
 import {
   COMPASS_AIM_PX,
   COMPASS_LOCK_PX,
@@ -52,6 +54,8 @@ export type OnyxHomeProps = {
   zodiacSign: string;
   /** Distilled sentence for the active reading layer. */
   momentLine: string;
+  /** Active chord — tap the phrase to see how the line was distilled. */
+  phraseChord?: Composition | null;
   /** Tier-honest provenance for the locked snapshot (measured vs celebrated). */
   provenanceLine?: string | null;
   /** Active layer label — names exactly what's folded in. */
@@ -99,6 +103,7 @@ export function OnyxHome({
   phaseFraction,
   zodiacSign,
   momentLine,
+  phraseChord = null,
   provenanceLine,
   readingLayerLabel,
   readingLayers = [],
@@ -140,6 +145,7 @@ export function OnyxHome({
   const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [distillOpen, setDistillOpen] = useState(false);
+  const [phraseWhyOpen, setPhraseWhyOpen] = useState(false);
   const [wallNow, setWallNow] = useState(() => _now);
   const deviceRef = useRef<HTMLDivElement>(null);
   const enterTimer = useRef(0);
@@ -504,10 +510,11 @@ export function OnyxHome({
           swipeIgnore.current = false;
         }}
         onKeyDown={e => {
-          if (e.key === "Escape" && (shareOpen || distillOpen)) {
+          if (e.key === "Escape" && (shareOpen || distillOpen || phraseWhyOpen)) {
             e.preventDefault();
             setShareOpen(false);
             setDistillOpen(false);
+            setPhraseWhyOpen(false);
             return;
           }
           if (e.key === "ArrowDown") goDelta(1);
@@ -734,7 +741,8 @@ export function OnyxHome({
             className="onyx-yy-phrase-btn"
             onClick={e => {
               e.stopPropagation();
-              enterDoor("center");
+              if (phraseChord) setPhraseWhyOpen(true);
+              else enterDoor("center");
             }}
           >
             <p className="big">{momentLine}</p>
@@ -837,6 +845,65 @@ export function OnyxHome({
             onChange={onDistillPrefs}
             onClose={() => setDistillOpen(false)}
           />
+        )}
+        {phraseWhyOpen && phraseChord && (
+          <div className="onyx-share-scrim" onClick={() => setPhraseWhyOpen(false)}>
+            <section
+              className="onyx-share-sheet onyx-phrase-why"
+              role="dialog"
+              aria-modal="true"
+              aria-label="How this phrase was distilled"
+              onClick={e => e.stopPropagation()}
+            >
+              {(() => {
+                const why = phraseReason(phraseChord, distillPrefs ? { voice: distillPrefs.voice } : undefined);
+                const voices = decompose(phraseChord).slice(0, 8);
+                return (
+                  <>
+                    <p className="onyx-share-kicker">How this line was made</p>
+                    <p className="onyx-phrase-why-line">{momentLine}</p>
+                    <p className="onyx-phrase-why-meta">
+                      {why.fieldSize} voices · {why.register.replace("-", " ")}
+                    </p>
+                    {why.root && (
+                      <p className="onyx-phrase-why-row">
+                        <span>Root</span>
+                        {poleWord(why.root.axis, why.root.pole) || why.root.axis}
+                      </p>
+                    )}
+                    {why.tension && (
+                      <p className="onyx-phrase-why-row">
+                        <span>Tension</span>
+                        {why.tension.axis}
+                      </p>
+                    )}
+                    {why.inflection[0] && (
+                      <p className="onyx-phrase-why-row">
+                        <span>Hour</span>
+                        {poleWord(why.inflection[0].axis, why.inflection[0].pole) || why.inflection[0].axis}
+                      </p>
+                    )}
+                    <p className="onyx-share-kicker onyx-distill-kicker-2">Voices in the chord</p>
+                    <ul className="onyx-phrase-why-voices">
+                      {voices.map(({ entry, contributes }) => (
+                        <li key={entry.id}>
+                          <b>{entry.name}</b>
+                          <span>{contributes.slice(0, 3).join(" · ")}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      type="button"
+                      className="onyx-share-cancel"
+                      onClick={() => setPhraseWhyOpen(false)}
+                    >
+                      Close
+                    </button>
+                  </>
+                );
+              })()}
+            </section>
+          </div>
         )}
       </div>
     </div>

@@ -264,7 +264,7 @@ export function parsePhraseBrainPayload(raw: unknown): PhraseBrainPayload | null
 export function acceptDistilledPhrase(text: string): string | null {
   let phrase = text.replace(/\s+/g, " ").trim();
   phrase = phrase.replace(/^["'`]+|["'`]+$/g, "");
-  if (phrase.length < 24 || phrase.length > 320) return null;
+  if (phrase.length < 12 || phrase.length > 160) return null;
   if (!/[.!?]$/.test(phrase)) phrase = `${phrase}.`;
   if (TRADITION_LEAK.test(phrase)) return null;
   if (BANNED_VOICE.test(phrase)) return null;

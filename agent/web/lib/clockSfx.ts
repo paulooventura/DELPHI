@@ -108,55 +108,72 @@ export function isClockAudioSilenced(): boolean {
   return audioSilenced || audioParked;
 }
 
-/** Clear woody knock — tick / tock on each second. Soft enough not to chop the bed. */
-export function playSecondTick(ctx: AudioContext, second: number) {
+/**
+ * Original two-tone tick/tock in the Schumann key (32.5 Hz family).
+ * High: 205 → 98 body, 680 tip. Low: 160 → 78 body, 540 tip.
+ */
+function keyedTick(
+  ctx: AudioContext,
+  high: boolean,
+  scale = 1,
+  gain = 1,
+  dur = 1,
+) {
   if (audioSilenced || audioParked) return;
   if (ctx.state !== "running") void ctx.resume();
   const t = ctx.currentTime;
-  const tock = second % 2 === 1;
   const out = masterBus(ctx);
+  const body0 = (high ? 205 : 160) * scale;
+  const body1 = (high ? 98 : 78) * scale;
+  const tipHz = (high ? 680 : 540) * scale;
+  const knockHz = (high ? 520 : 380) * Math.min(1.4, scale);
 
   const knock = ctx.createBufferSource();
   knock.buffer = noiseBuffer(ctx, 1.5);
   const knockBp = ctx.createBiquadFilter();
   knockBp.type = "bandpass";
-  knockBp.frequency.setValueAtTime(tock ? 380 : 520, t);
+  knockBp.frequency.setValueAtTime(knockHz, t);
   knockBp.Q.setValueAtTime(1.8, t);
   const knockGain = ctx.createGain();
-  knockGain.gain.setValueAtTime(tock ? 0.028 : 0.034, t);
-  knockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05);
+  knockGain.gain.setValueAtTime((high ? 0.034 : 0.028) * gain, t);
+  knockGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.05 * dur);
   knock.connect(knockBp);
   knockBp.connect(knockGain);
   knockGain.connect(out);
   knock.start(t);
-  knock.stop(t + 0.06);
+  knock.stop(t + 0.06 * dur);
 
   const body = ctx.createOscillator();
   const bodyLp = ctx.createBiquadFilter();
   const bodyGain = ctx.createGain();
   body.type = "triangle";
-  body.frequency.setValueAtTime(tock ? 160 : 205, t);
-  body.frequency.exponentialRampToValueAtTime(tock ? 78 : 98, t + 0.16);
+  body.frequency.setValueAtTime(body0, t);
+  body.frequency.exponentialRampToValueAtTime(Math.max(20, body1), t + 0.16 * dur);
   bodyLp.type = "lowpass";
-  bodyLp.frequency.setValueAtTime(900, t);
-  bodyGain.gain.setValueAtTime(tock ? 0.022 : 0.028, t);
-  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18);
+  bodyLp.frequency.setValueAtTime(Math.min(2400, 900 * scale), t);
+  bodyGain.gain.setValueAtTime((high ? 0.028 : 0.022) * gain, t);
+  bodyGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.18 * dur);
   body.connect(bodyLp);
   bodyLp.connect(bodyGain);
   bodyGain.connect(out);
   body.start(t);
-  body.stop(t + 0.2);
+  body.stop(t + 0.2 * dur);
 
   const tip = ctx.createOscillator();
   const tipGain = ctx.createGain();
   tip.type = "sine";
-  tip.frequency.setValueAtTime(tock ? 540 : 680, t);
-  tipGain.gain.setValueAtTime(0.022, t);
-  tipGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03);
+  tip.frequency.setValueAtTime(tipHz, t);
+  tipGain.gain.setValueAtTime(0.022 * gain, t);
+  tipGain.gain.exponentialRampToValueAtTime(0.0001, t + 0.03 * dur);
   tip.connect(tipGain);
   tipGain.connect(out);
   tip.start(t);
-  tip.stop(t + 0.04);
+  tip.stop(t + 0.04 * dur);
+}
+
+/** Clear two-tone tick / tock on each second — original wood in the 32.5 key. */
+export function playSecondTick(ctx: AudioContext, second: number) {
+  keyedTick(ctx, second % 2 === 0, 1, 1, 1);
 }
 
 /** Deep harmonious gong strike with long resonant tail. */
@@ -224,22 +241,14 @@ function playGongStrike(
   attack.stop(t0 + 0.14);
 }
 
-/** Minute gong — deep, single strike. */
+/** Minute — same two-tone family as the second, one octave down. */
 export function playMinuteBell(ctx: AudioContext) {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  playGongStrike(ctx, ctx.currentTime, 72, 0.22, 3.2);
+  keyedTick(ctx, new Date().getMinutes() % 2 === 0, 0.5, 1.35, 2.1);
 }
 
-/** Hour gong — deeper bowl, one strike per hour count. */
+/** Hour — same two-tone family, deeper still. */
 export function playHourBell(ctx: AudioContext, hour24: number) {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  const strikes = (hour24 % 12) || 12;
-  const gap = 1.55;
-  for (let i = 0; i < strikes; i++) {
-    playGongStrike(ctx, ctx.currentTime + i * gap, 55, 0.24, 3.8);
-  }
+  keyedTick(ctx, hour24 % 2 === 0, 0.35, 1.45, 2.6);
 }
 
 const PLANET_HZ: Record<string, number> = {
@@ -336,6 +345,7 @@ function harmonicPulse(
 }
 
 const lastFastMarkAt = new Map<string, number>();
+const markFlip = new Map<string, boolean>();
 function fastMarkGuard(id: string, ms = 90): boolean {
   const now = typeof performance !== "undefined" ? performance.now() : Date.now();
   const prev = lastFastMarkAt.get(id) ?? 0;
@@ -343,84 +353,58 @@ function fastMarkGuard(id: string, ms = 90): boolean {
   lastFastMarkAt.set(id, now);
   return true;
 }
+function flipHigh(id: string): boolean {
+  const next = !(markFlip.get(id) ?? false);
+  markFlip.set(id, next);
+  return next;
+}
 
 /** Helek — 3⅓ s glass tick. Audible mid-high, not a sub-harmonic thump. */
 export function playHelekMark(ctx: AudioContext) {
   if (!fastMarkGuard("helek")) return;
-  harmonicPulse(ctx, 784, 0.11, 0.14, -0.2);
+  keyedTick(ctx, flipHigh("helek"), 1.12, 0.72, 0.75);
 }
 
-/** Prāṇa — ~4 s breath chime. */
+/** Prāṇa — ~4 s breath, same two-tone family. */
 export function playPranaMark(ctx: AudioContext) {
   if (!fastMarkGuard("prana")) return;
-  harmonicPulse(ctx, 523, 0.12, 0.22, 0.18);
+  keyedTick(ctx, flipHigh("prana"), 0.92, 0.8, 0.95);
 }
 
-/** Pala — ~24 s fuller stone. */
+/** Pala — ~24 s fuller stone, same two-tone family. */
 export function playPalaMark(ctx: AudioContext) {
   if (!fastMarkGuard("pala")) return;
-  harmonicPulse(ctx, 329, 0.14, 0.4, 0);
+  keyedTick(ctx, flipHigh("pala"), 0.72, 1.05, 1.4);
 }
 
-/** Ghaṭi — ~24 min from sunrise. Clay / wood, quieter than the minute gong. */
+/** Ghaṭi — same two-tone family as the second, slower. */
 export function playGhatiMark(ctx: AudioContext) {
-  woodMark(ctx, 108, 0.2, 0.42);
+  keyedTick(ctx, flipHigh("ghati"), 0.58, 1.1, 1.7);
 }
 
-/** Muhūrta — ~48 min. Warmer bowl than the minute strike. */
+/** Muhūrta — same two-tone family, deeper. */
 export function playMuhurtaMark(ctx: AudioContext) {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  playGongStrike(ctx, ctx.currentTime, 88, 0.24, 2.6);
+  keyedTick(ctx, flipHigh("muhurta"), 0.5, 1.2, 2);
 }
 
-/** Planetary hour — pitch follows the Chaldean ruler. */
-export function playPlanetaryHourMark(ctx: AudioContext, planet: string) {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  playGongStrike(ctx, ctx.currentTime, PLANET_HZ[planet] ?? 82, 0.26, 2.9);
+/** Planetary hour — same two-tone family. */
+export function playPlanetaryHourMark(ctx: AudioContext, _planet: string) {
+  keyedTick(ctx, flipHigh("planetary"), 0.62, 1.15, 1.8);
 }
 
-/** Chinese shí — 2 h double-hour. Pentatonic ding + wood. */
-export function playShiMark(ctx: AudioContext, index: number) {
-  woodMark(ctx, SHI_HZ[((index % 12) + 12) % 12] ?? 131, 0.16, 0.55);
+/** Chinese shí — same two-tone family. */
+export function playShiMark(ctx: AudioContext, _index: number) {
+  keyedTick(ctx, flipHigh("shi"), 0.68, 1.05, 1.5);
 }
 
-/** Kè — 14.4 min water-clock mark. */
+/** Kè — same two-tone family. */
 export function playKeMark(ctx: AudioContext) {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  const t = ctx.currentTime;
-  const out = masterBus(ctx);
-  const drip = ctx.createOscillator();
-  const g = ctx.createGain();
-  drip.type = "sine";
-  drip.frequency.setValueAtTime(420, t);
-  drip.frequency.exponentialRampToValueAtTime(210, t + 0.28);
-  g.gain.setValueAtTime(0.12, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.36);
-  drip.connect(g);
-  g.connect(out);
-  drip.start(t);
-  drip.stop(t + 0.4);
+  keyedTick(ctx, flipHigh("ke"), 0.78, 0.95, 1.3);
 }
 
-/** .beat — 86.4 s. A whisper above the wood tick, not a gong. */
+/** .beat — same two-tone family, lighter. */
 export function playBeatMark(ctx: AudioContext) {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  const t = ctx.currentTime;
-  const out = masterBus(ctx);
-  const osc = ctx.createOscillator();
-  const g = ctx.createGain();
-  osc.type = "sine";
-  osc.frequency.setValueAtTime(784, t);
-  g.gain.setValueAtTime(0.055, t);
-  g.gain.exponentialRampToValueAtTime(0.0001, t + 0.14);
-  osc.connect(g);
-  g.connect(out);
-  osc.start(t);
-  osc.stop(t + 0.16);
+  keyedTick(ctx, flipHigh("beat"), 1.05, 0.7, 0.85);
 }
 
 /** Sunrise / sunset — the day lane's real gates. */
@@ -435,10 +419,8 @@ export function playDayGate(ctx: AudioContext, gate: "sunrise" | "sunset") {
 
 /** Slow sky — moon sector, wuku, pancawara, season. Rare on purpose. */
 export function playSlowSkyMark(ctx: AudioContext, kind: "moon" | "wuku" | "pancawara" | "season") {
-  if (audioSilenced) return;
-  if (ctx.state !== "running") void ctx.resume();
-  const hz = { moon: 58, wuku: 52, pancawara: 46, season: 41 }[kind];
-  playGongStrike(ctx, ctx.currentTime, hz, 0.2, 5.2);
+  const scale = { moon: 0.42, wuku: 0.38, pancawara: 0.34, season: 0.3 }[kind];
+  keyedTick(ctx, flipHigh(kind), scale, 1.25, 2.4);
 }
 
 // ─── Schumann atmosphere (32.5 Hz “song of the planet”) ─────────────────────

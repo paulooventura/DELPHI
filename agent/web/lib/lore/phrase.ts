@@ -201,23 +201,23 @@ const HOUR: string[] = [
  */
 const DARE: Record<Tone["register"], string[]> = {
   "warm-witness": [
-    " Stay with it. Your call.",
+    " Stay with it.",
     " Let it land on you.",
-    " Meet it. Don't improve it.",
+    " Your call.",
   ],
   "plain-reading": [
-    " Name the pole you'll answer.",
-    " Pick one side.",
-    " Choose on purpose.",
+    " Name it.",
+    " Pick one.",
+    " Choose.",
   ],
   "quiet-riddle": [
     " Don't look away.",
-    " Sit with the unsaid.",
-    " Give it your attention.",
+    " Sit with it.",
+    " Your attention.",
   ],
   "trickster-challenge": [
     " Your move.",
-    " Walk through one door.",
+    " Walk through.",
     " Act like it matters.",
   ],
 };
@@ -307,9 +307,38 @@ function dareLine(reg: Tone["register"], seed: number): string {
   return pick(DARE[reg], seed, 11);
 }
 
+export type PhraseReason = {
+  weather: string;
+  dare: string;
+  root: { axis: string; word: string; pole: number } | null;
+  tension: { axis: string; strength: number } | null;
+  inflection: { axis: string; pole: number }[];
+  register: Tone["register"];
+  fieldSize: number;
+};
+
+/** The same orchestration that made the street line — for the tap-to-see window. */
+export function phraseReason(c: Composition, opts?: DistillOptions): PhraseReason {
+  const o = orchestrate(c);
+  const seed = seedFrom(o);
+  const register =
+    opts?.voice && opts.voice !== "field" ? opts.voice : o.tone.register;
+  return {
+    weather: o.root ? weatherLine(o, c, seed) : pick(EMPTY, seed, 0),
+    dare: dareLine(register, seed).trim(),
+    root: o.root
+      ? { axis: o.root.axis, word: o.root.axis, pole: o.root.pole }
+      : null,
+    tension: o.tension,
+    inflection: o.inflection,
+    register,
+    fieldSize: o.fieldSize,
+  };
+}
+
 /**
- * Distilled line for the home orb — weather + hinge + hour + dare.
- * Local fallback when the phrase brain is offline. Wraps between the dots.
+ * Distilled line for the home orb — weather + a brief dare.
+ * Hinge and hour stay in the tap-to-see window, not on the street.
  */
 export function speak(c: Composition, opts?: DistillOptions): string {
   const o = orchestrate(c);
@@ -322,18 +351,7 @@ export function speak(c: Composition, opts?: DistillOptions): string {
   const weather = weatherLine(o, c, seed);
   const register =
     opts?.voice && opts.voice !== "field" ? opts.voice : o.tone.register;
-  const hinge = hingeClause({ ...o, tone: { ...o.tone, register } }, seed);
-  const hour = hourClause(o, seed);
   const dare = dareLine(register, seed);
-  let body = `${cap(weather)}${hinge}${hour}`;
-
-  const held = (opts?.castLean ?? [])
-    .map(q => q.trim().toLowerCase())
-    .filter(q => q.length > 1 && !body.toLowerCase().includes(q))
-    .slice(0, 2);
-  if (held.length === 2) body += `, with ${held[0]} and ${held[1]} held beneath`;
-  else if (held.length === 1) body += `, with ${held[0]} held beneath`;
-
-  const line = `${body}.${dare}`.replace(/\s+/g, " ").trim();
+  const line = `${cap(weather)}.${dare}`.replace(/\s+/g, " ").trim();
   return /[.!?]$/.test(line) ? line : `${line}.`;
 }
