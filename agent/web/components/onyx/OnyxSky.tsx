@@ -68,7 +68,7 @@ export function OnyxSky({
   moonAboveHorizon?: boolean;
   onCalibrateSun?: () => void;
   onCalibrateMoon?: () => void;
-  onCalibrateLookToObject?: (az: number, alt: number, name?: string) => void;
+  onCalibrateLookToObject?: (az: number, alt: number, name?: string, id?: string) => void;
   onResetSkyCalibration?: () => void;
   headingDeg: number;
   pitchDeg: number;
@@ -408,8 +408,8 @@ export function OnyxSky({
             onClose={() => setSkyDetail(null)}
             onLockLook={
               onCalibrateLookToObject
-                ? (az, alt, name) => {
-                    onCalibrateLookToObject(az, alt, name);
+                ? (az, alt, name, id) => {
+                    onCalibrateLookToObject(az, alt, name, id);
                     setSkyDetail(null);
                   }
                 : undefined

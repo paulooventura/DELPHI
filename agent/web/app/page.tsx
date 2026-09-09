@@ -13,6 +13,8 @@ import {
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
   setUserAltitudeOffsetDeg,
+  getUserAzimuthOffsetDeg,
+  getUserAltitudeOffsetDeg,
   lockLookOffsets,
 } from "../lib/orientationCalibration";
 import { computeCelestialBodies } from "../lib/cosmic/celestialBodies";
@@ -248,11 +250,15 @@ export default function Home() {
     try {
       const raw = localStorage.getItem(SKY_ALT_OFFSET_KEY);
       const v = raw != null ? Number(raw) : 0;
-      if (Number.isFinite(v)) {
+      if (Number.isFinite(v) && Math.abs(v) <= 8) {
         setUserAltitudeOffsetDeg(v);
         return v;
       }
+      if (Number.isFinite(v) && Math.abs(v) > 8) {
+        localStorage.removeItem(SKY_ALT_OFFSET_KEY);
+      }
     } catch { /* ignore */ }
+    setUserAltitudeOffsetDeg(0);
     return 0;
   });
   const [skyLockName, setSkyLockName] = useState(() => {
@@ -957,7 +963,7 @@ export default function Home() {
   }
 
   function applySkyAltOffset(value: number) {
-    const v = Math.max(-45, Math.min(45, value));
+    const v = Math.max(-8, Math.min(8, value));
     setSkyAltOffset(v);
     setUserAltitudeOffsetDeg(v);
     try { localStorage.setItem(SKY_ALT_OFFSET_KEY, String(v)); } catch { /* ignore */ }
@@ -978,9 +984,8 @@ export default function Home() {
     resetOrientationCalibration();
   }
 
-  /** Camera look for object lock — matches live AR sky view, not throttled HUD heading. */
+  /** Camera look for object lock — live IMU ray, not the lagged canvas smoother. */
   function viewForCalibration(): { az: number; alt: number } | null {
-    if (skyLookRef.current) return skyLookRef.current;
     if (hasLiveHeading || hasLivePitch) {
       return enuToAltAz(liveAttitudeRef.current.view);
     }
@@ -988,21 +993,40 @@ export default function Home() {
     return { az: manualHeading, alt: activePitch };
   }
 
-  function calibrateLookToObject(trueAz: number, trueAlt: number, name?: string) {
+  function liveHorizonForSkyId(id: string | undefined): { az: number; alt: number } | null {
+    if (!id || id.includes(":")) return null;
+    const skyNow = cosmic?.now ?? animNow;
+    const body = computeCelestialBodies(
+      skyNow,
+      mapLat,
+      mapLon,
+      signals?.altM ?? 0,
+    ).find(b => b.id === id);
+    if (!body) return null;
+    return { az: body.az, alt: body.alt };
+  }
+
+  function calibrateLookToObject(trueAz: number, trueAlt: number, name?: string, id?: string) {
+    const live = liveHorizonForSkyId(id);
+    const objectAz = live?.az ?? trueAz;
+    const objectAlt = live?.alt ?? trueAlt;
     const view = viewForCalibration();
     if (view == null) return;
     const next = lockLookOffsets({
-      objectAz: trueAz,
-      objectAlt: trueAlt,
+      objectAz,
+      objectAlt,
       viewAz: view.az,
       viewAlt: view.alt,
-      currentAzOffset: skyAzOffset,
-      currentAltOffset: skyAltOffset,
+      currentAzOffset: getUserAzimuthOffsetDeg(),
+      currentAltOffset: getUserAltitudeOffsetDeg(),
     });
     applySkyAzOffset(next.azOffset);
     applySkyAltOffset(next.altOffset);
     persistSkyLockName(name?.trim() || "");
-    liveAttitudeRef.current.view = altAzToEnu(trueAz, trueAlt);
+    const dAz = ((objectAz - view.az + 540) % 360) - 180;
+    const newAz = ((view.az + dAz) % 360 + 360) % 360;
+    const aimed = Math.abs(objectAlt - view.alt) <= 5;
+    liveAttitudeRef.current.view = altAzToEnu(newAz, aimed ? objectAlt : view.alt);
     skyLookSnapRef.current = true;
   }
 
@@ -1016,7 +1040,7 @@ export default function Home() {
     );
     const sun = bodies.find(b => b.id === "sun");
     if (!sun || sun.alt < 3) return;
-    calibrateLookToObject(sun.az, sun.alt, "Sun");
+    calibrateLookToObject(sun.az, sun.alt, "Sun", "sun");
   }
 
   function calibrateCompassToMoon() {
@@ -1029,7 +1053,7 @@ export default function Home() {
     );
     const moon = bodies.find(b => b.id === "moon");
     if (!moon || moon.alt < 8) return;
-    calibrateLookToObject(moon.az, moon.alt, "Moon");
+    calibrateLookToObject(moon.az, moon.alt, "Moon", "moon");
   }
 
   const moonAboveHorizon = useMemo(() => {

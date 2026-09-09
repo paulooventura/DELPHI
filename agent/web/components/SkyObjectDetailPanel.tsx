@@ -26,7 +26,7 @@ export function SkyObjectDetailPanel({
 }: {
   detail: SkyObjectDetail;
   onClose: () => void;
-  onLockLook?: (az: number, alt: number, name: string) => void;
+  onLockLook?: (az: number, alt: number, name: string, id?: string) => void;
 }) {
   return (
     <div
@@ -85,7 +85,7 @@ export function SkyObjectDetailPanel({
             <button
               type="button"
               className="cp-sky-object-panel-lock"
-              onClick={() => onLockLook(detail.az, detail.alt, detail.name)}
+              onClick={() => onLockLook(detail.az, detail.alt, detail.name, detail.id)}
             >
               Lock {detail.name}
             </button>

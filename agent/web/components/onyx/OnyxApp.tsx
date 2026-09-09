@@ -202,7 +202,7 @@ export function OnyxApp({
   moonAboveHorizon?: boolean;
   onCalibrateSun?: () => void;
   onCalibrateMoon?: () => void;
-  onCalibrateLookToObject?: (az: number, alt: number, name?: string) => void;
+  onCalibrateLookToObject?: (az: number, alt: number, name?: string, id?: string) => void;
   onResetSkyCalibration?: () => void;
   headingDeg: number;
   pitchDeg: number;

@@ -126,6 +126,19 @@ describe("lockLookOffsets", () => {
     expect(next.azOffset).toBeCloseTo(20, 5);
     expect(next.altOffset).toBeCloseTo(0, 5);
   });
+
+  it("does not pitch the whole sky when the object is far from the reticle", () => {
+    const next = lockLookOffsets({
+      objectAz: 200,
+      objectAlt: 35,
+      viewAz: 10,
+      viewAlt: 5,
+      currentAzOffset: 0,
+      currentAltOffset: 0,
+    });
+    expect(next.azOffset).toBeCloseTo(-170, 5);
+    expect(next.altOffset).toBe(0);
+  });
 });
 
 describe("horizon crossing", () => {

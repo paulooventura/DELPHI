@@ -109,7 +109,7 @@ export function getUserAzimuthOffsetDeg(): number {
 
 export function setUserAltitudeOffsetDeg(deg: number): void {
   if (!Number.isFinite(deg)) return;
-  userAltitudeOffsetDeg = clamp(deg, -45, 45);
+  userAltitudeOffsetDeg = clamp(deg, -8, 8);
 }
 
 export function getUserAltitudeOffsetDeg(): number {
@@ -120,6 +120,9 @@ export function getUserAltitudeOffsetDeg(): number {
  * Offsets that put a known object on the current look ray.
  * `viewAz` / `viewAlt` must already include the current user offsets
  * (the live AR look), matching sun / moon Align.
+ *
+ * Azimuth is the compass correction. Altitude is only a tiny trim when the
+ * object is already in the reticle — a large pitch slam tilts the whole sky.
  */
 export function lockLookOffsets(opts: {
   objectAz: number;
@@ -128,12 +131,17 @@ export function lockLookOffsets(opts: {
   viewAlt: number;
   currentAzOffset: number;
   currentAltOffset: number;
+  trimAltMaxDeg?: number;
 }): { azOffset: number; altOffset: number } {
   const dAz = shortestOffsetDeg(opts.objectAz - opts.viewAz);
   const dAlt = opts.objectAlt - opts.viewAlt;
+  const trim = opts.trimAltMaxDeg ?? 5;
   return {
     azOffset: shortestOffsetDeg(opts.currentAzOffset + dAz),
-    altOffset: clamp(opts.currentAltOffset + dAlt, -45, 45),
+    altOffset:
+      Math.abs(dAlt) <= trim
+        ? clamp(opts.currentAltOffset + dAlt, -8, 8)
+        : 0,
   };
 }
 

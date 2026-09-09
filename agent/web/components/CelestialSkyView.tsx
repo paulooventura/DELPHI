@@ -96,7 +96,7 @@ export type CelestialSkyViewProps = {
   /** Fires when the reticle lock enters / leaves a named sky object. */
   onAimedObjectChange?: (aim: AimedSkyObject | null) => void;
   /** Tap-sheet “this is where I see it” — uses the object’s true az/alt. */
-  onLockLookToObject?: (az: number, alt: number, name: string) => void;
+  onLockLookToObject?: (az: number, alt: number, name: string, id?: string) => void;
   /** Written every frame with the lockable object in the reticle (or null). */
   aimedLiveRef?: RefObject<AimedSkyObject | null>;
   /** Smoothed look the canvas is actually drawing — lock against this, not raw IMU. */
@@ -1819,9 +1819,14 @@ export function CelestialSkyView({
           }}
           onLockLook={
             onLockLookToObject
-              ? (az, alt, name) => {
+              ? (az, alt, name, id) => {
                   const live = trackablesRef.current.find(t => t.id === selectedDetail.id);
-                  onLockLookToObject(live?.az ?? az, live?.alt ?? alt, name);
+                  onLockLookToObject(
+                    live?.az ?? az,
+                    live?.alt ?? alt,
+                    name,
+                    live?.id ?? id ?? selectedDetail.id,
+                  );
                   setSelectedDetail(null);
                   onSelectDetailRef.current?.(null);
                 }
