@@ -2719,11 +2719,34 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-orrery-picker-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
   justify-content: center;
   margin: 10px auto 14px;
+  width: 100%;
   max-width: 360px;
+}
+.onyx-orrery-picker-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.onyx-orrery-picker-groups {
+  grid-template-columns: 1fr 1fr 1fr;
+}
+.onyx-orrery-picker-groups .onyx-orrery-filter-btn {
+  padding: 4px 4px;
+  font-size: 8px;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.onyx-orrery-picker-done {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 .onyx-orrery-picker-list {
   list-style: none;
@@ -3446,6 +3469,22 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-cut-citrine { --gem: 42 72% 46%; }
 .onyx-cut-ruby { --gem: 352 52% 40%; }
 .onyx-cut-topaz { --gem: 196 62% 46%; }
+.onyx-orrery-filter-btn.onyx-orrery-picker-show {
+  --gem: 152 52% 32%;
+  color: #e8fff4;
+}
+.onyx-orrery-filter-btn.onyx-orrery-picker-hide {
+  --gem: 352 58% 38%;
+  color: #ffe8ea;
+}
+.onyx-tool-btn.onyx-orrery-picker-done {
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
 .onyx-row {
   margin: 4px 0;
   padding: 12px 14px;

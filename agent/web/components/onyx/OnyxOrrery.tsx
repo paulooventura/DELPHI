@@ -515,41 +515,45 @@ export function OnyxOrrery({
               <p className="onyx-eyebrow">Cycles</p>
               <p className="onyx-layer-lead">Choose which lanes stay on the stack</p>
               <div className="onyx-orrery-picker-actions">
-                <button
-                  type="button"
-                  className="onyx-orrery-filter-btn"
-                  onClick={() => setHidden(new Set())}
-                >
-                  Show all
-                </button>
-                <button
-                  type="button"
-                  className="onyx-orrery-filter-btn"
-                  onClick={() => setHidden(new Set(visibleOrreryLaneIds()))}
-                >
-                  Hide all
-                </button>
-                <button
-                  type="button"
-                  className="onyx-orrery-filter-btn"
-                  onClick={() => showGroup(ORRERY_LANE_GROUPS.scientific)}
-                >
-                  Scientific
-                </button>
-                <button
-                  type="button"
-                  className="onyx-orrery-filter-btn"
-                  onClick={() => showGroup(ORRERY_LANE_GROUPS.cultural)}
-                >
-                  Cultural
-                </button>
-                <button
-                  type="button"
-                  className="onyx-orrery-filter-btn"
-                  onClick={() => showGroup(ORRERY_LANE_GROUPS.mystical)}
-                >
-                  Mystical
-                </button>
+                <div className="onyx-orrery-picker-row">
+                  <button
+                    type="button"
+                    className="onyx-orrery-filter-btn onyx-orrery-picker-show"
+                    onClick={() => setHidden(new Set())}
+                  >
+                    Show all
+                  </button>
+                  <button
+                    type="button"
+                    className="onyx-orrery-filter-btn onyx-orrery-picker-hide"
+                    onClick={() => setHidden(new Set(visibleOrreryLaneIds()))}
+                  >
+                    Hide all
+                  </button>
+                </div>
+                <div className="onyx-orrery-picker-row onyx-orrery-picker-groups">
+                  <button
+                    type="button"
+                    className="onyx-orrery-filter-btn"
+                    onClick={() => showGroup(ORRERY_LANE_GROUPS.scientific)}
+                  >
+                    Scientific
+                  </button>
+                  <button
+                    type="button"
+                    className="onyx-orrery-filter-btn"
+                    onClick={() => showGroup(ORRERY_LANE_GROUPS.cultural)}
+                  >
+                    Cultural
+                  </button>
+                  <button
+                    type="button"
+                    className="onyx-orrery-filter-btn"
+                    onClick={() => showGroup(ORRERY_LANE_GROUPS.mystical)}
+                  >
+                    Mystical
+                  </button>
+                </div>
               </div>
               <ul className="onyx-orrery-picker-list">
                 {visibleOrreryLaneIds().map(id => (
@@ -574,11 +578,10 @@ export function OnyxOrrery({
               </ul>
               <button
                 type="button"
-                className="onyx-tool-btn onyx-orrery-teach-close"
+                className="onyx-tool-btn onyx-orrery-teach-close onyx-orrery-picker-done"
                 onClick={() => setPickerOpen(false)}
               >
                 Done
-                <span>Back to the stack</span>
               </button>
             </section>
           </div>
