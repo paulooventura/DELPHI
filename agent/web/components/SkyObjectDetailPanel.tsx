@@ -51,6 +51,21 @@ export function SkyObjectDetailPanel({
           <span>{Math.round(detail.alt)}° elevation</span>
         </div>
 
+        {detail.lockable && onLockLook ? (
+          <button
+            type="button"
+            className="cp-sky-object-panel-lock"
+            onClick={() => onLockLook(detail.az, detail.alt, detail.name)}
+          >
+            Lock {detail.name}
+          </button>
+        ) : null}
+        {detail.lockable && onLockLook ? (
+          <p className="cp-sky-object-panel-lock-hint">
+            Point at it in the real sky, then lock — the rest of the map snaps to this sight.
+          </p>
+        ) : null}
+
         {detail.lore && (
           <div className="cp-sky-object-panel-lore">
             <p className="cp-sky-object-panel-lore-label">Reading</p>
@@ -74,15 +89,6 @@ export function SkyObjectDetailPanel({
             </div>
           ))}
         </dl>
-        {detail.lockable && onLockLook ? (
-          <button
-            type="button"
-            className="cp-sky-object-panel-lock"
-            onClick={() => onLockLook(detail.az, detail.alt, detail.name)}
-          >
-            This is where I see it
-          </button>
-        ) : null}
       </article>
     </div>
   );

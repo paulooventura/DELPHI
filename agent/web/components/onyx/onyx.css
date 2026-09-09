@@ -1434,6 +1434,10 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   pointer-events: none;
   opacity: 0.55;
 }
+.onyx-sky-device .cp-sky-object-panel {
+  z-index: 40;
+  padding-bottom: 1.25rem;
+}
 .onyx-sky-device .onyx-reticle {
   z-index: 6;
   pointer-events: none;

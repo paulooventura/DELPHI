@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from "react";
 import {
   CelestialSkyView,
   type AimedSkyObject,
   type LiveAttitude,
 } from "../CelestialSkyView";
+import { SkyObjectDetailPanel, type SkyObjectDetail } from "../SkyObjectDetailPanel";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
 import { enuToAltAz } from "../../lib/sphericalView";
 import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
@@ -41,6 +42,8 @@ export function OnyxSky({
   headingDeg,
   pitchDeg,
   liveAttitudeRef,
+  skyLookRef,
+  skyLookSnapRef,
   liveHeading = false,
   livePitch = false,
   arPoseReady = true,
@@ -70,6 +73,8 @@ export function OnyxSky({
   headingDeg: number;
   pitchDeg: number;
   liveAttitudeRef?: RefObject<LiveAttitude>;
+  skyLookRef?: MutableRefObject<{ az: number; alt: number } | null>;
+  skyLookSnapRef?: MutableRefObject<boolean>;
   liveHeading?: boolean;
   livePitch?: boolean;
   arPoseReady?: boolean;
@@ -86,6 +91,8 @@ export function OnyxSky({
   const [lookAlt, setLookAlt] = useState(() => pitchDeg);
   const [aimed, setAimed] = useState<AimedSkyObject | null>(null);
   const aimedLiveRef = useRef<AimedSkyObject | null>(null);
+  const openAimedDetailRef = useRef<(() => void) | null>(null);
+  const [skyDetail, setSkyDetail] = useState<SkyObjectDetail | null>(null);
 
   useEffect(() => {
     let raf = 0;
@@ -221,10 +228,10 @@ export function OnyxSky({
     : live
       ? arPoseReady
         ? aimed
-          ? `${aimed.name} in the reticle · tap Lock — this is where you see it now`
+          ? `${aimed.name} in the reticle · open it, then Lock`
           : skyLockName
-            ? `Locked to ${skyLockName} · aim at another object to retune · swipe down for home`
-            : "Aim at a star or object, then Lock — this is where you see it now"
+            ? `Locked to ${skyLockName} · tap an object for details · swipe down for home`
+            : "Tap a planet or star for details, then Lock — this is where you see it"
         : "Hold the phone more upright to lock AR pose"
       : "Allow motion & location — then aim the phone at the sky";
 
@@ -274,6 +281,10 @@ export function OnyxSky({
             onAimedObjectChange={setAimed}
             onLockLookToObject={onCalibrateLookToObject}
             aimedLiveRef={aimedLiveRef}
+            skyLookRef={skyLookRef}
+            skyLookSnapRef={skyLookSnapRef}
+            onSelectDetail={setSkyDetail}
+            openAimedDetailRef={openAimedDetailRef}
           />
         </div>
 
@@ -341,18 +352,14 @@ export function OnyxSky({
         </div>
 
         <div className="onyx-sky-align" role="group" aria-label="Sky perspective lock">
-          {aimed && onCalibrateLookToObject ? (
+          {aimed ? (
             <button
               type="button"
               className="onyx-sky-align-btn onyx-sky-lock-btn"
-              onClick={() => {
-                const live = aimedLiveRef.current ?? aimed;
-                if (!live) return;
-                onCalibrateLookToObject(live.az, live.alt, live.name);
-              }}
-              title="Point at it in the real sky, then tap — the rest of the map snaps to this view"
+              onClick={() => openAimedDetailRef.current?.()}
+              title="Open details, then lock this view"
             >
-              Lock {aimed.name}
+              {aimed.name}
             </button>
           ) : null}
           <div className="onyx-sky-align-row">
@@ -391,6 +398,21 @@ export function OnyxSky({
           <p className="onyx-sky-sensor" aria-live="polite">
             sensor: {sensorDiag.events} events · {sensorDiag.status}
           </p>
+        ) : null}
+
+        {skyDetail ? (
+          <SkyObjectDetailPanel
+            detail={skyDetail}
+            onClose={() => setSkyDetail(null)}
+            onLockLook={
+              onCalibrateLookToObject
+                ? (az, alt, name) => {
+                    onCalibrateLookToObject(az, alt, name);
+                    setSkyDetail(null);
+                  }
+                : undefined
+            }
+          />
         ) : null}
       </div>
     </div>

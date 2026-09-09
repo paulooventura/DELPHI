@@ -915,6 +915,8 @@ html.chorus-embed body {
   position: relative;
   z-index: 1;
   width: min(100%, 22rem);
+  max-height: min(72vh, 560px);
+  overflow: auto;
   border-radius: var(--cut-tight);
   border: 0.5px solid var(--edge);
   background: var(--surface-glass);
@@ -1047,16 +1049,24 @@ html.chorus-embed body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin-top: 1rem;
-  padding: 0.85rem 1rem;
+  margin: 0.85rem 0 0.35rem;
+  padding: 0.9rem 1rem;
   border: 0;
   background: linear-gradient(180deg, hsl(152 52% 32% / 0.92), hsl(152 40% 18%));
   color: #e8fff4;
   font: inherit;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   cursor: pointer;
+}
+.cp-sky-object-panel-lock-hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.68rem;
+  line-height: 1.35;
+  letter-spacing: 0.04em;
+  color: var(--ink-quiet);
+  text-align: center;
 }
 
 .cp-split-skymap-off {

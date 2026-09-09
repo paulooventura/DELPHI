@@ -299,6 +299,8 @@ export default function Home() {
   const locationCleanupRef = useRef<(() => void) | null>(null);
   const emfCleanupRef = useRef<(() => void) | null>(null);
   const liveAttitudeRef = useRef({ view: altAzToEnu(180, 0), roll: 0 });
+  const skyLookRef = useRef<{ az: number; alt: number } | null>(null);
+  const skyLookSnapRef = useRef(false);
   const attitudeHudMs = useRef(0);
   const rawOrientCleanupRef = useRef<(() => void) | null>(null);
   const [sensorDiag, setSensorDiag] = useState<{ events: number; status: "none" | "ok" | "event-but-null" | "denied" }>({
@@ -978,6 +980,7 @@ export default function Home() {
 
   /** Camera look for object lock — matches live AR sky view, not throttled HUD heading. */
   function viewForCalibration(): { az: number; alt: number } | null {
+    if (skyLookRef.current) return skyLookRef.current;
     if (hasLiveHeading || hasLivePitch) {
       return enuToAltAz(liveAttitudeRef.current.view);
     }
@@ -999,6 +1002,8 @@ export default function Home() {
     applySkyAzOffset(next.azOffset);
     applySkyAltOffset(next.altOffset);
     persistSkyLockName(name?.trim() || "");
+    liveAttitudeRef.current.view = altAzToEnu(trueAz, trueAlt);
+    skyLookSnapRef.current = true;
   }
 
   function calibrateCompassToSun() {
@@ -1262,6 +1267,8 @@ export default function Home() {
       headingDeg={activeHeading}
       pitchDeg={activePitch}
       liveAttitudeRef={liveAttitudeRef}
+      skyLookRef={skyLookRef}
+      skyLookSnapRef={skyLookSnapRef}
       liveHeading={hasLiveHeading || orientationStreaming}
       livePitch={hasLivePitch || orientationStreaming}
       arPoseReady={skyArPoseReady}

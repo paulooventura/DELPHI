@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from "react";
 import type { AircraftTrack } from "../lib/cosmic/aircraftTracking";
 import {
   computeCelestialBodies,
@@ -99,6 +99,13 @@ export type CelestialSkyViewProps = {
   onLockLookToObject?: (az: number, alt: number, name: string) => void;
   /** Written every frame with the lockable object in the reticle (or null). */
   aimedLiveRef?: RefObject<AimedSkyObject | null>;
+  /** Smoothed look the canvas is actually drawing — lock against this, not raw IMU. */
+  skyLookRef?: MutableRefObject<{ az: number; alt: number } | null>;
+  /** Set true after a lock so the smoother snaps onto the new look. */
+  skyLookSnapRef?: MutableRefObject<boolean>;
+  /** Parent (Onyx sky) renders the sheet above chrome. */
+  onSelectDetail?: (detail: SkyObjectDetail | null) => void;
+  openAimedDetailRef?: MutableRefObject<(() => void) | null>;
 };
 
 export type AimedSkyObject = {
@@ -919,6 +926,10 @@ export function CelestialSkyView({
   onAimedObjectChange,
   onLockLookToObject,
   aimedLiveRef,
+  skyLookRef,
+  skyLookSnapRef,
+  onSelectDetail,
+  openAimedDetailRef,
 }: CelestialSkyViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hapticsRef = useRef(createSkyHapticController());
@@ -940,6 +951,11 @@ export function CelestialSkyView({
   const onAimedRef = useRef(onAimedObjectChange);
   onAimedRef.current = onAimedObjectChange;
   const lastAimedIdRef = useRef<string | null | undefined>(undefined);
+  const onSelectDetailRef = useRef(onSelectDetail);
+  onSelectDetailRef.current = onSelectDetail;
+  const trackablesRef = useRef<Trackable[]>([]);
+  const bodiesRef = useRef<CelestialBody[]>([]);
+  const minorBodiesRef = useRef<MinorBody[]>([]);
   const [selectedDetail, setSelectedDetail] = useState<SkyObjectDetail | null>(null);
   const propsAttitudeRef = useRef<LiveAttitude>({
     view: altAzToEnu(headingDeg, pitchDeg),
@@ -979,6 +995,28 @@ export function CelestialSkyView({
     () => computeMinorBodies(skyEpoch, lat, lon, observerAltM),
     [skyEpoch, lat, lon, observerAltM],
   );
+  bodiesRef.current = bodies;
+  minorBodiesRef.current = minorBodies;
+
+  const publishDetail = (trackable: Trackable) => {
+    const d = buildObjectDetail(
+      trackable,
+      bodiesRef.current,
+      minorBodiesRef.current,
+      observationTimeRef.current,
+    );
+    setSelectedDetail(d);
+    onSelectDetailRef.current?.(d);
+  };
+
+  if (openAimedDetailRef) {
+    openAimedDetailRef.current = () => {
+      const aim = aimedLiveRef?.current;
+      if (!aim) return;
+      const t = trackablesRef.current.find(x => x.id === aim.id);
+      if (t) publishDetail(t);
+    };
+  }
 
   const stars = useMemo(
     () => skyObjectsInView(lat, lon, 0, 0, skyEpoch, 360, 180, distanceRank).stars,
@@ -1012,9 +1050,22 @@ export function CelestialSkyView({
         }
       }
       if (best) {
-        setSelectedDetail(buildObjectDetail(best.trackable, bodies, minorBodies, skyEpoch));
+        publishDetail(best.trackable);
         if (hapticsEnabled) {
           try { navigator.vibrate?.([4, 36, 8]); } catch { /* ignore */ }
+        }
+        return;
+      }
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      if (Math.hypot(px - cx, py - cy) <= 52) {
+        const aim = aimedLiveRef?.current;
+        const t = aim ? trackablesRef.current.find(x => x.id === aim.id) : null;
+        if (t) {
+          publishDetail(t);
+          if (hapticsEnabled) {
+            try { navigator.vibrate?.([4, 36, 8]); } catch { /* ignore */ }
+          }
         }
       }
     };
@@ -1111,12 +1162,17 @@ export function CelestialSkyView({
 
       const target = liveAttitudeRef?.current ?? propsAttitudeRef.current;
       const smooth = smoothAttitudeRef.current;
+      if (skyLookSnapRef?.current) {
+        skyLookSnapRef.current = false;
+        smooth.view = target.view;
+      }
       smooth.view = smoothViewAzAltAdaptive(smooth.view, target.view);
       smooth.roll = 0;
 
       const viewAtt = enuToAltAz(smooth.view);
       const viewHeading = viewAtt.az;
       const viewPitch = viewAtt.alt;
+      if (skyLookRef) skyLookRef.current = { az: viewHeading, alt: viewPitch };
       const basis = buildStableViewBasis(smooth.view, basisRef.current);
       basisRef.current = basis;
 
@@ -1311,6 +1367,7 @@ export function CelestialSkyView({
         }
       }
 
+      trackablesRef.current = trackables;
       const locked = arPoseReady
         ? findTargetLock(viewHeading, viewPitch, trackables, lockRef.current)
         : null;
@@ -1441,7 +1498,7 @@ export function CelestialSkyView({
               id: starTrackable.id,
               x: pt.x,
               y: pt.y,
-              radius: Math.max(14, vis.r + 10),
+              radius: Math.max(18, vis.r + 12),
               trackable: starTrackable,
             });
           }
@@ -1503,7 +1560,7 @@ export function CelestialSkyView({
           ctx.restore();
           const tr = trackables.find(t => t.id === dso.id);
           if (tr) {
-            hits.push({ id: dso.id, x: pt.x, y: pt.y, radius: 14, trackable: tr });
+            hits.push({ id: dso.id, x: pt.x, y: pt.y, radius: 22, trackable: tr });
           }
         }
       }
@@ -1595,7 +1652,7 @@ export function CelestialSkyView({
           id: body.id,
           x,
           y,
-          radius: body.id === "sun" ? 22 : body.id === "moon" ? 20 : 16,
+          radius: body.id === "sun" ? 28 : body.id === "moon" ? 26 : 28,
           trackable: trackables.find(t => t.id === body.id)!,
         });
       }
@@ -1753,15 +1810,20 @@ export function CelestialSkyView({
         className={`cp-celestial-sky cp-tabular${className ? ` ${className}` : ""}`}
         aria-label="Celestial sky view with horizon, tracking layers, and pinch zoom"
       />
-      {selectedDetail && (
+      {selectedDetail && !onSelectDetail && (
         <SkyObjectDetailPanel
           detail={selectedDetail}
-          onClose={() => setSelectedDetail(null)}
+          onClose={() => {
+            setSelectedDetail(null);
+            onSelectDetailRef.current?.(null);
+          }}
           onLockLook={
             onLockLookToObject
               ? (az, alt, name) => {
-                  onLockLookToObject(az, alt, name);
+                  const live = trackablesRef.current.find(t => t.id === selectedDetail.id);
+                  onLockLookToObject(live?.az ?? az, live?.alt ?? alt, name);
                   setSelectedDetail(null);
+                  onSelectDetailRef.current?.(null);
                 }
               : undefined
           }

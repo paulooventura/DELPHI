@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import type { CosmicClockState } from "../../lib/cosmic";
 import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
@@ -150,6 +150,8 @@ export function OnyxApp({
   headingDeg,
   pitchDeg,
   liveAttitudeRef,
+  skyLookRef,
+  skyLookSnapRef,
   liveHeading = false,
   livePitch = false,
   arPoseReady = true,
@@ -205,6 +207,8 @@ export function OnyxApp({
   headingDeg: number;
   pitchDeg: number;
   liveAttitudeRef?: RefObject<LiveAttitude>;
+  skyLookRef?: MutableRefObject<{ az: number; alt: number } | null>;
+  skyLookSnapRef?: MutableRefObject<boolean>;
   liveHeading?: boolean;
   livePitch?: boolean;
   arPoseReady?: boolean;
@@ -550,6 +554,8 @@ export function OnyxApp({
         headingDeg={headingDeg}
         pitchDeg={pitchDeg}
         liveAttitudeRef={liveAttitudeRef}
+        skyLookRef={skyLookRef}
+        skyLookSnapRef={skyLookSnapRef}
         liveHeading={liveHeading}
         livePitch={livePitch}
         arPoseReady={arPoseReady}
