@@ -29,67 +29,72 @@ export function SkyObjectDetailPanel({
   onLockLook?: (az: number, alt: number, name: string) => void;
 }) {
   return (
-    <div className="cp-sky-object-panel" role="dialog" aria-label={`${detail.name} details`}>
+    <div
+      className={`cp-sky-object-panel${detail.lockable && onLockLook ? " is-aiming" : ""}`}
+      role="dialog"
+      aria-label={`${detail.name} details`}
+    >
       <div className="cp-sky-object-panel-backdrop" onClick={onClose} aria-hidden />
-      <article
-        className="cp-sky-object-panel-card"
-        style={{ borderColor: `${detail.accent}55`, boxShadow: `0 20px 60px rgba(0,0,0,0.55), 0 0 40px ${detail.accent}18` }}
-      >
-        <header className="cp-sky-object-panel-header">
-          <span className="cp-sky-object-panel-emoji" aria-hidden>{detail.emoji}</span>
-          <div className="cp-sky-object-panel-title-wrap">
-            <p className="cp-sky-object-panel-kind">{detail.kind}</p>
-            <h3 className="cp-sky-object-panel-name">{detail.name}</h3>
-          </div>
-          <button type="button" className="cp-sky-object-panel-close" onClick={onClose} aria-label="Close">
-            ×
-          </button>
-        </header>
-
-        <div className="cp-sky-object-panel-coords">
-          <span>{Math.round(detail.az)}° azimuth</span>
-          <span>{Math.round(detail.alt)}° elevation</span>
-        </div>
-
-        {detail.lockable && onLockLook ? (
-          <button
-            type="button"
-            className="cp-sky-object-panel-lock"
-            onClick={() => onLockLook(detail.az, detail.alt, detail.name)}
-          >
-            Lock {detail.name}
-          </button>
-        ) : null}
-        {detail.lockable && onLockLook ? (
-          <p className="cp-sky-object-panel-lock-hint">
-            Point at it in the real sky, then lock — the rest of the map snaps to this sight.
-          </p>
-        ) : null}
-
-        {detail.lore && (
-          <div className="cp-sky-object-panel-lore">
-            <p className="cp-sky-object-panel-lore-label">Reading</p>
-            <p className="cp-sky-object-panel-lore-blurb">{detail.lore.blurb}</p>
-            {detail.lore.qualities.length > 0 && (
-              <p className="cp-sky-object-panel-lore-qualities">
-                {detail.lore.qualities.join(" · ")}
-              </p>
-            )}
-            {detail.lore.source && (
-              <p className="cp-sky-object-panel-lore-source">{detail.lore.source}</p>
-            )}
-          </div>
-        )}
-
-        <dl className="cp-sky-object-panel-facts">
-          {detail.lines.map(line => (
-            <div key={line.label} className="cp-sky-object-panel-fact">
-              <dt>{line.label}</dt>
-              <dd>{line.value}</dd>
+      <div className="cp-sky-object-panel-stack">
+        <article
+          className="cp-sky-object-panel-card"
+          style={{ borderColor: `${detail.accent}55`, boxShadow: `0 20px 60px rgba(0, 0, 0, 0.55), 0 0 40px ${detail.accent}18` }}
+        >
+          <header className="cp-sky-object-panel-header">
+            <span className="cp-sky-object-panel-emoji" aria-hidden>{detail.emoji}</span>
+            <div className="cp-sky-object-panel-title-wrap">
+              <p className="cp-sky-object-panel-kind">{detail.kind}</p>
+              <h3 className="cp-sky-object-panel-name">{detail.name}</h3>
             </div>
-          ))}
-        </dl>
-      </article>
+            <button type="button" className="cp-sky-object-panel-close" onClick={onClose} aria-label="Close">
+              ×
+            </button>
+          </header>
+
+          <div className="cp-sky-object-panel-coords">
+            <span>{Math.round(detail.az)}° azimuth</span>
+            <span>{Math.round(detail.alt)}° elevation</span>
+          </div>
+
+          {detail.lore && (
+            <div className="cp-sky-object-panel-lore">
+              <p className="cp-sky-object-panel-lore-label">Reading</p>
+              <p className="cp-sky-object-panel-lore-blurb">{detail.lore.blurb}</p>
+              {detail.lore.qualities.length > 0 && (
+                <p className="cp-sky-object-panel-lore-qualities">
+                  {detail.lore.qualities.join(" · ")}
+                </p>
+              )}
+              {detail.lore.source && (
+                <p className="cp-sky-object-panel-lore-source">{detail.lore.source}</p>
+              )}
+            </div>
+          )}
+
+          <dl className="cp-sky-object-panel-facts">
+            {detail.lines.map(line => (
+              <div key={line.label} className="cp-sky-object-panel-fact">
+                <dt>{line.label}</dt>
+                <dd>{line.value}</dd>
+              </div>
+            ))}
+          </dl>
+        </article>
+        {detail.lockable && onLockLook ? (
+          <div className="cp-sky-object-panel-dock">
+            <button
+              type="button"
+              className="cp-sky-object-panel-lock"
+              onClick={() => onLockLook(detail.az, detail.alt, detail.name)}
+            >
+              Lock {detail.name}
+            </button>
+            <p className="cp-sky-object-panel-lock-hint">
+              Keep pointing at it, then tap Lock.
+            </p>
+          </div>
+        ) : null}
+      </div>
     </div>
   );
 }

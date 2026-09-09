@@ -1436,7 +1436,16 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-sky-device .cp-sky-object-panel {
   z-index: 40;
-  padding-bottom: 1.25rem;
+  padding: 0.6rem 0.7rem calc(0.7rem + env(safe-area-inset-bottom, 0px));
+}
+.onyx-sky-device .cp-sky-object-panel-stack {
+  width: 100%;
+  max-width: none;
+}
+.onyx-sky-device .cp-sky-object-panel-lock {
+  min-height: 72px;
+  font-size: 1.15rem;
+  letter-spacing: 0.18em;
 }
 .onyx-sky-device .onyx-reticle {
   z-index: 6;

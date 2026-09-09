@@ -911,19 +911,39 @@ html.chorus-embed body {
   pointer-events: auto;
 }
 
-.cp-sky-object-panel-card {
+.cp-sky-object-panel.is-aiming .cp-sky-object-panel-backdrop {
+  background: linear-gradient(180deg, transparent 0%, rgba(3, 3, 4, 0.18) 42%, rgba(3, 3, 4, 0.78) 100%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.cp-sky-object-panel-stack {
   position: relative;
   z-index: 1;
   width: min(100%, 22rem);
-  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+  pointer-events: auto;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.cp-sky-object-panel-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-height: min(38vh, 280px);
   overflow: auto;
   border-radius: var(--cut-tight);
   border: 0.5px solid var(--edge);
   background: var(--surface-glass);
   box-shadow: var(--surface-glass-inset), 0 20px 60px rgba(0, 0, 0, 0.55);
   padding: 1rem 1.05rem 1.1rem;
-  pointer-events: auto;
   animation: cp-sky-panel-in var(--settle);
+}
+
+.cp-sky-object-panel-dock {
+  flex-shrink: 0;
+  margin-top: 0.7rem;
 }
 
 @keyframes cp-sky-panel-in {
@@ -1049,23 +1069,29 @@ html.chorus-embed body {
   align-items: center;
   justify-content: center;
   width: 100%;
-  margin: 0.85rem 0 0.35rem;
-  padding: 0.9rem 1rem;
+  min-height: 64px;
+  margin: 0;
+  padding: 1rem 1.1rem;
   border: 0;
-  background: linear-gradient(180deg, hsl(152 52% 32% / 0.92), hsl(152 40% 18%));
-  color: #e8fff4;
+  background: linear-gradient(180deg, hsl(152 58% 38% / 0.98), hsl(152 48% 22%));
+  color: #f3fff8;
   font: inherit;
-  font-size: 0.82rem;
-  letter-spacing: 0.14em;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(180, 255, 214, 0.35),
+    0 10px 28px rgba(20, 80, 48, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
 }
 .cp-sky-object-panel-lock-hint {
-  margin: 0 0 0.65rem;
-  font-size: 0.68rem;
+  margin: 0.45rem 0 0;
+  font-size: 0.72rem;
   line-height: 1.35;
-  letter-spacing: 0.04em;
-  color: var(--ink-quiet);
+  letter-spacing: 0.06em;
+  color: rgba(232, 255, 244, 0.82);
   text-align: center;
 }
 

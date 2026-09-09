@@ -351,49 +351,51 @@ export function OnyxSky({
           </div>
         </div>
 
-        <div className="onyx-sky-align" role="group" aria-label="Sky perspective lock">
-          {aimed ? (
-            <button
-              type="button"
-              className="onyx-sky-align-btn onyx-sky-lock-btn"
-              onClick={() => openAimedDetailRef.current?.()}
-              title="Open details, then lock this view"
-            >
-              {aimed.name}
-            </button>
-          ) : null}
-          <div className="onyx-sky-align-row">
-            <button
-              type="button"
-              className="onyx-sky-align-btn"
-              disabled={!sunAboveHorizon || !onCalibrateSun}
-              onClick={() => onCalibrateSun?.()}
-              title="Point at the sun, then tap — snaps the sky to that view"
-            >
-              Align sun
-            </button>
-            <button
-              type="button"
-              className="onyx-sky-align-btn"
-              disabled={!moonAboveHorizon || !onCalibrateMoon}
-              onClick={() => onCalibrateMoon?.()}
-              title="Point at the moon, then tap — snaps the sky to that view"
-            >
-              Align moon
-            </button>
-            {onResetSkyCalibration && (Math.abs(skyAzOffsetDeg) >= 0.15 || Boolean(skyLockName)) ? (
+        {!skyDetail ? (
+          <div className="onyx-sky-align" role="group" aria-label="Sky perspective lock">
+            {aimed ? (
               <button
                 type="button"
-                className="onyx-sky-align-btn ghost"
-                onClick={() => onResetSkyCalibration()}
+                className="onyx-sky-align-btn onyx-sky-lock-btn"
+                onClick={() => openAimedDetailRef.current?.()}
+                title="Open details, then lock this view"
               >
-                Reset
+                {aimed.name}
               </button>
             ) : null}
+            <div className="onyx-sky-align-row">
+              <button
+                type="button"
+                className="onyx-sky-align-btn"
+                disabled={!sunAboveHorizon || !onCalibrateSun}
+                onClick={() => onCalibrateSun?.()}
+                title="Point at the sun, then tap — snaps the sky to that view"
+              >
+                Align sun
+              </button>
+              <button
+                type="button"
+                className="onyx-sky-align-btn"
+                disabled={!moonAboveHorizon || !onCalibrateMoon}
+                onClick={() => onCalibrateMoon?.()}
+                title="Point at the moon, then tap — snaps the sky to that view"
+              >
+                Align moon
+              </button>
+              {onResetSkyCalibration && (Math.abs(skyAzOffsetDeg) >= 0.15 || Boolean(skyLockName)) ? (
+                <button
+                  type="button"
+                  className="onyx-sky-align-btn ghost"
+                  onClick={() => onResetSkyCalibration()}
+                >
+                  Reset
+                </button>
+              ) : null}
+            </div>
           </div>
-        </div>
+        ) : null}
 
-        <p className="onyx-sky-hint">{hint}</p>
+        {!skyDetail ? <p className="onyx-sky-hint">{hint}</p> : null}
         {sensorDiag ? (
           <p className="onyx-sky-sensor" aria-live="polite">
             sensor: {sensorDiag.events} events · {sensorDiag.status}
