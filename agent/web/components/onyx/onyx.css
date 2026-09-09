@@ -1455,6 +1455,52 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-sky-device .onyx-heading-mark {
   pointer-events: none;
 }
+.onyx-sky-device.is-lock-hold .onyx-sky-back {
+  z-index: 50;
+}
+.onyx-sky-lock-hold {
+  position: absolute;
+  inset: 0;
+  z-index: 36;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.18) 62%, rgba(0, 0, 0, 0.55) 100%);
+  padding: 0 18px calc(28px + env(safe-area-inset-bottom, 0px));
+}
+.onyx-sky-lock-hold-count {
+  margin: 0;
+  font-family: var(--font-voice);
+  font-size: 88px;
+  font-weight: 500;
+  line-height: 0.9;
+  letter-spacing: 0.02em;
+  color: #f3fff8;
+  text-shadow: 0 0 24px rgba(80, 200, 140, 0.45), var(--word-outline);
+}
+.onyx-sky-lock-hold-copy {
+  margin: 14px 0 0;
+  font-size: 13px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: rgba(232, 255, 244, 0.88);
+  text-align: center;
+}
+.onyx-sky-lock-hold-cancel {
+  margin-top: 28px;
+  background: none;
+  border: 0.5px solid var(--onyx-edge-bright);
+  border-radius: 20px;
+  padding: 10px 22px;
+  color: var(--onyx-ink-soft);
+  font: inherit;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
 .onyx-sky {
   position: absolute; inset: 0; z-index: 1;
   cursor: grab;

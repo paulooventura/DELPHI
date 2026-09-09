@@ -8,10 +8,23 @@ import {
 } from "../CelestialSkyView";
 import { SkyObjectDetailPanel, type SkyObjectDetail } from "../SkyObjectDetailPanel";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
-import { enuToAltAz } from "../../lib/sphericalView";
+import { pulseHaptic } from "../../lib/haptics";
+import { meanLookAzAlt } from "../../lib/orientationCalibration";
+import { altAzToEnu, enuToAltAz } from "../../lib/sphericalView";
 import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
 import { OnyxAudioStone } from "./OnyxAudioStone";
 import { cardinalFromHeading } from "./onyxCopy";
+
+const LOCK_HOLD_MS = 3000;
+const LOCK_SAMPLE_MS = 400;
+
+type PendingSkyLock = {
+  kind: "object" | "sun" | "moon";
+  az: number;
+  alt: number;
+  name: string;
+  id?: string;
+};
 
 const CARD = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
 const EXIT_MS = 480;
@@ -93,6 +106,65 @@ export function OnyxSky({
   const aimedLiveRef = useRef<AimedSkyObject | null>(null);
   const openAimedDetailRef = useRef<(() => void) | null>(null);
   const [skyDetail, setSkyDetail] = useState<SkyObjectDetail | null>(null);
+  const [lockHold, setLockHold] = useState<PendingSkyLock | null>(null);
+  const [lockRemainMs, setLockRemainMs] = useState(0);
+  const lookSamplesRef = useRef<Array<{ t: number; az: number; alt: number }>>([]);
+  const headingRef = useRef(headingDeg);
+  const pitchRef = useRef(pitchDeg);
+  headingRef.current = headingDeg;
+  pitchRef.current = pitchDeg;
+  const fireLockRef = useRef<(pending: PendingSkyLock) => void>(() => {});
+  fireLockRef.current = pending => {
+    if (hapticsEnabled) void pulseHaptic("deep");
+    if (pending.kind === "sun") onCalibrateSun?.();
+    else if (pending.kind === "moon") onCalibrateMoon?.();
+    else onCalibrateLookToObject?.(pending.az, pending.alt, pending.name, pending.id);
+  };
+
+  const beginLockHold = useCallback((pending: PendingSkyLock) => {
+    lookSamplesRef.current = [];
+    setSkyDetail(null);
+    setLockRemainMs(LOCK_HOLD_MS);
+    setLockHold(pending);
+  }, []);
+
+  useEffect(() => {
+    if (!lockHold) return;
+    const started = performance.now();
+    lookSamplesRef.current = [];
+    let raf = 0;
+    let lastShown = -1;
+    const tick = (now: number) => {
+      const view = liveAttitudeRef?.current?.view;
+      const look = view
+        ? enuToAltAz(view)
+        : { az: headingRef.current, alt: pitchRef.current };
+      lookSamplesRef.current.push({ t: now, az: look.az, alt: look.alt });
+      const cutoff = now - LOCK_SAMPLE_MS;
+      while (lookSamplesRef.current.length && lookSamplesRef.current[0].t < cutoff) {
+        lookSamplesRef.current.shift();
+      }
+      const remain = Math.max(0, LOCK_HOLD_MS - (now - started));
+      const shown = Math.max(1, Math.ceil(remain / 1000));
+      if (shown !== lastShown) {
+        lastShown = shown;
+        setLockRemainMs(remain);
+      }
+      if (remain <= 0) {
+        const mean = meanLookAzAlt(lookSamplesRef.current);
+        if (mean && liveAttitudeRef?.current) {
+          liveAttitudeRef.current.view = altAzToEnu(mean.az, mean.alt);
+        }
+        const pending = lockHold;
+        setLockHold(null);
+        fireLockRef.current(pending);
+        return;
+      }
+      raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [lockHold, liveAttitudeRef]);
 
   useEffect(() => {
     let raf = 0;
@@ -184,7 +256,7 @@ export function OnyxSky({
     const el = t as HTMLElement | null;
     if (!el?.closest) return false;
     // Detail sheet / chrome controls own their gestures.
-    return Boolean(el.closest(".onyx-sky-back, .onyx-stone-track, .onyx-sky-align, .cp-sky-object-panel, button, a, input, textarea"));
+    return Boolean(el.closest(".onyx-sky-back, .onyx-stone-track, .onyx-sky-align, .onyx-sky-lock-hold, .cp-sky-object-panel, button, a, input, textarea"));
   };
 
   const onPointerDown = (e: React.PointerEvent) => {
@@ -228,17 +300,17 @@ export function OnyxSky({
     : live
       ? arPoseReady
         ? aimed
-          ? `${aimed.name} in the reticle · open it, then Lock`
+          ? `${aimed.name} in the reticle · open it, then Lock and hold still`
           : skyLockName
             ? `Locked to ${skyLockName} · tap an object for details · swipe down for home`
-            : "Tap a planet or star for details, then Lock — this is where you see it"
+            : "Tap a planet or star for details, then Lock and hold still on it"
         : "Hold the phone more upright to lock AR pose"
       : "Allow motion & location — then aim the phone at the sky";
 
   return (
     <div className={`onyx-root${phaseClass}`}>
       <div
-        className="onyx-device onyx-sky-device"
+        className={`onyx-device onyx-sky-device${lockHold ? " is-lock-hold" : ""}`}
         role="application"
         aria-label="Delphi sky view"
         onPointerDown={onPointerDown}
@@ -279,7 +351,12 @@ export function OnyxSky({
             warmth={warmth}
             weather={weather}
             onAimedObjectChange={setAimed}
-            onLockLookToObject={onCalibrateLookToObject}
+            onLockLookToObject={
+              onCalibrateLookToObject
+                ? (az, alt, name, id) =>
+                    beginLockHold({ kind: "object", az, alt, name, id })
+                : undefined
+            }
             aimedLiveRef={aimedLiveRef}
             skyLookRef={skyLookRef}
             skyLookSnapRef={skyLookSnapRef}
@@ -351,7 +428,7 @@ export function OnyxSky({
           </div>
         </div>
 
-        {!skyDetail ? (
+        {!skyDetail && !lockHold ? (
           <div className="onyx-sky-align" role="group" aria-label="Sky perspective lock">
             {aimed ? (
               <button
@@ -368,8 +445,10 @@ export function OnyxSky({
                 type="button"
                 className="onyx-sky-align-btn"
                 disabled={!sunAboveHorizon || !onCalibrateSun}
-                onClick={() => onCalibrateSun?.()}
-                title="Point at the sun, then tap — snaps the sky to that view"
+                onClick={() =>
+                  beginLockHold({ kind: "sun", name: "Sun", id: "sun", az: 0, alt: 0 })
+                }
+                title="Point at the sun, then tap — hold still while it counts down"
               >
                 Align sun
               </button>
@@ -377,8 +456,10 @@ export function OnyxSky({
                 type="button"
                 className="onyx-sky-align-btn"
                 disabled={!moonAboveHorizon || !onCalibrateMoon}
-                onClick={() => onCalibrateMoon?.()}
-                title="Point at the moon, then tap — snaps the sky to that view"
+                onClick={() =>
+                  beginLockHold({ kind: "moon", name: "Moon", id: "moon", az: 0, alt: 0 })
+                }
+                title="Point at the moon, then tap — hold still while it counts down"
               >
                 Align moon
               </button>
@@ -395,7 +476,7 @@ export function OnyxSky({
           </div>
         ) : null}
 
-        {!skyDetail ? <p className="onyx-sky-hint">{hint}</p> : null}
+        {!skyDetail && !lockHold ? <p className="onyx-sky-hint">{hint}</p> : null}
         {sensorDiag ? (
           <p className="onyx-sky-sensor" aria-live="polite">
             sensor: {sensorDiag.events} events · {sensorDiag.status}
@@ -408,13 +489,27 @@ export function OnyxSky({
             onClose={() => setSkyDetail(null)}
             onLockLook={
               onCalibrateLookToObject
-                ? (az, alt, name, id) => {
-                    onCalibrateLookToObject(az, alt, name, id);
-                    setSkyDetail(null);
-                  }
+                ? (az, alt, name, id) =>
+                    beginLockHold({ kind: "object", az, alt, name, id })
                 : undefined
             }
           />
+        ) : null}
+
+        {lockHold ? (
+          <div className="onyx-sky-lock-hold" role="status" aria-live="assertive">
+            <p className="onyx-sky-lock-hold-count">
+              {Math.max(1, Math.ceil(lockRemainMs / 1000))}
+            </p>
+            <p className="onyx-sky-lock-hold-copy">Hold still on {lockHold.name}</p>
+            <button
+              type="button"
+              className="onyx-sky-lock-hold-cancel"
+              onClick={() => setLockHold(null)}
+            >
+              Cancel
+            </button>
+          </div>
         ) : null}
       </div>
     </div>

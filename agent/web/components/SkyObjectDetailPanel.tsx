@@ -90,7 +90,7 @@ export function SkyObjectDetailPanel({
               Lock {detail.name}
             </button>
             <p className="cp-sky-object-panel-lock-hint">
-              Keep pointing at it, then tap Lock.
+              Tap Lock, then hold still for three seconds.
             </p>
           </div>
         ) : null}

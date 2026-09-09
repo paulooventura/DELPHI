@@ -145,6 +145,27 @@ export function lockLookOffsets(opts: {
   };
 }
 
+/** Mean look over a short hold — circular azimuth, linear altitude. */
+export function meanLookAzAlt(
+  samples: ReadonlyArray<{ az: number; alt: number }>,
+): { az: number; alt: number } | null {
+  if (samples.length === 0) return null;
+  let east = 0;
+  let north = 0;
+  let alt = 0;
+  for (const s of samples) {
+    const r = s.az * (Math.PI / 180);
+    east += Math.sin(r);
+    north += Math.cos(r);
+    alt += s.alt;
+  }
+  const n = samples.length;
+  return {
+    az: normalizeHeading((Math.atan2(east, north) * 180) / Math.PI),
+    alt: alt / n,
+  };
+}
+
 /** Magnetic yaw lock in azimuth space, or null until the portrait lock happens. */
 export function getCompassYawOffsetDeg(): number | null {
   return compassYawOffset;

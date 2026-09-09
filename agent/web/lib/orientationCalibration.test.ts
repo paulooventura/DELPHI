@@ -9,6 +9,7 @@ import {
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
   lockLookOffsets,
+  meanLookAzAlt,
 } from "./orientationCalibration";
 import { deviceOrientationToViewEnu, dot, enuToAltAz } from "./sphericalView";
 
@@ -138,6 +139,23 @@ describe("lockLookOffsets", () => {
     });
     expect(next.azOffset).toBeCloseTo(-170, 5);
     expect(next.altOffset).toBe(0);
+  });
+});
+
+describe("meanLookAzAlt", () => {
+  it("averages a short hold, including across north", () => {
+    const mean = meanLookAzAlt([
+      { az: 358, alt: 40 },
+      { az: 0, alt: 42 },
+      { az: 2, alt: 41 },
+    ]);
+    expect(mean).not.toBeNull();
+    expect(shortest(mean!.az, 0)).toBeLessThan(0.5);
+    expect(mean!.alt).toBeCloseTo(41, 5);
+  });
+
+  it("returns null when there are no samples", () => {
+    expect(meanLookAzAlt([])).toBeNull();
   });
 });
 
