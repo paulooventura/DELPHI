@@ -12,6 +12,8 @@ import { resetOrientationCalibration, restoreOrientationCalibration, describeSky
 import {
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
+  setUserAltitudeOffsetDeg,
+  lockLookOffsets,
 } from "../lib/orientationCalibration";
 import { computeCelestialBodies } from "../lib/cosmic/celestialBodies";
 import { fetchDeclinationDeg } from "../lib/magneticDeclination";
@@ -82,6 +84,8 @@ const TOGGLES_STORAGE_KEY = "cp-sensor-toggles-v2";
 const RESEARCH_TIER_KEY = "cp-research-tier";
 const MANUAL_HEADING_KEY = "cp-manual-heading";
 const SKY_AZ_OFFSET_KEY = "cp-sky-az-offset";
+const SKY_ALT_OFFSET_KEY = "cp-sky-alt-offset";
+const SKY_LOCK_NAME_KEY = "cp-sky-lock-name";
 
 // ─── Research tiers (mirrors TIER_CONFIG in lib/researchEngine.ts) ──────────────
 // The user picks the computation tier per query. instant/standard are free and
@@ -239,6 +243,24 @@ export default function Home() {
       }
     } catch { /* ignore */ }
     return 0;
+  });
+  const [skyAltOffset, setSkyAltOffset] = useState(() => {
+    try {
+      const raw = localStorage.getItem(SKY_ALT_OFFSET_KEY);
+      const v = raw != null ? Number(raw) : 0;
+      if (Number.isFinite(v)) {
+        setUserAltitudeOffsetDeg(v);
+        return v;
+      }
+    } catch { /* ignore */ }
+    return 0;
+  });
+  const [skyLockName, setSkyLockName] = useState(() => {
+    try {
+      return localStorage.getItem(SKY_LOCK_NAME_KEY) || "";
+    } catch {
+      return "";
+    }
   });
   const [declinationDeg, setDeclinationDeg] = useState(0);
   const [compassCalibrated, setCompassCalibrated] = useState(() => getCompassYawOffsetDeg() != null);
@@ -932,17 +954,51 @@ export default function Home() {
     try { localStorage.setItem(SKY_AZ_OFFSET_KEY, String(v)); } catch { /* ignore */ }
   }
 
+  function applySkyAltOffset(value: number) {
+    const v = Math.max(-45, Math.min(45, value));
+    setSkyAltOffset(v);
+    setUserAltitudeOffsetDeg(v);
+    try { localStorage.setItem(SKY_ALT_OFFSET_KEY, String(v)); } catch { /* ignore */ }
+  }
+
+  function persistSkyLockName(name: string) {
+    setSkyLockName(name);
+    try {
+      if (name) localStorage.setItem(SKY_LOCK_NAME_KEY, name);
+      else localStorage.removeItem(SKY_LOCK_NAME_KEY);
+    } catch { /* ignore */ }
+  }
+
   function clearSkyCalibration() {
     applySkyAzOffset(0);
+    applySkyAltOffset(0);
+    persistSkyLockName("");
     resetOrientationCalibration();
   }
 
-  /** Camera look azimuth for sun/moon alignment — matches live AR sky view, not throttled HUD heading. */
-  function viewAzForCalibration(): number | null {
+  /** Camera look for object lock — matches live AR sky view, not throttled HUD heading. */
+  function viewForCalibration(): { az: number; alt: number } | null {
     if (hasLiveHeading || hasLivePitch) {
-      return enuToAltAz(liveAttitudeRef.current.view).az;
+      return enuToAltAz(liveAttitudeRef.current.view);
     }
-    return manualHeading;
+    if (manualHeading == null) return null;
+    return { az: manualHeading, alt: activePitch };
+  }
+
+  function calibrateLookToObject(trueAz: number, trueAlt: number, name?: string) {
+    const view = viewForCalibration();
+    if (view == null) return;
+    const next = lockLookOffsets({
+      objectAz: trueAz,
+      objectAlt: trueAlt,
+      viewAz: view.az,
+      viewAlt: view.alt,
+      currentAzOffset: skyAzOffset,
+      currentAltOffset: skyAltOffset,
+    });
+    applySkyAzOffset(next.azOffset);
+    applySkyAltOffset(next.altOffset);
+    persistSkyLockName(name?.trim() || "");
   }
 
   function calibrateCompassToSun() {
@@ -955,10 +1011,7 @@ export default function Home() {
     );
     const sun = bodies.find(b => b.id === "sun");
     if (!sun || sun.alt < 3) return;
-    const viewAz = viewAzForCalibration();
-    if (viewAz == null) return;
-    const delta = ((sun.az - viewAz + 540) % 360) - 180;
-    applySkyAzOffset(skyAzOffset + delta);
+    calibrateLookToObject(sun.az, sun.alt, "Sun");
   }
 
   function calibrateCompassToMoon() {
@@ -971,10 +1024,7 @@ export default function Home() {
     );
     const moon = bodies.find(b => b.id === "moon");
     if (!moon || moon.alt < 8) return;
-    const viewAz = viewAzForCalibration();
-    if (viewAz == null) return;
-    const delta = ((moon.az - viewAz + 540) % 360) - 180;
-    applySkyAzOffset(skyAzOffset + delta);
+    calibrateLookToObject(moon.az, moon.alt, "Moon");
   }
 
   const moonAboveHorizon = useMemo(() => {
@@ -1202,10 +1252,12 @@ export default function Home() {
       locationDenied={locDenied}
       magneticDeclinationDeg={magneticDeclination}
       skyAzOffsetDeg={skyAzOffset}
+      skyLockName={skyLockName}
       sunAboveHorizon={sunAboveHorizon}
       moonAboveHorizon={moonAboveHorizon}
       onCalibrateSun={calibrateCompassToSun}
       onCalibrateMoon={calibrateCompassToMoon}
+      onCalibrateLookToObject={calibrateLookToObject}
       onResetSkyCalibration={clearSkyCalibration}
       headingDeg={activeHeading}
       pitchDeg={activePitch}

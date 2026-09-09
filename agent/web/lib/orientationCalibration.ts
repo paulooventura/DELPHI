@@ -30,8 +30,10 @@ let yawOffsetLastBeta: number | null = null;
 let webkitSeen = false;
 /** East-positive magnetic declination for magnetic compass paths. */
 let magneticDeclinationDeg = 0;
-/** User fine-tune after sun / landmark alignment (degrees, east positive). */
+/** User fine-tune after sun / landmark / star lock (degrees, east positive). */
 let userAzimuthOffsetDeg = 0;
+/** Constant pitch bias from “this is where I see it” lock (degrees). */
+let userAltitudeOffsetDeg = 0;
 
 function persistYawOffset(): void {
   if (compassYawOffset == null) return;
@@ -105,6 +107,36 @@ export function getUserAzimuthOffsetDeg(): number {
   return userAzimuthOffsetDeg;
 }
 
+export function setUserAltitudeOffsetDeg(deg: number): void {
+  if (!Number.isFinite(deg)) return;
+  userAltitudeOffsetDeg = clamp(deg, -45, 45);
+}
+
+export function getUserAltitudeOffsetDeg(): number {
+  return userAltitudeOffsetDeg;
+}
+
+/**
+ * Offsets that put a known object on the current look ray.
+ * `viewAz` / `viewAlt` must already include the current user offsets
+ * (the live AR look), matching sun / moon Align.
+ */
+export function lockLookOffsets(opts: {
+  objectAz: number;
+  objectAlt: number;
+  viewAz: number;
+  viewAlt: number;
+  currentAzOffset: number;
+  currentAltOffset: number;
+}): { azOffset: number; altOffset: number } {
+  const dAz = shortestOffsetDeg(opts.objectAz - opts.viewAz);
+  const dAlt = opts.objectAlt - opts.viewAlt;
+  return {
+    azOffset: shortestOffsetDeg(opts.currentAzOffset + dAz),
+    altOffset: clamp(opts.currentAltOffset + dAlt, -45, 45),
+  };
+}
+
 /** Magnetic yaw lock in azimuth space, or null until the portrait lock happens. */
 export function getCompassYawOffsetDeg(): number | null {
   return compassYawOffset;
@@ -154,7 +186,7 @@ export function resolveLookAzAltDeg(event: CompassEvent): { az: number; alt: num
     typeof event.webkitCompassHeading === "number" && Number.isFinite(event.webkitCompassHeading)
       ? event.webkitCompassHeading
       : null;
-  const alt = clamp(raw.alt, -89.5, 89.5);
+  const alt = clamp(raw.alt + userAltitudeOffsetDeg, -89.5, 89.5);
 
   if (webkit != null) {
     webkitSeen = true;

@@ -93,7 +93,33 @@ export type CelestialSkyViewProps = {
   /** Open-Meteo slot for local sky palette + clouds */
   weather?: SkyWeatherSlot | null;
   className?: string;
+  /** Fires when the reticle lock enters / leaves a named sky object. */
+  onAimedObjectChange?: (aim: AimedSkyObject | null) => void;
+  /** Tap-sheet “this is where I see it” — uses the object’s true az/alt. */
+  onLockLookToObject?: (az: number, alt: number, name: string) => void;
+  /** Written every frame with the lockable object in the reticle (or null). */
+  aimedLiveRef?: RefObject<AimedSkyObject | null>;
 };
+
+export type AimedSkyObject = {
+  id: string;
+  name: string;
+  kind: Trackable["kind"];
+  az: number;
+  alt: number;
+};
+
+const SKY_LOCKABLE_KINDS = new Set<Trackable["kind"]>([
+  "planet",
+  "star",
+  "deepsky",
+  "asteroid",
+  "comet",
+]);
+
+export function isSkyLockableKind(kind: Trackable["kind"]): boolean {
+  return SKY_LOCKABLE_KINDS.has(kind);
+}
 
 type Trackable = {
   id: string;
@@ -239,6 +265,7 @@ function buildObjectDetail(
     accent: meta.accent,
     lines,
     lore: lore ?? undefined,
+    lockable: isSkyLockableKind(trackable.kind),
   };
 }
 
@@ -889,6 +916,9 @@ export function CelestialSkyView({
   warmth = 0.55,
   weather = null,
   className = "",
+  onAimedObjectChange,
+  onLockLookToObject,
+  aimedLiveRef,
 }: CelestialSkyViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hapticsRef = useRef(createSkyHapticController());
@@ -907,6 +937,9 @@ export function CelestialSkyView({
   const nearestAirportRef = useRef<string | null>(null);
   const lockReadoutRef = useRef<string | null>(null);
   const hudTickRef = useRef(0);
+  const onAimedRef = useRef(onAimedObjectChange);
+  onAimedRef.current = onAimedObjectChange;
+  const lastAimedIdRef = useRef<string | null | undefined>(undefined);
   const [selectedDetail, setSelectedDetail] = useState<SkyObjectDetail | null>(null);
   const propsAttitudeRef = useRef<LiveAttitude>({
     view: altAzToEnu(headingDeg, pitchDeg),
@@ -1283,6 +1316,36 @@ export function CelestialSkyView({
         : null;
       lockRef.current = locked?.id ?? null;
       lockGlowRef.current += ((locked ? 1 : 0) - lockGlowRef.current) * 0.06;
+      const lockableAim =
+        locked && isSkyLockableKind(locked.kind)
+          ? locked
+          : null;
+      if (aimedLiveRef) {
+        aimedLiveRef.current = lockableAim
+          ? {
+              id: lockableAim.id,
+              name: lockableAim.name,
+              kind: lockableAim.kind,
+              az: lockableAim.az,
+              alt: lockableAim.alt,
+            }
+          : null;
+      }
+      const aimedId = lockableAim?.id ?? null;
+      if (aimedId !== lastAimedIdRef.current) {
+        lastAimedIdRef.current = aimedId;
+        onAimedRef.current?.(
+          lockableAim
+            ? {
+                id: lockableAim.id,
+                name: lockableAim.name,
+                kind: lockableAim.kind,
+                az: lockableAim.az,
+                alt: lockableAim.alt,
+              }
+            : null,
+        );
+      }
 
       // Labels only on attention: aim lock + at most 1–2 brightest celestial in view.
       const labelCands: Array<{ id: string; brightness: number }> = [];
@@ -1691,7 +1754,18 @@ export function CelestialSkyView({
         aria-label="Celestial sky view with horizon, tracking layers, and pinch zoom"
       />
       {selectedDetail && (
-        <SkyObjectDetailPanel detail={selectedDetail} onClose={() => setSelectedDetail(null)} />
+        <SkyObjectDetailPanel
+          detail={selectedDetail}
+          onClose={() => setSelectedDetail(null)}
+          onLockLook={
+            onLockLookToObject
+              ? (az, alt, name) => {
+                  onLockLookToObject(az, alt, name);
+                  setSelectedDetail(null);
+                }
+              : undefined
+          }
+        />
       )}
     </div>
   );

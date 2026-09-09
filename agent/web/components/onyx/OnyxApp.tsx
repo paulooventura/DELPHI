@@ -140,10 +140,12 @@ export function OnyxApp({
   locationDenied = false,
   magneticDeclinationDeg = 0,
   skyAzOffsetDeg = 0,
+  skyLockName = "",
   sunAboveHorizon = false,
   moonAboveHorizon = false,
   onCalibrateSun,
   onCalibrateMoon,
+  onCalibrateLookToObject,
   onResetSkyCalibration,
   headingDeg,
   pitchDeg,
@@ -193,10 +195,12 @@ export function OnyxApp({
   locationDenied?: boolean;
   magneticDeclinationDeg?: number;
   skyAzOffsetDeg?: number;
+  skyLockName?: string;
   sunAboveHorizon?: boolean;
   moonAboveHorizon?: boolean;
   onCalibrateSun?: () => void;
   onCalibrateMoon?: () => void;
+  onCalibrateLookToObject?: (az: number, alt: number, name?: string) => void;
   onResetSkyCalibration?: () => void;
   headingDeg: number;
   pitchDeg: number;
@@ -536,10 +540,12 @@ export function OnyxApp({
         locationDenied={locationDenied}
         magneticDeclinationDeg={magneticDeclinationDeg}
         skyAzOffsetDeg={skyAzOffsetDeg}
+        skyLockName={skyLockName}
         sunAboveHorizon={sunAboveHorizon}
         moonAboveHorizon={moonAboveHorizon}
         onCalibrateSun={onCalibrateSun}
         onCalibrateMoon={onCalibrateMoon}
+        onCalibrateLookToObject={onCalibrateLookToObject}
         onResetSkyCalibration={onResetSkyCalibration}
         headingDeg={headingDeg}
         pitchDeg={pitchDeg}

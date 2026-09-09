@@ -1548,8 +1548,11 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-sky-align {
   position: absolute; bottom: 52px; left: 0; right: 0; z-index: 9;
-  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
+  display: flex; flex-direction: column; gap: 8px; align-items: center;
   padding: 0 16px; pointer-events: auto;
+}
+.onyx-sky-align-row {
+  display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
 }
 .onyx-sky-align-btn {
   background: rgba(6, 6, 10, 0.45); border: 0.5px solid var(--onyx-edge);
@@ -3476,6 +3479,13 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orrery-filter-btn.onyx-orrery-picker-hide {
   --gem: 352 58% 38%;
   color: #ffe8ea;
+}
+.onyx-sky-align-btn.onyx-sky-lock-btn {
+  --gem: 152 52% 32%;
+  color: #e8fff4;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  padding: 8px 16px;
 }
 .onyx-tool-btn.onyx-orrery-picker-done {
   text-align: center;

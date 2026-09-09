@@ -1042,6 +1042,23 @@ html.chorus-embed body {
   text-align: right;
 }
 
+.cp-sky-object-panel-lock {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+  border: 0;
+  background: linear-gradient(180deg, hsl(152 52% 32% / 0.92), hsl(152 40% 18%));
+  color: #e8fff4;
+  font: inherit;
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
 .cp-split-skymap-off {
   display: flex;
   align-items: center;

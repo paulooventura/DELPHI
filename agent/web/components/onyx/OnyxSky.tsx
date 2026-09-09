@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from "react";
 import {
   CelestialSkyView,
+  type AimedSkyObject,
   type LiveAttitude,
 } from "../CelestialSkyView";
 import type { SkyWeatherSlot } from "../../lib/cosmic/skyWeather";
@@ -30,10 +31,12 @@ export function OnyxSky({
   locationDenied = false,
   magneticDeclinationDeg = 0,
   skyAzOffsetDeg = 0,
+  skyLockName = "",
   sunAboveHorizon = false,
   moonAboveHorizon = false,
   onCalibrateSun,
   onCalibrateMoon,
+  onCalibrateLookToObject,
   onResetSkyCalibration,
   headingDeg,
   pitchDeg,
@@ -57,10 +60,12 @@ export function OnyxSky({
   locationDenied?: boolean;
   magneticDeclinationDeg?: number;
   skyAzOffsetDeg?: number;
+  skyLockName?: string;
   sunAboveHorizon?: boolean;
   moonAboveHorizon?: boolean;
   onCalibrateSun?: () => void;
   onCalibrateMoon?: () => void;
+  onCalibrateLookToObject?: (az: number, alt: number, name?: string) => void;
   onResetSkyCalibration?: () => void;
   headingDeg: number;
   pitchDeg: number;
@@ -79,6 +84,8 @@ export function OnyxSky({
   const ribbonRef = useRef<HTMLDivElement>(null);
   const [lookAz, setLookAz] = useState(() => ((headingDeg % 360) + 360) % 360);
   const [lookAlt, setLookAlt] = useState(() => pitchDeg);
+  const [aimed, setAimed] = useState<AimedSkyObject | null>(null);
+  const aimedLiveRef = useRef<AimedSkyObject | null>(null);
 
   useEffect(() => {
     let raf = 0;
@@ -121,6 +128,7 @@ export function OnyxSky({
     Math.abs(skyAzOffsetDeg) >= 0.15
       ? `align ${skyAzOffsetDeg >= 0 ? "+" : ""}${skyAzOffsetDeg.toFixed(1)}°`
       : null;
+  const lockLabel = skyLockName ? `locked to ${skyLockName}` : null;
 
   const [phase, setPhase] = useState<"enter" | "live" | "exit">("enter");
   const leavingRef = useRef(false);
@@ -212,7 +220,11 @@ export function OnyxSky({
     ? "Waiting on GPS — stars use approx location until a fix lands"
     : live
       ? arPoseReady
-        ? "Aim at the sun or moon, then tap Align · swipe down for home"
+        ? aimed
+          ? `${aimed.name} in the reticle · tap Lock — this is where you see it now`
+          : skyLockName
+            ? `Locked to ${skyLockName} · aim at another object to retune · swipe down for home`
+            : "Aim at a star or object, then Lock — this is where you see it now"
         : "Hold the phone more upright to lock AR pose"
       : "Allow motion & location — then aim the phone at the sky";
 
@@ -259,6 +271,9 @@ export function OnyxSky({
             hapticsEnabled={hapticsEnabled}
             warmth={warmth}
             weather={weather}
+            onAimedObjectChange={setAimed}
+            onLockLookToObject={onCalibrateLookToObject}
+            aimedLiveRef={aimedLiveRef}
           />
         </div>
 
@@ -304,6 +319,7 @@ export function OnyxSky({
         <div className="onyx-sky-meta" aria-live="polite">
           looking {look} · {Math.round(az)}° · pitch {pitchLabel}° · {declLabel}
           {offsetLabel ? ` · ${offsetLabel}` : ""}
+          {lockLabel ? ` · ${lockLabel}` : ""}
         </div>
 
         <div className="onyx-heading-mark" aria-hidden>
@@ -324,34 +340,50 @@ export function OnyxSky({
           </div>
         </div>
 
-        <div className="onyx-sky-align" role="group" aria-label="Compass alignment">
-          <button
-            type="button"
-            className="onyx-sky-align-btn"
-            disabled={!sunAboveHorizon || !onCalibrateSun}
-            onClick={() => onCalibrateSun?.()}
-            title="Point at the sun, then tap — snaps compass to true azimuth"
-          >
-            Align sun
-          </button>
-          <button
-            type="button"
-            className="onyx-sky-align-btn"
-            disabled={!moonAboveHorizon || !onCalibrateMoon}
-            onClick={() => onCalibrateMoon?.()}
-            title="Point at the moon, then tap — snaps compass to true azimuth"
-          >
-            Align moon
-          </button>
-          {onResetSkyCalibration && Math.abs(skyAzOffsetDeg) >= 0.15 ? (
+        <div className="onyx-sky-align" role="group" aria-label="Sky perspective lock">
+          {aimed && onCalibrateLookToObject ? (
             <button
               type="button"
-              className="onyx-sky-align-btn ghost"
-              onClick={() => onResetSkyCalibration()}
+              className="onyx-sky-align-btn onyx-sky-lock-btn"
+              onClick={() => {
+                const live = aimedLiveRef.current ?? aimed;
+                if (!live) return;
+                onCalibrateLookToObject(live.az, live.alt, live.name);
+              }}
+              title="Point at it in the real sky, then tap — the rest of the map snaps to this view"
             >
-              Reset
+              Lock {aimed.name}
             </button>
           ) : null}
+          <div className="onyx-sky-align-row">
+            <button
+              type="button"
+              className="onyx-sky-align-btn"
+              disabled={!sunAboveHorizon || !onCalibrateSun}
+              onClick={() => onCalibrateSun?.()}
+              title="Point at the sun, then tap — snaps the sky to that view"
+            >
+              Align sun
+            </button>
+            <button
+              type="button"
+              className="onyx-sky-align-btn"
+              disabled={!moonAboveHorizon || !onCalibrateMoon}
+              onClick={() => onCalibrateMoon?.()}
+              title="Point at the moon, then tap — snaps the sky to that view"
+            >
+              Align moon
+            </button>
+            {onResetSkyCalibration && (Math.abs(skyAzOffsetDeg) >= 0.15 || Boolean(skyLockName)) ? (
+              <button
+                type="button"
+                className="onyx-sky-align-btn ghost"
+                onClick={() => onResetSkyCalibration()}
+              >
+                Reset
+              </button>
+            ) : null}
+          </div>
         </div>
 
         <p className="onyx-sky-hint">{hint}</p>

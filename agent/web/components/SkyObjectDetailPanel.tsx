@@ -15,14 +15,18 @@ export type SkyObjectDetail = {
     qualities: string[];
     source?: string;
   };
+  /** Stars, planets, DSOs — not aircraft or satellites. */
+  lockable?: boolean;
 };
 
 export function SkyObjectDetailPanel({
   detail,
   onClose,
+  onLockLook,
 }: {
   detail: SkyObjectDetail;
   onClose: () => void;
+  onLockLook?: (az: number, alt: number, name: string) => void;
 }) {
   return (
     <div className="cp-sky-object-panel" role="dialog" aria-label={`${detail.name} details`}>
@@ -70,6 +74,15 @@ export function SkyObjectDetailPanel({
             </div>
           ))}
         </dl>
+        {detail.lockable && onLockLook ? (
+          <button
+            type="button"
+            className="cp-sky-object-panel-lock"
+            onClick={() => onLockLook(detail.az, detail.alt, detail.name)}
+          >
+            This is where I see it
+          </button>
+        ) : null}
       </article>
     </div>
   );

@@ -8,6 +8,7 @@ import {
   resolveDevicePitchDeg,
   setMagneticDeclinationDeg,
   setUserAzimuthOffsetDeg,
+  lockLookOffsets,
 } from "./orientationCalibration";
 import { deviceOrientationToViewEnu, dot, enuToAltAz } from "./sphericalView";
 
@@ -96,6 +97,34 @@ describe("resolveCompassHeadingDeg", () => {
     const event = { alpha: 40, beta: 90, gamma: 0, absolute: true } as DeviceOrientationEvent;
     const raw = rawLookAzAltDeg(event)!;
     expect(shortest(resolveCompassHeadingDeg(event)!, raw.az - 4.4 + 3)).toBeLessThan(0.001);
+  });
+});
+
+describe("lockLookOffsets", () => {
+  it("snaps the look so a named object sits on the reticle", () => {
+    const next = lockLookOffsets({
+      objectAz: 130,
+      objectAlt: 25,
+      viewAz: 100,
+      viewAlt: 20,
+      currentAzOffset: 2,
+      currentAltOffset: -1,
+    });
+    expect(next.azOffset).toBeCloseTo(32, 5);
+    expect(next.altOffset).toBeCloseTo(4, 5);
+  });
+
+  it("takes the short way around north", () => {
+    const next = lockLookOffsets({
+      objectAz: 10,
+      objectAlt: 40,
+      viewAz: 350,
+      viewAlt: 40,
+      currentAzOffset: 0,
+      currentAltOffset: 0,
+    });
+    expect(next.azOffset).toBeCloseTo(20, 5);
+    expect(next.altOffset).toBeCloseTo(0, 5);
   });
 });
 
