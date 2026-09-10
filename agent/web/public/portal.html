@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06x -->
+<!-- build: 2026-09-06y -->
 <script>
 (function(){
-  var BUILD='2026-09-06x';
+  var BUILD='2026-09-06y';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -163,10 +163,14 @@
   }
   .screen-mast{
     position:absolute;top:18px;left:0;right:0;height:32px;
-    display:flex;align-items:center;justify-content:center;
+    display:flex;align-items:center;justify-content:center;gap:0.55em;
     margin:0;padding:0 76px;text-align:center;
     font-size:11px;letter-spacing:.42em;text-transform:uppercase;
     color:#fff;pointer-events:none;font-weight:600;
+  }
+  .screen-mast-sub{
+    letter-spacing:.14em;font-weight:400;font-style:italic;
+    text-transform:none;opacity:.78;font-size:10px;
   }
   .screen.active{display:block;animation:screenin .5s cubic-bezier(.2,.8,.3,1) forwards}
   @keyframes screenin{from{opacity:0}to{opacity:1}}
@@ -566,6 +570,11 @@
   #screen-tonal .twrap{max-width:1120px;margin:0 auto;padding:8px 22px 90px}
   #screen-tonal .kicker{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.42em;color:var(--amber);text-transform:uppercase;margin:0 0 14px;text-align:center}
   #screen-tonal h1.ttitle{font-family:var(--serif);font-weight:500;font-size:clamp(30px,6vw,52px);margin:0;text-align:center;letter-spacing:.01em}
+  #screen-tonal .ttagline{
+    margin:10px auto 0;text-align:center;
+    font-family:var(--serif);font-style:italic;font-weight:400;
+    font-size:clamp(16px,3.2vw,22px);letter-spacing:.08em;color:var(--amber);
+  }
   #screen-tonal .tsub{color:var(--fog);max-width:66ch;margin:13px auto 0;font-size:14.5px;text-align:center}
   #screen-tonal .updown{display:flex;align-items:center;justify-content:center;gap:10px;margin:18px auto 0;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--fogd)}
   #screen-tonal .updown .u{color:var(--node)}#screen-tonal .updown .d{color:var(--amber)}
@@ -888,7 +897,7 @@
   .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.studies-tab):not(.backhome):not(.pill),
   .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.backhome):not(.pill),
   #screen-studies .kicker, #screen-studies h1.title, #screen-studies .sub, #screen-studies .axis-kicker,
-  #screen-tonal .kicker, #screen-tonal h1.ttitle, #screen-tonal .tsub,
+  #screen-tonal .kicker, #screen-tonal h1.ttitle, #screen-tonal .ttagline, #screen-tonal .tsub,
   .ledge .laxis .p, .ledge .laxis .z, .ledge .laxis .r, .ledge .lthesis p, .ledge .lnote p,
   .cell, .cell.y3, .cell.y2, .cell.y1, .cell.node, .cell.g1, .cell.g2, .cell.g3, .fullaxis .lvl,
   .backhome, .research-copy p, .research-open, .polepair, .polepair .yn, .polepair .yg {
@@ -944,7 +953,7 @@
   <div class="aura"></div><div class="ring r1"></div><div class="ring r2"></div>
   <div class="compass">
     <button class="dir up" onclick="fireNav('up')"><span class="ic">✦</span><span class="nm">Sky Map</span><span class="hint">the cosmos above</span></button>
-    <button class="dir down" onclick="fireNav('down')"><span class="ic">▽</span><span class="nm">Tonal</span><span class="hint">how it's built</span></button>
+    <button class="dir down" onclick="fireNav('down')"><span class="ic">▽</span><span class="nm">Tonal</span><span class="hint">Show Thyself</span></button>
     <button class="dir left" onclick="fireNav('left')"><span class="ic">❋</span><span class="nm">Studies</span><span class="hint">the knowledge</span></button>
     <button class="dir right" onclick="fireNav('right')"><span class="ic">◷</span><span class="nm">Orrery</span><span class="hint">the wheels</span></button>
     <div class="yinyang" title="Enter — begin with you">
@@ -1010,7 +1019,7 @@
 
 <!-- ===== TONAL (the ground — builders & backers) ===== -->
 <section class="screen" id="screen-tonal">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">TONAL</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">Tonal<span class="screen-mast-sub">Show Thyself</span></p></div>
   <div id="tonal-root"></div>
 </section>
 
@@ -1524,7 +1533,8 @@ troot.innerHTML=`
 
     <!-- FORK: choose your path -->
     <div class="tfork" id="tfork">
-      <h1 class="ttitle">Tonal — the gathering</h1>
+      <h1 class="ttitle">Tonal</h1>
+      <p class="ttagline">Show Thyself</p>
       <p class="tsub">Choose Your Path</p>
       <div class="forkcards">
         <button class="forkcard guest" onclick="tonalPath('guest')">
@@ -1580,7 +1590,7 @@ troot.innerHTML=`
     <!-- BUILDER VIEW -->
     <div class="tview" id="tview-builder">
       <div class="viewbar"><span class="vbtag builder">▽ Builder · promoter · venue · backer</span><button class="switchpath" onclick="tonalPath(null)">↔ Switch path</button></div>
-      <p class="kicker">Tonal · The Ground</p>
+      <p class="kicker">Tonal · Show Thyself</p>
       <h1 class="ttitle">How it gets built &amp; kept safe</h1>
       <p class="tsub">The infrastructure beneath the gathering — the covenant the builders keep, the roles that hold the night, the honest economics, and the doors where value crosses.</p>
 
