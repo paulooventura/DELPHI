@@ -4,8 +4,8 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Boot: pure black → intro film → last frame holds into the access gate.
- * Nothing on screen except the film and centered DELPHI. No corners, tagline,
- * coords, land ack, enter chrome, or seeds.
+ * Only the film plus centered title (Delphi) and line under it (Know Thyself).
+ * No corners, coords, land ack, enter chrome, or seeds.
  *
  * Tap can re-run device access on the user-gesture path (required on iOS)
  * when this session already granted. First ask lives on the permissions
@@ -85,10 +85,11 @@ export function OnyxSplash({
         <div className="onyx-dimmer" aria-hidden />
 
         <div
-          className={`onyx-splash-wordmark${markOn ? " on" : ""}`}
+          className={`onyx-splash-brand${markOn ? " on" : ""}`}
           aria-hidden={!markOn}
         >
-          DELPHI
+          <p className="onyx-splash-wordmark">Delphi</p>
+          <p className="onyx-splash-tagline">Know Thyself</p>
         </div>
 
         <div

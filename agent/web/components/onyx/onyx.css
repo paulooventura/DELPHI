@@ -257,18 +257,32 @@ html.chorus-embed .onyx-root {
   content: none !important;
 }
 
-.onyx-splash-wordmark {
-  position: absolute; top: 46%; left: 0; right: 0; z-index: 6;
+.onyx-splash-brand {
+  position: absolute; top: 44%; left: 0; right: 0; z-index: 6;
+  display: flex; flex-direction: column; align-items: center; gap: 0.55rem;
   text-align: center;
-  font-family: var(--font-voice); font-optical-sizing: auto;
-  font-size: 34px; font-weight: 300; letter-spacing: 0.42em;
-  color: var(--onyx-ink-bright); padding-left: 0.42em;
   opacity: 0; transform: translateY(8px);
   transition: opacity 720ms ease, transform 720ms ease;
   pointer-events: none;
 }
-.onyx-splash-wordmark.on {
+.onyx-splash-brand.on {
   opacity: 1; transform: translateY(0);
+}
+.onyx-splash-wordmark {
+  margin: 0;
+  font-family: var(--font-voice); font-optical-sizing: auto;
+  font-size: 36px; font-weight: 400; letter-spacing: 0.22em;
+  color: var(--onyx-ink-bright); padding-left: 0.22em;
+  line-height: 1.05;
+}
+.onyx-splash-tagline {
+  margin: 0;
+  font-family: var(--font-voice); font-optical-sizing: auto;
+  font-style: italic;
+  font-size: 15px; font-weight: 400; letter-spacing: 0.14em;
+  color: var(--onyx-ink-soft); padding-left: 0.14em;
+  line-height: 1.2;
+  opacity: 0.88;
 }
 @keyframes onyx-reveal {
   from { opacity: 0; transform: translateY(8px); }

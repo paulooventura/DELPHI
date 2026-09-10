@@ -1,9 +1,9 @@
 {
-  "name": "DELPHI — Cosmic Clock",
-  "short_name": "DELPHI",
-  "description": "Cosmic Clock | Astronomical Guidance — delphi.pauloventura.org",
+  "name": "Delphi",
+  "short_name": "Delphi",
+  "description": "Know Thyself",
   "id": "https://delphi.pauloventura.org/",
-  "start_url": "/?b=2026-09-05d",
+  "start_url": "/?b=2026-09-06x",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
