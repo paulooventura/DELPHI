@@ -2860,8 +2860,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-orrery-wrap {
   flex: 1;
   min-height: 0;
-  margin-top: 118px;
-  margin-bottom: 8px;
+  margin-top: 108px;
+  margin-bottom: 4px;
   position: relative;
   z-index: 2;
 }

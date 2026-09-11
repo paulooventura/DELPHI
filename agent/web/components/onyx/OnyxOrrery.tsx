@@ -204,11 +204,15 @@ export function OnyxOrrery({
       ctx.clip();
 
       const padX = 8;
-      const padTop = 6;
-      const laneGap = 3;
+      const padTop = 4;
+      const count = Math.max(1, lanes.length);
+      // Shrink gaps when the stack is dense so every cycle (incl. ms/rega) fits.
+      const laneGap = count > 28 ? 1 : count > 20 ? 2 : 3;
       const nowX = w * 0.5;
-      const avail = h - padTop - 8;
-      const laneH = Math.max(22, (avail - laneGap * Math.max(0, lanes.length - 1)) / Math.max(1, lanes.length));
+      const avail = Math.max(1, h - padTop - 4);
+      const laneH = (avail - laneGap * (count - 1)) / count;
+      const labelOk = laneH >= 11;
+      const gemPadY = laneH >= 16 ? 3 : laneH >= 10 ? 1 : 0;
       const hits: { y0: number; y1: number; id: string }[] = [];
 
       let y = padTop;
@@ -220,7 +224,9 @@ export function OnyxOrrery({
         const isMs = lane.id === "ms";
         const isFast = lane.speedT < 0.25;
         const discrete = laneMotion(lane.id) === "discrete-tick";
-        const cellW = isFast ? 32 : Math.max(56, Math.min(92, (w - padX * 2) / 5.2));
+        const cellW = isFast
+          ? Math.max(18, Math.min(32, laneH * 2.2))
+          : Math.max(40, Math.min(92, (w - padX * 2) / 5.2));
         const n = lane.cells.length || 1;
         const selected = selectedRef.current === lane.id;
 
@@ -243,6 +249,7 @@ export function OnyxOrrery({
         const last = Math.ceil((w - startX) / cellW) + 1;
         const underLine = mod(Math.floor((nowX - startX) / cellW), n);
         const centerOnly = CENTER_ONLY.has(lane.id);
+        const gemH = Math.max(2, laneH - gemPadY * 2);
 
         if (selected) {
           ctx.fillStyle = "rgba(180, 160, 255, 0.08)";
@@ -252,13 +259,15 @@ export function OnyxOrrery({
         if (centerOnly) {
           const gx = nowX - cellW / 2;
           const cell = lane.cells[lane.index] ?? lane.cells[underLine] ?? lane.cells[0];
-          drawGemCell(ctx, gx + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, false);
-          ctx.fillStyle = "rgba(255,255,255,0.94)";
-          ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
-          ctx.textAlign = "center";
-          ctx.textBaseline = "middle";
-          const label = short(cell?.label || cell?.glyph || lane.activeLabel || lane.name, cellW > 70 ? 12 : 8);
-          ctx.fillText(label, nowX, y0 + laneH / 2 + 1);
+          drawGemCell(ctx, gx + 2, y0 + gemPadY, cellW - 4, gemH, lane.speedT, true, false);
+          if (labelOk) {
+            ctx.fillStyle = "rgba(255,255,255,0.94)";
+            ctx.font = `600 ${Math.min(10, Math.max(7, laneH - 3))}px ui-sans-serif, system-ui, sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            const label = short(cell?.label || cell?.glyph || lane.activeLabel || lane.name, cellW > 70 ? 12 : 8);
+            ctx.fillText(label, nowX, y0 + laneH / 2 + 1);
+          }
         } else {
           for (let k = first; k <= last; k++) {
             const ci = mod(k, n);
@@ -268,15 +277,15 @@ export function OnyxOrrery({
             const atNow = ci === underLine;
 
             if (isMs) {
-              drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, true, true);
+              drawGemCell(ctx, x + 2, y0 + gemPadY, cellW - 4, gemH, lane.speedT, true, true);
               continue;
             }
 
-            drawGemCell(ctx, x + 2, y0 + 3, cellW - 4, laneH - 6, lane.speedT, atNow, false);
+            drawGemCell(ctx, x + 2, y0 + gemPadY, cellW - 4, gemH, lane.speedT, atNow, false);
 
-            if (atNow) {
+            if (atNow && labelOk) {
               ctx.fillStyle = "rgba(255,255,255,0.94)";
-              ctx.font = "600 10px ui-sans-serif, system-ui, sans-serif";
+              ctx.font = `600 ${Math.min(10, Math.max(7, laneH - 3))}px ui-sans-serif, system-ui, sans-serif`;
               ctx.textAlign = "center";
               ctx.textBaseline = "middle";
               const label = short(cell.label || cell.glyph || lane.name, cellW > 70 ? 12 : 8);
