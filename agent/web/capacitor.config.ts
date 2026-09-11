@@ -13,7 +13,7 @@ const serverUrl = baseUrl.includes("?")
 
 const config: CapacitorConfig = {
   appId: "org.pauloventura.delphi",
-  appName: "DELPHI",
+  appName: "Pneuma Mundi",
   webDir: "www",
   server: {
     url: serverUrl,

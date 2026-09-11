@@ -28,16 +28,16 @@ export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Delphi",
+  title: "Pneuma Mundi",
   description: "Know Thyself",
-  applicationName: "Delphi",
+  applicationName: "Pneuma Mundi",
   manifest: `/manifest.webmanifest?v=${DELPHI_BUILD}`,
   alternates: { canonical: "/" },
   openGraph: {
-    title: "Delphi",
+    title: "Pneuma Mundi",
     description: "Know Thyself",
     url: SITE_URL,
-    siteName: "Paulo Ventura · Delphi",
+    siteName: "Paulo Ventura · Pneuma Mundi",
   },
   icons: {
     icon: [
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "Delphi",
+    title: "Pneuma Mundi",
     statusBarStyle: "black-translucent",
   },
   formatDetection: { telephone: false },

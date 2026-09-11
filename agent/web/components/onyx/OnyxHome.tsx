@@ -387,7 +387,7 @@ export function OnyxHome({
         flashBall("copy");
       } else if (id === "more") {
         try {
-          await navigator.share?.({ title: "DELPHI", text: momentLine, url: "https://delphi.pauloventura.org/" });
+          await navigator.share?.({ title: "Pneuma Mundi", text: momentLine, url: "https://delphi.pauloventura.org/" });
         } catch {
           /* cancelled */
         }
@@ -511,7 +511,7 @@ export function OnyxHome({
         className="onyx-device onyx-yy-home"
         data-depth={depth}
         role="application"
-        aria-label="Delphi"
+        aria-label="Pneuma Mundi"
         onWheel={onWheel}
         onPointerDown={onPointerDownSwipe}
         onPointerUp={onPointerUpSwipe}
@@ -543,7 +543,7 @@ export function OnyxHome({
         <div className={`onyx-pulse-ring${pulseAnim === "beat" ? " beat" : ""}${pulseAnim === "chime" ? " chime" : ""}`} />
 
         <OnyxPhaseMoon phaseFraction={phaseFraction} onOpenSky={onOpenSky} />
-        <p className="onyx-wordmark">DELPHI</p>
+        <p className="onyx-wordmark">Pneuma Mundi</p>
         <p className="onyx-clock">
           {clockLabel.toUpperCase().replace(",", " ·")}:
           <span className="sec">{sec}</span>

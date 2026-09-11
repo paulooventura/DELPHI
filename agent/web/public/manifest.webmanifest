@@ -1,9 +1,9 @@
 {
-  "name": "Delphi",
-  "short_name": "Delphi",
+  "name": "Pneuma Mundi",
+  "short_name": "Pneuma Mundi",
   "description": "Know Thyself",
   "id": "https://delphi.pauloventura.org/",
-  "start_url": "/?b=2026-09-06y",
+  "start_url": "/?b=2026-09-06z",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",

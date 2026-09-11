@@ -508,7 +508,7 @@ export function OnyxApp({
   // Splash + Allow once per app open. Later door trips skip both.
   if (!bootReady) {
     return (
-      <div className="onyx-root" role="status" aria-label="Delphi" aria-busy="true">
+      <div className="onyx-root" role="status" aria-label="Pneuma Mundi" aria-busy="true">
         <div className="onyx-device">
           <div className="onyx-splash-veil on" aria-hidden />
         </div>

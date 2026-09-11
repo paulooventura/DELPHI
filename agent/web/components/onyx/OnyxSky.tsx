@@ -312,7 +312,7 @@ export function OnyxSky({
       <div
         className={`onyx-device onyx-sky-device${lockHold ? " is-lock-hold" : ""}`}
         role="application"
-        aria-label="Delphi sky view"
+        aria-label="Pneuma Mundi sky view"
         onPointerDown={onPointerDown}
         onPointerUp={onPointerUp}
         onPointerCancel={onPointerCancel}
@@ -395,7 +395,7 @@ export function OnyxSky({
         </div>
 
         <div className="onyx-sky-top">
-          <span className="onyx-wordmark">DELPHI</span>
+          <span className="onyx-wordmark">Pneuma Mundi</span>
         </div>
         <div className="onyx-sky-coords">
           <span className={!locationLive ? "onyx-sky-coords-warn" : undefined}>

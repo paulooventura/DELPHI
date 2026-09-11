@@ -1,9 +1,9 @@
 ﻿<!DOCTYPE html>
 <html lang="en"><head>
-<!-- build: 2026-09-06y -->
+<!-- build: 2026-09-06z -->
 <script>
 (function(){
-  var BUILD='2026-09-06y';
+  var BUILD='2026-09-06z';
   try{
     var prev=localStorage.getItem('delphi-portal-build');
     var q=new URLSearchParams(location.search).get('b');
@@ -17,7 +17,7 @@
 })();
 </script>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Delphi</title>
+<title>Pneuma Mundi</title>
 <style>
   :root{--void:#000000;--ink:#050506;--card:#0c0c12;--card2:#12121a;--line:rgba(140,124,255,0.16);--lsoft:rgba(140,124,255,0.1);
     --fog:#ffffff;--fogd:#ffffff;--paper:#ffffff;--green:#4fd1a1;--yellow:#f5c451;--red:#ff5b5b;--cool:#8a7bff;--violet:#a99cff;--node:#a99cff;--amber:#c4b8ff;
@@ -963,7 +963,7 @@
           <rect x="0" y="0" width="100" height="100" fill="#0f1524"/>
           <path d="M50,1 a24.5,24.5 0 0,1 0,49 a24.5,24.5 0 0,0 0,49 a49,49 0 0,1 0,-98 z" fill="#e8e6df"/>
         </g>
-        <g class="yydot yyshare" onclick="shareApp(event)"><title>Share DELPHI</title>
+        <g class="yydot yyshare" onclick="shareApp(event)"><title>Share Pneuma Mundi</title>
           <circle cx="50" cy="25.5" r="8" fill="#0f1524"/>
           <text x="50" y="25.5" class="yyicon" text-anchor="middle" dominant-baseline="central" fill="#e8e6df">↗</text>
         </g>
@@ -1085,9 +1085,9 @@
         <p>The polarity scales began as a long reading of how qualities actually move — not as opposites that cancel, but as coupled oscillators that share a node. Each scale is one axis: yin pole, three steps in, the living zero, three steps out, yang pole. One hundred sixty-four of them, grouped into twenty domains, from Aesthetic to Technological / Informational.</p>
         <p>The work sits on three sources you can request: the living polarity sheet (the working atlas), the coupled-oscillation white paper (the physics of why a node is not a compromise), and the Resonant Consent paper (how this lens meets bodies, rooms, and agreement).</p>
         <div class="request-row">
-          <a class="req" href="mailto:hello@pauloventura.org?subject=Delphi%20Studies%20access%20%E2%80%94%20polarity%20sheet">Request the sheet</a>
-          <a class="req" href="mailto:hello@pauloventura.org?subject=Delphi%20Studies%20access%20%E2%80%94%20coupled%20oscillation">Coupled oscillation paper</a>
-          <a class="req" href="mailto:hello@pauloventura.org?subject=Delphi%20Studies%20access%20%E2%80%94%20resonant%20consent">Resonant Consent paper</a>
+          <a class="req" href="mailto:hello@pauloventura.org?subject=Pneuma%20Mundi%20Studies%20access%20%E2%80%94%20polarity%20sheet">Request the sheet</a>
+          <a class="req" href="mailto:hello@pauloventura.org?subject=Pneuma%20Mundi%20Studies%20access%20%E2%80%94%20coupled%20oscillation">Coupled oscillation paper</a>
+          <a class="req" href="mailto:hello@pauloventura.org?subject=Pneuma%20Mundi%20Studies%20access%20%E2%80%94%20resonant%20consent">Resonant Consent paper</a>
         </div>
       </div></div>
     </div>
@@ -1145,7 +1145,7 @@
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
-  <div class="box"><h3>Leave DELPHI?</h3><p id="gate-msg">This opens an external site in a new tab.</p>
+  <div class="box"><h3>Leave Pneuma Mundi?</h3><p id="gate-msg">This opens an external site in a new tab.</p>
     <div class="row"><button onclick="closeGate()">Stay</button><button class="go" id="gate-go">Open new tab</button></div></div>
 </div>
 
@@ -1218,18 +1218,18 @@ window.startHold=startHold;window.endHold=endHold;
 function yySpark(el){if(!el)return;const svg=el.ownerSVGElement||el.closest('svg');const c=el.querySelector('circle')||el;let cx=50,cy=50;try{cx=+c.getAttribute('cx');cy=+c.getAttribute('cy');}catch(e){}const ns='http://www.w3.org/2000/svg';const g=document.createElementNS(ns,'g');g.setAttribute('class','sparkburst');for(let i=0;i<8;i++){const ang=(Math.PI*2*i)/8;const ln=document.createElementNS(ns,'line');ln.setAttribute('x1',cx);ln.setAttribute('y1',cy);ln.setAttribute('x2',cx+Math.cos(ang)*4);ln.setAttribute('y2',cy+Math.sin(ang)*4);ln.setAttribute('stroke','var(--amber)');ln.setAttribute('stroke-width','1.4');ln.setAttribute('stroke-linecap','round');ln.style.setProperty('--dx',Math.cos(ang)*14+'px');ln.style.setProperty('--dy',Math.sin(ang)*14+'px');g.appendChild(ln);}svg.appendChild(g);setTimeout(()=>g.remove(),620);}
 function toast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';document.body.appendChild(t);}t.textContent=msg;t.classList.remove('show');void t.offsetWidth;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(()=>t.classList.remove('show'),1800);}
 window.copyOracle=(ev)=>{if(ev){ev.stopPropagation();ev.preventDefault();}const t=(document.getElementById('momentPhrase')||{}).textContent||'';const el=ev&&ev.currentTarget;const done=()=>{if(el){el.classList.add('done');yySpark(el);setTimeout(()=>el.classList.remove('done'),1200);}toast('Oracle copied ✦');};if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(t).then(done).catch(done);}else{try{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);done();}catch(e){}}};
-window.shareApp=(ev)=>{if(ev){ev.stopPropagation();ev.preventDefault();}const el=ev&&ev.currentTarget;if(el){yySpark(el);el.classList.add('done');setTimeout(()=>el.classList.remove('done'),1200);}const url=(location&&location.href)||'https://delphi.pauloventura.org';const text='DELPHI — the oracle, the studies, the build.';const enc=encodeURIComponent,U=enc(url),T=enc(text);const opts=[
+window.shareApp=(ev)=>{if(ev){ev.stopPropagation();ev.preventDefault();}const el=ev&&ev.currentTarget;if(el){yySpark(el);el.classList.add('done');setTimeout(()=>el.classList.remove('done'),1200);}const url=(location&&location.href)||'https://delphi.pauloventura.org';const text='Pneuma Mundi — Know Thyself.';const enc=encodeURIComponent,U=enc(url),T=enc(text);const opts=[
     {k:'Instagram',ic:'📷',act:()=>{navigator.clipboard&&navigator.clipboard.writeText(url);toast('Link copied — paste into your IG story ✦');}},
     {k:'Facebook',ic:'📘',url:'https://www.facebook.com/sharer/sharer.php?u='+U},
     {k:'WhatsApp',ic:'💬',url:'https://wa.me/?text='+T+'%20'+U},
     {k:'Messenger',ic:'✉️',url:'https://www.facebook.com/dialog/send?link='+U+'&app_id=0&redirect_uri='+U},
     {k:'X',ic:'✕',url:'https://twitter.com/intent/tweet?text='+T+'&url='+U},
     {k:'Telegram',ic:'📨',url:'https://t.me/share/url?url='+U+'&text='+T},
-    {k:'Email',ic:'✦',url:'mailto:?subject='+enc('DELPHI')+'&body='+T+'%20'+U},
+    {k:'Email',ic:'✦',url:'mailto:?subject='+enc('Pneuma Mundi')+'&body='+T+'%20'+U},
     {k:'Copy link',ic:'⧉',act:()=>{navigator.clipboard&&navigator.clipboard.writeText(url);toast('Link copied ✦');}}
   ];
-  if(navigator.share){navigator.share({title:'DELPHI',text:text,url:url}).catch(()=>shareBubble(opts));}else{shareBubble(opts);}};
-function shareBubble(opts){const host=document.getElementById('modalHost');const items=opts.map((o,i)=>`<button class="shopt" data-i="${i}"><span class="shic">${o.ic}</span><span>${esc(o.k)}</span></button>`).join('');modal(`<div class="shwrap"><p class="shttl">Share DELPHI</p><div class="shgrid">${items}</div></div>`);document.querySelectorAll('.shopt').forEach(b=>{b.onclick=()=>{const o=opts[+b.dataset.i];closeModal();if(o.act)o.act();else if(o.url)window.open(o.url,'_blank','noopener');};});}
+  if(navigator.share){navigator.share({title:'Pneuma Mundi',text:text,url:url}).catch(()=>shareBubble(opts));}else{shareBubble(opts);}};
+function shareBubble(opts){const host=document.getElementById('modalHost');const items=opts.map((o,i)=>`<button class="shopt" data-i="${i}"><span class="shic">${o.ic}</span><span>${esc(o.k)}</span></button>`).join('');modal(`<div class="shwrap"><p class="shttl">Share Pneuma Mundi</p><div class="shgrid">${items}</div></div>`);document.querySelectorAll('.shopt').forEach(b=>{b.onclick=()=>{const o=opts[+b.dataset.i];closeModal();if(o.act)o.act();else if(o.url)window.open(o.url,'_blank','noopener');};});}
 window.shareBubble=shareBubble;window.toast=toast;
 /* outbound gate pattern */
 let _url=null;
@@ -1517,7 +1517,7 @@ const rxProviderLinks={
   },
   payment:{
     title:"Payment & W-9 platforms",
-    intro:"Contractor-payment services that collect the W-9, store sensitive data on compliant infrastructure, and file 1099s. DELPHI never touches this data. Start with the free option — it covers most events at no cost to you or the promoter.",
+    intro:"Contractor-payment services that collect the W-9, store sensitive data on compliant infrastructure, and file 1099s. Pneuma Mundi never touches this data. Start with the free option — it covers most events at no cost to you or the promoter.",
     guard:"Guardrail: the platform handles compliance mechanics, but worker classification and tax reporting remain your responsibility — confirm with a CPA.",
     links:[
       {name:"Found",url:"https://found.com/",cost:"free",note:"Free — no monthly fee, no minimums. W-9 built into the payment flow, auto 1099-NEC. Start here."},
@@ -1690,7 +1690,7 @@ troot.innerHTML=`
             <button onclick="tonalDoor('${esc(d.h)}')">${esc(d.label)}</button>
             <div class="stub">${esc(d.stub)}</div></div>`).join("")}
         </div>
-        <p class="doornote">When these go live, they'll open through the same outbound gate the rest of DELPHI uses — a clear "you're leaving to an external site" step before any payment page.</p>
+        <p class="doornote">When these go live, they'll open through the same outbound gate the rest of Pneuma Mundi uses — a clear "you're leaving to an external site" step before any payment page.</p>
       </div>
     </div>
     </div><!-- /tview-builder -->
@@ -1805,7 +1805,7 @@ const rxOnboard={
     {k:"W-9 on file",v:"Anyone paid $600+ in a year needs one; we collect it up front for everyone."},
     {k:"Certifications (if the role needs one)",v:"Proof of the cert flagged on this role, where applicable."}
   ],
-  note:"Onboarding, W-9 collection, and payments are handled by a dedicated contractor-payment platform (e.g. Gusto's contractor plan, or a free option like Found) — not by this app. That platform collects the W-9, stores sensitive data (including SSNs) on compliant infrastructure, and files the 1099-NEC at year-end. DELPHI never sees or stores your tax ID or payment details; it only links out to the secure platform through the outbound gate. This isn't tax or legal advice — classification and compliance are the organizer's responsibility, ideally confirmed with a CPA."
+  note:"Onboarding, W-9 collection, and payments are handled by a dedicated contractor-payment platform (e.g. Gusto's contractor plan, or a free option like Found) — not by this app. That platform collects the W-9, stores sensitive data (including SSNs) on compliant infrastructure, and files the 1099-NEC at year-end. Pneuma Mundi never sees or stores your tax ID or payment details; it only links out to the secure platform through the outbound gate. This isn't tax or legal advice — classification and compliance are the organizer's responsibility, ideally confirmed with a CPA."
 };
 
 const rxAgreements={
@@ -1918,7 +1918,7 @@ window.rxProviderModal=(type)=>{
     <p class="pmintro">${esc(P.intro)}</p>
     <div class="pmguard">🛡️ ${esc(P.guard)}</div>
     <div class="pmlinks">${linkHtml}</div>
-    <p class="pmfoot">These are starting points, not endorsements — vet each provider yourself. Links open an external site through DELPHI's outbound gate.</p>
+    <p class="pmfoot">These are starting points, not endorsements — vet each provider yourself. Links open an external site through Pneuma Mundi's outbound gate.</p>
     <button class="pmclose" onclick="closeModal()">Close</button>
   </div>`);
 };
@@ -2047,7 +2047,7 @@ rolesRender();
 
 tonalRender();
 }
-window.tonalDoor=(name)=>{const isVol=name==="Volunteer sign-up";const msg=isVol?"This isn't wired yet. When it opens, you'll pick an available shift and role, and we'll get you set up — a real spot on the crew in exchange for your way in.":("This door isn't wired to live payment yet. When it opens, it'll route through DELPHI's outbound gate to the real "+(name==="Ticketing"?"Ticket Fairy":"Stripe")+" flow.");const ico=isVol?"🤝":"🚧";modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">${ico}</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:42ch;margin-left:auto;margin-right:auto">${esc(msg)}</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
+window.tonalDoor=(name)=>{const isVol=name==="Volunteer sign-up";const msg=isVol?"This isn't wired yet. When it opens, you'll pick an available shift and role, and we'll get you set up — a real spot on the crew in exchange for your way in.":("This door isn't wired to live payment yet. When it opens, it'll route through Pneuma Mundi's outbound gate to the real "+(name==="Ticketing"?"Ticket Fairy":"Stripe")+" flow.");const ico=isVol?"🤝":"🚧";modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">${ico}</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:42ch;margin-left:auto;margin-right:auto">${esc(msg)}</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
 
 let _studiesMounted=false;
 function ensureStudies(){if(_studiesMounted)return;_studiesMounted=true;

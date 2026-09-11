@@ -4,9 +4,7 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * Boot: pure black → intro film → last frame holds into the access gate.
- * Only the film plus centered title (Delphi) and line under it (Know Thyself).
- * No corners, coords, land ack, enter chrome, or seeds.
- *
+ * Runway splash carries Pneuma Mundi typography in-frame — no second title overlay.
  * Tap can re-run device access on the user-gesture path (required on iOS)
  * when this session already granted. First ask lives on the permissions
  * screen after this splash.
@@ -23,13 +21,11 @@ export function OnyxSplash({
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
-  const [markOn, setMarkOn] = useState(false);
 
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
     if (fromGesture) onPrimeAccess?.();
-    setMarkOn(false);
     onEnter();
   };
 
@@ -46,7 +42,6 @@ export function OnyxSplash({
     if (!videoReady) return;
     const t = window.setTimeout(() => {
       setVeilOn(false);
-      setMarkOn(true);
     }, 180);
     return () => clearTimeout(t);
   }, [videoReady]);
@@ -60,7 +55,7 @@ export function OnyxSplash({
     <div
       className="onyx-root"
       role="dialog"
-      aria-label="Delphi splash"
+      aria-label="Pneuma Mundi splash"
       onClick={() => finish(true)}
     >
       <div className="onyx-device onyx-splash-only">
@@ -76,6 +71,7 @@ export function OnyxSplash({
             onPlaying={() => setVideoReady(true)}
             onEnded={() => finish(false)}
           >
+            <source src="/pneuma-intro.mp4" type="video/mp4" />
             <source src="/delphi-intro.mp4" type="video/mp4" />
           </video>
         </div>
@@ -83,14 +79,6 @@ export function OnyxSplash({
         <div className="onyx-grade" aria-hidden />
         <div className="onyx-tint" aria-hidden />
         <div className="onyx-dimmer" aria-hidden />
-
-        <div
-          className={`onyx-splash-brand${markOn ? " on" : ""}`}
-          aria-hidden={!markOn}
-        >
-          <p className="onyx-splash-wordmark">Delphi</p>
-          <p className="onyx-splash-tagline">Know Thyself</p>
-        </div>
 
         <div
           className={`onyx-splash-veil${veilOn ? " on" : ""}`}

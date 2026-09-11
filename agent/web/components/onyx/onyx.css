@@ -271,8 +271,8 @@ html.chorus-embed .onyx-root {
 .onyx-splash-wordmark {
   margin: 0;
   font-family: var(--font-voice); font-optical-sizing: auto;
-  font-size: 36px; font-weight: 400; letter-spacing: 0.22em;
-  color: var(--onyx-ink-bright); padding-left: 0.22em;
+  font-size: clamp(26px, 7.2vw, 34px); font-weight: 400; letter-spacing: 0.14em;
+  color: var(--onyx-ink-bright); padding-left: 0.14em;
   line-height: 1.05;
 }
 .onyx-splash-tagline {
@@ -532,7 +532,7 @@ html.chorus-embed .onyx-root {
 
 .onyx-wordmark {
   position: absolute; top: 56px; left: 0; right: 0; text-align: center; z-index: 8;
-  font-size: 11px; letter-spacing: 0.42em; color: var(--onyx-ink-quiet); font-weight: 300;
+  font-size: 10px; letter-spacing: 0.22em; color: var(--onyx-ink-quiet); font-weight: 300;
   transition: opacity var(--onyx-settle);
 }
 .onyx-device[data-depth="2"] .onyx-wordmark { opacity: 0.35; }
