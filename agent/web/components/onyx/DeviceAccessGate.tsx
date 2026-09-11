@@ -1,10 +1,12 @@
 "use client";
 
 /**
- * After splash, once per app open until the gem is tapped.
+ * After splash, once per app open until Allow access is tapped.
  * Close the tab/page or uninstall to see this again. One tap → location +
  * orientation + motion, then home. Returning from other doors in the same
  * open skips this screen.
+ *
+ * Backdrop is Paulo’s Runway sacred-threshold still — gem plate retired.
  */
 
 export function DeviceAccessGate({
@@ -24,8 +26,8 @@ export function DeviceAccessGate({
           onClick={onAllow}
         >
           <img
-            className="onyx-access-gem"
-            src="/allow-access-gem.jpg"
+            className="onyx-access-backdrop"
+            src="/allow-access-backdrop.jpg"
             alt=""
             draggable={false}
           />
