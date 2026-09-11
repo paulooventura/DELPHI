@@ -12,12 +12,14 @@ import { useEffect, useRef, useState } from "react";
 import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
 import {
   getClockAudio,
-  playHelekMark,
-  playPalaMark,
-  playPranaMark,
   playScrubTick,
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
+import {
+  startHeliodromeChord,
+  stopHeliodromeChord,
+  tickHeliodromeChord,
+} from "../../lib/heliodromeChord";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
   CENTER_ONLY_LANE_IDS,
@@ -32,7 +34,6 @@ import {
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
 
-const SONIC_LANES = new Set<OrreryLaneId>(["helek", "prana", "pala"]);
 const CENTER_ONLY = new Set<OrreryLaneId>(CENTER_ONLY_LANE_IDS);
 
 const LANE_LABEL: Record<OrreryLaneId, string> = {
@@ -128,6 +129,11 @@ export function OnyxOrrery({
   }, [frozen]);
 
   useEffect(() => {
+    void startHeliodromeChord();
+    return () => stopHeliodromeChord();
+  }, []);
+
+  useEffect(() => {
     if (!expanded && !pickerOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
@@ -183,6 +189,10 @@ export function OnyxOrrery({
       const lanes = allLanes.filter(l => l.id !== "wuku-tzolkin" && !hide.has(l.id));
       lanesRef.current = lanes;
 
+      if (!frozenRef.current) {
+        tickHeliodromeChord(lanes, hapticsRef.current);
+      }
+
       nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
 
       ctx.clearRect(0, 0, w, h);
@@ -218,16 +228,9 @@ export function OnyxOrrery({
 
         const prevIdx = lastIndex.get(lane.id);
         if (prevIdx !== undefined && prevIdx !== lane.index) {
+          // Escapement haptic only — string excitation lives in tickHeliodromeChord.
           if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
           nowPulseRef.current = Math.max(nowPulseRef.current, 0.7);
-          if (SONIC_LANES.has(lane.id) && !frozenRef.current) {
-            const audio = getClockAudio();
-            if (audio?.state === "running") {
-              if (lane.id === "helek") playHelekMark(audio);
-              else if (lane.id === "prana") playPranaMark(audio);
-              else playPalaMark(audio);
-            }
-          }
         } else if (discrete && lane.progress > 0.92) {
           nowPulseRef.current = Math.max(
             nowPulseRef.current,

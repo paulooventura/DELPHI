@@ -35,6 +35,7 @@ import {
   unmuteClockAudio,
   unparkClockAudio,
 } from "../lib/clockSfx";
+import { isHeliodromeChordActive, isHeliodromeChordWanted, startHeliodromeChord } from "../lib/heliodromeChord";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
 
 export type ClockObserver = { lat: number; lon: number };
@@ -109,7 +110,8 @@ export function useClockSfx(
         refs.observer = readObserver();
         syncChimeRefs(refs);
         unmuteClockAudio();
-        startSchumannAtmosphere(ctx);
+        if (isHeliodromeChordWanted()) void startHeliodromeChord();
+        else startSchumannAtmosphere(ctx);
         setActive(true);
       });
     };
@@ -126,7 +128,8 @@ export function useClockSfx(
         unparkClockAudio();
         unmuteClockAudio();
         // Only build the bed if it's gone — never tear/rebuild on flicker.
-        if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
+        if (isHeliodromeChordWanted()) void startHeliodromeChord();
+        else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
         setActive(true);
       });
     };
@@ -164,7 +167,8 @@ export function useClockSfx(
       refs.observer = readObserver();
       syncChimeRefs(refs);
       unmuteClockAudio();
-      startSchumannAtmosphere(existing);
+      if (isHeliodromeChordWanted()) void startHeliodromeChord();
+      else startSchumannAtmosphere(existing);
       setActive(true);
     }
 
@@ -192,7 +196,8 @@ export function useClockSfx(
         const hr = d.getHours();
 
         if (sec !== lastSec.current) {
-          playSecondTick(ctx, sec);
+          // Heliodrome NOW-Chord owns seconds while open (tic-tac string).
+          if (!isHeliodromeChordActive()) playSecondTick(ctx, sec);
           lastSec.current = sec;
 
           if (sec === 0) {
@@ -209,6 +214,7 @@ export function useClockSfx(
         const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
         const prev = lastMarks.current;
         if (
+          !isHeliodromeChordActive() &&
           prev &&
           (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
         ) {
@@ -246,7 +252,8 @@ export function useClockSfx(
       });
       unparkClockAudio();
       unmuteClockAudio();
-      if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
+      if (isHeliodromeChordWanted()) void startHeliodromeChord();
+      else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
       setActive(true);
     });
   }, []);

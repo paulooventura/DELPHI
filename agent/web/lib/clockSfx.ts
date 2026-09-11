@@ -14,6 +14,19 @@ let audioSilenced = false;
 let audioParked = false;
 /** Orrery freeze — ticks and lane marks stop; the Schumann bed can keep breathing. */
 let clockTimeFrozen = false;
+/** Optional listeners (e.g. Heliodrome NOW-Chord) — avoid circular imports. */
+const muteHooks = new Set<() => void>();
+const unmuteHooks = new Set<() => void>();
+
+export function onClockAudioMute(fn: () => void): () => void {
+  muteHooks.add(fn);
+  return () => muteHooks.delete(fn);
+}
+
+export function onClockAudioUnmute(fn: () => void): () => void {
+  unmuteHooks.add(fn);
+  return () => unmuteHooks.delete(fn);
+}
 
 export function setClockTimeFrozen(frozen: boolean) {
   clockTimeFrozen = frozen;
@@ -809,6 +822,13 @@ export function muteClockAudio(opts?: { fadeMs?: number }): void {
   }
 
   stopSchumannAtmosphere({ fadeSec });
+  for (const fn of muteHooks) {
+    try {
+      fn();
+    } catch {
+      /* ignore */
+    }
+  }
 
   if (ctx) {
     window.setTimeout(() => {
@@ -849,26 +869,34 @@ export function unmuteClockAudio(): void {
       }
     }
   }
-  if (!sharedMaster) return;
-  // Already open — do not re-slam gain to ~0.
-  if (!wasSilenced && sharedMaster.gain.value > MASTER_CEILING * 0.45) {
-    try {
-      const t = sharedMaster.context.currentTime;
-      sharedMaster.gain.cancelScheduledValues(t);
-      sharedMaster.gain.setValueAtTime(MASTER_CEILING, t);
-    } catch {
-      /* ignore */
+  if (sharedMaster) {
+    // Already open — do not re-slam gain to ~0.
+    if (!wasSilenced && sharedMaster.gain.value > MASTER_CEILING * 0.45) {
+      try {
+        const t = sharedMaster.context.currentTime;
+        sharedMaster.gain.cancelScheduledValues(t);
+        sharedMaster.gain.setValueAtTime(MASTER_CEILING, t);
+      } catch {
+        /* ignore */
+      }
+    } else {
+      try {
+        const t = sharedMaster.context.currentTime;
+        sharedMaster.gain.cancelScheduledValues(t);
+        sharedMaster.gain.setValueAtTime(0.0001, t);
+        sharedMaster.gain.exponentialRampToValueAtTime(MASTER_CEILING, t + 0.25);
+      } catch {
+        try {
+          sharedMaster.gain.value = MASTER_CEILING;
+        } catch {
+          /* ignore */
+        }
+      }
     }
-    return;
   }
-  try {
-    const t = sharedMaster.context.currentTime;
-    sharedMaster.gain.cancelScheduledValues(t);
-    sharedMaster.gain.setValueAtTime(0.0001, t);
-    sharedMaster.gain.exponentialRampToValueAtTime(MASTER_CEILING, t + 0.25);
-  } catch {
+  for (const fn of unmuteHooks) {
     try {
-      sharedMaster.gain.value = MASTER_CEILING;
+      fn();
     } catch {
       /* ignore */
     }
