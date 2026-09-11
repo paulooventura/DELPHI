@@ -460,7 +460,8 @@ export function OnyxApp({
   const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
   // Home street line = distilled chorus of the active reading layer.
   // Calendar name-drops stay under the clock rows — never concatenated here.
-  const momentLine = distilled || "Reading the sky…";
+  // Omphalos home line — axis language from the whole chorus; no tradition names.
+  const momentLine = distilled || "Reading the chord…";
   void multiVoice;
 
   const dayGalactic = cycles?.galactic;
@@ -491,7 +492,7 @@ export function OnyxApp({
       <br />
       {birth?.hour !== undefined
         ? "Your hour shapes the rising chord beneath this kin."
-        : "Add your birth hour in You — it shapes rising math."}
+        : "Add your birth hour in Psyche — it shapes rising math."}
     </>
   ) : dayGalactic ? (
     <>
@@ -499,7 +500,7 @@ export function OnyxApp({
       <br />
       {dayGalactic.tribe.color} {dayGalactic.tribe.name} · {dayGalactic.tribe.mayaSign}.
       <br />
-      Save your birth in You to hear this in your color.
+      Save your birth in Psyche to hear this in your color.
     </>
   ) : (
     <>Hold still. The sky is still reading you.</>
@@ -609,7 +610,7 @@ export function OnyxApp({
             </p>
             <div className="onyx-tools-grid">
               <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("rings")}>
-                Orrery
+                Heliodrome
                 <span>Stacked lanes · read the now-line</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={() => setMode("atlas")}>
@@ -643,11 +644,11 @@ export function OnyxApp({
                 <span>Ask / research</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={openSky}>
-                Sky
-                <span>Live sky with object details</span>
+                Aether
+                <span>Live map of the heavens</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => setMode("you")}>
-                You
+                Psyche
                 <span>Natal chord — local only, never sent</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-ruby" onClick={() => setMode("cast")}>
@@ -655,12 +656,12 @@ export function OnyxApp({
                 <span>Draw — colours a labeled reading layer</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => { window.location.href = "/studies"; }}>
-                Studies
-                <span>Polarity · Materia · Medica</span>
+                Mouseion
+                <span>Studies · Polarity · Materia · Medica</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-citrine" onClick={() => { window.location.href = "/tonal"; }}>
-                Tonal
-                <span>Covenant · roles · the ground</span>
+                Agon
+                <span>Show Thyself · covenant · the ground</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("about")}>
                 About

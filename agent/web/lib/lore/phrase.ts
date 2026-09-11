@@ -1,9 +1,9 @@
 /**
- * PHRASE — Delphi's local oracle voice. No API. No third-party dependency.
+ * PHRASE — Pneuma Mundi local oracle voice (Omphalos). No required API.
  * ----------------------------------------------------------------------------
  * Turns orchestration (root · tension · inflection · tone) into ONE reading
  * that names the field and challenges the reader — every home phrase ends as
- * a dare. Offline fallback for the phrase brain; we own this path on-device.
+ * a dare. Primary path on-device; optional Deep mouth upgrades only when keyed.
  *
  * Grammar (structure, not mush):
  *   WEATHER  — root axis → subject (the standing character of the moment)

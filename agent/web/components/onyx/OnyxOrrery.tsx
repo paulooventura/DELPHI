@@ -444,7 +444,7 @@ export function OnyxOrrery({
         </button>
         <div className="onyx-orrery-header">
           <div className="onyx-orrery-mast">
-            <p className="onyx-orrery-title">ORRERY</p>
+            <p className="onyx-orrery-title">HELIODROME</p>
             <div className="onyx-orrery-controls">
               <button
                 type="button"
@@ -466,7 +466,7 @@ export function OnyxOrrery({
                     setFrozen(true);
                     setExpanded(null);
                   }}
-                  title="Freeze at the birthday saved in You — date, hour, and minute."
+                  title="Freeze at the birthday saved in Psyche — date, hour, and minute."
                 >
                   Birth
                 </button>
@@ -500,7 +500,7 @@ export function OnyxOrrery({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
-            aria-label="Live orrery clock — stacked cultural cycles"
+            aria-label="Heliodrome — live stacked cultural cycles"
           />
         </div>
         {pickerOpen && (

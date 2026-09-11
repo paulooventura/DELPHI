@@ -1,6 +1,7 @@
 /**
- * Reader's mouth for the home phrase — local only.
+ * Reader's mouth for the home Omphalos phrase — local Spark by default.
  * Never retunes composeMoment. Voice + depth + brain are how it SPEAKS.
+ * Deep (API) is optional; structure always stays on-device.
  */
 
 import type { DistillVoice } from "./compose";
@@ -21,11 +22,12 @@ export type BrainAvailability = {
   gemini: boolean;
 };
 
-const KEY = "delphi-distill-v1";
+const KEY = "pneuma-distill-v1";
 
 export const DEFAULT_DISTILL: DistillPrefs = {
   voice: "field",
-  depth: "deep",
+  /** Local speak() only — Deep is opt-in when a keyed brain exists. */
+  depth: "spark",
   brain: "auto",
 };
 

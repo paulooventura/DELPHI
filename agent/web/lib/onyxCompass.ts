@@ -1,11 +1,13 @@
-/** Home compass — Paulo 2026-09-01: yin-yang doors, not the old cast/clock map. */
+/** Home compass — yin-yang doors. Chamber display names live in `chambers.ts`. */
+
+import type { CompassDoor } from "./chambers";
 
 export type CompassAim = "up" | "down" | "left" | "right" | "center" | null;
 
 export const COMPASS_LOCK_PX = 10;
 export const COMPASS_AIM_PX = 42;
 
-export type CompassDoor = "sky" | "tonal" | "studies" | "orrery" | "you";
+export type { CompassDoor };
 
 export const COMPASS_DOORS: Record<Exclude<CompassAim, null>, CompassDoor> = {
   up: "sky",

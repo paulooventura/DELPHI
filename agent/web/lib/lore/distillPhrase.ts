@@ -20,7 +20,7 @@ export function phraseCacheKey(
   const rLon = Math.round(lon * 10) / 10;
   const lean = colorLean ?? "none";
   // v14: mouth (voice/depth/brain) is part of the cache identity.
-  return `delphi-phrase:v16:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
+  return `pneuma-phrase:v17:${civilYmd}:${rLat}:${rLon}:${layerKey}:${lean}:${castLeanKey}`;
 }
 
 export function readCachedPhrase(key: string): string | null {
@@ -47,7 +47,7 @@ export function phraseCacheKeyFrom(
   lon: number,
   opts?: DistillOptions,
   layerKey = "moment",
-  mouthKey = "field-deep-auto",
+  mouthKey = "field-spark-auto",
 ): string {
   const castKey = (opts?.castLean ?? []).slice(0, 6).join("+") || "none";
   const voice = opts?.voice ?? "field";
@@ -77,7 +77,7 @@ export function phraseForMoment(
   lon: number,
   opts?: DistillOptions,
   layerKey = "moment",
-  mouthKey = "field-deep-auto",
+  mouthKey = "field-spark-auto",
 ): PhraseResult {
   const key = phraseCacheKeyFrom(civilYmd, lat, lon, opts, layerKey, mouthKey);
   const cached = readCachedPhrase(key);

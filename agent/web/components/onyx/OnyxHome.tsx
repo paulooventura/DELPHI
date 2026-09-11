@@ -31,6 +31,7 @@ import {
   resolveCompassAim,
   type CompassAim,
 } from "../../lib/onyxCompass";
+import { COMPASS_DOOR_LABEL } from "../../lib/chambers";
 
 const MAX = 2;
 
@@ -554,7 +555,7 @@ export function OnyxHome({
           onEnabledChange={setPulse}
         />
 
-        {/* 0 STREET — no held-cast strip here; divinations live inside You */}
+        {/* 0 STREET — Omphalos moment reading; casts live inside Psyche */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`} />
 
         {/* 1 MOMENT */}
@@ -726,7 +727,7 @@ export function OnyxHome({
                     onOpenYou();
                   }}
                 >
-                  You · natal (local)
+                  Psyche · natal (local)
                 </button>
               )}
               {onOpenYou && (
@@ -738,7 +739,7 @@ export function OnyxHome({
                     onOpenYou();
                   }}
                 >
-                  Divinations · inside You
+                  Divinations · inside Psyche
                 </button>
               )}
             </div>
@@ -773,7 +774,7 @@ export function OnyxHome({
                 <button
                   type="button"
                   className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
-                  aria-label="Hold and drag: up sky map, down tonal, right orrery, left studies. Tap the glass for you."
+                  aria-label="Hold and drag: up Aether, down Agon, right Heliodrome, left Mouseion. Tap the center for Psyche. The Omphalos reading is the street line."
                   disabled={Boolean(gemSpin)}
                   onPointerDown={e => {
                     if (gemSpin) return;
@@ -818,12 +819,12 @@ export function OnyxHome({
             <div className="onyx-compass-dirs onyx-yy-dirs">
               {(
                 [
-                  ["up", "sky map"],
+                  ["up", "sky"],
                   ["left", "studies"],
                   ["right", "orrery"],
                   ["down", "tonal"],
                 ] as const
-              ).map(([dir, label]) => (
+              ).map(([dir, door]) => (
                 <button
                   key={dir}
                   type="button"
@@ -834,7 +835,7 @@ export function OnyxHome({
                     enterDoor(dir);
                   }}
                 >
-                  {label}
+                  {COMPASS_DOOR_LABEL[door]}
                 </button>
               ))}
             </div>

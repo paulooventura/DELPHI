@@ -63,7 +63,7 @@ export function OnyxYou({
   onBack: () => void;
   /** Fired after local save/clear so home can re-distill with color lean. */
   onBirthSaved?: (birth: BirthRecord | null) => void;
-  /** Divinations are an expansion of You, not a home-compass door. */
+  /** Divinations expand Psyche — not a home-compass door (Omphalos stays the moment). */
   expandDivinations?: boolean;
   heldCasts?: EmbracedCast[];
   onOpenCast?: () => void;
@@ -256,7 +256,7 @@ export function OnyxYou({
           HOME
         </button>
         <div className="onyx-overlay onyx-you">
-          <p className="onyx-eyebrow">YOU</p>
+          <p className="onyx-eyebrow">PSYCHE</p>
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
 
           <div className="onyx-about-block onyx-you-blurb">
@@ -485,8 +485,8 @@ export function OnyxYou({
                     BIRTH CLOCK
                   </p>
                   <p className="onyx-layer-meta">
-                    The orrery frozen at this birthday — hour, minute, and place included when you
-                    saved them. Open ORRERY and tap Birth to stand there.
+                    The Heliodrome frozen at this birthday — hour, minute, and place included when you
+                    saved them. Open Heliodrome and tap Birth to stand there.
                   </p>
                   {personal.cycles.map(row => (
                     <article key={row.id} className="onyx-decomp-card onyx-you-voice">
@@ -573,7 +573,7 @@ export function OnyxYou({
             {divinationsOpen && (
               <div className="onyx-you-divinations-body">
                 <p className="onyx-layer-meta">
-                  Draws live here — an expansion of You, not a home door. They colour a labeled
+                  Draws live here — an expansion of Psyche, not a home door. They colour a labeled
                   layer through you. They never rewrite the sky clock.
                 </p>
                 {heldCasts.length > 0 && (
