@@ -516,7 +516,26 @@
     clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
     box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 0 0 1px rgba(220,210,255,.16);
   }
-  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:0;max-height:28vh;overflow-y:auto}
+  .domain-box[hidden]{display:none!important}
+  .domains-row{display:flex;justify-content:center;margin:8px 0 0}
+  .domains-btn{
+    --cut:8px;min-width:148px;min-height:40px;border:0;cursor:pointer;color:#fff;
+    font:inherit;font-size:11px;letter-spacing:.16em;text-transform:uppercase;padding:0 18px;
+    background:
+      radial-gradient(160% 130% at 28% 18%,rgba(255,255,255,.28),rgba(255,255,255,.05) 32%,transparent 58%),
+      linear-gradient(180deg,hsla(272,42%,38%,.55) 0%,hsla(268,24%,8%,.96) 72%);
+    clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.28),inset 0 0 0 1px rgba(220,210,255,.18);
+  }
+  .domains-btn[aria-expanded=true],
+  .domains-btn.has-filter{
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 0 0 1px rgba(220,210,255,.4),0 0 14px rgba(140,120,255,.24);
+  }
+  .domains-done{
+    display:block;width:100%;margin:10px 0 0;border:0;background:transparent;color:var(--paper);
+    font:inherit;font-size:10px;letter-spacing:.18em;text-transform:uppercase;padding:10px 8px;cursor:pointer;
+  }
+  .domain-cols,.cat-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;margin:0;max-height:36vh;overflow-y:auto}
   .cat-cols{grid-template-columns:1fr 1fr 1fr}
   .domain-cols .pill,.cat-cols .pill{width:100%;justify-content:flex-start;white-space:normal;text-align:left;--cut:6px}
   .searchwrap .search{width:min(420px,94%)}
@@ -892,9 +911,9 @@
     color:#fff;
     text-shadow:var(--word-outline);
   }
-  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.studies-tab):not(.backhome):not(.pill),
+  #screen-studies :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.studies-tab):not(.backhome):not(.pill):not(.domains-btn):not(.domains-done),
   #screen-tonal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button,td,th):not(.bar):not(.backhome):not(.pill),
-  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.studies-tab):not(.backhome):not(.pill),
+  .screen :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.studies-tab):not(.backhome):not(.pill):not(.domains-btn):not(.domains-done),
   .modal :is(p,h1,h2,h3,h4,li,label,span,small,em,b,strong,a,button):not(.bar):not(.backhome):not(.pill),
   #screen-studies .kicker, #screen-studies h1.title, #screen-studies .sub, #screen-studies .axis-kicker,
   #screen-tonal .kicker, #screen-tonal h1.ttitle, #screen-tonal .ttagline, #screen-tonal .tsub,
@@ -1044,8 +1063,12 @@
         <button type="button" class="laxis" onclick="toggleLedge('polarity')" aria-expanded="false">
           <span class="p">Yin</span><span class="bar"></span><span class="z">0</span><span class="bar"></span><span class="r">Yang</span>
         </button>
-        <div class="domain-box">
+        <div class="domains-row">
+          <button type="button" class="domains-btn" id="p-domains-btn" aria-expanded="false" aria-controls="p-domain-box">Domains</button>
+        </div>
+        <div class="domain-box" id="p-domain-box" hidden>
           <div class="domain-cols" id="p-domain-grid"></div>
+          <button type="button" class="domains-done" id="p-domains-done">Done</button>
         </div>
         <div class="ldetail"><div class="ldinner">
           <div class="lnote method"><p>Levels run −3 → 0 → +3. The glowing 0 is the zero-crossing — a third quality, not the absence of both poles.</p></div>
@@ -2059,13 +2082,29 @@ function lc(l){return LIN_COLORS[l]||"#828da3";}
 /* ===== POLARITY (first) — PDF-style rows grouped by domain ===== */
 const pState={doms:new Set(),q:""};document.getElementById("n-polarity").textContent=polarity.length;
 (()=>{const host=document.getElementById("p-domain-grid");if(!host)return;[...pdomains].sort((a,b)=>a.name.localeCompare(b.name)).forEach(dm=>{const b=document.createElement("button");b.className="pill";b.dataset.dom=dm.name;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${dm.emoji}</span>${esc(dm.name)}`;host.appendChild(b);});})();
+function syncDomainsBtn(){
+  const btn=document.getElementById("p-domains-btn");
+  if(!btn)return;
+  const n=pState.doms.size;
+  btn.textContent=n?`Domains · ${n}`:"Domains";
+  btn.classList.toggle("has-filter",n>0);
+}
+window.toggleDomainsPanel=open=>{
+  const box=document.getElementById("p-domain-box");
+  const btn=document.getElementById("p-domains-btn");
+  if(!box||!btn)return;
+  const next=typeof open==="boolean"?open:box.hasAttribute("hidden");
+  if(next)box.removeAttribute("hidden");else box.setAttribute("hidden","");
+  btn.setAttribute("aria-expanded",next?"true":"false");
+};
 const CELLCLASS=["y3","y2","y1","node","g1","g2","g3"];const LVN=["−3","−2","−1","0","+1","+2","+3"];
 function scaleRow(s){const cells=s.levels.map((t,i)=>`<div class="cell ${CELLCLASS[i]}" data-lv="${LVN[i]}">${esc(t)}</div>`).join("");
   return `<div class="scalerow" onclick='openPolarity(${s.n})'>${cells}</div>`;}
 function pRender(){const host=document.getElementById("p-list");
   let f=polarity.filter(s=>{if(pState.doms.size&&!pState.doms.has(s.domain))return false;if(pState.q&&!(s.levels.join(" ")+" "+s.domain).toLowerCase().includes(pState.q))return false;return true;});
   host.innerHTML=f.map(scaleRow).join("")||`<p style="color:var(--fog);text-align:center;padding:40px">No scales match.</p>`;
-  const pc=document.getElementById("p-count");if(pc)pc.textContent=`${f.length} of ${polarity.length} scales`;}
+  const pc=document.getElementById("p-count");if(pc)pc.textContent=`${f.length} of ${polarity.length} scales`;
+  syncDomainsBtn();}
 function scaleComment(s){
   const templates=[
     `${esc(s.node)} is where ${esc(s.yin)} and ${esc(s.yang)} stop competing and start belonging to one motion.`,
@@ -2082,7 +2121,10 @@ window.openPolarity=n=>{const s=polarity.find(x=>x.n===n);
   <div class="mbody"><div class="fullaxis"><div class="polepair"><span class="yn">◀ yin pole</span><span style="color:var(--node)">the node</span><span class="yg">yang pole ▶</span></div><div class="rail">${bars}</div></div>
   <div class="sec"><p style="color:var(--fog);font-size:13px">${scaleComment(s)}</p></div></div>`);};
 document.querySelectorAll("#p-domain-grid .pill").forEach(b=>b.addEventListener("click",()=>{const v=b.dataset.dom;pState.doms.has(v)?(pState.doms.delete(v),b.setAttribute("aria-pressed","false")):(pState.doms.add(v),b.setAttribute("aria-pressed","true"));pRender();}));
+document.getElementById("p-domains-btn")?.addEventListener("click",()=>window.toggleDomainsPanel());
+document.getElementById("p-domains-done")?.addEventListener("click",()=>window.toggleDomainsPanel(false));
 document.getElementById("p-search").oninput=e=>{pState.q=e.target.value.toLowerCase().trim();pRender();};
+syncDomainsBtn();
 (()=>{let px=0,py=0,live=false,raf=0;const tick=()=>{raf=0;if(!live)return;document.querySelectorAll(".cell,.fullaxis .lvl").forEach(el=>{const r=el.getBoundingClientRect();if(r.bottom<-40||r.top>innerHeight+40||r.right<0||r.left>innerWidth)return;el.style.setProperty("--lx",((px-r.left)/Math.max(1,r.width)*100)+"%");el.style.setProperty("--ly",((py-r.top)/Math.max(1,r.height)*100)+"%");});};const move=e=>{px=e.clientX;py=e.clientY;live=true;if(!raf)raf=requestAnimationFrame(tick);};document.addEventListener("pointermove",move,{passive:true});})();
 
 /* ===== MATERIA ===== */
