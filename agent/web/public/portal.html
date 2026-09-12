@@ -971,10 +971,10 @@
   <canvas id="stars"></canvas>
   <div class="aura"></div><div class="ring r1"></div><div class="ring r2"></div>
   <div class="compass">
-    <button class="dir up" onclick="fireNav('up')"><span class="ic">✦</span><span class="nm">Sky Map</span><span class="hint">the cosmos above</span></button>
-    <button class="dir down" onclick="fireNav('down')"><span class="ic">▽</span><span class="nm">Tonal</span><span class="hint">Show Thyself</span></button>
-    <button class="dir left" onclick="fireNav('left')"><span class="ic">❋</span><span class="nm">Studies</span><span class="hint">the knowledge</span></button>
-    <button class="dir right" onclick="fireNav('right')"><span class="ic">◷</span><span class="nm">Orrery</span><span class="hint">the wheels</span></button>
+    <button class="dir up" onclick="fireNav('up')"><span class="ic">✦</span><span class="nm">Aether</span><span class="hint">the cosmos above</span></button>
+    <button class="dir down" onclick="fireNav('down')"><span class="ic">▽</span><span class="nm">Agon</span><span class="hint">Show Thyself</span></button>
+    <button class="dir left" onclick="fireNav('left')"><span class="ic">❋</span><span class="nm">Mouseion</span><span class="hint">the knowledge</span></button>
+    <button class="dir right" onclick="fireNav('right')"><span class="ic">◷</span><span class="nm">Heliodrome</span><span class="hint">the wheels</span></button>
     <div class="yinyang" title="Enter — begin with you">
       <svg viewBox="0 0 100 100">
         <defs><clipPath id="yyclip"><circle cx="50" cy="50" r="49"/></clipPath></defs>
@@ -1001,7 +1001,7 @@
 
 <!-- ===== ME (placeholder) ===== -->
 <section class="screen" id="screen-me">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">YOU</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">PSYCHE</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--node)">☉</div>
     <p class="eye">Center · The Self</p>
@@ -1014,7 +1014,7 @@
 
 <!-- ===== SKY (placeholder) ===== -->
 <section class="screen" id="screen-sky">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">SKY</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">AETHER</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--cool)">✦</div>
     <p class="eye">Above · Scroll Up</p>
@@ -1026,7 +1026,7 @@
 
 <!-- ===== CLOCK (placeholder) ===== -->
 <section class="screen" id="screen-clock">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">ORRERY</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">HELIODROME</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--violet)">◷</div>
     <p class="eye">Right · Time</p>
@@ -1038,24 +1038,24 @@
 
 <!-- ===== TONAL (the ground — builders & backers) ===== -->
 <section class="screen" id="screen-tonal">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">Tonal<span class="screen-mast-sub">Show Thyself</span></p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">Agon<span class="screen-mast-sub">Show Thyself</span></p></div>
   <div id="tonal-root"></div>
 </section>
 
 <!-- ===== STUDIES (the folded-in atlas) ===== -->
 <section class="screen" id="screen-studies">
-  <div class="screen-chrome"><button class="backhome" id="studies-home" onclick="home()">HOME</button><p class="screen-mast">STUDIES</p></div>
+  <div class="screen-chrome"><button class="backhome" id="studies-home" onclick="home()">HOME</button><p class="screen-mast" id="studies-mast">MOUSEION</p></div>
   <div id="studies-root">
-<div class="wrap">
+  <div class="wrap">
   <span hidden id="n-polarity"></span><span hidden id="n-materia"></span>
   <span hidden id="p-count"></span><span hidden id="m-count"></span>
 
   <div class="studies-sticky" id="studies-sticky">
     <button type="button" class="studies-up" id="studies-up" hidden onclick="studiesToTop()" aria-label="Back to title">↑</button>
-    <h1 class="title" id="studies-page-title">Polarity Scales</h1>
+    <h1 class="title" id="studies-page-title">Mouseion</h1>
     <div class="studies-tabs" role="tablist">
-      <button type="button" class="studies-tab is-on" id="tab-scales" onclick="showStudiesPage('polarity')">Scales</button>
-      <button type="button" class="studies-tab" id="tab-substances" onclick="showStudiesPage('hr')">Substances</button>
+      <button type="button" class="studies-tab is-on" id="tab-scales" onclick="showStudiesPage('polarity')">Mouseion</button>
+      <button type="button" class="studies-tab" id="tab-substances" onclick="showStudiesPage('hr')">Adyton</button>
     </div>
     <div id="sticky-polarity">
       <div class="ledge quiet" id="ledge-polarity">
@@ -1074,7 +1074,7 @@
           <div class="lnote method"><p>Levels run −3 → 0 → +3. The glowing 0 is the zero-crossing — a third quality, not the absence of both poles.</p></div>
         </div></div>
       </div>
-      <div class="searchwrap"><input class="search" id="p-search" placeholder="Search Scales" aria-label="Search Scales"></div>
+      <div class="searchwrap"><input class="search" id="p-search" placeholder="Search Mouseion" aria-label="Search Mouseion"></div>
     </div>
     <div id="sticky-hr" hidden>
       <div class="ledge quiet" id="ledge-materia">
@@ -1556,7 +1556,7 @@ troot.innerHTML=`
 
     <!-- FORK: choose your path -->
     <div class="tfork" id="tfork">
-      <h1 class="ttitle">Tonal</h1>
+      <h1 class="ttitle">Agon</h1>
       <p class="ttagline">Show Thyself</p>
       <p class="tsub">Choose Your Path</p>
       <div class="forkcards">
@@ -1613,7 +1613,7 @@ troot.innerHTML=`
     <!-- BUILDER VIEW -->
     <div class="tview" id="tview-builder">
       <div class="viewbar"><span class="vbtag builder">▽ Builder · promoter · venue · backer</span><button class="switchpath" onclick="tonalPath(null)">↔ Switch path</button></div>
-      <p class="kicker">Tonal · Show Thyself</p>
+      <p class="kicker">Agon · Show Thyself</p>
       <h1 class="ttitle">How it gets built &amp; kept safe</h1>
       <p class="tsub">The infrastructure beneath the gathering — the covenant the builders keep, the roles that hold the night, the honest economics, and the doors where value crosses.</p>
 
@@ -2235,7 +2235,9 @@ window.showStudiesPage=page=>{
   if(sc)sc.classList.toggle("is-on",page!=="hr");
   if(su)su.classList.toggle("is-on",page==="hr");
   const heading=document.getElementById("studies-page-title");
-  if(heading)heading.textContent=page==="hr"?"Harm Reduction":"Polarity Scales";
+  if(heading)heading.textContent=page==="hr"?"Adyton":"Mouseion";
+  const mast=document.getElementById("studies-mast");
+  if(mast)mast.textContent=page==="hr"?"ADYTON":"MOUSEION";
   syncStudiesSticky();
 };
 window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
