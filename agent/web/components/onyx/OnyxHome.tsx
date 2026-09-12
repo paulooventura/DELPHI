@@ -15,8 +15,8 @@ import {
 import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
-import { OnyxStarfield } from "./OnyxStarfield";
 import { OnyxAudioStone } from "./OnyxAudioStone";
+import { OnyxHomeFilm } from "./OnyxHomeFilm";
 import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
 import { OnyxCompassRose } from "./OnyxCompassRose";
@@ -534,9 +534,9 @@ export function OnyxHome({
         tabIndex={0}
       >
         <div className="onyx-field">
+          <OnyxHomeFilm />
           <div className="onyx-home-vision" aria-hidden />
           <div className="onyx-aura" />
-          <OnyxStarfield />
           {depth !== 0 && <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />}
         </div>
 
