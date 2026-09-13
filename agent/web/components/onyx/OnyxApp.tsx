@@ -43,6 +43,7 @@ import { EmfReader } from "../EmfReader";
 import { PauloVenturaHub } from "../PauloVenturaHub";
 import { OnyxHome } from "./OnyxHome";
 import { OnyxSky } from "./OnyxSky";
+import { OnyxSkySplash } from "./OnyxSkySplash";
 import { OnyxSplash } from "./OnyxSplash";
 import { OnyxYou } from "./OnyxYou";
 import { OnyxCast } from "./OnyxCast";
@@ -252,6 +253,14 @@ export function OnyxApp({
   const [orreryIntro, setOrreryIntro] = useState(() => {
     try {
       return sessionStorage.getItem("delphi-orrery-intro-seen") !== "1";
+    } catch {
+      return true;
+    }
+  });
+  /** Aether plate — once per tab session, first time we open the sky map. */
+  const [skyIntro, setSkyIntro] = useState(() => {
+    try {
+      return sessionStorage.getItem("delphi-sky-intro-seen") !== "1";
     } catch {
       return true;
     }
@@ -537,6 +546,20 @@ export function OnyxApp({
   };
 
   if (mode === "sky") {
+    if (skyIntro) {
+      return (
+        <OnyxSkySplash
+          onEnter={() => {
+            try {
+              sessionStorage.setItem("delphi-sky-intro-seen", "1");
+            } catch {
+              /* private mode */
+            }
+            setSkyIntro(false);
+          }}
+        />
+      );
+    }
     return (
       <OnyxSky
         now={now}

@@ -233,6 +233,35 @@ html.chorus-embed .onyx-root {
   animation: onyx-slowpush 12s ease-out forwards;
 }
 .onyx-film video.onyx-film-ready { opacity: 1; }
+.onyx-sky-splash-film img {
+  position: absolute; top: 50%; left: 50%;
+  min-width: 100%; min-height: 100%;
+  width: auto; height: auto;
+  transform: translate(-50%, -50%) scale(1.04);
+  object-fit: cover;
+  background: #000;
+  opacity: 0;
+  transition: opacity 720ms ease;
+  animation: onyx-slowpush 12s ease-out forwards;
+}
+.onyx-sky-splash-film img.onyx-film-ready { opacity: 1; }
+.onyx-splash-only > .onyx-splash-wordmark {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(48px, calc(18px + env(safe-area-inset-bottom, 0px)));
+  z-index: 8;
+  text-align: center;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 720ms ease, transform 720ms ease;
+  pointer-events: none;
+  letter-spacing: 0.28em;
+}
+.onyx-splash-only > .onyx-splash-wordmark.on {
+  opacity: 1;
+  transform: translateY(0);
+}
 @keyframes onyx-slowpush { to { transform: translate(-50%, -50%) scale(1.16); } }
 
 /* Pure black boot/exit veil — no imagery. */
