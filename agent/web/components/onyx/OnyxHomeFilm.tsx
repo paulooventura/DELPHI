@@ -4,18 +4,19 @@ import { useEffect, useRef } from "react";
 
 /**
  * Home street background — Paulo’s Runway Max loop (public/pneuma-home-bg.mp4).
- * Video autoplays muted; soundtrack turns on after Allow access when the stone is on.
- * Pauses when the tab is hidden.
+ * Visual only (always muted). Soundtrack is OnyxSymphonyBed — stays on across chambers
+ * and layers with the Heliodrome NOW-Chord as the app symphony.
  */
-export function OnyxHomeFilm({ soundEnabled = false }: { soundEnabled?: boolean }) {
+export function OnyxHomeFilm() {
   const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const v = ref.current;
     if (!v) return;
+    v.muted = true;
     const play = () => {
       void v.play().catch(() => {
-        /* autoplay may wait for gesture — Allow access / stone unlock most sessions */
+        /* autoplay may wait for gesture */
       });
     };
     play();
@@ -33,24 +34,12 @@ export function OnyxHomeFilm({ soundEnabled = false }: { soundEnabled?: boolean 
     };
   }, []);
 
-  useEffect(() => {
-    const v = ref.current;
-    if (!v) return;
-    v.muted = !soundEnabled;
-    v.volume = soundEnabled ? 0.72 : 0;
-    if (soundEnabled) {
-      void v.play().catch(() => {
-        /* need a gesture if autoplay-with-sound is blocked */
-      });
-    }
-  }, [soundEnabled]);
-
   return (
     <div className="onyx-home-film" aria-hidden>
       <video
         ref={ref}
         autoPlay
-        muted={!soundEnabled}
+        muted
         loop
         playsInline
         preload="auto"

@@ -376,7 +376,8 @@ export async function startHeliodromeChord(): Promise<void> {
   if (runtime?.ctx === ctx) return;
 
   stopHeliodromeChordGraph();
-  // Chord owns the Schumann bed while Heliodrome is open.
+  // Film soundtrack (OnyxSymphonyBed) keeps playing — chord layers on top.
+  // Soften Schumann so the Runway bed + NOW-Chord stay the audible symphony.
   if (isSchumannAtmosphereRunning()) stopSchumannAtmosphere({ fadeSec: 0.4 });
 
   const master = ctx.createGain();

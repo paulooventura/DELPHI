@@ -13,7 +13,6 @@ import {
   getClockAudio,
   isClockAudioSilenced,
   isClockTimeFrozen,
-  isSchumannAtmosphereRunning,
   muteClockAudio,
   parkClockAudio,
   playBeatMark,
@@ -31,7 +30,6 @@ import {
   playShiMark,
   playSlowSkyMark,
   resumeClockAudio,
-  startSchumannAtmosphere,
   unmuteClockAudio,
   unparkClockAudio,
 } from "../lib/clockSfx";
@@ -105,7 +103,8 @@ export function useClockSfx(
       unparkClockAudio();
       unmuteClockAudio();
       if (isHeliodromeChordWanted()) void startHeliodromeChord();
-      else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
+      // Runway film bed (OnyxSymphonyBed) is the continuous pad — skip Schumann
+      // so home soundtrack + Heliodrome chord can layer as the symphony.
       setActive(true);
     };
 
@@ -259,7 +258,8 @@ export function useClockSfx(
       unparkClockAudio();
       unmuteClockAudio();
       if (isHeliodromeChordWanted()) void startHeliodromeChord();
-      else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
+      // Runway film bed (OnyxSymphonyBed) is the continuous pad — skip Schumann
+      // so home soundtrack + Heliodrome chord can layer as the symphony.
       setActive(true);
     };
     if (ctx.state === "suspended") {

@@ -614,50 +614,52 @@ export function OnyxOrrery({
               aria-label={expanded.name}
               onClick={event => event.stopPropagation()}
             >
-              <div className="onyx-orrery-teach-center">
-                <p className="onyx-eyebrow">{expanded.name}</p>
-                {expanded.cells[expanded.index]?.glyph && (
-                  <p className="onyx-orrery-teach-glyph">
-                    {expanded.cells[expanded.index]!.glyph}
+              <div className="onyx-orrery-teach-body">
+                <div className="onyx-orrery-teach-center">
+                  <p className="onyx-eyebrow">{expanded.name}</p>
+                  {expanded.cells[expanded.index]?.glyph && (
+                    <p className="onyx-orrery-teach-glyph">
+                      {expanded.cells[expanded.index]!.glyph}
+                    </p>
+                  )}
+                  <p className="onyx-layer-lead">{expanded.activeLabel}</p>
+                  <p className="onyx-layer-meta">
+                    Cycle · {expanded.cycle}
+                    {" · "}
+                    {expanded.tier === "display"
+                      ? "display pulse"
+                      : expanded.tier}
                   </p>
-                )}
-                <p className="onyx-layer-lead">{expanded.activeLabel}</p>
-                <p className="onyx-layer-meta">
-                  Cycle · {expanded.cycle}
-                  {" · "}
-                  {expanded.tier === "display"
-                    ? "display pulse"
-                    : expanded.tier}
-                </p>
-                {expanded.lore && (
-                  <div className="onyx-orrery-lore-block">
-                    <p className="onyx-orrery-lore-label">What it keeps</p>
-                    <p className="onyx-decomp-source">{expanded.lore}</p>
-                  </div>
-                )}
-                {expanded.origin && (
-                  <div className="onyx-orrery-lore-block">
-                    <p className="onyx-orrery-lore-label">Origin</p>
-                    <p className="onyx-decomp-source">{expanded.origin}</p>
-                  </div>
-                )}
-                {expanded.usedSince && (
-                  <div className="onyx-orrery-lore-block">
-                    <p className="onyx-orrery-lore-label">Used since</p>
-                    <p className="onyx-decomp-source">{expanded.usedSince}</p>
-                  </div>
-                )}
-                {expanded.curious && (
-                  <div className="onyx-orrery-lore-block">
-                    <p className="onyx-orrery-lore-label">Curious fact</p>
-                    <p className="onyx-decomp-source">{expanded.curious}</p>
-                  </div>
-                )}
-                {expanded.source && (
-                  <p className="onyx-layer-meta onyx-orrery-teach-source">
-                    {expanded.source}
-                  </p>
-                )}
+                  {expanded.lore && (
+                    <div className="onyx-orrery-lore-block">
+                      <p className="onyx-orrery-lore-label">What it keeps</p>
+                      <p className="onyx-decomp-source">{expanded.lore}</p>
+                    </div>
+                  )}
+                  {expanded.origin && (
+                    <div className="onyx-orrery-lore-block">
+                      <p className="onyx-orrery-lore-label">Origin</p>
+                      <p className="onyx-decomp-source">{expanded.origin}</p>
+                    </div>
+                  )}
+                  {expanded.usedSince && (
+                    <div className="onyx-orrery-lore-block">
+                      <p className="onyx-orrery-lore-label">Used since</p>
+                      <p className="onyx-decomp-source">{expanded.usedSince}</p>
+                    </div>
+                  )}
+                  {expanded.curious && (
+                    <div className="onyx-orrery-lore-block">
+                      <p className="onyx-orrery-lore-label">Curious fact</p>
+                      <p className="onyx-decomp-source">{expanded.curious}</p>
+                    </div>
+                  )}
+                  {expanded.source && (
+                    <p className="onyx-layer-meta onyx-orrery-teach-source">
+                      {expanded.source}
+                    </p>
+                  )}
+                </div>
               </div>
               <button
                 type="button"

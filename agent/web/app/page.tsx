@@ -27,6 +27,7 @@ import type { ClockRingData } from "../lib/timeEngine";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { muteClockAudio } from "../lib/clockSfx";
 import { useClockSfx } from "../hooks/useClockSfx";
+import { OnyxSymphonyBed } from "../components/onyx/OnyxSymphonyBed";
 import { useCosmicClock } from "../hooks/useCosmicClock";
 import { useSpringValue } from "../hooks/useSpringValue";
 import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
@@ -1254,6 +1255,14 @@ export default function Home() {
   }
 
   return (
+    <>
+      <OnyxSymphonyBed
+        enabled={
+          clockSfxOn &&
+          !showLaunch &&
+          (chorusEmbed || !needsAccessGate)
+        }
+      />
     <OnyxApp
       bootReady={launchReady && accessReady}
       showSplash={showLaunch && !chorusEmbed}
@@ -1348,6 +1357,7 @@ export default function Home() {
         },
       }}
     />
+    </>
   );
 
 }

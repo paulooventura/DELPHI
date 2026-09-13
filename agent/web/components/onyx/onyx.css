@@ -338,6 +338,15 @@ html.chorus-embed .onyx-root {
   object-position: center center;
   pointer-events: none;
 }
+/* App-wide Runway soundtrack — persists across chambers under the NOW-Chord */
+.onyx-symphony-bed {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  left: -9999px;
+  opacity: 0;
+  pointer-events: none;
+}
 .onyx-yy-home .onyx-home-vision {
   position: absolute;
   inset: 0;
@@ -2999,13 +3008,14 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-orrery-teach {
   width: min(92%, 560px);
-  height: min(86dvh, 760px);
-  max-height: 100%;
-  overflow-y: auto;
-  display: grid;
-  grid-template-rows: 1fr auto;
-  align-items: center;
-  padding: clamp(28px, 6vh, 58px) clamp(24px, 7vw, 64px) 24px;
+  max-height: min(86dvh, 760px);
+  min-height: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  padding: clamp(20px, 4vh, 40px) clamp(18px, 5vw, 48px) clamp(16px, 3vh, 24px);
   text-align: center;
   background:
     radial-gradient(circle at 50% 30%, rgba(66, 44, 118, 0.2), transparent 48%),
@@ -3016,15 +3026,27 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
     0 32px 90px rgba(0, 0, 0, 0.78),
     inset 0 1px 0 rgba(228, 220, 255, 0.12),
     inset 0 0 44px rgba(88, 62, 150, 0.08);
+  /* Shell clips to the gem; scrolling lives in .onyx-orrery-teach-body */
+  overflow: hidden;
+}
+.onyx-orrery-teach-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
 }
 .onyx-orrery-teach-center {
   width: min(100%, 430px);
-  margin: auto;
+  margin: 0 auto;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  gap: clamp(10px, 2vh, 20px);
+  justify-content: flex-start;
+  gap: clamp(8px, 1.5vh, 14px);
+  padding-bottom: 4px;
 }
 .onyx-orrery-teach .onyx-eyebrow,
 .onyx-orrery-teach .onyx-layer-lead,
@@ -3034,20 +3056,20 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   text-align: center;
 }
 .onyx-orrery-teach .onyx-layer-lead {
-  font-size: clamp(26px, 7vw, 42px);
-  line-height: 1.14;
+  font-size: clamp(20px, 5.4vw, 34px);
+  line-height: 1.18;
 }
 .onyx-orrery-teach .onyx-decomp-source {
-  max-width: 38ch;
-  font-size: clamp(15px, 3.8vw, 19px);
-  line-height: 1.65;
+  max-width: 42ch;
+  font-size: clamp(13px, 3.2vw, 16px);
+  line-height: 1.5;
   color: var(--onyx-ink);
 }
 .onyx-orrery-lore-block {
   width: 100%;
   display: grid;
   justify-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 .onyx-orrery-lore-label {
   margin: 0;
@@ -3058,25 +3080,26 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   color: var(--onyx-core);
 }
 .onyx-orrery-lore-block + .onyx-orrery-lore-block {
-  padding-top: 14px;
+  padding-top: 10px;
   border-top: 0.5px solid rgba(140, 124, 255, 0.12);
 }
 .onyx-orrery-teach-glyph {
   margin: 0;
   min-height: 1em;
-  font-size: clamp(32px, 10vw, 64px);
+  font-size: clamp(24px, 7vw, 48px);
   line-height: 1;
   color: var(--onyx-ink-bright);
   filter: drop-shadow(0 0 18px rgba(169, 156, 255, 0.35));
 }
 .onyx-orrery-teach-source {
   max-width: 48ch;
-  padding-top: 10px;
+  padding-top: 8px;
   border-top: 0.5px solid rgba(140, 124, 255, 0.18);
 }
 .onyx-orrery-teach-close {
+  flex: 0 0 auto;
   width: min(100%, 320px);
-  margin: 24px auto 0;
+  margin: 12px auto 0;
 }
 @keyframes onyx-orrery-teach-in {
   from { opacity: 0; }
@@ -3684,7 +3707,6 @@ html[data-sky="twilight"] .onyx-overlay-close {
 :is(
   .onyx-share-sheet,
   .onyx-sheet,
-  .onyx-orrery-teach,
   .onyx-decomp-card,
   .onyx-about-block,
   .onyx-held,
@@ -3722,6 +3744,37 @@ html[data-sky="twilight"] .onyx-overlay-close {
   filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.5));
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
+}
+/* Heliodrome teach keeps gem cut; scroll lives in .onyx-orrery-teach-body */
+.onyx-orrery-teach {
+  --cut: 14px;
+  --gem: 272 42% 38%;
+  --steps: 9px;
+  position: relative;
+  isolation: isolate;
+  border: 0;
+  border-radius: 0;
+  background:
+    linear-gradient(125deg, rgba(255, 255, 255, 0.28) 0%, transparent 22%),
+    linear-gradient(180deg, hsl(var(--gem) / 0.55) 0%, hsl(268 24% 8% / 0.96) 72%);
+  clip-path: polygon(
+    var(--cut) 0,
+    calc(100% - var(--cut)) 0,
+    100% var(--cut),
+    100% calc(100% - var(--cut)),
+    calc(100% - var(--cut)) 100%,
+    var(--cut) 100%,
+    0 calc(100% - var(--cut)),
+    0 var(--cut)
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -28px 48px rgba(0, 0, 0, 0.4);
+  filter: drop-shadow(0 16px 36px rgba(0, 0, 0, 0.5));
+}
+.onyx-orrery-teach.onyx-orrery-picker {
+  overflow-x: hidden;
+  overflow-y: auto;
 }
 .onyx-decomp-card,
 .onyx-about-block {
