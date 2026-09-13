@@ -44,6 +44,7 @@ import { PauloVenturaHub } from "../PauloVenturaHub";
 import { OnyxHome } from "./OnyxHome";
 import { OnyxSky } from "./OnyxSky";
 import { OnyxSkySplash } from "./OnyxSkySplash";
+import { OnyxAgonSplash } from "./OnyxAgonSplash";
 import { OnyxSplash } from "./OnyxSplash";
 import { OnyxYou } from "./OnyxYou";
 import { OnyxCast } from "./OnyxCast";
@@ -265,6 +266,15 @@ export function OnyxApp({
       return true;
     }
   });
+  /** Agon film — once per tab session, first time we open Show Thyself. */
+  const [agonIntro, setAgonIntro] = useState(() => {
+    try {
+      return sessionStorage.getItem("delphi-agon-intro-seen") !== "1";
+    } catch {
+      return true;
+    }
+  });
+  const [agonSplashPending, setAgonSplashPending] = useState(false);
   /** Cast opens as an expansion of You, not a home-compass door. */
   const [castReturn, setCastReturn] = useState<"home" | "you">("you");
   const [youExpandCast, setYouExpandCast] = useState(false);
@@ -275,6 +285,10 @@ export function OnyxApp({
     window.location.href = "/studies";
   };
   const openTonal = () => {
+    if (agonIntro) {
+      setAgonSplashPending(true);
+      return;
+    }
     window.location.href = "/tonal";
   };
   const openYou = (expandCast = false) => {
@@ -539,6 +553,23 @@ export function OnyxApp({
     return <DeviceAccessGate onAllow={onAllowAccess} busy={accessBusy} />;
   }
 
+  if (agonSplashPending && agonIntro) {
+    return (
+      <OnyxAgonSplash
+        onEnter={() => {
+          try {
+            sessionStorage.setItem("delphi-agon-intro-seen", "1");
+          } catch {
+            /* private mode */
+          }
+          setAgonIntro(false);
+          setAgonSplashPending(false);
+          window.location.href = "/tonal";
+        }}
+      />
+    );
+  }
+
   const openSky = () => {
     // Must stay on the user gesture path for iOS DeviceOrientation permission.
     onEnterSky?.();
@@ -687,7 +718,7 @@ export function OnyxApp({
                 Mouseion
                 <span>Studies · Polarity · Materia · Medica</span>
               </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-citrine" onClick={() => { window.location.href = "/tonal"; }}>
+              <button type="button" className="onyx-tool-btn onyx-cut-citrine" onClick={openTonal}>
                 Agon
                 <span>Show Thyself · covenant · the ground</span>
               </button>
