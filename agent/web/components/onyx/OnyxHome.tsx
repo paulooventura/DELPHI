@@ -21,6 +21,7 @@ import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
 import { OnyxCompassRose } from "./OnyxCompassRose";
 import { OnyxYinYang } from "./OnyxYinYang";
+import { OnyxDoorArrows, type DoorArrowDir } from "./OnyxDoorArrows";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
 import { decompose, poleWord, type Composition, type DistillOptions } from "../../lib/lore/compose";
 import { phraseReason } from "../../lib/lore/phrase";
@@ -153,6 +154,7 @@ export function OnyxHome({
   const [compassAim, setCompassAim] = useState<CompassAim>(null);
   const [compassFollow, setCompassFollow] = useState({ x: 0, y: 0 });
   const [gemSpin, setGemSpin] = useState<CompassAim>(null);
+  const [bowShoot, setBowShoot] = useState<DoorArrowDir | null>(null);
   const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [distillOpen, setDistillOpen] = useState(false);
@@ -345,7 +347,7 @@ export function OnyxHome({
 
   const enterDoor = useCallback(
     (aim: CompassAim) => {
-      if (!aim || gemSpin) return;
+      if (!aim || gemSpin || bowShoot) return;
       if (!doorForAim(aim)) return;
       setGemSpin(aim);
       buzz("step");
@@ -356,7 +358,21 @@ export function OnyxHome({
         setGemSpin(null);
       }, ms);
     },
-    [buzz, commitCompassAim, gemSpin],
+    [buzz, commitCompassAim, gemSpin, bowShoot],
+  );
+
+  const shootBow = useCallback(
+    (dir: DoorArrowDir) => {
+      if (bowShoot || gemSpin) return;
+      setBowShoot(dir);
+      buzz("step");
+      window.clearTimeout(enterTimer.current);
+      enterTimer.current = window.setTimeout(() => {
+        commitCompassAim(dir);
+        setBowShoot(null);
+      }, 540);
+    },
+    [bowShoot, buzz, commitCompassAim, gemSpin],
   );
 
   const flashBall = useCallback((kind: "copy" | "share") => {
@@ -760,24 +776,24 @@ export function OnyxHome({
           </button>
         </div>
 
-        <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}`}>
+        <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}${bowShoot ? " bow-loosing" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
             <div className="onyx-yy-orb">
               <OnyxCompassRose
-                active={compassAim ?? gemSpin ?? null}
+                active={compassAim ?? gemSpin ?? bowShoot ?? null}
                 follow={compassFollow}
-                holding={compassLocked || Boolean(gemSpin)}
+                holding={compassLocked || Boolean(gemSpin) || Boolean(bowShoot)}
                 headingDeg={headingDeg}
                 attitudeRef={attitudeRef}
               />
               <div className="onyx-yy-gem-nest">
                 <button
                   type="button"
-                  className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
-                  aria-label="Hold and drag: up Aether, down Agon, right Heliodrome, left Mouseion. Tap the center for Psyche. The Omphalos reading is the street line."
-                  disabled={Boolean(gemSpin)}
+                  className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin || bowShoot ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
+                  aria-label="Hold and drag: up Aether, down Agon, right Heliodrome, left Mouseion. Or release a silver bow. Tap the center for Psyche. The Omphalos reading is the street line."
+                  disabled={Boolean(gemSpin) || Boolean(bowShoot)}
                   onPointerDown={e => {
-                    if (gemSpin) return;
+                    if (gemSpin || bowShoot) return;
                     onCompassPointerDown(e);
                   }}
                   onPointerMove={onCompassPointerMove}
@@ -788,7 +804,7 @@ export function OnyxHome({
                   }}
                 >
                   <OnyxYinYang
-                    aiming={Boolean(compassAim) || Boolean(gemSpin)}
+                    aiming={Boolean(compassAim) || Boolean(gemSpin) || Boolean(bowShoot)}
                     locked={compassLocked}
                     spinning={Boolean(gemSpin)}
                     sensorsUnlocked={sensorsUnlocked}
@@ -816,7 +832,12 @@ export function OnyxHome({
                 />
               </div>
             </div>
-            <div className="onyx-compass-dirs onyx-yy-dirs">
+            <OnyxDoorArrows
+              active={compassAim ?? gemSpin ?? null}
+              shooting={bowShoot}
+              onShoot={shootBow}
+            />
+            <div className="onyx-compass-dirs onyx-yy-dirs" aria-hidden>
               {(
                 [
                   ["up", "sky"],
@@ -825,18 +846,12 @@ export function OnyxHome({
                   ["down", "tonal"],
                 ] as const
               ).map(([dir, door]) => (
-                <button
+                <span
                   key={dir}
-                  type="button"
-                  className={`d-${dir}${compassAim === dir || gemSpin === dir ? " on" : ""}`}
-                  onPointerDown={e => e.stopPropagation()}
-                  onClick={e => {
-                    e.stopPropagation();
-                    enterDoor(dir);
-                  }}
+                  className={`d-${dir}${compassAim === dir || gemSpin === dir || bowShoot === dir ? " on" : ""}`}
                 >
                   {COMPASS_DOOR_LABEL[door]}
-                </button>
+                </span>
               ))}
             </div>
           </div>

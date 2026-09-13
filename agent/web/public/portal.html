@@ -1082,8 +1082,12 @@
         <button type="button" class="laxis" onclick="toggleLedge('materia')" aria-expanded="false">
           <span class="p">pole</span><span class="bar"></span><span class="z">node</span><span class="bar"></span><span class="r">overshoot</span>
         </button>
-        <div class="domain-box">
+        <div class="domains-row">
+          <button type="button" class="domains-btn" id="m-cats-btn" aria-expanded="false" aria-controls="m-cat-box">Categories</button>
+        </div>
+        <div class="domain-box" id="m-cat-box" hidden>
           <div class="cat-cols" id="m-lins"></div>
+          <button type="button" class="domains-done" id="m-cats-done">Done</button>
         </div>
         <div class="ldetail"><div class="ldinner">
           <div class="lnote floor"><h3>The floor</h3><p><span class="tel">911 · 988 · 1-800-222-1222</span><br>Test the supply, carry naloxone, never use alone.<br><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
@@ -2199,8 +2203,26 @@ window.openSubstance=i=>{
   <div class="sec overshoot"><div class="lbl"><span class="num">7</span>The overshoot</div><p>${esc(over)}</p></div>
   <div class="sec wrong"><div class="lbl"><span class="num">8</span>If it goes wrong</div><div class="rz"><span class="k">Recognize</span><div class="signs">${signs(rec)}</div></div><div class="rz"><span class="k">Respond</span><div class="respond">${esc(resp)}</div></div></div></div>`);
 };
-function mRender(){const g=document.getElementById("m-grid");const match=d=>{if(mState.bands.size&&!mState.bands.has(d.band))return false;if(mState.lins.size&&!mState.lins.has(d.lineage))return false;if(mState.q&&!(d.name+" "+(d.latin||"")+" "+(d.lineage||"")+" "+(d.snapshot||"")+" "+(d.measured||"")+" "+(d.caution||"")).toLowerCase().includes(mState.q))return false;return true;};const items=substances.filter(match);const html=items.map((d,i)=>mMini(d,substances.indexOf(d))).join("");g.innerHTML=html||empty();const mc=document.getElementById("m-count");if(mc)mc.textContent=`${items.length} of ${substances.length} shown`;}
+function mRender(){const g=document.getElementById("m-grid");const match=d=>{if(mState.bands.size&&!mState.bands.has(d.band))return false;if(mState.lins.size&&!mState.lins.has(d.lineage))return false;if(mState.q&&!(d.name+" "+(d.latin||"")+" "+(d.lineage||"")+" "+(d.snapshot||"")+" "+(d.measured||"")+" "+(d.caution||"")).toLowerCase().includes(mState.q))return false;return true;};const items=substances.filter(match);const html=items.map((d,i)=>mMini(d,substances.indexOf(d))).join("");g.innerHTML=html||empty();const mc=document.getElementById("m-count");if(mc)mc.textContent=`${items.length} of ${substances.length} shown`;syncCatsBtn();}
+function syncCatsBtn(){
+  const btn=document.getElementById("m-cats-btn");
+  if(!btn)return;
+  const n=mState.lins.size;
+  btn.textContent=n?`Categories · ${n}`:"Categories";
+  btn.classList.toggle("has-filter",n>0);
+}
+window.toggleCatsPanel=open=>{
+  const box=document.getElementById("m-cat-box");
+  const btn=document.getElementById("m-cats-btn");
+  if(!box||!btn)return;
+  const next=typeof open==="boolean"?open:box.hasAttribute("hidden");
+  if(next)box.removeAttribute("hidden");else box.setAttribute("hidden","");
+  btn.setAttribute("aria-expanded",next?"true":"false");
+};
 bindBands("m-bands",mState,mRender);bindLins("m-lins",mState,mRender);document.getElementById("m-search").oninput=e=>{mState.q=e.target.value.toLowerCase().trim();mRender();};
+document.getElementById("m-cats-btn")?.addEventListener("click",()=>window.toggleCatsPanel());
+document.getElementById("m-cats-done")?.addEventListener("click",()=>window.toggleCatsPanel(false));
+syncCatsBtn();
 
 /* ===== MEDICA ===== */
 const dState={bands:new Set(),lins:new Set(),q:""};

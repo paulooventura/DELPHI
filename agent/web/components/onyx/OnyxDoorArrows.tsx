@@ -1,141 +1,137 @@
 "use client";
 
 /**
- * Four curved onyx arrowheads around the home taijitu —
- * a quiet visual cue that the marble can be dragged to open doors.
+ * Four silver bows around the home compass — drawn (loaded), release on click.
+ * Tip points outward; arrow flies that way, then the door opens.
  */
 
 export type DoorArrowDir = "up" | "down" | "left" | "right";
 
-/**
- * Carved chevron that hugs the circle. Local space: tip points +Y (outward
- * after parent rotate). Curves follow the rim so it reads as stone cut into
- * the ring, not a flat UI caret.
- */
-function CurvedOnyxHead({ id }: { id: string }) {
+function SilverBow({ id, shooting }: { id: string; shooting: boolean }) {
   return (
-    <g>
+    <svg viewBox="0 0 64 64" className="onyx-bow-svg" aria-hidden focusable="false">
       <defs>
-        <linearGradient id={`${id}-body`} x1="18%" y1="5%" x2="82%" y2="95%">
-          <stop offset="0%" stopColor="#4a2f7a" stopOpacity="0.58" />
-          <stop offset="38%" stopColor="#160c2a" stopOpacity="0.78" />
-          <stop offset="72%" stopColor="#2a1748" stopOpacity="0.62" />
-          <stop offset="100%" stopColor="#6b4db8" stopOpacity="0.42" />
+        <linearGradient id={`${id}-limb`} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#f4f6fa" />
+          <stop offset="28%" stopColor="#c5ccd6" />
+          <stop offset="55%" stopColor="#8e97a6" />
+          <stop offset="78%" stopColor="#e8ecf2" />
+          <stop offset="100%" stopColor="#6a7382" />
         </linearGradient>
-        <linearGradient id={`${id}-facet`} x1="40%" y1="0%" x2="60%" y2="100%">
-          <stop offset="0%" stopColor="#d8ceff" stopOpacity="0.5" />
-          <stop offset="40%" stopColor="#9a8cff" stopOpacity="0.22" />
-          <stop offset="100%" stopColor="#12081f" stopOpacity="0" />
+        <linearGradient id={`${id}-arrow`} x1="0%" y1="100%" x2="0%" y2="0%">
+          <stop offset="0%" stopColor="#9aa3b2" />
+          <stop offset="45%" stopColor="#eef1f6" />
+          <stop offset="100%" stopColor="#7a8494" />
         </linearGradient>
-        <radialGradient id={`${id}-spec`} cx="38%" cy="28%" r="55%">
-          <stop offset="0%" stopColor="#f0eaff" stopOpacity="0.55" />
-          <stop offset="55%" stopColor="#8a7bff" stopOpacity="0.12" />
-          <stop offset="100%" stopColor="#000" stopOpacity="0" />
-        </radialGradient>
-        <filter id={`${id}-carve`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="0.55" result="b" />
-          <feOffset dy="0.45" result="o" />
-          <feFlood floodColor="#05030c" floodOpacity="0.65" />
-          <feComposite in2="o" operator="in" result="sh" />
+        <filter id={`${id}-glow`} x="-40%" y="-40%" width="180%" height="180%">
+          <feGaussianBlur stdDeviation="0.7" result="b" />
           <feMerge>
-            <feMergeNode in="sh" />
+            <feMergeNode in="b" />
             <feMergeNode in="SourceGraphic" />
           </feMerge>
         </filter>
       </defs>
 
-      {/* Outer carved body — curved wings + tip */}
+      {/* Bow limbs — tip points up (+Y outward after parent rotate) */}
       <path
-        d="
-          M 0 10.5
-          C 1.2 8.8, 2.6 6.4, 4.8 4.2
-          C 7.8 1.2, 10.6 -1.6, 11.4 -4.8
-          C 11.8 -6.4, 10.2 -7.2, 8.6 -6.4
-          C 5.8 -5.0, 3.2 -2.6, 1.4 -0.2
-          L 0 -2.4
-          L -1.4 -0.2
-          C -3.2 -2.6, -5.8 -5.0, -8.6 -6.4
-          C -10.2 -7.2, -11.8 -6.4, -11.4 -4.8
-          C -10.6 -1.6, -7.8 1.2, -4.8 4.2
-          C -2.6 6.4, -1.2 8.8, 0 10.5
-          Z
-        "
-        fill={`url(#${id}-body)`}
-        stroke="rgba(150,130,220,0.42)"
-        strokeWidth="0.5"
-        filter={`url(#${id}-carve)`}
+        className="onyx-bow-limb"
+        d="M 14 50 C 10 36, 12 18, 32 10 C 52 18, 54 36, 50 50"
+        fill="none"
+        stroke={`url(#${id}-limb)`}
+        strokeWidth="3.2"
+        strokeLinecap="round"
+        filter={`url(#${id}-glow)`}
+      />
+      <path
+        className="onyx-bow-limb-edge"
+        d="M 16 48 C 13 36, 15 20, 32 13 C 49 20, 51 36, 48 48"
+        fill="none"
+        stroke="rgba(255,255,255,0.55)"
+        strokeWidth="0.7"
+        strokeLinecap="round"
       />
 
-      {/* Inner facet — glossy cut */}
+      {/* Drawn string (taut when loaded; slack when shooting) */}
       <path
-        d="
-          M 0 6.8
-          C 0.9 5.4, 2.0 3.6, 3.4 2.0
-          C 5.2 0.0, 6.8 -1.8, 7.2 -3.4
-          C 7.4 -4.2, 6.6 -4.6, 5.8 -4.1
-          C 4.0 -3.2, 2.4 -1.6, 1.1 0.2
-          L 0 -1.2
-          L -1.1 0.2
-          C -2.4 -1.6, -4.0 -3.2, -5.8 -4.1
-          C -6.6 -4.6, -7.4 -4.2, -7.2 -3.4
-          C -6.8 -1.8, -5.2 0.0, -3.4 2.0
-          C -2.0 3.6, -0.9 5.4, 0 6.8
-          Z
-        "
-        fill={`url(#${id}-facet)`}
-        stroke="rgba(210,198,255,0.28)"
-        strokeWidth="0.3"
+        className={`onyx-bow-string${shooting ? " slack" : ""}`}
+        d={shooting ? "M 16 48 L 32 42 L 48 48" : "M 16 48 L 32 28 L 48 48"}
+        fill="none"
+        stroke="#d8dee8"
+        strokeWidth="1.15"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
 
-      {/* Specular window on the carved face */}
-      <ellipse
-        cx="-2.2"
-        cy="1.4"
-        rx="2.1"
-        ry="3.2"
-        fill={`url(#${id}-spec)`}
-        transform="rotate(-22 -2.2 1.4)"
-        opacity="0.85"
-      />
-    </g>
+      {/* Arrow — nocked on string, tip outward */}
+      <g className={`onyx-bow-arrow${shooting ? " loosed" : ""}`}>
+        <line
+          x1="32"
+          y1="46"
+          x2="32"
+          y2="14"
+          stroke={`url(#${id}-arrow)`}
+          strokeWidth="1.6"
+          strokeLinecap="round"
+        />
+        <path
+          d="M 32 8 L 36.2 16.5 L 32 14.6 L 27.8 16.5 Z"
+          fill="#eef2f7"
+          stroke="#9aa3b2"
+          strokeWidth="0.4"
+        />
+        <path d="M 29.2 44 L 32 40.5 L 34.8 44 Z" fill="#b8c0cc" opacity="0.9" />
+      </g>
+    </svg>
   );
 }
 
+const BOW_META: {
+  dir: DoorArrowDir;
+  rotate: number;
+  label: string;
+}[] = [
+  { dir: "up", rotate: 0, label: "Aether — sky map" },
+  { dir: "right", rotate: 90, label: "Heliodrome — orrery" },
+  { dir: "down", rotate: 180, label: "Agon — Show Thyself" },
+  { dir: "left", rotate: -90, label: "Mouseion — studies" },
+];
+
 export function OnyxDoorArrows({
   active = null,
+  shooting = null,
+  onShoot,
 }: {
   active?: DoorArrowDir | "center" | null;
+  shooting?: DoorArrowDir | null;
+  onShoot?: (dir: DoorArrowDir) => void;
 }) {
   const lit: DoorArrowDir | null =
     active === "up" || active === "down" || active === "left" || active === "right"
       ? active
       : null;
 
-  const dirs: { dir: DoorArrowDir; x: number; y: number; rotate: number }[] = [
-    // Position and heading are explicit: top points up, right points right,
-    // bottom points down, left points left.
-    { dir: "up", x: 50, y: 5.4, rotate: 180 },
-    { dir: "right", x: 94.6, y: 50, rotate: -90 },
-    { dir: "down", x: 50, y: 94.6, rotate: 0 },
-    { dir: "left", x: 5.4, y: 50, rotate: 90 },
-  ];
-
   return (
-    <svg
-      className="onyx-yy-arrows"
-      viewBox="0 0 100 100"
-      aria-hidden
-      focusable="false"
-    >
-      {dirs.map(({ dir, x, y, rotate }) => (
-        <g
+    <div className="onyx-yy-bows" aria-label="Chamber bows">
+      {BOW_META.map(({ dir, rotate, label }) => (
+        <button
           key={dir}
-          className={`onyx-yy-arrow onyx-yy-arrow-${dir}${lit === dir ? " on" : ""}`}
-          transform={`translate(${x} ${y}) rotate(${rotate})`}
+          type="button"
+          className={`onyx-yy-bow onyx-yy-bow-${dir}${lit === dir ? " on" : ""}${shooting === dir ? " shooting" : ""}`}
+          aria-label={label}
+          disabled={Boolean(shooting)}
+          style={{ ["--bow-rot" as string]: `${rotate}deg` }}
+          onPointerDown={e => e.stopPropagation()}
+          onClick={e => {
+            e.stopPropagation();
+            if (shooting) return;
+            onShoot?.(dir);
+          }}
         >
-          <CurvedOnyxHead id={`yy-arr-${dir}`} />
-        </g>
+          <span className="onyx-yy-bow-face" style={{ transform: `rotate(${rotate}deg)` }}>
+            <SilverBow id={`yy-bow-${dir}`} shooting={shooting === dir} />
+          </span>
+        </button>
       ))}
-    </svg>
+    </div>
   );
 }

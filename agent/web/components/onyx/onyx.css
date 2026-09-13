@@ -804,7 +804,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   transition: opacity var(--onyx-settle);
 }
 .onyx-yy-wrap {
-  --yy-size: clamp(240px, 64vmin, 320px);
+  --yy-size: clamp(152px, 40vmin, 200px);
   /* Full street, no 50%/translate — that pair walked off-screen on iOS viewport shift. */
   inset: 0;
   top: 0;
@@ -817,7 +817,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   display: grid;
   place-items: center;
   pointer-events: none;
-  overflow: hidden;
+  /* Visible so cardinal bows (outside the gem) are not clipped */
+  overflow: visible;
 }
 .onyx-compass-stage.onyx-yy-stage {
   position: relative;
@@ -826,10 +827,12 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   height: var(--yy-size);
   display: grid;
   place-items: center;
+  overflow: visible;
 }
 .onyx-yy-wrap .onyx-yy-gem { pointer-events: auto; }
 .onyx-yy-wrap .onyx-yy-dot,
-.onyx-yy-wrap .onyx-yy-phrase-btn { pointer-events: auto; }
+.onyx-yy-wrap .onyx-yy-phrase-btn,
+.onyx-yy-wrap .onyx-yy-bow { pointer-events: auto; }
 .onyx-yy-orb {
   position: relative;
   left: auto;
@@ -936,6 +939,66 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   pointer-events: none;
   overflow: visible;
 }
+.onyx-yy-bows {
+  position: absolute;
+  inset: -54px;
+  z-index: 6;
+  pointer-events: none;
+}
+.onyx-yy-bow {
+  position: absolute;
+  width: 58px;
+  height: 58px;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  display: grid;
+  place-items: center;
+  -webkit-tap-highlight-color: transparent;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+  transition: transform 160ms ease, filter 160ms ease;
+}
+.onyx-yy-bow:disabled { cursor: default; }
+.onyx-yy-bow.on,
+.onyx-yy-bow:hover {
+  filter: drop-shadow(0 0 10px rgba(210, 220, 235, 0.45)) drop-shadow(0 2px 6px rgba(0, 0, 0, 0.45));
+}
+.onyx-yy-bow-face {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.onyx-bow-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+.onyx-yy-bow-up { top: 0; left: 50%; transform: translateX(-50%); }
+.onyx-yy-bow-down { bottom: 0; left: 50%; transform: translateX(-50%); }
+.onyx-yy-bow-left { left: 0; top: 50%; transform: translateY(-50%); }
+.onyx-yy-bow-right { right: 0; top: 50%; transform: translateY(-50%); }
+.onyx-yy-bow-up.on { transform: translateX(-50%) translateY(-3px); }
+.onyx-yy-bow-down.on { transform: translateX(-50%) translateY(3px); }
+.onyx-yy-bow-left.on { transform: translateY(-50%) translateX(-3px); }
+.onyx-yy-bow-right.on { transform: translateY(-50%) translateX(3px); }
+.onyx-bow-arrow {
+  transform-origin: 32px 46px;
+}
+.onyx-yy-bow.shooting .onyx-bow-arrow.loosed {
+  animation: onyx-bow-loose 520ms cubic-bezier(0.15, 0.85, 0.25, 1) forwards;
+}
+.onyx-yy-bow.shooting .onyx-bow-string.slack {
+  stroke: rgba(200, 210, 220, 0.55);
+}
+@keyframes onyx-bow-loose {
+  0% { transform: translateY(0); opacity: 1; }
+  70% { opacity: 1; }
+  100% { transform: translateY(-46px); opacity: 0; }
+}
 .onyx-yy-arrow {
   opacity: 0.62;
   transform-box: fill-box;
@@ -1029,20 +1092,22 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-yy-wrap .onyx-yy-dirs button { opacity: 0; }
 .onyx-yy-wrap.holding .onyx-yy-dirs span,
 .onyx-yy-wrap.holding .onyx-yy-dirs button { opacity: 0.7; }
+.onyx-yy-wrap .onyx-yy-dirs span.on,
 .onyx-yy-wrap .onyx-yy-dirs button.on { opacity: 1; }
 .onyx-yy-dirs .d-up { top: -2px; }
 .onyx-yy-dirs .d-down { bottom: -2px; }
 .onyx-yy-dirs .d-left { left: -2px; }
 .onyx-yy-dirs .d-right { right: -2px; }
 @media (min-width: 800px) {
-  .onyx-yy-wrap { --yy-size: clamp(280px, 38vmin, 380px); }
+  .onyx-yy-wrap { --yy-size: clamp(160px, 26vmin, 210px); }
 }
 @media (orientation: landscape) and (max-height: 620px) {
-  .onyx-yy-wrap { --yy-size: clamp(200px, 52vmin, 280px); }
+  .onyx-yy-wrap { --yy-size: clamp(132px, 38vmin, 180px); }
 }
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-phrase,
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-dot,
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-arrows,
+.onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-yy-bows,
 .onyx-yy-home:has(.onyx-yy-gem.spinning) .onyx-compass-rose {
   opacity: 0;
   pointer-events: none;
