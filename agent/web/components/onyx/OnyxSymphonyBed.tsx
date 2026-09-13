@@ -1,11 +1,12 @@
 "use client";
 
 /**
- * Pneuma Mundi symphony bed — the Omphalos film soundtrack.
- * Lives above chamber routes so it keeps playing in Heliodrome / Aether / Agon / …
- * and layers with the Heliodrome NOW-Chord (Web Audio), not replaces it.
+ * Pneuma Mundi symphony bed — Omphalos Runway soundtrack.
+ * Mounted above chamber routes so it keeps playing everywhere and layers with
+ * the Heliodrome NOW-Chord (Web Audio). Visual plate stays on OnyxHomeFilm (muted).
  *
- * Source: public/pneuma-home-bg.mp4 (swap when Paulo drops the next Runway loop).
+ * Source: public/pneuma-home-bg.mp4 — encoded with end→start video/audio crossfade
+ * so HTML5 loop joins without a click or flash.
  */
 
 import { useEffect, useRef } from "react";
@@ -16,55 +17,62 @@ export const PNEUMA_SYMPHONY_SRC = "/pneuma-home-bg.mp4";
 const SYMPHONY_VOLUME = 0.55;
 
 export function OnyxSymphonyBed({ enabled }: { enabled: boolean }) {
-  const ref = useRef<HTMLAudioElement>(null);
+  const ref = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    const a = ref.current;
-    if (!a) return;
-    a.loop = true;
-    a.preload = "auto";
-    a.setAttribute("playsinline", "true");
+    const v = ref.current;
+    if (!v) return;
+    v.loop = true;
+    v.playsInline = true;
+    v.preload = "auto";
 
-    const onVis = () => {
-      if (document.visibilityState === "hidden") {
-        a.pause();
-      } else if (enabled) {
-        a.muted = false;
-        a.volume = SYMPHONY_VOLUME;
-        void a.play().catch(() => {
-          /* needs Allow / stone gesture — useClockSfx unlock covers most sessions */
-        });
+    const ensureLoop = () => {
+      // Belt-and-suspenders near the seam (file is already crossfaded).
+      if (!v.duration || !Number.isFinite(v.duration)) return;
+      if (v.currentTime >= v.duration - 0.04) {
+        v.currentTime = 0.02;
+        void v.play().catch(() => {});
       }
     };
 
+    const onVis = () => {
+      if (document.visibilityState === "hidden") {
+        v.pause();
+      } else if (enabled) {
+        v.muted = false;
+        v.volume = SYMPHONY_VOLUME;
+        void v.play().catch(() => {});
+      }
+    };
+
+    v.addEventListener("timeupdate", ensureLoop);
     document.addEventListener("visibilitychange", onVis);
     return () => {
+      v.removeEventListener("timeupdate", ensureLoop);
       document.removeEventListener("visibilitychange", onVis);
-      a.pause();
+      v.pause();
     };
   }, [enabled]);
 
   useEffect(() => {
-    const a = ref.current;
-    if (!a) return;
+    const v = ref.current;
+    if (!v) return;
     if (!enabled) {
-      a.muted = true;
-      a.volume = 0;
-      a.pause();
+      v.muted = true;
+      v.volume = 0;
+      v.pause();
       return;
     }
-    a.muted = false;
-    a.volume = SYMPHONY_VOLUME;
-    void a.play().catch(() => {
-      /* gesture pending */
-    });
+    v.muted = false;
+    v.volume = SYMPHONY_VOLUME;
+    void v.play().catch(() => {});
   }, [enabled]);
 
   return (
-    <audio
+    <video
       ref={ref}
       className="onyx-symphony-bed"
-      src={PNEUMA_SYMPHONY_SRC}
+      src={`${PNEUMA_SYMPHONY_SRC}?v=2026-09-13e`}
       loop
       playsInline
       preload="auto"
