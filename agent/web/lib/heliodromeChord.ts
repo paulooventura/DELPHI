@@ -358,13 +358,21 @@ function orderStrings(lanes: OrreryLaneState[]) {
 
 /**
  * Start the NOW-Chord (Heliodrome open). Safe to call repeatedly.
- * AudioContext must already be unlocked by a user gesture (stone / home).
+ * Prefer calling after Allow access has unlocked AudioContext; still resumes if needed.
  */
 export async function startHeliodromeChord(): Promise<void> {
   heliodromeChordWanted = true;
   if (isClockAudioSilenced()) return;
-  const ctx = (await resumeClockAudio()) ?? getClockAudio();
-  if (!ctx || ctx.state !== "running") return;
+  const ctx = getClockAudio();
+  if (!ctx) return;
+  if (ctx.state === "suspended") {
+    try {
+      await ctx.resume();
+    } catch {
+      return;
+    }
+  }
+  if (ctx.state !== "running") return;
   if (runtime?.ctx === ctx) return;
 
   stopHeliodromeChordGraph();

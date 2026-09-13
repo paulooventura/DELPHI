@@ -174,6 +174,7 @@ export function OnyxApp({
   oracleExtra,
   pulseEnabled = true,
   onPulseEnabledChange,
+  onArmAudio,
 }: {
   /** False until sessionStorage is read — hold black so returns don't flash splash. */
   bootReady?: boolean;
@@ -232,6 +233,8 @@ export function OnyxApp({
   oracleExtra?: ReactNode;
   pulseEnabled?: boolean;
   onPulseEnabledChange?: (on: boolean) => void;
+  /** Re-arm Web Audio after Allow / when entering Heliodrome. */
+  onArmAudio?: () => void;
 }) {
   const [mode, setModeState] = useState<OnyxMode>(modeFromSearch);
   const setMode = (next: OnyxMode) => {
@@ -580,6 +583,7 @@ export function OnyxApp({
             } catch {
               /* private mode */
             }
+            if (pulseEnabled) onArmAudio?.();
             setOrreryIntro(false);
           }}
         />
@@ -592,6 +596,7 @@ export function OnyxApp({
         onBack={() => setMode("home")}
         natalDate={birth ? birthToDate(birth) : null}
         hapticsEnabled={pulseEnabled}
+        onArmAudio={pulseEnabled ? onArmAudio : undefined}
       />
     );
   }

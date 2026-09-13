@@ -99,21 +99,34 @@ export function useClockSfx(
     let alive = true;
     let parkTimer = 0;
 
+    const armBed = (ctx: AudioContext) => {
+      refs.observer = readObserver();
+      syncChimeRefs(refs);
+      unparkClockAudio();
+      unmuteClockAudio();
+      if (isHeliodromeChordWanted()) void startHeliodromeChord();
+      else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
+      setActive(true);
+    };
+
     const unlock = (ev: Event) => {
       const t = ev.target as HTMLElement | null;
       if (t?.closest?.(".onyx-stone-track")) return;
       if (document.visibilityState === "hidden") return;
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
-      void resumeClockAudio().then(ctx => {
-        if (!ctx || !alive || !enabledRef.current || document.visibilityState === "hidden") return;
-        refs.observer = readObserver();
-        syncChimeRefs(refs);
-        unmuteClockAudio();
-        if (isHeliodromeChordWanted()) void startHeliodromeChord();
-        else startSchumannAtmosphere(ctx);
-        setActive(true);
-      });
+      // Resume in the gesture turn — do not wait on an outer await first.
+      const ctx = getClockAudio();
+      if (!ctx) return;
+      const go = () => {
+        if (!alive || !enabledRef.current || document.visibilityState === "hidden") return;
+        armBed(ctx);
+      };
+      if (ctx.state === "suspended") {
+        void ctx.resume().then(go).catch(() => {});
+      } else {
+        go();
+      }
     };
 
     window.addEventListener("pointerdown", unlock);
@@ -125,12 +138,7 @@ export function useClockSfx(
       parkTimer = 0;
       void resumeClockAudio().then(ctx => {
         if (!ctx || !alive || !enabledRef.current || document.visibilityState === "hidden") return;
-        unparkClockAudio();
-        unmuteClockAudio();
-        // Only build the bed if it's gone — never tear/rebuild on flicker.
-        if (isHeliodromeChordWanted()) void startHeliodromeChord();
-        else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
-        setActive(true);
+        armBed(ctx);
       });
     };
 
@@ -164,12 +172,7 @@ export function useClockSfx(
       document.visibilityState === "visible" &&
       !isClockAudioSilenced()
     ) {
-      refs.observer = readObserver();
-      syncChimeRefs(refs);
-      unmuteClockAudio();
-      if (isHeliodromeChordWanted()) void startHeliodromeChord();
-      else startSchumannAtmosphere(existing);
-      setActive(true);
+      armBed(existing);
     }
 
     const loop = () => {
@@ -235,14 +238,17 @@ export function useClockSfx(
       window.removeEventListener("keydown", unlock);
       document.removeEventListener("visibilitychange", onVis);
       window.removeEventListener("pagehide", onPageHide);
-      muteClockAudio({ fadeMs: 120 });
+      // Do NOT hard-mute here — React Strict Mode remounts would kill the bed
+      // right after Allow access. Mute only when enabled flips off (above).
     };
   }, [enabled]);
 
   const enable = useCallback(() => {
-    void resumeClockAudio().then(ctx => {
-      if (!ctx || document.visibilityState === "hidden") return;
-      if (!enabledRef.current) return;
+    const ctx = getClockAudio();
+    if (!ctx || document.visibilityState === "hidden") return;
+    if (!enabledRef.current) return;
+    const arm = () => {
+      if (!enabledRef.current || document.visibilityState === "hidden") return;
       syncChimeRefs({
         lastSec,
         lastChimeKey,
@@ -255,7 +261,12 @@ export function useClockSfx(
       if (isHeliodromeChordWanted()) void startHeliodromeChord();
       else if (!isSchumannAtmosphereRunning()) startSchumannAtmosphere(ctx);
       setActive(true);
-    });
+    };
+    if (ctx.state === "suspended") {
+      void ctx.resume().then(arm).catch(() => {});
+    } else {
+      arm();
+    }
   }, []);
 
   return { active, enable };

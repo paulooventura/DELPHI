@@ -317,6 +317,9 @@ export default function Home() {
   const togglesRef = useRef(toggles);
   const observerRef = useRef({ lat: FALLBACK_LAT, lon: FALLBACK_LON });
   const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn, observerRef);
+  const armAudio = useCallback(() => {
+    if (clockSfxOn) enableSfx();
+  }, [clockSfxOn, enableSfx]);
   const [showLaunch, completeLaunch, launchReady] = useShowLaunch();
   /** After splash: true until this app session has granted (or just granted). */
   const [needsAccessGate, setNeedsAccessGate] = useState(false);
@@ -438,13 +441,14 @@ export default function Home() {
     };
   }, [cycles, tab]);
 
-  // Cycle sonics: Schumann + civil ticks + lane marks. Unlock after splash
-  // (or immediately in the Chorus iframe — stone stays on).
+  // Cycle sonics: Schumann + civil ticks + lane marks. Arm after splash only when
+  // this session already passed Allow (or Chorus embed). First open waits for the
+  // Allow-access gesture so iOS keeps the AudioContext running.
   useEffect(() => {
-    if (!showLaunch && clockSfxOn) {
-      void enableSfx();
-    }
-  }, [showLaunch, clockSfxOn, enableSfx]);
+    if (showLaunch || !clockSfxOn) return;
+    if (!chorusEmbed && needsAccessGate) return;
+    void enableSfx();
+  }, [showLaunch, clockSfxOn, enableSfx, chorusEmbed, needsAccessGate]);
 
   // Same-session return (Studies/Tonal → home) skipped splash, so start
   // watches here. First open still waits for splash + Allow.
@@ -1258,9 +1262,9 @@ export default function Home() {
           setNeedsAccessGate(false);
           void captureSensors();
           void startOrientationWatch();
+          if (clockSfxOn) void enableSfx();
         }
         completeLaunch();
-        if (clockSfxOn) void enableSfx();
       }}
       onPrimeAccess={() => {
         if (hasAccessThisSession()) void primeDeviceAccess();
@@ -1268,8 +1272,10 @@ export default function Home() {
       showAccessGate={needsAccessGate && !chorusEmbed}
       sensorsUnlocked={!needsAccessGate}
       onAllowAccess={() => {
+        // Unlock Web Audio in the same gesture as Allow — orrery chord is ready
+        // before Heliodrome opens; home film soundtrack can unmute after.
+        armAudio();
         void primeDeviceAccess();
-        if (clockSfxOn) void enableSfx();
       }}
       accessBusy={accessBusy}
       now={cosmic?.now ?? animNow}
@@ -1328,6 +1334,7 @@ export default function Home() {
         if (on) void enableSfx();
         else muteClockAudio({ fadeMs: 120 });
       }}
+      onArmAudio={armAudio}
       sensorProps={{
         autoAwaken: true,
         onAmbient: handleAmbient,

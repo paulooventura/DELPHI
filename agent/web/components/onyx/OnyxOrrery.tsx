@@ -79,6 +79,7 @@ export function OnyxOrrery({
   onBack,
   natalDate = null,
   hapticsEnabled = true,
+  onArmAudio,
 }: {
   lat: number;
   lon: number;
@@ -87,6 +88,8 @@ export function OnyxOrrery({
   natalDate?: Date | null;
   /** Master stone toggle — escapement ticks respect this. */
   hapticsEnabled?: boolean;
+  /** Ensure Web Audio is running when Heliodrome mounts (post–Allow access). */
+  onArmAudio?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -129,9 +132,10 @@ export function OnyxOrrery({
   }, [frozen]);
 
   useEffect(() => {
+    onArmAudio?.();
     void startHeliodromeChord();
     return () => stopHeliodromeChord();
-  }, []);
+  }, [onArmAudio]);
 
   useEffect(() => {
     if (!expanded && !pickerOpen) return;
