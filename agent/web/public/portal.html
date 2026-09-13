@@ -471,6 +471,26 @@
   .sec.wrong .signs{display:flex;flex-wrap:wrap;gap:5px;justify-content:center}
   .sec.wrong .signs span{background:var(--ink);border:1px solid var(--line);border-radius:6px;padding:3px 9px;font-size:12px}
   .sec.wrong .respond{color:#fff;font-size:13px}
+  .sec.timebody .lbl{color:#7cf0d0}
+  .sec.timebody .tb-frame,.sec.riskmods .tb-frame{font-size:12px;color:var(--fog);line-height:1.55;margin:0 0 12px;text-align:left}
+  .sec.timebody .tb-block{text-align:left;margin:0 0 14px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.22)}
+  .sec.timebody .tb-block h4{margin:0 0 8px;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#7cf0d0}
+  .sec.timebody .tb-why{margin:0 0 8px;font-size:12px;color:#cfe0f5;line-height:1.5}
+  .sec.timebody .tb-row{display:grid;grid-template-columns:88px 1fr;gap:8px;padding:4px 0;border-top:1px dashed rgba(255,255,255,.06);font-size:12.5px}
+  .sec.timebody .tb-row:first-of-type{border-top:0}
+  .sec.timebody .tb-k{color:var(--fogd);font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.08em;text-transform:uppercase;padding-top:2px}
+  .sec.timebody .tb-v{color:var(--paper);line-height:1.45}
+  .sec.timebody .tb-note,.sec.timebody .tb-src,.sec.riskmods .tb-src{margin:8px 0 0;font-size:11.5px;color:var(--fog);line-height:1.5;text-align:left}
+  .sec.riskmods .lbl{color:#c9a0ff}
+  .sec.riskmods .rm-note{margin:0 0 12px;font-size:13px;color:#e8dcff;line-height:1.55;text-align:left}
+  .sec.riskmods .rm-grid{display:grid;grid-template-columns:1fr;gap:8px;text-align:left}
+  @media(min-width:720px){.sec.riskmods .rm-grid{grid-template-columns:1fr 1fr}}
+  .sec.riskmods .rm-card{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:rgba(0,0,0,.18)}
+  .sec.riskmods .rm-card.on{border-color:rgba(201,160,255,.45);box-shadow:inset 0 0 0 1px rgba(201,160,255,.2)}
+  .sec.riskmods .rm-card h4{margin:0 0 6px;font-size:12.5px;color:#e8dcff}
+  .sec.riskmods .rm-card p{margin:0;font-size:12px;color:var(--fog);line-height:1.5}
+  .sec.adyton-disclaimer{background:rgba(255,91,91,.06);border-top:1px solid rgba(255,91,91,.22)}
+  .sec.adyton-disclaimer p{font-size:12px;color:#ffc9c9;line-height:1.5}
   /* full polarity axis in modal */
   .fullaxis{padding:22px}.fullaxis .rail{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
   .fullaxis .lvl{min-height:74px;flex-direction:column;gap:6px;padding:12px 6px}
@@ -1091,7 +1111,7 @@
         </div>
         <div class="ldetail"><div class="ldinner">
           <div class="lnote floor"><h3>The floor</h3><p><span class="tel">911 · 988 · 1-800-222-1222</span><br>Test the supply, carry naloxone, never use alone.<br><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
-          <div class="lnote method"><h3>Method</h3><p>No “safe number.” A direction the body is pushed, and a point past which it cannot self-correct. Consumption doses are absent by design — on an adulterated supply a printed threshold reads as protection and works as permission.</p></div>
+          <div class="lnote method"><h3>Method</h3><p>No “safe number.” A direction the body is pushed, and a point past which it cannot self-correct. Consumption doses are absent by design — on an adulterated supply a printed threshold reads as protection and works as permission. <strong>Time in Body</strong> shows effect ranges and detection windows so you can choose whether to partake (including when a job test is at stake) — never to beat a test. <strong>Why you may differ</strong> names risk modulators, not a personal safe dose. Not medical advice. Emergency → local emergency number.</p></div>
         </div></div>
       </div>
       <div class="searchwrap"><input class="search" id="m-search" placeholder="What substance are you looking to dive into?" aria-label="Search substances"></div>
@@ -1169,6 +1189,8 @@
 </div>
 
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
+
+<script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -2197,11 +2219,15 @@ window.openSubstance=i=>{
   <div class="sec roots"><div class="lbl"><span class="num">1</span>Roots — the arc</div><p class="arc">${esc(roots)}</p><p class="celeb"><b>Celebrated</b><br>${esc(celeb)}</p></div>
   <div class="sec axis"><div class="lbl"><span class="num">2</span>The axis</div>${axis}</div>
   <div class="sec body-brain"><div class="lbl"><span class="num">3</span>In your body / brain</div><p>${esc(body)}</p></div>
-  <div class="sec know"><div class="lbl"><span class="num">4</span>Know before</div><p>${esc(know)}</p><p class="interact"><strong>Deadly mix:</strong> ${esc(mix)}</p></div>
-  <div class="sec standing"><div class="lbl"><span class="num">5</span>Standing</div><span class="legal">${esc(D(d.legal))}</span>${ceil}</div>
-  <div class="sec test"><div class="lbl"><span class="num">6</span>Test it</div><p>${esc(test)}</p></div>
-  <div class="sec overshoot"><div class="lbl"><span class="num">7</span>The overshoot</div><p>${esc(over)}</p></div>
-  <div class="sec wrong"><div class="lbl"><span class="num">8</span>If it goes wrong</div><div class="rz"><span class="k">Recognize</span><div class="signs">${signs(rec)}</div></div><div class="rz"><span class="k">Respond</span><div class="respond">${esc(resp)}</div></div></div></div>`);
+  ${typeof adytonTimeBodyHtml==="function"?adytonTimeBodyHtml(d):""}
+  ${typeof adytonRiskModsHtml==="function"?adytonRiskModsHtml(d):""}
+  <div class="sec know"><div class="lbl"><span class="num">6</span>Know before</div><p>${esc(know)}</p><p class="interact"><strong>Deadly mix:</strong> ${esc(mix)}</p></div>
+  <div class="sec standing"><div class="lbl"><span class="num">7</span>Standing</div><span class="legal">${esc(D(d.legal))}</span>${ceil}</div>
+  <div class="sec test"><div class="lbl"><span class="num">8</span>Test it</div><p>${esc(test)}</p></div>
+  <div class="sec overshoot"><div class="lbl"><span class="num">9</span>The overshoot</div><p>${esc(over)}</p></div>
+  <div class="sec wrong"><div class="lbl"><span class="num">10</span>If it goes wrong</div><div class="rz"><span class="k">Recognize</span><div class="signs">${signs(rec)}</div></div><div class="rz"><span class="k">Respond</span><div class="respond">${esc(resp)}</div></div></div>
+  ${typeof adytonDisclaimerHtml==="function"?adytonDisclaimerHtml():`<div class="sec adyton-disclaimer"><p>Not medical advice. Emergency → call your local emergency number.</p></div>`}
+  </div>`);
 };
 function mRender(){const g=document.getElementById("m-grid");const match=d=>{if(mState.bands.size&&!mState.bands.has(d.band))return false;if(mState.lins.size&&!mState.lins.has(d.lineage))return false;if(mState.q&&!(d.name+" "+(d.latin||"")+" "+(d.lineage||"")+" "+(d.snapshot||"")+" "+(d.measured||"")+" "+(d.caution||"")).toLowerCase().includes(mState.q))return false;return true;};const items=substances.filter(match);const html=items.map((d,i)=>mMini(d,substances.indexOf(d))).join("");g.innerHTML=html||empty();const mc=document.getElementById("m-count");if(mc)mc.textContent=`${items.length} of ${substances.length} shown`;syncCatsBtn();}
 function syncCatsBtn(){
