@@ -45,6 +45,7 @@ import { OnyxHome } from "./OnyxHome";
 import { OnyxSky } from "./OnyxSky";
 import { OnyxSkySplash } from "./OnyxSkySplash";
 import { OnyxAgonSplash } from "./OnyxAgonSplash";
+import { OnyxPsycheSplash } from "./OnyxPsycheSplash";
 import { OnyxSplash } from "./OnyxSplash";
 import { OnyxYou } from "./OnyxYou";
 import { OnyxCast } from "./OnyxCast";
@@ -275,6 +276,14 @@ export function OnyxApp({
     }
   });
   const [agonSplashPending, setAgonSplashPending] = useState(false);
+  /** Psyche film — once per tab session, first intentional open of You. */
+  const [youIntro, setYouIntro] = useState(() => {
+    try {
+      return sessionStorage.getItem("delphi-you-intro-seen") !== "1";
+    } catch {
+      return true;
+    }
+  });
   /** Cast opens as an expansion of You, not a home-compass door. */
   const [castReturn, setCastReturn] = useState<"home" | "you">("you");
   const [youExpandCast, setYouExpandCast] = useState(false);
@@ -706,7 +715,7 @@ export function OnyxApp({
                 Aether
                 <span>Live map of the heavens</span>
               </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => setMode("you")}>
+              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => openYou(false)}>
                 Psyche
                 <span>Natal chord — local only, never sent</span>
               </button>
@@ -734,6 +743,20 @@ export function OnyxApp({
   }
 
   if (mode === "you") {
+    if (youIntro) {
+      return (
+        <OnyxPsycheSplash
+          onEnter={() => {
+            try {
+              sessionStorage.setItem("delphi-you-intro-seen", "1");
+            } catch {
+              /* private mode */
+            }
+            setYouIntro(false);
+          }}
+        />
+      );
+    }
     return (
       <OnyxYou
         nowChord={homeSnap?.chord ?? activeReading.chord}
@@ -760,6 +783,13 @@ export function OnyxApp({
           setActiveLayerChoice(undefined); // deepen to with-drawn
           setCastReturn("you");
           setYouExpandCast(true);
+          // Skip Psyche entry film when returning from a draw.
+          try {
+            sessionStorage.setItem("delphi-you-intro-seen", "1");
+          } catch {
+            /* private mode */
+          }
+          setYouIntro(false);
           setMode("you");
         }}
         onResetHeld={resetHeldDivinations}
