@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { DELPHI_BUILD } from "../../lib/buildStamp";
 
 /**
  * Home street background — Paulo’s Runway Max loop (public/pneuma-home-bg.mp4).
@@ -56,7 +57,7 @@ export function OnyxHomeFilm() {
         preload="auto"
         poster=""
       >
-        <source src="/pneuma-home-bg.mp4?v=2026-09-13e" type="video/mp4" />
+        <source src={`/pneuma-home-bg.mp4?v=${DELPHI_BUILD}`} type="video/mp4" />
       </video>
     </div>
   );

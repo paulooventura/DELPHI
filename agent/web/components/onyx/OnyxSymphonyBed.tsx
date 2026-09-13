@@ -9,15 +9,25 @@
  * so HTML5 loop joins without a click or flash.
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import {
+  isSymphonyDucked,
+  subscribeSymphonyDuck,
+} from "../../lib/symphonyDuck";
+import { DELPHI_BUILD } from "../../lib/buildStamp";
 
 export const PNEUMA_SYMPHONY_SRC = "/pneuma-home-bg.mp4";
 
 /** Soft under the chord / ticks — film is the pad, not the lead. */
 const SYMPHONY_VOLUME = 0.55;
+/** Under Aulos of Delphi so the hymn leads. */
+const SYMPHONY_DUCKED = 0.08;
 
 export function OnyxSymphonyBed({ enabled }: { enabled: boolean }) {
   const ref = useRef<HTMLVideoElement>(null);
+  const [ducked, setDucked] = useState(isSymphonyDucked);
+
+  useEffect(() => subscribeSymphonyDuck(setDucked), []);
 
   useEffect(() => {
     const v = ref.current;
@@ -40,7 +50,7 @@ export function OnyxSymphonyBed({ enabled }: { enabled: boolean }) {
         v.pause();
       } else if (enabled) {
         v.muted = false;
-        v.volume = SYMPHONY_VOLUME;
+        v.volume = isSymphonyDucked() ? SYMPHONY_DUCKED : SYMPHONY_VOLUME;
         void v.play().catch(() => {});
       }
     };
@@ -64,15 +74,15 @@ export function OnyxSymphonyBed({ enabled }: { enabled: boolean }) {
       return;
     }
     v.muted = false;
-    v.volume = SYMPHONY_VOLUME;
+    v.volume = ducked ? SYMPHONY_DUCKED : SYMPHONY_VOLUME;
     void v.play().catch(() => {});
-  }, [enabled]);
+  }, [enabled, ducked]);
 
   return (
     <video
       ref={ref}
       className="onyx-symphony-bed"
-      src={`${PNEUMA_SYMPHONY_SRC}?v=2026-09-13e`}
+      src={`${PNEUMA_SYMPHONY_SRC}?v=${DELPHI_BUILD}`}
       loop
       playsInline
       preload="auto"

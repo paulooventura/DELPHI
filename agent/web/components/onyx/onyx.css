@@ -1544,6 +1544,115 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-stone-track.quiet .onyx-stone svg { filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6)); }
 
+/* ── Aulos of Delphi (homescreen hymn) ───────────────────────────────────── */
+.onyx-aulos-btn {
+  position: absolute;
+  left: 16px;
+  bottom: max(22px, env(safe-area-inset-bottom, 0px));
+  z-index: 40;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px 8px 10px;
+  border: 0.5px solid var(--onyx-edge);
+  border-radius: 16px;
+  background: rgba(8, 7, 12, 0.55);
+  color: var(--onyx-ink-soft);
+  font-family: inherit;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: border-color var(--onyx-lift), color var(--onyx-lift), background var(--onyx-lift);
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.onyx-aulos-btn:hover,
+.onyx-aulos-btn:focus-visible {
+  color: var(--onyx-ink);
+  border-color: var(--onyx-edge-bright);
+  outline: none;
+}
+.onyx-aulos-btn.on {
+  color: var(--onyx-light);
+  border-color: rgba(180, 160, 90, 0.45);
+  background: rgba(40, 32, 18, 0.55);
+}
+.onyx-aulos-reed {
+  display: flex;
+  color: inherit;
+  opacity: 0.9;
+}
+.onyx-aulos-label {
+  white-space: nowrap;
+}
+.onyx-aulos-scrim {
+  z-index: 55;
+}
+.onyx-aulos-sheet {
+  max-height: min(78vh, 640px);
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 10px;
+}
+.onyx-aulos-title {
+  margin: 0 8px 4px;
+  font-family: var(--font-fashion, ui-serif, Georgia, serif);
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  color: var(--onyx-ink-bright);
+}
+.onyx-aulos-status {
+  margin: 0 8px 12px;
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-aulos-lyrics {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 8px 8px;
+  mask-image: linear-gradient(180deg, transparent 0, #000 12px, #000 calc(100% - 16px), transparent 100%);
+}
+.onyx-aulos-sec {
+  margin: 0 0 16px;
+}
+.onyx-aulos-sec-label {
+  margin: 0 0 6px;
+  font-size: 9px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(200, 170, 90, 0.7);
+}
+.onyx-aulos-line {
+  margin: 0;
+  font-family: var(--font-fashion, ui-serif, Georgia, serif);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--onyx-ink-soft);
+}
+.onyx-aulos-break {
+  margin: 0;
+  height: 0.7em;
+}
+.onyx-aulos-instrumental {
+  margin: 4px 0 0;
+  letter-spacing: 0.35em;
+  color: var(--onyx-ink-faint);
+}
+.onyx-aulos-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 0 4px;
+}
+
 /* ── Sky ─────────────────────────────────────────────────────────────────── */
 /* Rise into the sky from the street (scroll-up metaphor). */
 .onyx-sky-enter {

@@ -16,6 +16,7 @@ import { claimMarkClass } from "./onyxCopy";
 import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
 import { OnyxAudioStone } from "./OnyxAudioStone";
+import { OnyxAulos } from "./OnyxAulos";
 import { OnyxHomeFilm } from "./OnyxHomeFilm";
 import { OnyxDistillSheet } from "./OnyxDistillSheet";
 import { destinationsFor, OnyxShareSheet, type ShareDest } from "./OnyxShareSheet";
@@ -544,6 +545,7 @@ export function OnyxHome({
             setPhraseWhyOpen(false);
             return;
           }
+          /* Aulos lyrics Esc is handled inside OnyxAulos. */
           if (e.key === "ArrowDown") goDelta(1);
           if (e.key === "ArrowUp") goDelta(-1);
         }}
@@ -570,6 +572,8 @@ export function OnyxHome({
           enabled={hapticOn}
           onEnabledChange={setPulse}
         />
+
+        <OnyxAulos soundAllowed={hapticOn} visible={depth === 0} />
 
         {/* 0 STREET — Omphalos moment reading; casts live inside Psyche */}
         <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`} />
