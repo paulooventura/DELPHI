@@ -2219,6 +2219,125 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   color: var(--onyx-ink-soft);
 }
 
+/* ── Psyche birth declaration (post-save) ────────────────────────────────── */
+.onyx-declare-scrim {
+  z-index: 60;
+}
+.onyx-declare-sheet {
+  max-height: min(82vh, 720px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 14px;
+}
+.onyx-declare-lead {
+  margin: 0 8px 14px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--onyx-ink-soft);
+}
+.onyx-declare-lead em {
+  font-style: italic;
+  color: var(--onyx-ink);
+}
+.onyx-declare-phrase {
+  margin: 0 8px 10px;
+  font-family: var(--font-fashion, ui-serif, Georgia, serif);
+  font-style: italic;
+  font-size: 20px;
+  line-height: 1.35;
+  color: var(--onyx-ink-bright);
+}
+.onyx-declare-meta {
+  margin: 0 8px 6px;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-declare-poles {
+  margin-top: 14px;
+}
+.onyx-declare-pole-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 8px 4px;
+}
+.onyx-declare-pole {
+  padding: 6px 12px;
+  border: 0.5px solid rgba(200, 170, 90, 0.35);
+  border-radius: 14px;
+  font-family: var(--font-fashion, ui-serif, Georgia, serif);
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  color: rgba(230, 210, 150, 0.95);
+  background: rgba(40, 32, 18, 0.35);
+}
+.onyx-declare-bands,
+.onyx-declare-voices,
+.onyx-declare-clock,
+.onyx-declare-cals {
+  margin-top: 16px;
+}
+.onyx-declare-band-why {
+  margin: 0 8px 10px;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-declare-band {
+  margin: 0 4px 10px;
+  padding: 12px 12px 10px;
+  border-radius: 16px;
+  border: 0.5px solid var(--onyx-edge);
+  background: rgba(255, 255, 255, 0.03);
+}
+.onyx-declare-band.tone-shared {
+  border-color: rgba(180, 160, 90, 0.4);
+  background: rgba(50, 40, 18, 0.35);
+}
+.onyx-declare-band.tone-you {
+  border-color: rgba(140, 160, 200, 0.28);
+  background: rgba(20, 24, 40, 0.4);
+}
+.onyx-declare-band.tone-now {
+  border-color: rgba(160, 140, 180, 0.22);
+  background: rgba(28, 22, 36, 0.35);
+}
+.onyx-declare-band.empty {
+  opacity: 0.55;
+}
+.onyx-declare-band-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.onyx-declare-band-label {
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--onyx-ink);
+}
+.onyx-declare-band-feel {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-declare-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.onyx-declare-empty {
+  margin: 0;
+  font-size: 12px;
+  color: var(--onyx-ink-faint);
+}
+.onyx-declare-voice-list {
+  max-height: none;
+}
+
 .onyx-primary-btn {
   background: rgba(140, 124, 255, 0.18);
   border: 0.5px solid var(--onyx-edge-bright);

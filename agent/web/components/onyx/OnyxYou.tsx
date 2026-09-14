@@ -13,6 +13,7 @@ import { speak } from "../../lib/lore/phrase";
 import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
 import type { EmbracedCast } from "../../lib/lore/castStore";
 import { OnyxStarfield } from "./OnyxStarfield";
+import { OnyxBirthDeclareSheet } from "./OnyxBirthDeclareSheet";
 
 function overlap(a: Composition, b: Composition) {
   const nowQ = new Set(a.activeQualities);
@@ -86,6 +87,7 @@ export function OnyxYou({
   const [listOpen, setListOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [divinationsOpen, setDivinationsOpen] = useState(expandDivinations);
+  const [declareOpen, setDeclareOpen] = useState(false);
 
   useEffect(() => {
     if (expandDivinations) setDivinationsOpen(true);
@@ -208,8 +210,8 @@ export function OnyxYou({
     saveBirth(next);
     setBirth(next);
     setError(null);
+    setDeclareOpen(true);
     onBirthSaved?.(next);
-    // Parent returns to home so the moment retunes immediately.
   }
 
   function wipe() {
@@ -417,6 +419,15 @@ export function OnyxYou({
             <button type="button" className="onyx-primary-btn" onClick={persist}>
               Save locally
             </button>
+            {birth && personal && personalPhrase && (
+              <button
+                type="button"
+                className="onyx-ghost-btn"
+                onClick={() => setDeclareOpen(true)}
+              >
+                See what this declares
+              </button>
+            )}
             {birth && (
               <button type="button" className="onyx-ghost-btn" onClick={wipe}>
                 Clear device data
@@ -590,6 +601,20 @@ export function OnyxYou({
             )}
           </div>
         </div>
+
+        {declareOpen && personal && personalPhrase && (
+          <OnyxBirthDeclareSheet
+            phrase={personalPhrase}
+            colorLine={`Kin ${personal.galactic.kin} · ${personal.galactic.tone.name} · ${personal.galactic.tribe.color} ${personal.galactic.tribe.name}`}
+            placeLabel={birth?.placeLabel}
+            timeIsApproximate={personal.timeIsApproximate}
+            cycles={personal.cycles}
+            calendars={natalBySystem}
+            chord={personal.chord}
+            compare={compare}
+            onClose={() => setDeclareOpen(false)}
+          />
+        )}
       </div>
     </div>
   );
