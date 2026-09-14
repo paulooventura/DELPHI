@@ -1,6 +1,7 @@
 /**
  * Heliodrome NOW-Chord — one continuously-ringing chord driven by live cycle lanes.
- * Native Web Audio (no Tone.js). Shares getClockAudio(); respects stone mute / park / freeze.
+ * Native Web Audio (no Tone.js). Shares getClockAudio(); plays app-wide while sound
+ * is on. Pauses only for stone mute / park, time freeze, or Aulos lead vocal.
  */
 
 import {
@@ -10,10 +11,9 @@ import {
   isSchumannAtmosphereRunning,
   onClockAudioMute,
   onClockAudioUnmute,
-  resumeClockAudio,
-  startSchumannAtmosphere,
   stopSchumannAtmosphere,
 } from "./clockSfx";
+import { isSymphonyDucked, subscribeSymphonyDuck } from "./symphonyDuck";
 import { pulseHaptic, hapticsMuted } from "./haptics";
 import {
   GHATI_MS,
@@ -357,12 +357,12 @@ function orderStrings(lanes: OrreryLaneState[]) {
 }
 
 /**
- * Start the NOW-Chord (Heliodrome open). Safe to call repeatedly.
+ * Start the NOW-Chord (app-wide while sound is armed). Safe to call repeatedly.
  * Prefer calling after Allow access has unlocked AudioContext; still resumes if needed.
  */
 export async function startHeliodromeChord(): Promise<void> {
   heliodromeChordWanted = true;
-  if (isClockAudioSilenced()) return;
+  if (isClockAudioSilenced() || isSymphonyDucked()) return;
   const ctx = getClockAudio();
   if (!ctx) return;
   if (ctx.state === "suspended") {
@@ -464,32 +464,26 @@ export function silenceHeliodromeChord(): void {
   stopHeliodromeChordGraph();
 }
 
-/** After unmute — rebuild if Heliodrome still wants the chord. */
+/** After unmute / Aulos ends — rebuild if the chord is still wanted. */
 export function maybeRestartHeliodromeChord(): void {
-  if (heliodromeChordWanted && !isClockAudioSilenced()) {
+  if (heliodromeChordWanted && !isClockAudioSilenced() && !isSymphonyDucked()) {
     void startHeliodromeChord();
   }
 }
 
-/** Leave Heliodrome — tear chord graph; restore home Schumann bed if still audible. */
+/** Tear chord when sound master turns off (stone quiet / leave app audio). */
 export function stopHeliodromeChord(): void {
   heliodromeChordWanted = false;
   stopHeliodromeChordGraph();
-  if (!isClockAudioSilenced()) {
-    const ctx = getClockAudio();
-    if (ctx?.state === "running" && !isSchumannAtmosphereRunning()) {
-      startSchumannAtmosphere(ctx);
-    }
-  }
 }
 
 /**
- * Drive the chord from one Heliodrome frame.
- * Call with visible (non-hidden) lanes from computeOrreryState.
+ * Drive the chord from live cycle lanes (app-wide ticker or Heliodrome canvas).
+ * Call with lanes from computeOrreryState.
  */
 export function tickHeliodromeChord(lanes: OrreryLaneState[], hapticsOn: boolean): void {
   if (!heliodromeChordWanted) return;
-  if (isClockAudioSilenced() || isClockTimeFrozen()) {
+  if (isClockAudioSilenced() || isClockTimeFrozen() || isSymphonyDucked()) {
     if (runtime) {
       const t = runtime.ctx.currentTime;
       runtime.whirBus.gain.setTargetAtTime(0.0001, t, 0.05);
@@ -562,8 +556,12 @@ export function orderStringsForTest(lanes: OrreryLaneState[]) {
   return orderStrings(lanes);
 }
 
-// Wire stone mute without circular imports at call sites.
+// Wire stone mute + Aulos duck without circular imports at call sites.
 if (typeof window !== "undefined") {
   onClockAudioMute(() => silenceHeliodromeChord());
   onClockAudioUnmute(() => maybeRestartHeliodromeChord());
+  subscribeSymphonyDuck(ducked => {
+    if (ducked) silenceHeliodromeChord();
+    else maybeRestartHeliodromeChord();
+  });
 }

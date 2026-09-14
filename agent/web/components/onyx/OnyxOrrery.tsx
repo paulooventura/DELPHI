@@ -15,11 +15,6 @@ import {
   playScrubTick,
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
-import {
-  startHeliodromeChord,
-  stopHeliodromeChord,
-  tickHeliodromeChord,
-} from "../../lib/heliodromeChord";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
   CENTER_ONLY_LANE_IDS,
@@ -132,9 +127,8 @@ export function OnyxOrrery({
   }, [frozen]);
 
   useEffect(() => {
+    // Chord is armed app-wide by useClockSfx; Heliodrome only ensures AudioContext is live.
     onArmAudio?.();
-    void startHeliodromeChord();
-    return () => stopHeliodromeChord();
   }, [onArmAudio]);
 
   useEffect(() => {
@@ -192,10 +186,6 @@ export function OnyxOrrery({
       const hide = hiddenRef.current;
       const lanes = allLanes.filter(l => l.id !== "wuku-tzolkin" && !hide.has(l.id));
       lanesRef.current = lanes;
-
-      if (!frozenRef.current) {
-        tickHeliodromeChord(lanes, hapticsRef.current);
-      }
 
       nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
 

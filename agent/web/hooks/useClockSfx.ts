@@ -33,7 +33,8 @@ import {
   unmuteClockAudio,
   unparkClockAudio,
 } from "../lib/clockSfx";
-import { isHeliodromeChordActive, isHeliodromeChordWanted, startHeliodromeChord } from "../lib/heliodromeChord";
+import { isHeliodromeChordActive, startHeliodromeChord, stopHeliodromeChord, tickHeliodromeChord } from "../lib/heliodromeChord";
+import { computeOrreryState } from "../lib/lore/orreryLanes";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
 
 export type ClockObserver = { lat: number; lon: number };
@@ -88,6 +89,7 @@ export function useClockSfx(
   useEffect(() => {
     if (!enabled) {
       muteClockAudio({ fadeMs: 180 });
+      stopHeliodromeChord();
       setActive(false);
       return;
     }
@@ -102,7 +104,8 @@ export function useClockSfx(
       syncChimeRefs(refs);
       unparkClockAudio();
       unmuteClockAudio();
-      if (isHeliodromeChordWanted()) void startHeliodromeChord();
+      // Heliodrome NOW-Chord stays armed app-wide (pauses only for Aulos / freeze / stone).
+      void startHeliodromeChord();
       // Runway film bed (OnyxSymphonyBed) is the continuous pad — skip Schumann
       // so home soundtrack + Heliodrome chord can layer as the symphony.
       setActive(true);
@@ -176,6 +179,16 @@ export function useClockSfx(
 
     const loop = () => {
       if (!alive) return;
+      const obs = readObserver();
+      // Drive NOW-Chord every frame app-wide (freeze / Aulos duck handled inside tick).
+      if (enabledRef.current && document.visibilityState !== "hidden") {
+        const { lanes } = computeOrreryState(new Date(), obs.lat, obs.lon);
+        tickHeliodromeChord(
+          lanes.filter(l => l.id !== "wuku-tzolkin"),
+          enabledRef.current,
+        );
+      }
+
       if (
         !enabledRef.current ||
         document.visibilityState === "hidden" ||
@@ -198,7 +211,7 @@ export function useClockSfx(
         const hr = d.getHours();
 
         if (sec !== lastSec.current) {
-          // Heliodrome NOW-Chord owns seconds while open (tic-tac string).
+          // Heliodrome NOW-Chord owns seconds while the chord is ringing.
           if (!isHeliodromeChordActive()) playSecondTick(ctx, sec);
           lastSec.current = sec;
 
@@ -212,7 +225,6 @@ export function useClockSfx(
           }
         }
 
-        const obs = readObserver();
         const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
         const prev = lastMarks.current;
         if (
@@ -257,7 +269,7 @@ export function useClockSfx(
       });
       unparkClockAudio();
       unmuteClockAudio();
-      if (isHeliodromeChordWanted()) void startHeliodromeChord();
+      void startHeliodromeChord();
       // Runway film bed (OnyxSymphonyBed) is the continuous pad — skip Schumann
       // so home soundtrack + Heliodrome chord can layer as the symphony.
       setActive(true);

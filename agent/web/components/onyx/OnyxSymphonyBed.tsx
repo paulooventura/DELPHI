@@ -3,7 +3,8 @@
 /**
  * Pneuma Mundi symphony bed — Omphalos Runway soundtrack.
  * Mounted above chamber routes so it keeps playing everywhere and layers with
- * the Heliodrome NOW-Chord (Web Audio). Visual plate stays on OnyxHomeFilm (muted).
+ * the Heliodrome NOW-Chord (Web Audio), which also stays armed app-wide.
+ * Visual plate stays on OnyxHomeFilm (muted).
  *
  * Source: public/pneuma-home-bg.mp4 — encoded with end→start video/audio crossfade
  * so HTML5 loop joins without a click or flash.

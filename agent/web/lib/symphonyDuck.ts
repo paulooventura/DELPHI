@@ -1,5 +1,6 @@
 /**
- * Soft-duck the Omphalos symphony bed while Aulos of Delphi is the lead vocal.
+ * Soft-duck the Omphalos film bed (and pause Heliodrome NOW-Chord) while
+ * Aulos of Delphi is the lead vocal.
  */
 
 type Listener = (ducked: boolean) => void;
