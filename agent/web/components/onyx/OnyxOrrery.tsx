@@ -15,6 +15,7 @@ import {
   playScrubTick,
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
+import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
   CENTER_ONLY_LANE_IDS,
@@ -125,6 +126,11 @@ export function OnyxOrrery({
     }
     return () => setClockTimeFrozen(false);
   }, [frozen]);
+
+  useEffect(() => {
+    // Keep NOW-Chord voices in sync with scientific / cultural / mystical + toggles.
+    setHeliodromeHiddenLanes(hidden);
+  }, [hidden]);
 
   useEffect(() => {
     // Chord is armed app-wide by useClockSfx; Heliodrome only ensures AudioContext is live.

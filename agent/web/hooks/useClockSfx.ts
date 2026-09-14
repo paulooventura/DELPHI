@@ -34,6 +34,7 @@ import {
   unparkClockAudio,
 } from "../lib/clockSfx";
 import { isHeliodromeChordActive, startHeliodromeChord, stopHeliodromeChord, tickHeliodromeChord } from "../lib/heliodromeChord";
+import { audibleHeliodromeLanes } from "../lib/heliodromeLaneVoice";
 import { computeOrreryState } from "../lib/lore/orreryLanes";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
 
@@ -183,10 +184,7 @@ export function useClockSfx(
       // Drive NOW-Chord every frame app-wide (freeze / Aulos duck handled inside tick).
       if (enabledRef.current && document.visibilityState !== "hidden") {
         const { lanes } = computeOrreryState(new Date(), obs.lat, obs.lon);
-        tickHeliodromeChord(
-          lanes.filter(l => l.id !== "wuku-tzolkin"),
-          enabledRef.current,
-        );
+        tickHeliodromeChord(audibleHeliodromeLanes(lanes), enabledRef.current);
       }
 
       if (
