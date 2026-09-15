@@ -1,12 +1,14 @@
 "use client";
 
 /**
- * After splash, once per app open until Allow access is tapped.
- * Backdrop: Paulo’s locked-off sacred-void film (replaces still), with its
- * own dissolve soundtrack via AudioBus — never hard-cut.
+ * Permission screen after splash:
+ * Locked-off void film plays once → freezes on last frame.
+ * At ~3/4 duration the purple octagon crystal fades in; “Allow access”
+ * rises from its center slightly later and keeps glowing until tap.
+ * Soundtrack dissolves via AudioBus delay tail (no hard cut).
  */
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { getClockAudio, resumeClockAudio } from "../../lib/clockSfx";
 import {
@@ -19,6 +21,11 @@ import {
 
 const VOID_VIDEO = `/pneuma-boot-void.mp4?v=${DELPHI_BUILD}`;
 const VOID_AUDIO = `/pneuma-boot-void-audio.m4a?v=${DELPHI_BUILD}`;
+const CRYSTAL = `/allow-access-crystal.png?v=${DELPHI_BUILD}`;
+
+/** Crystal reveal at 75% of clip; phrase shortly after. */
+const CRYSTAL_AT = 0.75;
+const PHRASE_AFTER_CRYSTAL_S = 0.55;
 
 export function DeviceAccessGate({
   onAllow,
@@ -30,14 +37,75 @@ export function DeviceAccessGate({
   const videoRef = useRef<HTMLVideoElement>(null);
   const srcRef = useRef<AudioBufferSourceNode | null>(null);
   const dissolveRef = useRef<((onDone?: () => void) => void) | null>(null);
+  const crystalTimer = useRef<number | null>(null);
+  const phraseTimer = useRef<number | null>(null);
+  const [crystalOn, setCrystalOn] = useState(false);
+  const [phraseOn, setPhraseOn] = useState(false);
+  const [frozen, setFrozen] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const v = videoRef.current;
+
+    const clearCueTimers = () => {
+      if (crystalTimer.current != null) {
+        window.clearTimeout(crystalTimer.current);
+        crystalTimer.current = null;
+      }
+      if (phraseTimer.current != null) {
+        window.clearTimeout(phraseTimer.current);
+        phraseTimer.current = null;
+      }
+    };
+
+    const scheduleOverlays = (durationS: number) => {
+      clearCueTimers();
+      const crystalMs = Math.max(0, durationS * CRYSTAL_AT * 1000);
+      const phraseMs = crystalMs + PHRASE_AFTER_CRYSTAL_S * 1000;
+      crystalTimer.current = window.setTimeout(() => {
+        if (!cancelled) setCrystalOn(true);
+      }, crystalMs);
+      phraseTimer.current = window.setTimeout(() => {
+        if (!cancelled) setPhraseOn(true);
+      }, phraseMs);
+    };
+
+    const freezeLastFrame = () => {
+      if (!v || cancelled) return;
+      try {
+        if (Number.isFinite(v.duration) && v.duration > 0) {
+          v.currentTime = Math.max(0, v.duration - 0.05);
+        }
+      } catch {
+        /* ignore */
+      }
+      try {
+        v.pause();
+      } catch {
+        /* ignore */
+      }
+      setFrozen(true);
+      setCrystalOn(true);
+      setPhraseOn(true);
+    };
+
+    const onMeta = () => {
+      if (cancelled || !v) return;
+      const d = Number.isFinite(v.duration) && v.duration > 0 ? v.duration : 10;
+      scheduleOverlays(d);
+    };
+    const onEnded = () => freezeLastFrame();
+
     if (v) {
       v.muted = true;
-      v.loop = true;
-      void v.play().catch(() => {});
+      v.loop = false;
+      v.playsInline = true;
+      v.addEventListener("loadedmetadata", onMeta);
+      v.addEventListener("ended", onEnded);
+      if (v.readyState >= 1) onMeta();
+      void v.play().catch(() => {
+        scheduleOverlays(0.4);
+      });
     }
 
     (async () => {
@@ -49,7 +117,6 @@ export function DeviceAccessGate({
         const buf = await ctx.decodeAudioData(await res.arrayBuffer());
         if (cancelled) return;
 
-        // Ensure splash channel is clear before void bed.
         fadeOut("splash", 80);
         const src = ctx.createBufferSource();
         src.buffer = buf;
@@ -74,6 +141,11 @@ export function DeviceAccessGate({
 
     return () => {
       cancelled = true;
+      clearCueTimers();
+      if (v) {
+        v.removeEventListener("loadedmetadata", onMeta);
+        v.removeEventListener("ended", onEnded);
+      }
       const dissolve = dissolveRef.current;
       dissolveRef.current = null;
       if (dissolve) {
@@ -99,10 +171,10 @@ export function DeviceAccessGate({
 
   return (
     <div className="onyx-root" role="dialog" aria-label="Allow location and sensors">
-      <div className="onyx-device onyx-access-gate">
+      <div className={`onyx-device onyx-access-gate${frozen ? " frozen" : ""}`}>
         <button
           type="button"
-          className={`onyx-access-cta${busy ? " busy" : ""}`}
+          className={`onyx-access-cta${busy ? " busy" : ""}${phraseOn ? " lit" : ""}`}
           disabled={busy}
           onClick={onAllow}
         >
@@ -112,12 +184,17 @@ export function DeviceAccessGate({
             src={VOID_VIDEO}
             autoPlay
             muted
-            loop
             playsInline
             preload="auto"
             aria-hidden
           />
-          <span className="onyx-access-cta-label">
+          <img
+            className={`onyx-access-crystal${crystalOn ? " on" : ""}`}
+            src={CRYSTAL}
+            alt=""
+            draggable={false}
+          />
+          <span className={`onyx-access-cta-label${phraseOn ? " on" : ""}`}>
             {busy ? "Requesting…" : "Allow access"}
           </span>
         </button>
