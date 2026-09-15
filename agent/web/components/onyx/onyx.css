@@ -309,6 +309,11 @@ html.chorus-embed .onyx-root {
   animation: onyx-slowpush 12s ease-out forwards;
 }
 .onyx-sky-splash-film img.onyx-film-ready { opacity: 1; }
+.onyx-splash-only {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
+}
 .onyx-splash-only > .onyx-splash-wordmark {
   position: absolute;
   left: 0;

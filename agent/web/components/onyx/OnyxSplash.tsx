@@ -16,6 +16,10 @@ import {
  *   A historical → B Pythia → C stairs → Allow gate (void film).
  * Each clip plays ONLY its own soundtrack through AudioBus splash channel,
  * with fade-in + delay/reverb dissolve on end — never overlapping another clip.
+ *
+ * Mobile: first tap must resume AudioContext in the same turn as the gesture.
+ * Visual unlock must NOT wait on audio fetch/decode — otherwise a failed or
+ * slow bed leaves “Tap to begin” dead.
  */
 
 type ClipDef = { video: string; audio: string };
@@ -117,19 +121,26 @@ export function OnyxSplash({
     const hit = audioCache.current.get(url);
     if (hit) return hit;
     const res = await fetch(url);
+    if (!res.ok) throw new Error(`audio fetch ${res.status}`);
     const buf = await ctx.decodeAudioData(await res.arrayBuffer());
     audioCache.current.set(url, buf);
     return buf;
   };
 
-  /** Play ONLY this clip's audio — dissolves any previous first. */
+  /** Play ONLY this clip's audio — never blocks visual progress. */
   const startClipAudio = async (clipIdx: number) => {
     const clip = CLIPS[clipIdx];
     if (!clip) return false;
-    const ctx = await resumeClockAudio();
+    const ctx = getClockAudio() ?? (await resumeClockAudio());
     if (!ctx) return false;
+    if (ctx.state === "suspended") {
+      try {
+        await ctx.resume();
+      } catch {
+        return false;
+      }
+    }
 
-    // Hard-clear previous source so another clip never bleeds under this one.
     stopBootAudio(true);
     ensureAudioBus(ctx);
 
@@ -160,7 +171,11 @@ export function OnyxSplash({
     return true;
   };
 
-  const unlockAndRestartOpen = async () => {
+  /**
+   * First tap: unlock in the gesture turn (sync resume), then restart clip A.
+   * Audio bed is best-effort — never gate the UI on decode success.
+   */
+  const unlockAndRestartOpen = () => {
     if (entered.current || audioUnlocked.current || unlocking.current) return;
     unlocking.current = true;
 
@@ -170,16 +185,17 @@ export function OnyxSplash({
     }
     phaseRef.current = "a";
 
-    const v = videoRef.current;
-    if (!v) {
-      unlocking.current = false;
-      return;
+    // Same-turn unlock — critical on iOS Safari / Chrome.
+    const ctx = getClockAudio();
+    if (ctx?.state === "suspended") {
+      void ctx.resume().catch(() => {});
     }
-
-    const ok = await startClipAudio(0);
-    if (!ok) {
-      unlocking.current = false;
-      return;
+    if (ctx) {
+      try {
+        ensureAudioBus(ctx);
+      } catch {
+        /* ignore */
+      }
     }
 
     audioUnlocked.current = true;
@@ -187,32 +203,48 @@ export function OnyxSplash({
     setVeilOn(false);
     setVideoReady(true);
 
+    const v = videoRef.current;
+    if (!v) {
+      unlocking.current = false;
+      return;
+    }
+
+    // Fire audio without awaiting — visual path continues either way.
+    void startClipAudio(0);
+
+    const kickVideo = () => {
+      try {
+        v.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+      playMutedVideo(v);
+      unlocking.current = false;
+    };
+
     if (!v.src.includes("pneuma-boot-historical")) {
       v.src = CLIPS[0]!.video;
-      await new Promise<void>(resolve => {
-        const done = () => {
-          v.removeEventListener("loadeddata", done);
-          resolve();
-        };
-        v.addEventListener("loadeddata", done);
-        v.load();
-      });
+      const done = () => {
+        v.removeEventListener("loadeddata", done);
+        kickVideo();
+      };
+      v.addEventListener("loadeddata", done);
+      v.load();
+      // Safety: never leave unlocking=true if loadeddata never fires.
+      window.setTimeout(() => {
+        if (unlocking.current) kickVideo();
+      }, 1200);
+      return;
     }
 
-    try {
-      v.currentTime = 0;
-    } catch {
-      /* ignore */
-    }
-    playMutedVideo(v);
-    unlocking.current = false;
+    kickVideo();
   };
 
-  const onRootPointer = (e: React.PointerEvent) => {
+  const onBeginGesture = (e: React.SyntheticEvent) => {
     if (entered.current) return;
     e.preventDefault();
     if (!audioUnlocked.current) {
-      void unlockAndRestartOpen();
+      unlockAndRestartOpen();
       return;
     }
     finish(true);
@@ -238,7 +270,6 @@ export function OnyxSplash({
         if (!entered.current) setVeilOn(false);
       }, 120);
       playMutedVideo(v);
-      // Fresh bed for this clip only (clears any leftover).
       if (audioUnlocked.current) void startClipAudio(clipIdx);
     };
 
@@ -295,12 +326,16 @@ export function OnyxSplash({
     let cancelled = false;
     (async () => {
       try {
+        // Prefetch after a gesture when possible; still try quiet warm-up.
         const ctx = getClockAudio();
         if (!ctx) return;
-        // Prefetch all three beds so hand-offs stay clean.
         for (const clip of CLIPS) {
           if (cancelled) return;
-          await ensureClipBuffer(ctx, clip.audio);
+          try {
+            await ensureClipBuffer(ctx, clip.audio);
+          } catch {
+            /* unlock path retries */
+          }
         }
       } catch {
         /* unlock path will retry */
@@ -337,7 +372,9 @@ export function OnyxSplash({
       className="onyx-root"
       role="dialog"
       aria-label="Pneuma Mundi splash"
-      onPointerDown={onRootPointer}
+      onPointerDown={onBeginGesture}
+      onTouchStart={onBeginGesture}
+      onClick={onBeginGesture}
     >
       <div className="onyx-device onyx-splash-only">
         <div className="onyx-film">
