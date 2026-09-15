@@ -6,7 +6,10 @@ import { DELPHI_BUILD } from "../../lib/buildStamp";
 /**
  * Boot: black → historical open (audio 0→100% / 1.5s) → end hold →
  * Pneuma Mundi title film → access gate.
- * Tap skips the whole sequence (and primes iOS access on the gesture).
+ *
+ * Cold loads usually block unmuted autoplay. We start the picture muted,
+ * then unlock sound on the first tap (restart clip A + fade) instead of
+ * skipping. A later tap still skips the whole sequence.
  */
 
 const CLIP_A = `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`;
@@ -51,6 +54,8 @@ export function OnyxSplash({
   const phaseRef = useRef<"a" | "hold" | "b">("a");
   const fadeCancel = useRef({ cancelled: false });
   const holdTimer = useRef<number | null>(null);
+  /** True until unmuted playback has been granted (autoplay or gesture). */
+  const audioUnlocked = useRef(false);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
 
@@ -74,16 +79,18 @@ export function OnyxSplash({
     onEnter();
   };
 
-  const playWithAudioFade = (v: HTMLVideoElement, fadeIn: boolean) => {
+  const playWithAudioFade = (
+    v: HTMLVideoElement,
+    fadeIn: boolean,
+    opts?: { forceMuted?: boolean },
+  ) => {
     fadeCancel.current.cancelled = true;
     fadeCancel.current = { cancelled: false };
     const cancel = fadeCancel.current;
 
     v.playsInline = true;
-    v.muted = false;
-    v.volume = fadeIn ? 0 : 1;
 
-    const startMutedFallback = () => {
+    const startMuted = () => {
       v.muted = true;
       v.volume = 1;
       void v.play().catch(() => {
@@ -91,13 +98,80 @@ export function OnyxSplash({
       });
     };
 
+    if (opts?.forceMuted) {
+      startMuted();
+      return;
+    }
+
+    v.muted = false;
+    v.volume = fadeIn ? 0 : 1;
+
     void v
       .play()
       .then(() => {
         if (cancel.cancelled) return;
+        audioUnlocked.current = true;
         if (fadeIn) rampVolume(v, 0, 1, AUDIO_FADE_MS, cancel);
       })
-      .catch(startMutedFallback);
+      .catch(startMuted);
+  };
+
+  /** First user gesture: restart open clip with audible fade (browser unlock). */
+  const unlockAudioFromGesture = () => {
+    const v = videoRef.current;
+    if (!v || entered.current || audioUnlocked.current) return;
+
+    if (holdTimer.current != null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+
+    phaseRef.current = "a";
+    fadeCancel.current.cancelled = true;
+    fadeCancel.current = { cancelled: false };
+    const cancel = fadeCancel.current;
+
+    setVeilOn(false);
+    setVideoReady(true);
+
+    const beginAudible = () => {
+      v.removeEventListener("loadeddata", beginAudible);
+      if (entered.current) return;
+      v.currentTime = 0;
+      v.muted = false;
+      v.volume = 0;
+      void v
+        .play()
+        .then(() => {
+          if (cancel.cancelled) return;
+          audioUnlocked.current = true;
+          rampVolume(v, 0, 1, AUDIO_FADE_MS, cancel);
+        })
+        .catch(() => {
+          /* still blocked — leave muted picture running */
+          v.muted = true;
+          v.volume = 1;
+          void v.play().catch(() => {});
+        });
+    };
+
+    if (!v.src.includes("pneuma-boot-historical")) {
+      v.src = CLIP_A;
+      v.load();
+      v.addEventListener("loadeddata", beginAudible);
+      return;
+    }
+
+    beginAudible();
+  };
+
+  const onRootPointer = () => {
+    if (entered.current) return;
+    if (!audioUnlocked.current && phaseRef.current !== "b") {
+      unlockAudioFromGesture();
+      return;
+    }
+    finish(true);
   };
 
   const cueClipB = () => {
@@ -120,7 +194,11 @@ export function OnyxSplash({
       window.setTimeout(() => {
         if (!entered.current) setVeilOn(false);
       }, 120);
-      playWithAudioFade(v, true);
+      if (audioUnlocked.current) {
+        playWithAudioFade(v, true);
+      } else {
+        playWithAudioFade(v, false, { forceMuted: true });
+      }
     };
 
     v.pause();
@@ -146,6 +224,8 @@ export function OnyxSplash({
     const v = videoRef.current;
     if (!v) return;
     v.src = CLIP_A;
+    // Prefer audible open; most cold browsers reject this and we fall muted
+    // until the first tap unlocks (see onRootPointer).
     playWithAudioFade(v, true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -175,7 +255,7 @@ export function OnyxSplash({
       className="onyx-root"
       role="dialog"
       aria-label="Pneuma Mundi splash"
-      onClick={() => finish(true)}
+      onPointerDown={onRootPointer}
     >
       <div className="onyx-device onyx-splash-only">
         <div className="onyx-film">
