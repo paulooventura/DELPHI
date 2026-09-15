@@ -373,15 +373,6 @@ html.chorus-embed .onyx-root {
   object-position: center center;
   pointer-events: none;
 }
-/* App-wide Runway soundtrack — persists across chambers under the NOW-Chord */
-.onyx-symphony-bed {
-  position: fixed;
-  width: 1px;
-  height: 1px;
-  left: -9999px;
-  opacity: 0;
-  pointer-events: none;
-}
 .onyx-yy-home .onyx-home-vision {
   position: absolute;
   inset: 0;
