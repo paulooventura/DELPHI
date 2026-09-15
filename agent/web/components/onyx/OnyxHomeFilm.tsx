@@ -5,8 +5,7 @@ import { DELPHI_BUILD } from "../../lib/buildStamp";
 
 /**
  * Home street background — Paulo’s Runway Max loop (public/pneuma-home-bg.mp4).
- * Visual only (always muted). Soundtrack is OnyxSymphonyBed — stays on across chambers
- * and layers with the Heliodrome NOW-Chord as the app symphony.
+ * Visual only (always muted). App audio is Heliodrome NOW-Chord (+ Aulos on demand).
  * File is end→start crossfaded so loop joins without a flash.
  */
 export function OnyxHomeFilm() {

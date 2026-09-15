@@ -376,8 +376,7 @@ export async function startHeliodromeChord(): Promise<void> {
   if (runtime?.ctx === ctx) return;
 
   stopHeliodromeChordGraph();
-  // Film soundtrack (OnyxSymphonyBed) keeps playing — chord layers on top.
-  // Soften Schumann so the Runway bed + NOW-Chord stay the audible symphony.
+  // Soften Schumann so the NOW-Chord is the clear app voice (no film bed pad).
   if (isSchumannAtmosphereRunning()) stopSchumannAtmosphere({ fadeSec: 0.4 });
 
   const master = ctx.createGain();

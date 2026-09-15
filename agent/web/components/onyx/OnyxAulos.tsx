@@ -2,7 +2,7 @@
 
 /**
  * Homescreen Aulos of Delphi — tap to play the hymn and reveal lyrics.
- * Ducks the Omphalos symphony bed while the vocal lead is on.
+ * Ducks the Heliodrome NOW-Chord while the vocal lead is on.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";

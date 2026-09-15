@@ -105,10 +105,8 @@ export function useClockSfx(
       syncChimeRefs(refs);
       unparkClockAudio();
       unmuteClockAudio();
-      // Heliodrome NOW-Chord stays armed app-wide (pauses only for Aulos / freeze / stone).
+      // Heliodrome NOW-Chord is the continuous app voice — skip Schumann pad.
       void startHeliodromeChord();
-      // Runway film bed (OnyxSymphonyBed) is the continuous pad — skip Schumann
-      // so home soundtrack + Heliodrome chord can layer as the symphony.
       setActive(true);
     };
 
@@ -268,8 +266,7 @@ export function useClockSfx(
       unparkClockAudio();
       unmuteClockAudio();
       void startHeliodromeChord();
-      // Runway film bed (OnyxSymphonyBed) is the continuous pad — skip Schumann
-      // so home soundtrack + Heliodrome chord can layer as the symphony.
+      // Heliodrome NOW-Chord is the continuous app voice — skip Schumann pad.
       setActive(true);
     };
     if (ctx.state === "suspended") {
