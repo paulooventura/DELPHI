@@ -17,7 +17,6 @@ import { tzolkinPlugin } from "../worldCycles/plugins/tzolkin";
 import { ayanamsa, localSiderealTime } from "../../services/astronomyEngine";
 import { byId, type QualiaEntry } from "./qualia";
 import {
-  CHALDEAN_PLANETS,
   solarDayWindow,
   unequalMuhurta,
   unequalPlanetaryHour,
@@ -49,9 +48,6 @@ const NK = [
 const PD = [
   "pd-sun", "pd-moon", "pd-mars", "pd-mercury", "pd-jupiter", "pd-venus", "pd-saturn",
 ] as const;
-
-/** Chaldean order for planetary hours — re-export for callers. */
-const CHALDEAN = CHALDEAN_PLANETS;
 
 const SHI_BRANCH = [
   "zi", "chou", "yin", "mao", "chen", "si", "wu", "wei", "shen", "you", "xu", "hai",
