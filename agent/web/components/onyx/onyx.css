@@ -3329,6 +3329,62 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   gap: clamp(8px, 1.5vh, 14px);
   padding-bottom: 4px;
 }
+.onyx-orrery-teach-kicker {
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: rgba(196, 184, 255, 0.72);
+}
+.onyx-orrery-teach-title {
+  margin: 0;
+  font-family: var(--onyx-display, Georgia, "Times New Roman", serif);
+  font-size: clamp(22px, 5.8vw, 34px);
+  font-weight: 500;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  color: var(--onyx-ink, #f4f0ff);
+  text-wrap: balance;
+}
+.onyx-orrery-teach-now {
+  margin: 0;
+  font-size: clamp(20px, 5.2vw, 32px);
+  line-height: 1.2;
+  color: rgba(255, 248, 232, 0.96);
+}
+.onyx-orrery-teach-period {
+  margin: 0 0 4px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(180, 168, 220, 0.75);
+}
+.onyx-orrery-teach-facts {
+  width: 100%;
+  margin-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  text-align: left;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(140, 124, 255, 0.16);
+  overflow: hidden;
+}
+.onyx-orrery-teach-facts .onyx-orrery-lore-block {
+  justify-items: start;
+  padding: 14px 16px;
+  gap: 6px;
+}
+.onyx-orrery-teach-facts .onyx-orrery-lore-block + .onyx-orrery-lore-block {
+  padding-top: 14px;
+  border-top: 1px solid rgba(140, 124, 255, 0.14);
+}
+.onyx-orrery-teach-facts .onyx-decomp-source {
+  max-width: none;
+  text-align: left;
+  color: rgba(236, 230, 255, 0.88);
+}
 .onyx-orrery-teach .onyx-eyebrow,
 .onyx-orrery-teach .onyx-layer-lead,
 .onyx-orrery-teach .onyx-layer-meta,

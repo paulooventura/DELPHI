@@ -31,7 +31,8 @@ GainNode envelope. Hard cuts are the pops.
 | `disarmHeliodrome()` | Fade before tear-down |
 | `connectClipWithTail(ctx, src)` | Clip dry + delay dissolve |
 
-Tune times / duck dB in `AUDIO_BUS` (`audioBusConfig.ts`).
+Tune times / duck dB / leave dissolve in `AUDIO_BUS` (`audioBusConfig.ts`).
+`LEAVE_MS` (~560) is the minimum before `AudioContext.suspend()` so hide/close never clips.
 
 ## Contracts
 

@@ -13,22 +13,30 @@ import {
 
 /**
  * Boot film sequence (muted picture; Web Audio unlock on first tap):
- *   A historical open → hold → B Pythia / priestess → hold → C stairs → access gate.
- * Opening soundtrack = decoded historical m4a through AudioBus splash channel
- * (fade in + delay/reverb dissolve on end — never a hard cut).
+ *   A historical → B Pythia → C stairs → Allow gate (void film).
+ * Each clip plays ONLY its own soundtrack through AudioBus splash channel,
+ * with fade-in + delay/reverb dissolve on end — never overlapping another clip.
  */
 
-const CLIPS = [
-  `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`,
-  `/pneuma-boot-pythia.mp4?v=${DELPHI_BUILD}`,
-  `/pneuma-boot-stairs.mp4?v=${DELPHI_BUILD}`,
+type ClipDef = { video: string; audio: string };
+
+const CLIPS: readonly ClipDef[] = [
+  {
+    video: `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`,
+    audio: `/pneuma-boot-historical-audio.m4a?v=${DELPHI_BUILD}`,
+  },
+  {
+    video: `/pneuma-boot-pythia.mp4?v=${DELPHI_BUILD}`,
+    audio: `/pneuma-boot-pythia-audio.m4a?v=${DELPHI_BUILD}`,
+  },
+  {
+    video: `/pneuma-boot-stairs.mp4?v=${DELPHI_BUILD}`,
+    audio: `/pneuma-boot-stairs-audio.m4a?v=${DELPHI_BUILD}`,
+  },
 ] as const;
 
-const CLIP_A_AUDIO = `/pneuma-boot-historical-audio.m4a?v=${DELPHI_BUILD}`;
-
 const END_HOLD_MS = 1500;
-/** Three ~5s clips + holds + tap wait. */
-const SAFETY_MS = 60_000;
+const SAFETY_MS = 75_000;
 
 type Phase = "a" | "hold-ab" | "b" | "hold-bc" | "c";
 
@@ -43,11 +51,12 @@ export function OnyxSplash({
   const videoRef = useRef<HTMLVideoElement>(null);
   const phaseRef = useRef<Phase>("a");
   const holdTimer = useRef<number | null>(null);
-  const audioBufRef = useRef<AudioBuffer | null>(null);
+  const audioCache = useRef<Map<string, AudioBuffer>>(new Map());
   const bufferSrcRef = useRef<AudioBufferSourceNode | null>(null);
   const dissolveRef = useRef<((onDone?: () => void) => void) | null>(null);
   const audioUnlocked = useRef(false);
   const unlocking = useRef(false);
+  const playingClipIdx = useRef(0);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
   const [needTap, setNeedTap] = useState(true);
@@ -104,13 +113,33 @@ export function OnyxSplash({
     void v.play().catch(() => {});
   };
 
-  const startBootAudioFade = async () => {
-    const ctx = await resumeClockAudio();
-    const buf = audioBufRef.current;
-    if (!ctx || !buf) return false;
+  const ensureClipBuffer = async (ctx: AudioContext, url: string) => {
+    const hit = audioCache.current.get(url);
+    if (hit) return hit;
+    const res = await fetch(url);
+    const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+    audioCache.current.set(url, buf);
+    return buf;
+  };
 
+  /** Play ONLY this clip's audio — dissolves any previous first. */
+  const startClipAudio = async (clipIdx: number) => {
+    const clip = CLIPS[clipIdx];
+    if (!clip) return false;
+    const ctx = await resumeClockAudio();
+    if (!ctx) return false;
+
+    // Hard-clear previous source so another clip never bleeds under this one.
     stopBootAudio(true);
     ensureAudioBus(ctx);
+
+    let buf: AudioBuffer;
+    try {
+      buf = await ensureClipBuffer(ctx, clip.audio);
+    } catch {
+      return false;
+    }
+
     const src = ctx.createBufferSource();
     src.buffer = buf;
     const { dry, stopDissolve } = connectClipWithTail(ctx, src);
@@ -127,6 +156,7 @@ export function OnyxSplash({
     src.start(0);
     bufferSrcRef.current = src;
     dissolveRef.current = stopDissolve;
+    playingClipIdx.current = clipIdx;
     return true;
   };
 
@@ -146,19 +176,7 @@ export function OnyxSplash({
       return;
     }
 
-    if (!audioBufRef.current) {
-      try {
-        const ctx = getClockAudio() ?? (await resumeClockAudio());
-        if (ctx) {
-          const res = await fetch(CLIP_A_AUDIO);
-          audioBufRef.current = await ctx.decodeAudioData(await res.arrayBuffer());
-        }
-      } catch {
-        /* unlock path retries play anyway */
-      }
-    }
-
-    const ok = await startBootAudioFade();
+    const ok = await startClipAudio(0);
     if (!ok) {
       unlocking.current = false;
       return;
@@ -170,7 +188,7 @@ export function OnyxSplash({
     setVideoReady(true);
 
     if (!v.src.includes("pneuma-boot-historical")) {
-      v.src = CLIPS[0];
+      v.src = CLIPS[0]!.video;
       await new Promise<void>(resolve => {
         const done = () => {
           v.removeEventListener("loadeddata", done);
@@ -200,10 +218,9 @@ export function OnyxSplash({
     finish(true);
   };
 
-  const cueClip = (next: "b" | "c", src: string) => {
+  const cueClip = (next: "b" | "c", clipIdx: number) => {
     if (entered.current) return;
     phaseRef.current = next;
-    if (next === "b") stopBootAudio(false);
     const v = videoRef.current;
     if (!v) {
       finish(false);
@@ -221,10 +238,12 @@ export function OnyxSplash({
         if (!entered.current) setVeilOn(false);
       }, 120);
       playMutedVideo(v);
+      // Fresh bed for this clip only (clears any leftover).
+      if (audioUnlocked.current) void startClipAudio(clipIdx);
     };
 
     v.pause();
-    v.src = src;
+    v.src = CLIPS[clipIdx]!.video;
     v.load();
     v.addEventListener("loadeddata", onReady);
   };
@@ -248,25 +267,29 @@ export function OnyxSplash({
       stopBootAudio(false);
       holdTimer.current = window.setTimeout(() => {
         holdTimer.current = null;
-        cueClip("b", CLIPS[1]);
+        cueClip("b", 1);
       }, END_HOLD_MS);
       return;
     }
     if (phaseRef.current === "b") {
       phaseRef.current = "hold-bc";
+      stopBootAudio(false);
       holdTimer.current = window.setTimeout(() => {
         holdTimer.current = null;
-        cueClip("c", CLIPS[2]);
+        cueClip("c", 2);
       }, END_HOLD_MS);
       return;
     }
-    if (phaseRef.current === "c") finish(false);
+    if (phaseRef.current === "c") {
+      stopBootAudio(false);
+      finish(false);
+    }
   };
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    v.src = CLIPS[0];
+    v.src = CLIPS[0]!.video;
     playMutedVideo(v);
 
     let cancelled = false;
@@ -274,9 +297,11 @@ export function OnyxSplash({
       try {
         const ctx = getClockAudio();
         if (!ctx) return;
-        const res = await fetch(CLIP_A_AUDIO);
-        const buf = await ctx.decodeAudioData(await res.arrayBuffer());
-        if (!cancelled) audioBufRef.current = buf;
+        // Prefetch all three beds so hand-offs stay clean.
+        for (const clip of CLIPS) {
+          if (cancelled) return;
+          await ensureClipBuffer(ctx, clip.audio);
+        }
       } catch {
         /* unlock path will retry */
       }
@@ -286,6 +311,7 @@ export function OnyxSplash({
       cancelled = true;
       stopBootAudio(true);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

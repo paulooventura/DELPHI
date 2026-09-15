@@ -37,6 +37,7 @@ import { isHeliodromeChordActive, startHeliodromeChord, stopHeliodromeChord, tic
 import { audibleHeliodromeLanes } from "../lib/heliodromeLaneVoice";
 import { computeOrreryState } from "../lib/lore/orreryLanes";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
+import { AUDIO_BUS } from "../lib/audioBus";
 
 export type ClockObserver = { lat: number; lon: number };
 
@@ -89,7 +90,7 @@ export function useClockSfx(
 
   useEffect(() => {
     if (!enabled) {
-      muteClockAudio({ fadeMs: 180 });
+      muteClockAudio({ fadeMs: AUDIO_BUS.LEAVE_MS });
       stopHeliodromeChord();
       setActive(false);
       return;
@@ -149,7 +150,7 @@ export function useClockSfx(
         window.clearTimeout(parkTimer);
         parkTimer = window.setTimeout(() => {
           if (document.visibilityState !== "hidden") return;
-          parkClockAudio({ fadeMs: 100 });
+          parkClockAudio({ fadeMs: AUDIO_BUS.LEAVE_MS });
           setActive(false);
         }, 2000);
         return;
@@ -159,7 +160,7 @@ export function useClockSfx(
 
     const onPageHide = () => {
       window.clearTimeout(parkTimer);
-      parkClockAudio({ fadeMs: 80 });
+      parkClockAudio({ fadeMs: AUDIO_BUS.LEAVE_MS });
       setActive(false);
     };
 

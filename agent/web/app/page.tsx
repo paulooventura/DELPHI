@@ -26,6 +26,7 @@ import { COSMIC_CLOCK_OUTER_RADIUS, type RingSelectMeta } from "../components/Co
 import type { ClockRingData } from "../lib/timeEngine";
 import { RingFocusPanel, zoomForRingRadius, fitMobileClockZoom } from "../components/RingFocusPanel";
 import { muteClockAudio } from "../lib/clockSfx";
+import { AUDIO_BUS } from "../lib/audioBus";
 import { useClockSfx } from "../hooks/useClockSfx";
 import { useCosmicClock } from "../hooks/useCosmicClock";
 import { useSpringValue } from "../hooks/useSpringValue";
@@ -1333,7 +1334,7 @@ export default function Home() {
           localStorage.setItem("delphi-clock-sfx", on ? "1" : "0");
         } catch { /* ignore */ }
         if (on) void enableSfx();
-        else muteClockAudio({ fadeMs: 120 });
+        else muteClockAudio({ fadeMs: AUDIO_BUS.LEAVE_MS });
       }}
       onArmAudio={armAudio}
       sensorProps={{

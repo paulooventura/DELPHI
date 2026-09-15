@@ -666,7 +666,7 @@ export function computeOrreryState(
   const lanesNorthToSouth: OrreryLaneState[] = [
     {
       id: "precession",
-      name: "Great Year",
+      name: "Great Year (precession)",
       cycle: "~25,772 years",
       tier: "measured",
       speedT: 1.2,
@@ -678,7 +678,7 @@ export function computeOrreryState(
     },
     {
       id: "age",
-      name: "Astrological age",
+      name: "Zodiac age (~2150y)",
       cycle: `~${Math.round(AGE_YEARS)} years`,
       tier: "celebrated",
       speedT: 1.16,
@@ -690,7 +690,7 @@ export function computeOrreryState(
     },
     {
       id: "century",
-      name: "Century",
+      name: "Century (100 years)",
       cycle: "100 years",
       tier: "display",
       speedT: 1.12,
@@ -702,7 +702,7 @@ export function computeOrreryState(
     },
     {
       id: "year",
-      name: "Year",
+      name: "Calendar year",
       cycle: "10 years",
       tier: "display",
       speedT: 1.08,
@@ -714,7 +714,7 @@ export function computeOrreryState(
     },
     {
       id: "season",
-      name: "Solar season",
+      name: "Zodiac season (signs)",
       cycle: "~1 year",
       tier: "celebrated",
       speedT: 1.06,
@@ -727,7 +727,7 @@ export function computeOrreryState(
     },
     {
       id: "tzolkin",
-      name: "Tzolk'in",
+      name: "Maya Tzolk'in (260d)",
       cycle: "260 days",
       tier: "celebrated",
       speedT: 1.02,
@@ -740,7 +740,7 @@ export function computeOrreryState(
     },
     {
       id: "dreamspell-kin",
-      name: "Dreamspell kin",
+      name: "Dreamspell kin (260)",
       cycle: "260 days",
       tier: "celebrated",
       speedT: 1.01,
@@ -764,7 +764,7 @@ export function computeOrreryState(
     },
     {
       id: "dreamspell-tone",
-      name: "Dreamspell tone",
+      name: "Dreamspell tone (13)",
       cycle: "13 days",
       tier: "celebrated",
       speedT: 0.99,
@@ -776,7 +776,7 @@ export function computeOrreryState(
     },
     {
       id: "month",
-      name: "Month",
+      name: "Calendar month",
       cycle: "12 months",
       tier: "display",
       speedT: 0.985,
@@ -788,7 +788,7 @@ export function computeOrreryState(
     },
     {
       id: "date",
-      name: "Day of month",
+      name: "Day of the month",
       cycle: `${daysThisMonth} days`,
       tier: "display",
       speedT: 0.96,
@@ -803,7 +803,7 @@ export function computeOrreryState(
     },
     {
       id: "moon",
-      name: "Moon phase",
+      name: "Moon phase (synodic)",
       cycle: "~29.5 days",
       tier: "measured",
       speedT: 0.92,
@@ -816,7 +816,7 @@ export function computeOrreryState(
     },
     {
       id: "nakshatra",
-      name: "Nakshatra",
+      name: "Nakshatra (lunar mansion)",
       cycle: "~27.3 days",
       tier: "measured",
       speedT: 0.88,
@@ -829,7 +829,7 @@ export function computeOrreryState(
     },
     {
       id: "decan",
-      name: "Decan",
+      name: "Egyptian decan (10°)",
       cycle: "~10 days",
       tier: "celebrated",
       speedT: 0.84,
@@ -842,7 +842,7 @@ export function computeOrreryState(
     },
     {
       id: "wuku",
-      name: "Wuku",
+      name: "Javanese–Balinese wuku",
       cycle: "7 days",
       tier: "celebrated",
       speedT: 0.8,
@@ -855,7 +855,7 @@ export function computeOrreryState(
     },
     {
       id: "planetary-day",
-      name: "Planetary day",
+      name: "Planetary weekday",
       cycle: "7 days",
       tier: "celebrated",
       speedT: 0.78,
@@ -868,7 +868,7 @@ export function computeOrreryState(
     },
     {
       id: "pancawara",
-      name: "Pancawara",
+      name: "Javanese 5-day week",
       cycle: "5 days",
       tier: "celebrated",
       speedT: 0.76,
@@ -881,7 +881,7 @@ export function computeOrreryState(
     },
     {
       id: "manzil",
-      name: "Manzil",
+      name: "Arabic manzil (lunar)",
       cycle: "~1 day",
       tier: "celebrated",
       speedT: 0.72,
@@ -894,7 +894,7 @@ export function computeOrreryState(
     },
     {
       id: "numerology",
-      name: "Number",
+      name: "Date numerology",
       cycle: "1 day",
       tier: "celebrated",
       speedT: 0.68,
@@ -906,7 +906,7 @@ export function computeOrreryState(
     },
     {
       id: "day",
-      name: "The day",
+      name: "Civil hours (24h)",
       cycle: "24 h",
       tier: "measured",
       speedT: 0.64,
@@ -922,7 +922,7 @@ export function computeOrreryState(
     },
     {
       id: "shi",
-      name: "Chinese shí",
+      name: "Chinese shí (double-hour)",
       cycle: "2 h",
       tier: "celebrated",
       speedT: 0.55,
@@ -935,7 +935,7 @@ export function computeOrreryState(
     },
     {
       id: "planetary-hour",
-      name: "Planetary hour",
+      name: "Unequal planetary hour",
       cycle: "day / night 1⁄12",
       tier: "celebrated",
       speedT: 0.45,
@@ -948,7 +948,7 @@ export function computeOrreryState(
     },
     {
       id: "muhurta",
-      name: "Muhūrta",
+      name: "Vedic muhūrta",
       cycle: "day/night 1⁄15",
       tier: "celebrated",
       speedT: 0.36,
@@ -961,7 +961,7 @@ export function computeOrreryState(
     },
     {
       id: "ghati",
-      name: "Ghati",
+      name: "Ghati (~24 min)",
       cycle: "~24 min",
       tier: "display",
       speedT: 0.27,
@@ -977,7 +977,7 @@ export function computeOrreryState(
     },
     {
       id: "ke",
-      name: "Kè",
+      name: "Chinese kè (14.4 min)",
       cycle: "14.4 min",
       tier: "display",
       speedT: 0.24,
@@ -1007,7 +1007,7 @@ export function computeOrreryState(
     },
     {
       id: "beat",
-      name: ".beat",
+      name: "Swatch .beat",
       cycle: "86.4 s",
       tier: "display",
       speedT: 0.18,
@@ -1019,7 +1019,7 @@ export function computeOrreryState(
     },
     {
       id: "pala",
-      name: "Pala",
+      name: "Pala (~24 s)",
       cycle: "~24 s",
       tier: "display",
       speedT: 0.16,
@@ -1035,7 +1035,7 @@ export function computeOrreryState(
     },
     {
       id: "prana",
-      name: "Prāṇa",
+      name: "Prāṇa (~4 s breath)",
       cycle: "~4 s",
       tier: "display",
       speedT: 0.13,
@@ -1051,7 +1051,7 @@ export function computeOrreryState(
     },
     {
       id: "helek",
-      name: "Helek",
+      name: "Helek (Hebrew 1/1080h)",
       cycle: "3⅓ s",
       tier: "display",
       speedT: 0.11,
@@ -1082,7 +1082,7 @@ export function computeOrreryState(
     },
     {
       id: "rega",
-      name: "Rega",
+      name: "Rega (1/76 helek)",
       cycle: "~44 ms",
       tier: "display",
       speedT: 0.04,

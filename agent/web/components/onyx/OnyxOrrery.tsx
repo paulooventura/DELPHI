@@ -38,39 +38,39 @@ const HELIODROME_ZOOM_MAX = 4.5;
 const CENTER_ONLY = new Set<OrreryLaneId>(CENTER_ONLY_LANE_IDS);
 
 const LANE_LABEL: Record<OrreryLaneId, string> = {
-  precession: "Great Year",
-  age: "Astrological age",
-  century: "Century",
-  year: "Year",
-  season: "Solar season",
-  tzolkin: "Tzolk'in",
-  "dreamspell-kin": "Dreamspell kin",
-  "dreamspell-tone": "Dreamspell tone",
-  "dreamspell-wavespell": "Wavespell",
-  month: "Month",
-  date: "Day of month",
-  moon: "Moon phase",
-  nakshatra: "Nakshatra",
-  decan: "Decan",
-  wuku: "Wuku",
+  precession: "Great Year (precession)",
+  age: "Zodiac age (~2150y)",
+  century: "Century (100 years)",
+  year: "Calendar year",
+  season: "Zodiac season (signs)",
+  tzolkin: "Maya Tzolk'in (260d)",
+  "dreamspell-kin": "Dreamspell kin (260)",
+  "dreamspell-tone": "Dreamspell tone (13)",
+  "dreamspell-wavespell": "Dreamspell wavespell",
+  month: "Calendar month",
+  date: "Day of the month",
+  moon: "Moon phase (synodic)",
+  nakshatra: "Nakshatra (lunar mansion)",
+  decan: "Egyptian decan (10°)",
+  wuku: "Javanese–Balinese wuku",
   "wuku-tzolkin": "Wuku · Tzolk'in",
-  "planetary-day": "Planetary day",
-  pancawara: "Pancawara",
-  manzil: "Manzil",
-  numerology: "Number",
-  day: "Hours",
-  shi: "Chinese shí",
-  "planetary-hour": "Planetary hour",
-  muhurta: "Muhūrta",
-  ghati: "Ghati",
-  ke: "Kè",
+  "planetary-day": "Planetary weekday",
+  pancawara: "Javanese 5-day week",
+  manzil: "Arabic manzil (lunar)",
+  numerology: "Date numerology",
+  day: "Civil hours (24h)",
+  shi: "Chinese shí (double-hour)",
+  "planetary-hour": "Unequal planetary hour",
+  muhurta: "Vedic muhūrta",
+  ghati: "Ghati (~24 min)",
+  ke: "Chinese kè (14.4 min)",
   min: "Minutes",
-  beat: ".beat",
-  pala: "Pala",
-  prana: "Prāṇa",
-  helek: "Helek",
+  beat: "Swatch .beat",
+  pala: "Pala (~24 s)",
+  prana: "Prāṇa (~4 s breath)",
+  helek: "Helek (Hebrew 1/1080h)",
   sec: "Seconds",
-  rega: "Rega",
+  rega: "Rega (1/76 helek)",
   ms: "Milliseconds",
 };
 
@@ -662,49 +662,57 @@ export function OnyxOrrery({
             >
               <div className="onyx-orrery-teach-body">
                 <div className="onyx-orrery-teach-center">
-                  <p className="onyx-eyebrow">{expanded.name}</p>
+                  <p className="onyx-orrery-teach-kicker">
+                    {expanded.tier === "display"
+                      ? "Display pulse"
+                      : expanded.tier === "measured"
+                        ? "Measured sky"
+                        : "Celebrated count"}
+                  </p>
+                  <h2 className="onyx-orrery-teach-title">{expanded.name}</h2>
                   {expanded.cells[expanded.index]?.glyph && (
                     <p className="onyx-orrery-teach-glyph">
                       {expanded.cells[expanded.index]!.glyph}
                     </p>
                   )}
-                  <p className="onyx-layer-lead">{expanded.activeLabel}</p>
-                  <p className="onyx-layer-meta">
-                    Cycle · {expanded.cycle}
-                    {" · "}
-                    {expanded.tier === "display"
-                      ? "display pulse"
-                      : expanded.tier}
+                  <p className="onyx-orrery-teach-now">{expanded.activeLabel}</p>
+                  <p className="onyx-orrery-teach-period">
+                    Full cycle · {expanded.cycle}
                   </p>
-                  {expanded.lore && (
-                    <div className="onyx-orrery-lore-block">
-                      <p className="onyx-orrery-lore-label">What it keeps</p>
-                      <p className="onyx-decomp-source">{expanded.lore}</p>
-                    </div>
-                  )}
-                  {expanded.origin && (
-                    <div className="onyx-orrery-lore-block">
-                      <p className="onyx-orrery-lore-label">Origin</p>
-                      <p className="onyx-decomp-source">{expanded.origin}</p>
-                    </div>
-                  )}
-                  {expanded.usedSince && (
-                    <div className="onyx-orrery-lore-block">
-                      <p className="onyx-orrery-lore-label">Used since</p>
-                      <p className="onyx-decomp-source">{expanded.usedSince}</p>
-                    </div>
-                  )}
-                  {expanded.curious && (
-                    <div className="onyx-orrery-lore-block">
-                      <p className="onyx-orrery-lore-label">Curious fact</p>
-                      <p className="onyx-decomp-source">{expanded.curious}</p>
-                    </div>
-                  )}
-                  {expanded.source && (
-                    <p className="onyx-layer-meta onyx-orrery-teach-source">
-                      {expanded.source}
-                    </p>
-                  )}
+                  <div className="onyx-orrery-teach-facts">
+                    {expanded.lore && (
+                      <div className="onyx-orrery-lore-block">
+                        <p className="onyx-orrery-lore-label">What it keeps</p>
+                        <p className="onyx-decomp-source">{expanded.lore}</p>
+                      </div>
+                    )}
+                    {expanded.origin && (
+                      <div className="onyx-orrery-lore-block">
+                        <p className="onyx-orrery-lore-label">Origin</p>
+                        <p className="onyx-decomp-source">{expanded.origin}</p>
+                      </div>
+                    )}
+                    {expanded.usedSince && (
+                      <div className="onyx-orrery-lore-block">
+                        <p className="onyx-orrery-lore-label">Used since</p>
+                        <p className="onyx-decomp-source">{expanded.usedSince}</p>
+                      </div>
+                    )}
+                    {expanded.curious && (
+                      <div className="onyx-orrery-lore-block">
+                        <p className="onyx-orrery-lore-label">Curious fact</p>
+                        <p className="onyx-decomp-source">{expanded.curious}</p>
+                      </div>
+                    )}
+                    {expanded.source && (
+                      <div className="onyx-orrery-lore-block">
+                        <p className="onyx-orrery-lore-label">Source</p>
+                        <p className="onyx-decomp-source onyx-orrery-teach-source">
+                          {expanded.source}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
               <button

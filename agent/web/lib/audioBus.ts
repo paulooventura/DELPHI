@@ -156,7 +156,6 @@ export function unduck(
   applyChannelLevel(ch, bus.ctx, ms);
 }
 
-/** Master fader (outer ceiling). */
 export function fadeMaster(to: number, ms: number): void {
   if (!bus) return;
   rampGain(
@@ -165,6 +164,22 @@ export function fadeMaster(to: number, ms: number): void {
     ms,
     bus.ctx,
   );
+}
+
+/** Fade every channel + master before suspend (leave app / hide / mute). */
+export function fadeAllForLeave(ms: number = AUDIO_BUS.LEAVE_MS): void {
+  if (!bus) return;
+  const channels: AudioBusChannel[] = ["ticks", "chord", "splash", "bed", "media"];
+  for (const id of channels) fadeOut(id, ms);
+  fadeMaster(0, ms);
+}
+
+/** Restore outer master + tick/bed channels after park (chord re-arms separately). */
+export function restoreAfterLeave(ms: number = AUDIO_BUS.FADE_IN_MS): void {
+  if (!bus) return;
+  fadeMaster(1, ms);
+  fadeIn("ticks", ms, 1);
+  fadeIn("bed", ms, 1);
 }
 
 /**

@@ -1,4 +1,10 @@
-import { ensureAudioBus, audioBusInput, AUDIO_BUS } from "./audioBus";
+import {
+  ensureAudioBus,
+  audioBusInput,
+  AUDIO_BUS,
+  fadeAllForLeave,
+  restoreAfterLeave,
+} from "./audioBus";
 
 let sharedCtx: AudioContext | null = null;
 let sharedNoise: AudioBuffer | null = null;
@@ -666,17 +672,20 @@ export function stopSchumannAtmosphere(opts?: { fadeSec?: number }): void {
 }
 
 /**
- * Soft park for brief tab/visibility flickers — fade + suspend, keep the
- * Schumann bed intact so restore doesn't rebuild (that was the cut/play loop).
+ * Soft park for brief tab/visibility flickers — fade ALL buses (including
+ * Heliodrome chord) then suspend. Keep graphs so restore doesn't rebuild.
  */
 export function parkClockAudio(opts?: { fadeMs?: number }): void {
   if (audioSilenced) return;
-  const fadeMs = opts?.fadeMs ?? AUDIO_BUS.FADE_OUT_MS;
+  const fadeMs = Math.max(opts?.fadeMs ?? AUDIO_BUS.LEAVE_MS, AUDIO_BUS.LEAVE_MS);
   const fadeSec = fadeMs / 1000;
   const epoch = ++muteEpoch;
   audioParked = true;
 
   const ctx = sharedCtx;
+  if (ctx) ensureAudioBus(ctx);
+  fadeAllForLeave(fadeMs);
+
   const t = ctx?.currentTime ?? 0;
   if (sharedMaster && ctx) {
     try {
@@ -723,7 +732,7 @@ export function parkClockAudio(opts?: { fadeMs?: number }): void {
       } catch {
         /* ignore */
       }
-    }, fadeMs + 40);
+    }, fadeMs + 80);
   }
 }
 
@@ -736,12 +745,14 @@ export function unparkClockAudio(): void {
   if (ctx && ctx.state === "suspended") {
     void ctx.resume();
   }
+  if (ctx) ensureAudioBus(ctx);
+  restoreAfterLeave(280);
   const t = ctx?.currentTime ?? 0;
   if (sharedMaster) {
     try {
       sharedMaster.gain.cancelScheduledValues(t);
       sharedMaster.gain.setValueAtTime(Math.max(0.0001, sharedMaster.gain.value), t);
-      sharedMaster.gain.exponentialRampToValueAtTime(MASTER_CEILING, t + 0.2);
+      sharedMaster.gain.exponentialRampToValueAtTime(MASTER_CEILING, t + 0.28);
     } catch {
       try {
         sharedMaster.gain.value = MASTER_CEILING;
@@ -754,7 +765,7 @@ export function unparkClockAudio(): void {
     try {
       sharedBedOut.gain.cancelScheduledValues(t);
       sharedBedOut.gain.setValueAtTime(Math.max(0.0001, sharedBedOut.gain.value), t);
-      sharedBedOut.gain.exponentialRampToValueAtTime(BED_CEILING, t + 0.2);
+      sharedBedOut.gain.exponentialRampToValueAtTime(BED_CEILING, t + 0.28);
     } catch {
       try {
         sharedBedOut.gain.value = BED_CEILING;
@@ -777,10 +788,10 @@ export function unparkClockAudio(): void {
 
 /**
  * Hard mute — stone off / leave app. Tears down the bed.
- * Fade the clock bus out, then stop oscillators / suspend context.
+ * Fade ALL buses (including Heliodrome), then suspend after the dissolve.
  */
 export function muteClockAudio(opts?: { fadeMs?: number }): void {
-  const fadeMs = opts?.fadeMs ?? AUDIO_BUS.FADE_OUT_MS;
+  const fadeMs = Math.max(opts?.fadeMs ?? AUDIO_BUS.LEAVE_MS, AUDIO_BUS.LEAVE_MS);
   const fadeSec = fadeMs / 1000;
   const epoch = ++muteEpoch;
   audioSilenced = true;
@@ -797,6 +808,9 @@ export function muteClockAudio(opts?: { fadeMs?: number }): void {
   // thrashed iOS audio sessions (heard as chopped bed).
 
   const ctx = sharedCtx;
+  if (ctx) ensureAudioBus(ctx);
+  fadeAllForLeave(fadeMs);
+
   const t = ctx?.currentTime ?? 0;
   if (sharedMaster && ctx) {
     try {
@@ -842,7 +856,7 @@ export function muteClockAudio(opts?: { fadeMs?: number }): void {
       } catch {
         /* ignore */
       }
-    }, fadeMs + 40);
+    }, fadeMs + 80);
   }
 }
 
@@ -855,6 +869,10 @@ export function unmuteClockAudio(): void {
   const ctx = sharedCtx;
   if (ctx && ctx.state === "suspended") {
     void ctx.resume();
+  }
+  if (ctx) {
+    ensureAudioBus(ctx);
+    restoreAfterLeave(wasSilenced ? 320 : 80);
   }
   if (sharedBedOut) {
     try {

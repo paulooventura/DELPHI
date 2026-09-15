@@ -13,6 +13,8 @@ export const AUDIO_BUS = {
   LIMITER_ATTACK: 0.015,
   LIMITER_RELEASE: 0.4,
 
+  /** Leave / hide / mute — long enough that suspend never hard-cuts. */
+  LEAVE_MS: 560,
   /** Generic fade in / out (ms). */
   FADE_IN_MS: 280,
   FADE_OUT_MS: 450,
