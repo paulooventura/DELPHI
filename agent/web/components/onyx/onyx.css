@@ -264,6 +264,12 @@ html.chorus-embed .onyx-root {
 }
 @keyframes onyx-slowpush { to { transform: translate(-50%, -50%) scale(1.16); } }
 
+/* Boot splash: title is baked into the film — no Ken Burns zoom (it crops "Pneuma Mundi"). */
+.onyx-splash-only > .onyx-film:not(.onyx-sky-splash-film) video {
+  transform: translate(-50%, -50%) scale(1);
+  animation: none;
+}
+
 /* Pure black boot/exit veil — no imagery. */
 .onyx-splash-veil {
   position: absolute; inset: 0; z-index: 40;
