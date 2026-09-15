@@ -17,7 +17,7 @@ import {
 } from "../../lib/clockSfx";
 import { createPinchGestureController } from "../../lib/cosmic/pinchGesture";
 import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
-import { OnyxStarfield } from "./OnyxStarfield";
+import { OnyxHeliodromeFilm } from "./OnyxHeliodromeFilm";
 import {
   CENTER_ONLY_LANE_IDS,
   ORRERY_LANE_GROUPS,
@@ -213,7 +213,8 @@ export function OnyxOrrery({
       nowPulseRef.current = Math.max(0, nowPulseRef.current - dt * 2.8);
 
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#000";
+      // Soft veil only — Heliodrome film shows through (no solid black plate).
+      ctx.fillStyle = "rgba(0, 0, 0, 0.28)";
       ctx.fillRect(0, 0, w, h);
       ctx.save();
       ctx.beginPath();
@@ -500,7 +501,7 @@ export function OnyxOrrery({
           swipeRef.current = null;
         }}
       >
-        <OnyxStarfield />
+        <OnyxHeliodromeFilm />
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
           HOME
         </button>
