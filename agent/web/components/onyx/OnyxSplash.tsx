@@ -17,9 +17,9 @@ import {
  * Each clip plays ONLY its own soundtrack through AudioBus splash channel,
  * with fade-in + delay/reverb dissolve on end — never overlapping another clip.
  *
- * Mobile: first tap must resume AudioContext in the same turn as the gesture.
- * Visual unlock must NOT wait on audio fetch/decode — otherwise a failed or
- * slow bed leaves “Tap to begin” dead.
+ * Mobile: first tap resumes AudioContext in the gesture turn. Visual unlock
+ * does not wait on audio decode. Only one gesture handler (pointerdown) so
+ * touch+click cannot unlock then immediately skip the full sequence.
  */
 
 type ClipDef = { video: string; audio: string };
@@ -41,6 +41,8 @@ const CLIPS: readonly ClipDef[] = [
 
 const END_HOLD_MS = 1500;
 const SAFETY_MS = 75_000;
+/** After unlock, ignore skip taps (ghost click) and spurious ended events. */
+const UNLOCK_GUARD_MS = 900;
 
 type Phase = "a" | "hold-ab" | "b" | "hold-bc" | "c";
 
@@ -60,6 +62,8 @@ export function OnyxSplash({
   const dissolveRef = useRef<((onDone?: () => void) => void) | null>(null);
   const audioUnlocked = useRef(false);
   const unlocking = useRef(false);
+  /** Ignore finish() / onEnded until this timestamp (ms). */
+  const guardUntil = useRef(0);
   const playingClipIdx = useRef(0);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
@@ -172,12 +176,13 @@ export function OnyxSplash({
   };
 
   /**
-   * First tap: unlock in the gesture turn (sync resume), then restart clip A.
-   * Audio bed is best-effort — never gate the UI on decode success.
+   * First tap: unlock + force-reload clip A from t=0 with its audio.
+   * Full sequence A→B→C must then play through; skip taps are guarded briefly.
    */
   const unlockAndRestartOpen = () => {
     if (entered.current || audioUnlocked.current || unlocking.current) return;
     unlocking.current = true;
+    guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
 
     if (holdTimer.current != null) {
       window.clearTimeout(holdTimer.current);
@@ -185,7 +190,6 @@ export function OnyxSplash({
     }
     phaseRef.current = "a";
 
-    // Same-turn unlock — critical on iOS Safari / Chrome.
     const ctx = getClockAudio();
     if (ctx?.state === "suspended") {
       void ctx.resume().catch(() => {});
@@ -209,10 +213,12 @@ export function OnyxSplash({
       return;
     }
 
-    // Fire audio without awaiting — visual path continues either way.
     void startClipAudio(0);
 
-    const kickVideo = () => {
+    // Always hard-reload A so we never inherit an already-ended / mid-clip state.
+    const onReady = () => {
+      v.removeEventListener("loadeddata", onReady);
+      if (entered.current) return;
       try {
         v.currentTime = 0;
       } catch {
@@ -220,33 +226,34 @@ export function OnyxSplash({
       }
       playMutedVideo(v);
       unlocking.current = false;
+      // Extend guard until playback is clearly underway.
+      guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
     };
-
-    if (!v.src.includes("pneuma-boot-historical")) {
-      v.src = CLIPS[0]!.video;
-      const done = () => {
-        v.removeEventListener("loadeddata", done);
-        kickVideo();
-      };
-      v.addEventListener("loadeddata", done);
-      v.load();
-      // Safety: never leave unlocking=true if loadeddata never fires.
-      window.setTimeout(() => {
-        if (unlocking.current) kickVideo();
-      }, 1200);
-      return;
-    }
-
-    kickVideo();
+    v.pause();
+    v.src = CLIPS[0]!.video;
+    v.load();
+    v.addEventListener("loadeddata", onReady);
+    window.setTimeout(() => {
+      if (unlocking.current) onReady();
+    }, 1500);
   };
 
-  const onBeginGesture = (e: React.SyntheticEvent) => {
+  const onBeginGesture = (e: React.PointerEvent) => {
     if (entered.current) return;
+    // Only primary finger / mouse — ignore hover synthetics.
+    if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
+
     if (!audioUnlocked.current) {
       unlockAndRestartOpen();
       return;
     }
+
+    // Ghost click after unlock must not skip the whole boot sequence.
+    if (Date.now() < guardUntil.current) return;
+
+    // After unlock, a later tap still skips — but only once A–C are underway
+    // and the user is clearly asking to leave (not the unlock echo).
     finish(true);
   };
 
@@ -261,6 +268,7 @@ export function OnyxSplash({
 
     setVeilOn(true);
     setVideoReady(false);
+    guardUntil.current = Date.now() + 400;
 
     const onReady = () => {
       v.removeEventListener("loadeddata", onReady);
@@ -269,6 +277,11 @@ export function OnyxSplash({
       window.setTimeout(() => {
         if (!entered.current) setVeilOn(false);
       }, 120);
+      try {
+        v.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
       playMutedVideo(v);
       if (audioUnlocked.current) void startClipAudio(clipIdx);
     };
@@ -281,6 +294,20 @@ export function OnyxSplash({
 
   const onClipEnded = () => {
     if (entered.current) return;
+    // Spurious ended right after seek/reload — keep playing A.
+    if (Date.now() < guardUntil.current) {
+      const v = videoRef.current;
+      if (v && phaseRef.current === "a" && audioUnlocked.current) {
+        try {
+          v.currentTime = 0;
+          playMutedVideo(v);
+        } catch {
+          /* ignore */
+        }
+      }
+      return;
+    }
+
     if (phaseRef.current === "a") {
       if (!audioUnlocked.current) {
         try {
@@ -326,7 +353,6 @@ export function OnyxSplash({
     let cancelled = false;
     (async () => {
       try {
-        // Prefetch after a gesture when possible; still try quiet warm-up.
         const ctx = getClockAudio();
         if (!ctx) return;
         for (const clip of CLIPS) {
@@ -373,8 +399,6 @@ export function OnyxSplash({
       role="dialog"
       aria-label="Pneuma Mundi splash"
       onPointerDown={onBeginGesture}
-      onTouchStart={onBeginGesture}
-      onClick={onBeginGesture}
     >
       <div className="onyx-device onyx-splash-only">
         <div className="onyx-film">
