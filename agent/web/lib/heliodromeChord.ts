@@ -101,6 +101,7 @@ type ChordRuntime = {
   duckUntil: number;
   bedSources: Array<OscillatorNode | AudioBufferSourceNode>;
   noiseBuf: AudioBuffer;
+  lastDayHour: number | null;
 };
 
 let runtime: ChordRuntime | null = null;
@@ -180,6 +181,50 @@ function buildBed(rt: ChordRuntime): void {
 
   bedGain.gain.setValueAtTime(0.0001, t);
   bedGain.gain.exponentialRampToValueAtTime(0.35, t + 2.2);
+}
+
+function exciteHourBell(rt: ChordRuntime, pitch: number, when: number): void {
+  const voice = acquireStruck(rt);
+  if (!voice) return;
+  const ctx = rt.ctx;
+  const t = Math.max(ctx.currentTime, when);
+  const fund = Math.max(40, pitch * 0.5);
+  voice.pan.pan.setValueAtTime(0, t);
+  voice.filter.frequency.setValueAtTime(4200, t);
+  voice.filter.Q.setValueAtTime(1.2, t);
+  voice.gain.gain.cancelScheduledValues(t);
+  voice.gain.gain.setValueAtTime(0.0001, t);
+  voice.gain.gain.exponentialRampToValueAtTime(NOW_CHORD.HOUR_STRIKE_GAIN, t + 0.02);
+  voice.gain.gain.exponentialRampToValueAtTime(0.0001, t + 4.5);
+  voice.busyUntil = t + 4.8;
+
+  const partials = [1, 2.01, 2.76, 3.9];
+  const gains = [1, 0.45, 0.22, 0.12];
+  for (let i = 0; i < partials.length; i++) {
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.type = i === 0 ? "sine" : "triangle";
+    o.frequency.value = fund * partials[i]!;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.35 * gains[i]!, t + 0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 3.8 - i * 0.35);
+    o.connect(g);
+    g.connect(voice.filter);
+    o.start(t);
+    o.stop(t + 4.2);
+  }
+}
+
+/** 12h hour count on civil day-lane rollover (1…12 strikes). */
+function scheduleHourStrikes(rt: ChordRuntime, hour24: number, basePitch: number): void {
+  const h12 = hour24 % 12 || 12;
+  const t0 = rt.ctx.currentTime + 0.05;
+  for (let i = 0; i < h12; i++) {
+    const deg = NOW_CHORD.SCALE[i % NOW_CHORD.SCALE.length]!;
+    const hz = basePitch * 2 ** (deg / 12);
+    exciteHourBell(rt, hz, t0 + i * NOW_CHORD.HOUR_STRIKE_GAP_S);
+  }
+  rt.duckUntil = t0 + h12 * NOW_CHORD.HOUR_STRIKE_GAP_S + NOW_CHORD.DUCK_SEC;
 }
 
 function acquireStruck(rt: ChordRuntime): StruckVoice | null {
@@ -321,8 +366,13 @@ function updateWhir(
   const pan = Math.max(-1, Math.min(1, yinYang * params.stereoWidth));
   const level = Math.min(NOW_CHORD.WHIR_CEILING_GAIN, params.gain) * duck;
   v.pan.pan.setTargetAtTime(pan, t, 0.08);
-  v.filter.frequency.setTargetAtTime(Math.max(400, params.lowpassHz * (1 + 0.2 * yinYang)), t, 0.1);
-  v.gain.gain.setTargetAtTime(Math.max(0.0001, level * 0.55), t, 0.15);
+  // Prāṇa = breath: slow lowpass rise/fall with progress (inhale→exhale).
+  const breath =
+    id === "prana"
+      ? 800 + 5200 * Math.sin(Math.max(0, Math.min(1, (yinYang + 1) / 2)) * Math.PI)
+      : Math.max(400, params.lowpassHz * (1 + 0.2 * yinYang));
+  v.filter.frequency.setTargetAtTime(breath, t, 0.12);
+  v.gain.gain.setTargetAtTime(Math.max(0.0001, level * (id === "prana" ? 0.4 : 0.55)), t, 0.15);
 }
 
 function pruneWhir(rt: ChordRuntime, keep: Set<OrreryLaneId>): void {
@@ -426,6 +476,7 @@ export async function startHeliodromeChord(): Promise<void> {
     duckUntil: 0,
     bedSources: [],
     noiseBuf: makeNoise(ctx),
+    lastDayHour: null,
   };
   buildBed(runtime);
 }
@@ -530,10 +581,20 @@ export function tickHeliodromeChord(lanes: OrreryLaneState[], hapticsOn: boolean
         const semi = NOW_CHORD.SCALE[deg % NOW_CHORD.SCALE.length]!;
         hitPitch = NOW_CHORD.ROOT_HZ * 2 ** (semi / 12) * 4; // mid register tic-tac
       }
-      excitePluck(rt, pitch, params, yinYang, hitPitch);
+      if (lane.id === "day") {
+        // Dedicated civil-hour striker — count = 12h face of the local hour.
+        if (rt.lastDayHour !== null && rt.lastDayHour !== lane.index) {
+          scheduleHourStrikes(rt, lane.index, pitch);
+        }
+        rt.lastDayHour = lane.index;
+      } else {
+        excitePluck(rt, pitch, params, yinYang, hitPitch);
+      }
       if (s < NOW_CHORD.SLOW_BLOOM_S) {
         rt.duckUntil = t + NOW_CHORD.DUCK_SEC;
       }
+    } else if (lane.id === "day" && rt.lastDayHour === null) {
+      rt.lastDayHour = lane.index;
     }
   }
 

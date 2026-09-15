@@ -1,14 +1,22 @@
 /**
  * Heliodrome NOW-Chord — Paulo-tunable constants (single source of truth).
  * Speed determines everything except pitch; pitch is locked to this chord.
+ *
+ * See docs/NOW-CHORD.md for what each knob does.
  */
 
+/** Schumann fundamental. */
+export const SCHUMANN_HZ = 7.83;
+
 export const NOW_CHORD = {
-  /** Starting root ~C2; Schumann-rooted harmony. */
-  ROOT_HZ: 65.41,
+  /**
+   * Audible root = Schumann raised into hearing range (7.83 × 2^4 ≈ 125.28 Hz).
+   * Nearest “open” drone; edit by ear.
+   */
+  ROOT_HZ: SCHUMANN_HZ * 2 ** 4,
   /** Scale degrees in semitones — Dorian-ish; edit live. */
   SCALE: [0, 2, 3, 5, 7, 9, 10] as readonly number[],
-  SCHUMANN_HZ: 7.83,
+  SCHUMANN_HZ,
   SCHUMANN_HARMONICS: [7.83, 14.3, 20.8, 27.3, 33.8] as readonly number[],
   MASTER_GAIN: 0.7,
   /** Hard cap on fastest band — floor texture only. */
@@ -29,6 +37,9 @@ export const NOW_CHORD = {
   /** Seconds string tic/tac alternate scale degrees (indices into SCALE). */
   TIC_DEGREE: 4,
   TAC_DEGREE: 5,
+  /** Civil-hour striker (12h count) — spacing between strikes. */
+  HOUR_STRIKE_GAP_S: 0.9,
+  HOUR_STRIKE_GAIN: 0.55,
 } as const;
 
 export type NowChordConfig = typeof NOW_CHORD;
@@ -55,7 +66,7 @@ export function voiceFromSpeed(
   cfg: Pick<NowChordConfig, "WHIR_CEILING_GAIN" | "WHIR_SPEED"> = NOW_CHORD,
 ) {
   const gain = lerp(0.9, cfg.WHIR_CEILING_GAIN, s);
-  const attackMs = lerp(40, 0, s);
+  const attackMs = lerp(35, 0, s);
   const decayS = lerp(Math.min(tickPeriodSec * 0.9, 30), 0.05, s);
   const lowpassHz = lerp(9000, 1200, s);
   const stereoWidth = lerp(0.2, 1.0, s);

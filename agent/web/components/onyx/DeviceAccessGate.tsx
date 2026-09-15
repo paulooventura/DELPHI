@@ -6,8 +6,10 @@
  * orientation + motion, then home. Returning from other doors in the same
  * open skips this screen.
  *
- * Backdrop is Paulo’s Runway sacred-threshold still — gem plate retired.
+ * Backdrop: Paulo’s near-black sacred-void still (build-stamped for CDN bust).
  */
+
+import { DELPHI_BUILD } from "../../lib/buildStamp";
 
 export function DeviceAccessGate({
   onAllow,
@@ -27,7 +29,7 @@ export function DeviceAccessGate({
         >
           <img
             className="onyx-access-backdrop"
-            src="/allow-access-backdrop.jpg"
+            src={`/allow-access-backdrop.jpg?v=${DELPHI_BUILD}`}
             alt=""
             draggable={false}
           />

@@ -5,21 +5,27 @@ import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { getClockAudio, resumeClockAudio } from "../../lib/clockSfx";
 
 /**
- * Boot: muted historical film → first tap unlocks Web Audio (0→100% / 1.5s)
- * synced to a restart of the open clip → end hold → Pneuma Mundi title film → gate.
- *
- * Browsers block unmuted media autoplay; HTML video.volume is also ignored on iOS.
- * Sound therefore rides a decoded buffer through AudioContext (same stack as Heliodrome).
+ * Boot film sequence (muted picture; Web Audio unlock on first tap):
+ *   A historical open → hold → B Pythia / priestess → hold → C stairs → access gate.
+ * Further clips can append later. Opening soundtrack = decoded historical m4a
+ * with 0→100% fade over 1.5s (iOS-safe). Later clips stay visual until we wire
+ * their beds.
  */
 
-const CLIP_A = `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`;
+const CLIPS = [
+  `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`,
+  `/pneuma-boot-pythia.mp4?v=${DELPHI_BUILD}`,
+  `/pneuma-boot-stairs.mp4?v=${DELPHI_BUILD}`,
+] as const;
+
 const CLIP_A_AUDIO = `/pneuma-boot-historical-audio.m4a?v=${DELPHI_BUILD}`;
-/** Existing title plate that carries “Pneuma Mundi” in-frame. */
-const CLIP_B = `/pneuma-intro.mp4?v=${DELPHI_BUILD}`;
 
 const AUDIO_FADE_MS = 1500;
 const END_HOLD_MS = 1500;
-const SAFETY_MS = 45_000;
+/** Three ~5s clips + holds + tap wait. */
+const SAFETY_MS = 60_000;
+
+type Phase = "a" | "hold-ab" | "b" | "hold-bc" | "c";
 
 export function OnyxSplash({
   onEnter,
@@ -30,7 +36,7 @@ export function OnyxSplash({
 }) {
   const entered = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const phaseRef = useRef<"a" | "hold" | "b">("a");
+  const phaseRef = useRef<Phase>("a");
   const holdTimer = useRef<number | null>(null);
   const audioBufRef = useRef<AudioBuffer | null>(null);
   const bufferSrcRef = useRef<AudioBufferSourceNode | null>(null);
@@ -119,7 +125,6 @@ export function OnyxSplash({
       return;
     }
 
-    // Ensure buffer is ready (cold tap before fetch finishes).
     if (!audioBufRef.current) {
       try {
         const ctx = getClockAudio() ?? (await resumeClockAudio());
@@ -128,7 +133,7 @@ export function OnyxSplash({
           audioBufRef.current = await ctx.decodeAudioData(await res.arrayBuffer());
         }
       } catch {
-        /* fall through — still try resume + play */
+        /* unlock path retries play anyway */
       }
     }
 
@@ -144,7 +149,7 @@ export function OnyxSplash({
     setVideoReady(true);
 
     if (!v.src.includes("pneuma-boot-historical")) {
-      v.src = CLIP_A;
+      v.src = CLIPS[0];
       await new Promise<void>(resolve => {
         const done = () => {
           v.removeEventListener("loadeddata", done);
@@ -174,10 +179,10 @@ export function OnyxSplash({
     finish(true);
   };
 
-  const cueClipB = () => {
-    if (entered.current || phaseRef.current === "b") return;
-    phaseRef.current = "b";
-    stopBootAudio();
+  const cueClip = (next: "b" | "c", src: string) => {
+    if (entered.current) return;
+    phaseRef.current = next;
+    if (next === "b") stopBootAudio();
     const v = videoRef.current;
     if (!v) {
       finish(false);
@@ -198,7 +203,7 @@ export function OnyxSplash({
     };
 
     v.pause();
-    v.src = CLIP_B;
+    v.src = src;
     v.load();
     v.addEventListener("loadeddata", onReady);
   };
@@ -206,7 +211,6 @@ export function OnyxSplash({
   const onClipEnded = () => {
     if (entered.current) return;
     if (phaseRef.current === "a") {
-      // Wait for the tap-to-hear unlock before leaving the open clip.
       if (!audioUnlocked.current) {
         try {
           const v = videoRef.current;
@@ -219,21 +223,29 @@ export function OnyxSplash({
         }
         return;
       }
-      phaseRef.current = "hold";
+      phaseRef.current = "hold-ab";
       stopBootAudio();
       holdTimer.current = window.setTimeout(() => {
         holdTimer.current = null;
-        cueClipB();
+        cueClip("b", CLIPS[1]);
       }, END_HOLD_MS);
       return;
     }
-    if (phaseRef.current === "b") finish(false);
+    if (phaseRef.current === "b") {
+      phaseRef.current = "hold-bc";
+      holdTimer.current = window.setTimeout(() => {
+        holdTimer.current = null;
+        cueClip("c", CLIPS[2]);
+      }, END_HOLD_MS);
+      return;
+    }
+    if (phaseRef.current === "c") finish(false);
   };
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    v.src = CLIP_A;
+    v.src = CLIPS[0];
     playMutedVideo(v);
 
     let cancelled = false;
