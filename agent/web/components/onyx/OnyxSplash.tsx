@@ -1,14 +1,43 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { DELPHI_BUILD } from "../../lib/buildStamp";
 
 /**
- * Boot: pure black → intro film → last frame holds into the access gate.
- * Runway splash carries Pneuma Mundi typography in-frame — no second title overlay.
- * Tap can re-run device access on the user-gesture path (required on iOS)
- * when this session already granted. First ask lives on the permissions
- * screen after this splash.
+ * Boot: black → historical open (audio 0→100% / 1.5s) → end hold →
+ * Pneuma Mundi title film → access gate.
+ * Tap skips the whole sequence (and primes iOS access on the gesture).
  */
+
+const CLIP_A = `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`;
+/** Existing title plate that carries “Pneuma Mundi” in-frame. */
+const CLIP_B = `/pneuma-intro.mp4?v=${DELPHI_BUILD}`;
+
+const AUDIO_FADE_MS = 1500;
+/** Hold last frame of clip A before cueing clip B. */
+const END_HOLD_MS = 1500;
+const SAFETY_MS = 22_000;
+
+function rampVolume(
+  video: HTMLVideoElement,
+  from: number,
+  to: number,
+  ms: number,
+  cancel: { cancelled: boolean },
+) {
+  const lo = Math.max(0, Math.min(1, from));
+  const hi = Math.max(0, Math.min(1, to));
+  video.volume = lo;
+  const start = performance.now();
+  const step = (now: number) => {
+    if (cancel.cancelled) return;
+    const t = Math.min(1, (now - start) / ms);
+    video.volume = lo + (hi - lo) * t;
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
 export function OnyxSplash({
   onEnter,
   onPrimeAccess,
@@ -19,23 +48,106 @@ export function OnyxSplash({
 }) {
   const entered = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const phaseRef = useRef<"a" | "hold" | "b">("a");
+  const fadeCancel = useRef({ cancelled: false });
+  const holdTimer = useRef<number | null>(null);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
 
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
+    fadeCancel.current.cancelled = true;
+    if (holdTimer.current != null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+    const v = videoRef.current;
+    if (v) {
+      try {
+        v.pause();
+      } catch {
+        /* ignore */
+      }
+    }
     if (fromGesture) onPrimeAccess?.();
     onEnter();
+  };
+
+  const playWithAudioFade = (v: HTMLVideoElement, fadeIn: boolean) => {
+    fadeCancel.current.cancelled = true;
+    fadeCancel.current = { cancelled: false };
+    const cancel = fadeCancel.current;
+
+    v.playsInline = true;
+    v.muted = false;
+    v.volume = fadeIn ? 0 : 1;
+
+    const startMutedFallback = () => {
+      v.muted = true;
+      v.volume = 1;
+      void v.play().catch(() => {
+        /* still reveal once a frame is ready */
+      });
+    };
+
+    void v
+      .play()
+      .then(() => {
+        if (cancel.cancelled) return;
+        if (fadeIn) rampVolume(v, 0, 1, AUDIO_FADE_MS, cancel);
+      })
+      .catch(startMutedFallback);
+  };
+
+  const cueClipB = () => {
+    if (entered.current || phaseRef.current === "b") return;
+    phaseRef.current = "b";
+    const v = videoRef.current;
+    if (!v) {
+      finish(false);
+      return;
+    }
+
+    setVeilOn(true);
+    setVideoReady(false);
+    fadeCancel.current.cancelled = true;
+
+    const onReady = () => {
+      v.removeEventListener("loadeddata", onReady);
+      if (entered.current) return;
+      setVideoReady(true);
+      window.setTimeout(() => {
+        if (!entered.current) setVeilOn(false);
+      }, 120);
+      playWithAudioFade(v, true);
+    };
+
+    v.pause();
+    v.src = CLIP_B;
+    v.load();
+    v.addEventListener("loadeddata", onReady);
+  };
+
+  const onClipEnded = () => {
+    if (entered.current) return;
+    if (phaseRef.current === "a") {
+      phaseRef.current = "hold";
+      holdTimer.current = window.setTimeout(() => {
+        holdTimer.current = null;
+        cueClipB();
+      }, END_HOLD_MS);
+      return;
+    }
+    if (phaseRef.current === "b") finish(false);
   };
 
   useEffect(() => {
     const v = videoRef.current;
     if (!v) return;
-    v.muted = true;
-    void v.play().catch(() => {
-      /* autoplay blocked — still fade in once metadata is there */
-    });
+    v.src = CLIP_A;
+    playWithAudioFade(v, true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
@@ -47,8 +159,15 @@ export function OnyxSplash({
   }, [videoReady]);
 
   useEffect(() => {
-    const t = window.setTimeout(() => setVideoReady(true), 2200);
-    return () => clearTimeout(t);
+    const readyFallback = window.setTimeout(() => setVideoReady(true), 2200);
+    const safety = window.setTimeout(() => finish(false), SAFETY_MS);
+    return () => {
+      clearTimeout(readyFallback);
+      clearTimeout(safety);
+      if (holdTimer.current != null) clearTimeout(holdTimer.current);
+      fadeCancel.current.cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -63,17 +182,13 @@ export function OnyxSplash({
           <video
             ref={videoRef}
             autoPlay
-            muted
             playsInline
             preload="auto"
             className={videoReady ? "onyx-film-ready" : undefined}
             onLoadedData={() => setVideoReady(true)}
             onPlaying={() => setVideoReady(true)}
-            onEnded={() => finish(false)}
-          >
-            <source src="/pneuma-intro.mp4" type="video/mp4" />
-            <source src="/delphi-intro.mp4" type="video/mp4" />
-          </video>
+            onEnded={onClipEnded}
+          />
         </div>
 
         <div className="onyx-grade" aria-hidden />
