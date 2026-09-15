@@ -15,6 +15,7 @@ import {
   playScrubTick,
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
+import { createPinchGestureController } from "../../lib/cosmic/pinchGesture";
 import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
 import { OnyxStarfield } from "./OnyxStarfield";
 import {
@@ -29,6 +30,10 @@ import {
   type OrreryLaneId,
   type OrreryLaneState,
 } from "../../lib/lore/orreryLanes";
+
+/** Fit-all stack = zoom 1. Pinch / wheel zooms into taller cycle rows. */
+const HELIODROME_ZOOM_MIN = 1;
+const HELIODROME_ZOOM_MAX = 4.5;
 
 const CENTER_ONLY = new Set<OrreryLaneId>(CENTER_ONLY_LANE_IDS);
 
@@ -109,12 +114,16 @@ export function OnyxOrrery({
   const nowPulseRef = useRef(0);
   const lastTsRef = useRef(0);
   const scrubAccRef = useRef(0);
+  const panYRef = useRef(0);
+  const maxPanRef = useRef(0);
+  const zoomLiveRef = useRef(1);
   const pointerRef = useRef<{
     id: number;
     x: number;
     y: number;
     laneId: OrreryLaneId | null;
     dragged: boolean;
+    mode: "none" | "pan" | "scrub";
   } | null>(null);
 
   useEffect(() => {
@@ -162,6 +171,13 @@ export function OnyxOrrery({
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     const lastIndex = lastIndexRef.current;
 
+    const pinch = createPinchGestureController({
+      min: HELIODROME_ZOOM_MIN,
+      max: HELIODROME_ZOOM_MAX,
+      wheelSensitivity: 0.0018,
+    });
+    pinch.attach(wrap);
+
     const resize = () => {
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
@@ -184,6 +200,7 @@ export function OnyxOrrery({
       const prev = lastTsRef.current || ts;
       const dt = Math.min(0.05, (ts - prev) / 1000);
       lastTsRef.current = ts;
+      pinch.tick(dt);
 
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
@@ -210,12 +227,22 @@ export function OnyxOrrery({
       const laneGap = count > 28 ? 1 : count > 20 ? 2 : 3;
       const nowX = w * 0.5;
       const avail = Math.max(1, h - padTop - 4);
-      const laneH = (avail - laneGap * (count - 1)) / count;
+      const baseLaneH = (avail - laneGap * (count - 1)) / count;
+      const zoom = pinch.getScale();
+      zoomLiveRef.current = zoom;
+      // zoom 1 = fit all cycles on screen; zoom in grows row height + vertical pan.
+      const laneH = baseLaneH * zoom;
+      const contentH = padTop + count * laneH + laneGap * (count - 1) + 4;
+      const maxPan = Math.max(0, contentH - h);
+      maxPanRef.current = maxPan;
+      if (zoom <= HELIODROME_ZOOM_MIN + 0.01) panYRef.current = 0;
+      else panYRef.current = Math.min(maxPan, Math.max(0, panYRef.current));
+      const panY = panYRef.current;
       const labelOk = laneH >= 11;
       const gemPadY = laneH >= 16 ? 3 : laneH >= 10 ? 1 : 0;
       const hits: { y0: number; y1: number; id: string }[] = [];
 
-      let y = padTop;
+      let y = padTop - panY;
       for (const lane of lanes) {
         const y0 = y;
         const y1 = y + laneH;
@@ -342,6 +369,7 @@ export function OnyxOrrery({
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      pinch.detach();
       document.removeEventListener("visibilitychange", onVis);
       lastIndex.clear();
     };
@@ -371,6 +399,7 @@ export function OnyxOrrery({
       y: e.clientY,
       laneId: lane?.id ?? null,
       dragged: false,
+      mode: "none",
     };
     scrubAccRef.current = 0;
     if (frozen && lane) setSelectedLane(lane.id);
@@ -382,7 +411,28 @@ export function OnyxOrrery({
     const dx = e.clientX - ptr.x;
     const dy = e.clientY - ptr.y;
     if (!ptr.dragged && Math.hypot(dx, dy) > 12) ptr.dragged = true;
-    if (!frozen || !ptr.dragged) return;
+    if (!ptr.dragged) return;
+
+    const zoomed = zoomLiveRef.current > HELIODROME_ZOOM_MIN + 0.02;
+    if (ptr.mode === "none") {
+      if (frozen && Math.abs(dx) >= Math.abs(dy)) ptr.mode = "scrub";
+      else if (zoomed && Math.abs(dy) > Math.abs(dx)) ptr.mode = "pan";
+      else if (frozen) ptr.mode = "scrub";
+      else if (zoomed) ptr.mode = "pan";
+      else return;
+    }
+
+    if (ptr.mode === "pan") {
+      ptr.y = e.clientY;
+      ptr.x = e.clientX;
+      panYRef.current = Math.min(
+        maxPanRef.current,
+        Math.max(0, panYRef.current - dy),
+      );
+      return;
+    }
+
+    if (!frozen) return;
     const laneId = ptr.laneId ?? selectedRef.current;
     if (!laneId) return;
     ptr.x = e.clientX;
@@ -512,7 +562,7 @@ export function OnyxOrrery({
             onPointerMove={onPointerMove}
             onPointerUp={onPointerUp}
             onPointerCancel={onPointerUp}
-            aria-label="Heliodrome — live stacked cultural cycles"
+            aria-label="Heliodrome — pinch to zoom cycle rows; drag to pan when zoomed"
           />
         </div>
         {pickerOpen && (

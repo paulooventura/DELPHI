@@ -280,6 +280,31 @@ html.chorus-embed .onyx-root {
 }
 .onyx-splash-veil.on { opacity: 1; }
 
+/* Boot: cold loads mute media — ask for the gesture that unlocks Web Audio. */
+.onyx-splash-tap {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: max(56px, calc(24px + env(safe-area-inset-bottom, 0px)));
+  z-index: 45;
+  margin: 0;
+  text-align: center;
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-size: 13px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: rgba(255, 248, 240, 0.78);
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 640ms ease, transform 640ms ease;
+  pointer-events: none;
+  text-shadow: 0 1px 18px rgba(0, 0, 0, 0.65);
+}
+.onyx-splash-tap.on {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 /* Splash: film + DELPHI only. Kill any legacy chrome if a stale bundle leaks it. */
 .onyx-splash-only .onyx-corner,
 .onyx-splash-only .onyx-enter,
@@ -3232,13 +3257,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   margin-bottom: 4px;
   position: relative;
   z-index: 2;
+  /* Pinch + vertical pan when zoomed — do not let the browser steal gestures. */
+  touch-action: none;
 }
 .onyx-orrery-canvas {
   display: block;
   width: 100%;
   height: 100%;
   cursor: pointer;
-  touch-action: manipulation;
+  touch-action: none;
 }
 .onyx-orrery-canvas.is-frozen {
   touch-action: none;

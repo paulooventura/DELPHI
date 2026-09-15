@@ -2,67 +2,59 @@
 
 import { useEffect, useRef, useState } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
+import { getClockAudio, resumeClockAudio } from "../../lib/clockSfx";
 
 /**
- * Boot: black → historical open (audio 0→100% / 1.5s) → end hold →
- * Pneuma Mundi title film → access gate.
+ * Boot: muted historical film → first tap unlocks Web Audio (0→100% / 1.5s)
+ * synced to a restart of the open clip → end hold → Pneuma Mundi title film → gate.
  *
- * Cold loads usually block unmuted autoplay. We start the picture muted,
- * then unlock sound on the first tap (restart clip A + fade) instead of
- * skipping. A later tap still skips the whole sequence.
+ * Browsers block unmuted media autoplay; HTML video.volume is also ignored on iOS.
+ * Sound therefore rides a decoded buffer through AudioContext (same stack as Heliodrome).
  */
 
 const CLIP_A = `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`;
+const CLIP_A_AUDIO = `/pneuma-boot-historical-audio.m4a?v=${DELPHI_BUILD}`;
 /** Existing title plate that carries “Pneuma Mundi” in-frame. */
 const CLIP_B = `/pneuma-intro.mp4?v=${DELPHI_BUILD}`;
 
 const AUDIO_FADE_MS = 1500;
-/** Hold last frame of clip A before cueing clip B. */
 const END_HOLD_MS = 1500;
-const SAFETY_MS = 22_000;
-
-function rampVolume(
-  video: HTMLVideoElement,
-  from: number,
-  to: number,
-  ms: number,
-  cancel: { cancelled: boolean },
-) {
-  const lo = Math.max(0, Math.min(1, from));
-  const hi = Math.max(0, Math.min(1, to));
-  video.volume = lo;
-  const start = performance.now();
-  const step = (now: number) => {
-    if (cancel.cancelled) return;
-    const t = Math.min(1, (now - start) / ms);
-    video.volume = lo + (hi - lo) * t;
-    if (t < 1) requestAnimationFrame(step);
-  };
-  requestAnimationFrame(step);
-}
+const SAFETY_MS = 45_000;
 
 export function OnyxSplash({
   onEnter,
   onPrimeAccess,
 }: {
   onEnter: () => void;
-  /** Sync call from the tap handler — must not be deferred past the gesture. */
   onPrimeAccess?: () => void;
 }) {
   const entered = useRef(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const phaseRef = useRef<"a" | "hold" | "b">("a");
-  const fadeCancel = useRef({ cancelled: false });
   const holdTimer = useRef<number | null>(null);
-  /** True until unmuted playback has been granted (autoplay or gesture). */
+  const audioBufRef = useRef<AudioBuffer | null>(null);
+  const bufferSrcRef = useRef<AudioBufferSourceNode | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
   const audioUnlocked = useRef(false);
+  const unlocking = useRef(false);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
+  const [needTap, setNeedTap] = useState(true);
+
+  const stopBootAudio = () => {
+    try {
+      bufferSrcRef.current?.stop();
+    } catch {
+      /* already stopped */
+    }
+    bufferSrcRef.current = null;
+    gainRef.current = null;
+  };
 
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
-    fadeCancel.current.cancelled = true;
+    stopBootAudio();
     if (holdTimer.current != null) {
       window.clearTimeout(holdTimer.current);
       holdTimer.current = null;
@@ -79,96 +71,104 @@ export function OnyxSplash({
     onEnter();
   };
 
-  const playWithAudioFade = (
-    v: HTMLVideoElement,
-    fadeIn: boolean,
-    opts?: { forceMuted?: boolean },
-  ) => {
-    fadeCancel.current.cancelled = true;
-    fadeCancel.current = { cancelled: false };
-    const cancel = fadeCancel.current;
-
+  const playMutedVideo = (v: HTMLVideoElement) => {
+    v.muted = true;
+    v.defaultMuted = true;
     v.playsInline = true;
-
-    const startMuted = () => {
-      v.muted = true;
-      v.volume = 1;
-      void v.play().catch(() => {
-        /* still reveal once a frame is ready */
-      });
-    };
-
-    if (opts?.forceMuted) {
-      startMuted();
-      return;
-    }
-
-    v.muted = false;
-    v.volume = fadeIn ? 0 : 1;
-
-    void v
-      .play()
-      .then(() => {
-        if (cancel.cancelled) return;
-        audioUnlocked.current = true;
-        if (fadeIn) rampVolume(v, 0, 1, AUDIO_FADE_MS, cancel);
-      })
-      .catch(startMuted);
+    v.setAttribute("muted", "");
+    v.setAttribute("playsinline", "");
+    void v.play().catch(() => {});
   };
 
-  /** First user gesture: restart open clip with audible fade (browser unlock). */
-  const unlockAudioFromGesture = () => {
-    const v = videoRef.current;
-    if (!v || entered.current || audioUnlocked.current) return;
+  const startBootAudioFade = async () => {
+    const ctx = await resumeClockAudio();
+    const buf = audioBufRef.current;
+    if (!ctx || !buf) return false;
+
+    stopBootAudio();
+    const gain = ctx.createGain();
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    const t0 = ctx.currentTime;
+    gain.gain.setValueAtTime(0.0001, t0);
+    gain.gain.exponentialRampToValueAtTime(1, t0 + AUDIO_FADE_MS / 1000);
+    src.connect(gain);
+    gain.connect(ctx.destination);
+    src.onended = () => {
+      if (bufferSrcRef.current === src) bufferSrcRef.current = null;
+    };
+    src.start(0);
+    bufferSrcRef.current = src;
+    gainRef.current = gain;
+    return true;
+  };
+
+  const unlockAndRestartOpen = async () => {
+    if (entered.current || audioUnlocked.current || unlocking.current) return;
+    unlocking.current = true;
 
     if (holdTimer.current != null) {
       window.clearTimeout(holdTimer.current);
       holdTimer.current = null;
     }
-
     phaseRef.current = "a";
-    fadeCancel.current.cancelled = true;
-    fadeCancel.current = { cancelled: false };
-    const cancel = fadeCancel.current;
 
-    setVeilOn(false);
-    setVideoReady(true);
-
-    const beginAudible = () => {
-      v.removeEventListener("loadeddata", beginAudible);
-      if (entered.current) return;
-      v.currentTime = 0;
-      v.muted = false;
-      v.volume = 0;
-      void v
-        .play()
-        .then(() => {
-          if (cancel.cancelled) return;
-          audioUnlocked.current = true;
-          rampVolume(v, 0, 1, AUDIO_FADE_MS, cancel);
-        })
-        .catch(() => {
-          /* still blocked — leave muted picture running */
-          v.muted = true;
-          v.volume = 1;
-          void v.play().catch(() => {});
-        });
-    };
-
-    if (!v.src.includes("pneuma-boot-historical")) {
-      v.src = CLIP_A;
-      v.load();
-      v.addEventListener("loadeddata", beginAudible);
+    const v = videoRef.current;
+    if (!v) {
+      unlocking.current = false;
       return;
     }
 
-    beginAudible();
+    // Ensure buffer is ready (cold tap before fetch finishes).
+    if (!audioBufRef.current) {
+      try {
+        const ctx = getClockAudio() ?? (await resumeClockAudio());
+        if (ctx) {
+          const res = await fetch(CLIP_A_AUDIO);
+          audioBufRef.current = await ctx.decodeAudioData(await res.arrayBuffer());
+        }
+      } catch {
+        /* fall through — still try resume + play */
+      }
+    }
+
+    const ok = await startBootAudioFade();
+    if (!ok) {
+      unlocking.current = false;
+      return;
+    }
+
+    audioUnlocked.current = true;
+    setNeedTap(false);
+    setVeilOn(false);
+    setVideoReady(true);
+
+    if (!v.src.includes("pneuma-boot-historical")) {
+      v.src = CLIP_A;
+      await new Promise<void>(resolve => {
+        const done = () => {
+          v.removeEventListener("loadeddata", done);
+          resolve();
+        };
+        v.addEventListener("loadeddata", done);
+        v.load();
+      });
+    }
+
+    try {
+      v.currentTime = 0;
+    } catch {
+      /* ignore */
+    }
+    playMutedVideo(v);
+    unlocking.current = false;
   };
 
-  const onRootPointer = () => {
+  const onRootPointer = (e: React.PointerEvent) => {
     if (entered.current) return;
-    if (!audioUnlocked.current && phaseRef.current !== "b") {
-      unlockAudioFromGesture();
+    e.preventDefault();
+    if (!audioUnlocked.current) {
+      void unlockAndRestartOpen();
       return;
     }
     finish(true);
@@ -177,6 +177,7 @@ export function OnyxSplash({
   const cueClipB = () => {
     if (entered.current || phaseRef.current === "b") return;
     phaseRef.current = "b";
+    stopBootAudio();
     const v = videoRef.current;
     if (!v) {
       finish(false);
@@ -185,7 +186,6 @@ export function OnyxSplash({
 
     setVeilOn(true);
     setVideoReady(false);
-    fadeCancel.current.cancelled = true;
 
     const onReady = () => {
       v.removeEventListener("loadeddata", onReady);
@@ -194,11 +194,7 @@ export function OnyxSplash({
       window.setTimeout(() => {
         if (!entered.current) setVeilOn(false);
       }, 120);
-      if (audioUnlocked.current) {
-        playWithAudioFade(v, true);
-      } else {
-        playWithAudioFade(v, false, { forceMuted: true });
-      }
+      playMutedVideo(v);
     };
 
     v.pause();
@@ -210,7 +206,21 @@ export function OnyxSplash({
   const onClipEnded = () => {
     if (entered.current) return;
     if (phaseRef.current === "a") {
+      // Wait for the tap-to-hear unlock before leaving the open clip.
+      if (!audioUnlocked.current) {
+        try {
+          const v = videoRef.current;
+          if (v) {
+            v.currentTime = 0;
+            playMutedVideo(v);
+          }
+        } catch {
+          /* ignore */
+        }
+        return;
+      }
       phaseRef.current = "hold";
+      stopBootAudio();
       holdTimer.current = window.setTimeout(() => {
         holdTimer.current = null;
         cueClipB();
@@ -224,17 +234,30 @@ export function OnyxSplash({
     const v = videoRef.current;
     if (!v) return;
     v.src = CLIP_A;
-    // Prefer audible open; most cold browsers reject this and we fall muted
-    // until the first tap unlocks (see onRootPointer).
-    playWithAudioFade(v, true);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    playMutedVideo(v);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const ctx = getClockAudio();
+        if (!ctx) return;
+        const res = await fetch(CLIP_A_AUDIO);
+        const buf = await ctx.decodeAudioData(await res.arrayBuffer());
+        if (!cancelled) audioBufRef.current = buf;
+      } catch {
+        /* unlock path will retry */
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      stopBootAudio();
+    };
   }, []);
 
   useEffect(() => {
     if (!videoReady) return;
-    const t = window.setTimeout(() => {
-      setVeilOn(false);
-    }, 180);
+    const t = window.setTimeout(() => setVeilOn(false), 180);
     return () => clearTimeout(t);
   }, [videoReady]);
 
@@ -245,7 +268,7 @@ export function OnyxSplash({
       clearTimeout(readyFallback);
       clearTimeout(safety);
       if (holdTimer.current != null) clearTimeout(holdTimer.current);
-      fadeCancel.current.cancelled = true;
+      stopBootAudio();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -262,6 +285,7 @@ export function OnyxSplash({
           <video
             ref={videoRef}
             autoPlay
+            muted
             playsInline
             preload="auto"
             className={videoReady ? "onyx-film-ready" : undefined}
@@ -274,6 +298,13 @@ export function OnyxSplash({
         <div className="onyx-grade" aria-hidden />
         <div className="onyx-tint" aria-hidden />
         <div className="onyx-dimmer" aria-hidden />
+
+        <p
+          className={`onyx-splash-tap${needTap && videoReady && !veilOn ? " on" : ""}`}
+          aria-hidden={!needTap}
+        >
+          Tap to begin
+        </p>
 
         <div
           className={`onyx-splash-veil${veilOn ? " on" : ""}`}
