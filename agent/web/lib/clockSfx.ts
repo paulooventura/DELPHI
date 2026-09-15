@@ -1,3 +1,5 @@
+import { ensureAudioBus, audioBusInput, AUDIO_BUS } from "./audioBus";
+
 let sharedCtx: AudioContext | null = null;
 let sharedNoise: AudioBuffer | null = null;
 let sharedMaster: GainNode | null = null;
@@ -52,6 +54,7 @@ export function getClockAudio(): AudioContext | null {
 
 function masterBus(ctx: AudioContext): GainNode {
   if (!sharedMaster || sharedMaster.context !== ctx) {
+    ensureAudioBus(ctx);
     sharedMaster = ctx.createGain();
     sharedMaster.gain.value = MASTER_CEILING;
     // Soft peak catch only — never duck the continuous bed (that's on bedBus).
@@ -62,11 +65,12 @@ function masterBus(ctx: AudioContext): GainNode {
     sharedLimiter.attack.value = 0.02;
     sharedLimiter.release.value = 0.45;
     sharedMaster.connect(sharedLimiter);
-    sharedLimiter.connect(ctx.destination);
+    // Outer AudioBus owns destination + master limiter for all layers.
+    sharedLimiter.connect(audioBusInput("ticks", ctx));
 
     sharedBedOut = ctx.createGain();
     sharedBedOut.gain.value = BED_CEILING;
-    sharedBedOut.connect(ctx.destination);
+    sharedBedOut.connect(audioBusInput("bed", ctx));
   }
   return sharedMaster;
 }
@@ -667,7 +671,7 @@ export function stopSchumannAtmosphere(opts?: { fadeSec?: number }): void {
  */
 export function parkClockAudio(opts?: { fadeMs?: number }): void {
   if (audioSilenced) return;
-  const fadeMs = opts?.fadeMs ?? 120;
+  const fadeMs = opts?.fadeMs ?? AUDIO_BUS.FADE_OUT_MS;
   const fadeSec = fadeMs / 1000;
   const epoch = ++muteEpoch;
   audioParked = true;
@@ -776,7 +780,7 @@ export function unparkClockAudio(): void {
  * Fade the clock bus out, then stop oscillators / suspend context.
  */
 export function muteClockAudio(opts?: { fadeMs?: number }): void {
-  const fadeMs = opts?.fadeMs ?? 160;
+  const fadeMs = opts?.fadeMs ?? AUDIO_BUS.FADE_OUT_MS;
   const fadeSec = fadeMs / 1000;
   const epoch = ++muteEpoch;
   audioSilenced = true;

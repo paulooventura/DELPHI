@@ -50,3 +50,5 @@ Claude package target (more distinct cultural patches, Karplus nakshatra, etc.) 
 ## Tune by ear
 
 Edit `heliodromeChordConfig.ts` only first. Rebuild/push Delphi `main` and hard-refresh `?b=…`.
+
+Master fades / clip dissolve / Aulos duck: see `docs/AUDIO-BUS.md` (`lib/audioBus.ts`).

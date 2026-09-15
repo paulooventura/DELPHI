@@ -14,6 +14,15 @@ import {
   stopSchumannAtmosphere,
 } from "./clockSfx";
 import { isSymphonyDucked, subscribeSymphonyDuck } from "./symphonyDuck";
+import {
+  armHeliodrome,
+  audioBusInput,
+  disarmHeliodrome,
+  duck,
+  ensureAudioBus,
+  unduck,
+  AUDIO_BUS,
+} from "./audioBus";
 import { pulseHaptic, hapticsMuted } from "./haptics";
 import {
   GHATI_MS,
@@ -412,7 +421,7 @@ function orderStrings(lanes: OrreryLaneState[]) {
  */
 export async function startHeliodromeChord(): Promise<void> {
   heliodromeChordWanted = true;
-  if (isClockAudioSilenced() || isSymphonyDucked()) return;
+  if (isClockAudioSilenced()) return;
   const ctx = getClockAudio();
   if (!ctx) return;
   if (ctx.state === "suspended") {
@@ -423,13 +432,20 @@ export async function startHeliodromeChord(): Promise<void> {
     }
   }
   if (ctx.state !== "running") return;
-  if (runtime?.ctx === ctx) return;
+  if (runtime?.ctx === ctx) {
+    armHeliodrome();
+    if (isSymphonyDucked()) duck("chord");
+    else unduck("chord");
+    return;
+  }
 
-  stopHeliodromeChordGraph();
+  stopHeliodromeChordGraph(false);
   // Soften Schumann so the NOW-Chord is the clear app voice (no film bed pad).
   if (isSchumannAtmosphereRunning()) stopSchumannAtmosphere({ fadeSec: 0.4 });
 
+  ensureAudioBus(ctx);
   const master = ctx.createGain();
+  // Channel fader handles ceremonial arm — keep internal master at working level.
   master.gain.value = NOW_CHORD.MASTER_GAIN * 0.22;
   const compressor = ctx.createDynamicsCompressor();
   compressor.threshold.value = -18;
@@ -443,7 +459,7 @@ export async function startHeliodromeChord(): Promise<void> {
   bedGain.gain.value = 0.0001;
 
   master.connect(compressor);
-  compressor.connect(ctx.destination);
+  compressor.connect(audioBusInput("chord", ctx));
   whirBus.connect(master);
   bedGain.connect(master);
 
@@ -479,44 +495,50 @@ export async function startHeliodromeChord(): Promise<void> {
     lastDayHour: null,
   };
   buildBed(runtime);
+  armHeliodrome();
+  if (isSymphonyDucked()) duck("chord");
 }
 
-function stopHeliodromeChordGraph(): void {
+function stopHeliodromeChordGraph(fade = true): void {
   if (!runtime) return;
   const rt = runtime;
   runtime = null;
   const t = rt.ctx.currentTime;
+  if (fade) disarmHeliodrome();
   try {
     rt.master.gain.cancelScheduledValues(t);
-    rt.master.gain.setTargetAtTime(0.0001, t, 0.04);
+    rt.master.gain.setTargetAtTime(0.0001, t, 0.08);
   } catch {
     /* ignore */
   }
-  for (const s of rt.bedSources) {
-    try {
-      s.stop();
-    } catch {
-      /* ignore */
+  const tearDelay = fade ? AUDIO_BUS.HELIODROME_DISARM_MS + 40 : 0;
+  window.setTimeout(() => {
+    for (const s of rt.bedSources) {
+      try {
+        s.stop();
+      } catch {
+        /* ignore */
+      }
     }
-  }
-  for (const v of rt.whir.values()) {
-    try {
-      v.noise.stop();
-      v.osc.stop();
-    } catch {
-      /* ignore */
+    for (const v of rt.whir.values()) {
+      try {
+        v.noise.stop();
+        v.osc.stop();
+      } catch {
+        /* ignore */
+      }
     }
-  }
+  }, tearDelay);
 }
 
-/** Stone mute — tear voices but keep wanted so unmute/orrery frame can rebuild. */
+/** Stone mute — fade then tear voices but keep wanted so unmute can rebuild. */
 export function silenceHeliodromeChord(): void {
-  stopHeliodromeChordGraph();
+  stopHeliodromeChordGraph(true);
 }
 
-/** After unmute / Aulos ends — rebuild if the chord is still wanted. */
+/** After unmute — rebuild if the chord is still wanted. */
 export function maybeRestartHeliodromeChord(): void {
-  if (heliodromeChordWanted && !isClockAudioSilenced() && !isSymphonyDucked()) {
+  if (heliodromeChordWanted && !isClockAudioSilenced()) {
     void startHeliodromeChord();
   }
 }
@@ -524,7 +546,7 @@ export function maybeRestartHeliodromeChord(): void {
 /** Tear chord when sound master turns off (stone quiet / leave app audio). */
 export function stopHeliodromeChord(): void {
   heliodromeChordWanted = false;
-  stopHeliodromeChordGraph();
+  stopHeliodromeChordGraph(true);
 }
 
 /**
@@ -533,11 +555,13 @@ export function stopHeliodromeChord(): void {
  */
 export function tickHeliodromeChord(lanes: OrreryLaneState[], hapticsOn: boolean): void {
   if (!heliodromeChordWanted) return;
-  if (isClockAudioSilenced() || isClockTimeFrozen() || isSymphonyDucked()) {
+  // Aulos ducks via AudioBus — chord keeps synthesizing underneath.
+  if (isClockAudioSilenced() || isClockTimeFrozen()) {
     if (runtime) {
       const t = runtime.ctx.currentTime;
-      runtime.whirBus.gain.setTargetAtTime(0.0001, t, 0.05);
-      runtime.master.gain.setTargetAtTime(0.0001, t, 0.05);
+      // Fade internal voices — no hard cut; channel stays for fast unfreeze restore.
+      runtime.whirBus.gain.setTargetAtTime(0.0001, t, 0.12);
+      runtime.master.gain.setTargetAtTime(0.0001, t, 0.12);
     }
     return;
   }
@@ -621,7 +645,7 @@ if (typeof window !== "undefined") {
   onClockAudioMute(() => silenceHeliodromeChord());
   onClockAudioUnmute(() => maybeRestartHeliodromeChord());
   subscribeSymphonyDuck(ducked => {
-    if (ducked) silenceHeliodromeChord();
-    else maybeRestartHeliodromeChord();
+    if (ducked) duck("chord");
+    else unduck("chord");
   });
 }

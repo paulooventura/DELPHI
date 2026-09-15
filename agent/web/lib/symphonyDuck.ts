@@ -1,6 +1,6 @@
 /**
  * Soft-duck flag while Aulos of Delphi is the lead vocal.
- * Pauses the Heliodrome NOW-Chord (film bed soundtrack removed).
+ * AudioBus ducks the Heliodrome chord channel a few dB (no hard cut).
  */
 
 type Listener = (ducked: boolean) => void;

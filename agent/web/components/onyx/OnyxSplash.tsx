@@ -3,13 +3,19 @@
 import { useEffect, useRef, useState } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { getClockAudio, resumeClockAudio } from "../../lib/clockSfx";
+import {
+  AUDIO_BUS,
+  connectClipWithTail,
+  ensureAudioBus,
+  fadeIn,
+  fadeOut,
+} from "../../lib/audioBus";
 
 /**
  * Boot film sequence (muted picture; Web Audio unlock on first tap):
  *   A historical open → hold → B Pythia / priestess → hold → C stairs → access gate.
- * Further clips can append later. Opening soundtrack = decoded historical m4a
- * with 0→100% fade over 1.5s (iOS-safe). Later clips stay visual until we wire
- * their beds.
+ * Opening soundtrack = decoded historical m4a through AudioBus splash channel
+ * (fade in + delay/reverb dissolve on end — never a hard cut).
  */
 
 const CLIPS = [
@@ -20,7 +26,6 @@ const CLIPS = [
 
 const CLIP_A_AUDIO = `/pneuma-boot-historical-audio.m4a?v=${DELPHI_BUILD}`;
 
-const AUDIO_FADE_MS = 1500;
 const END_HOLD_MS = 1500;
 /** Three ~5s clips + holds + tap wait. */
 const SAFETY_MS = 60_000;
@@ -40,27 +45,40 @@ export function OnyxSplash({
   const holdTimer = useRef<number | null>(null);
   const audioBufRef = useRef<AudioBuffer | null>(null);
   const bufferSrcRef = useRef<AudioBufferSourceNode | null>(null);
-  const gainRef = useRef<GainNode | null>(null);
+  const dissolveRef = useRef<((onDone?: () => void) => void) | null>(null);
   const audioUnlocked = useRef(false);
   const unlocking = useRef(false);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
   const [needTap, setNeedTap] = useState(true);
 
-  const stopBootAudio = () => {
+  const stopBootAudio = (hard = false) => {
+    const dissolve = dissolveRef.current;
+    dissolveRef.current = null;
+    if (!hard && dissolve) {
+      dissolve(() => {
+        try {
+          bufferSrcRef.current?.stop();
+        } catch {
+          /* already stopped */
+        }
+        bufferSrcRef.current = null;
+      });
+      return;
+    }
     try {
       bufferSrcRef.current?.stop();
     } catch {
       /* already stopped */
     }
     bufferSrcRef.current = null;
-    gainRef.current = null;
+    fadeOut("splash", AUDIO_BUS.CLIP_FADE_OUT_MS);
   };
 
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
-    stopBootAudio();
+    stopBootAudio(false);
     if (holdTimer.current != null) {
       window.clearTimeout(holdTimer.current);
       holdTimer.current = null;
@@ -91,21 +109,24 @@ export function OnyxSplash({
     const buf = audioBufRef.current;
     if (!ctx || !buf) return false;
 
-    stopBootAudio();
-    const gain = ctx.createGain();
+    stopBootAudio(true);
+    ensureAudioBus(ctx);
     const src = ctx.createBufferSource();
     src.buffer = buf;
+    const { dry, stopDissolve } = connectClipWithTail(ctx, src);
     const t0 = ctx.currentTime;
-    gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(1, t0 + AUDIO_FADE_MS / 1000);
-    src.connect(gain);
-    gain.connect(ctx.destination);
+    dry.gain.setValueAtTime(AUDIO_BUS.SILENCE, t0);
+    dry.gain.exponentialRampToValueAtTime(1, t0 + AUDIO_BUS.CLIP_FADE_IN_MS / 1000);
+    fadeIn("splash", AUDIO_BUS.CLIP_FADE_IN_MS, 1);
     src.onended = () => {
-      if (bufferSrcRef.current === src) bufferSrcRef.current = null;
+      if (bufferSrcRef.current === src) {
+        bufferSrcRef.current = null;
+        stopDissolve();
+      }
     };
     src.start(0);
     bufferSrcRef.current = src;
-    gainRef.current = gain;
+    dissolveRef.current = stopDissolve;
     return true;
   };
 
@@ -182,7 +203,7 @@ export function OnyxSplash({
   const cueClip = (next: "b" | "c", src: string) => {
     if (entered.current) return;
     phaseRef.current = next;
-    if (next === "b") stopBootAudio();
+    if (next === "b") stopBootAudio(false);
     const v = videoRef.current;
     if (!v) {
       finish(false);
@@ -224,7 +245,7 @@ export function OnyxSplash({
         return;
       }
       phaseRef.current = "hold-ab";
-      stopBootAudio();
+      stopBootAudio(false);
       holdTimer.current = window.setTimeout(() => {
         holdTimer.current = null;
         cueClip("b", CLIPS[1]);
@@ -263,7 +284,7 @@ export function OnyxSplash({
 
     return () => {
       cancelled = true;
-      stopBootAudio();
+      stopBootAudio(true);
     };
   }, []);
 
@@ -280,7 +301,7 @@ export function OnyxSplash({
       clearTimeout(readyFallback);
       clearTimeout(safety);
       if (holdTimer.current != null) clearTimeout(holdTimer.current);
-      stopBootAudio();
+      stopBootAudio(true);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
