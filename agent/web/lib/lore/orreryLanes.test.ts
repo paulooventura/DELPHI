@@ -11,6 +11,55 @@ import {
 import { computeSolarDayEvents } from "../cosmic/astronomy";
 
 describe("orrery lanes — CLOCK-SPEC", () => {
+  it("stacks slowest cycles at the top and fastest at the bottom", () => {
+    const { lanes } = computeOrreryState(
+      new Date("2026-07-24T18:00:00Z"),
+      36.16,
+      -86.78,
+    );
+    expect(lanes[0]!.id).toBe("precession");
+    expect(lanes[lanes.length - 1]!.id).toBe("ms");
+    expect(lanes.map(l => l.id).indexOf("dreamspell-kin")).toBeLessThan(
+      lanes.map(l => l.id).indexOf("dreamspell-wavespell"),
+    );
+    expect(lanes.map(l => l.id).indexOf("dreamspell-wavespell")).toBeLessThan(
+      lanes.map(l => l.id).indexOf("dreamspell-tone"),
+    );
+    for (let i = 1; i < lanes.length; i++) {
+      expect(lanes[i - 1]!.speedT).toBeGreaterThanOrEqual(lanes[i]!.speedT);
+    }
+  });
+
+  it("Great Year uses IAU 2006 precession from J2000 JD, not civil 2000-01-01 linear", () => {
+    const date = new Date("2026-07-24T18:00:00Z");
+    const { lanes } = computeOrreryState(date, 36.16, -86.78);
+    const prec = lanes.find(l => l.id === "precession")!;
+    const jd = date.getTime() / 86400000 + 2440587.5;
+    const centuries = (jd - 2451545.0) / 36525;
+    const arcsec = 5028.796195 * centuries + 1.1054348 * centuries * centuries;
+    expect(prec.activeLabel).toContain(arcsec.toFixed(1));
+  });
+
+  it("planetary hour and muhūrta follow sunrise-anchored unequal day/night parts", () => {
+    const date = new Date("2026-07-29T23:45:00Z"); // ~6:45 PM CDT Nashville (still daylight in July)
+    const { lanes } = computeOrreryState(date, 36.16, -86.78);
+    const ph = lanes.find(l => l.id === "planetary-hour")!;
+    const muh = lanes.find(l => l.id === "muhurta")!;
+    expect(ph.cycle).toMatch(/day|night/i);
+    expect(muh.cycle).toMatch(/day\/night/i);
+    expect(muh.index).toBeGreaterThanOrEqual(0);
+    expect(muh.index).toBeLessThan(30);
+    expect(muh.progress).toBeGreaterThanOrEqual(0);
+    expect(muh.progress).toBeLessThan(1.0001);
+    // Late evening after sunset → night half (15–29)
+    const night = computeOrreryState(
+      new Date("2026-07-30T03:00:00Z"),
+      36.16,
+      -86.78,
+    ).lanes.find(l => l.id === "muhurta")!;
+    expect(night.index).toBeGreaterThanOrEqual(15);
+  });
+
   it("returns uncollapsed lanes north→south including slow sky", () => {
     const { lanes, slowSky } = computeOrreryState(
       new Date("2026-07-24T18:00:00Z"),
@@ -18,8 +67,8 @@ describe("orrery lanes — CLOCK-SPEC", () => {
       -86.78,
     );
     expect(lanes.length).toBeGreaterThanOrEqual(24);
-    expect(lanes[0]!.id).toBe("precession"); // slowest / north
-    expect(lanes[lanes.length - 1]!.id).toBe("ms"); // fast / south
+    expect(lanes[0]!.id).toBe("precession");
+    expect(lanes[lanes.length - 1]!.id).toBe("ms");
     expect(lanes[0]!.speedT).toBeGreaterThan(lanes[lanes.length - 1]!.speedT);
     expect(slowSky.length).toBeGreaterThanOrEqual(3);
     const ids = lanes.map(l => l.id);

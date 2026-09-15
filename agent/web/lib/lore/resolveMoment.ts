@@ -9,14 +9,19 @@
  * through the day from real cycles, not churn.
  */
 
-import { muhurtaPhase } from "../cosmic/math";
 import { computePhases } from "../phase/engine";
-import { dateFromJd } from "../phase/timeResolution";
+import { dateFromJd, zoneForCoords } from "../phase/timeResolution";
 import { buildCycleContext } from "../worldCycles/context";
 import { chineseYearPlugin } from "../worldCycles/plugins/chineseYear";
 import { tzolkinPlugin } from "../worldCycles/plugins/tzolkin";
 import { ayanamsa, localSiderealTime } from "../../services/astronomyEngine";
 import { byId, type QualiaEntry } from "./qualia";
+import {
+  CHALDEAN_PLANETS,
+  solarDayWindow,
+  unequalMuhurta,
+  unequalPlanetaryHour,
+} from "./solarDayHours";
 
 const WZ = [
   "wz-aries", "wz-taurus", "wz-gemini", "wz-cancer", "wz-leo", "wz-virgo",
@@ -45,13 +50,8 @@ const PD = [
   "pd-sun", "pd-moon", "pd-mars", "pd-mercury", "pd-jupiter", "pd-venus", "pd-saturn",
 ] as const;
 
-/** Chaldean order for planetary hours. */
-const CHALDEAN = [
-  "saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon",
-] as const;
-
-/** Weekday (0=Sun … 6=Sat) → first hour's planet index in CHALDEAN. */
-const DAY_RULER_IDX = [3, 6, 2, 5, 1, 4, 0] as const;
+/** Chaldean order for planetary hours — re-export for callers. */
+const CHALDEAN = CHALDEAN_PLANETS;
 
 const SHI_BRANCH = [
   "zi", "chou", "yin", "mao", "chen", "si", "wu", "wei", "shen", "you", "xu", "hai",
@@ -161,8 +161,11 @@ export type MomentResolution = {
     chineseAnimal: string;
     chineseElement: string;
     planetaryHour: string;
+    planetaryHourIndex: number;
+    planetaryHourProgress: number;
     chineseShi: string;
     muhurta: number;
+    muhurtaProgress: number;
     wuku: number;
     pancawara: number;
     manzil: number;
@@ -199,8 +202,7 @@ export function resolveMoment(jd: number, lat: number, lon: number): MomentResol
   const instant = dateFromJd(jd);
   let timeZone = "UTC";
   try {
-    if (lon >= -100 && lon <= -70 && lat >= 24 && lat <= 50) timeZone = "America/Chicago";
-    else if (lon >= 30 && lon <= 36 && lat >= 33 && lat <= 36) timeZone = "Asia/Nicosia";
+    timeZone = zoneForCoords(lat, lon);
   } catch {
     /* keep UTC */
   }
@@ -239,13 +241,14 @@ export function resolveMoment(jd: number, lat: number, lon: number): MomentResol
   const shiIndex = Math.floor(((local.hour + 1) % 24) / 2) % 12;
   const shi = `shi-${SHI_BRANCH[shiIndex]!}`;
 
-  // Planetary hour — equal-hour Chaldean cascade (unequal hours when sunrise lands later).
-  const planetIdx = (DAY_RULER_IDX[local.weekday]! + local.hour) % 7;
-  const ph = `ph-${CHALDEAN[planetIdx]!}`;
+  // Planetary hour — unequal day/night twelfths from true sunrise/sunset.
+  const solarWin = solarDayWindow(instant, lat, lon, timeZone);
+  const phState = unequalPlanetaryHour(instant, solarWin);
+  const ph = `ph-${phState.planet}`;
 
-  // Vedic muhūrta — 30 × ~48 min from local midnight (sunrise-relative when available upstream).
-  const muh = muhurtaPhase(instant);
-  const muhId = `muh-${String(muh.index + 1).padStart(2, "0")}`;
+  // Vedic muhūrta — 15 day + 15 night unequal parts of the solar day.
+  const muhState = unequalMuhurta(instant, solarWin);
+  const muhId = `muh-${String(muhState.index + 1).padStart(2, "0")}`;
 
   // Numerology — reduced civil date digits (0–9).
   const numDigit = reduceDigits(local.year * 10000 + local.month * 100 + local.day);
@@ -274,9 +277,12 @@ export function resolveMoment(jd: number, lat: number, lon: number): MomentResol
       tzolkinTone: Number(tz.meta.tone),
       chineseAnimal: animal,
       chineseElement: element,
-      planetaryHour: CHALDEAN[planetIdx]!,
+      planetaryHour: phState.planet,
+      planetaryHourIndex: phState.planetIndex,
+      planetaryHourProgress: phState.progress,
       chineseShi: SHI_BRANCH[shiIndex]!,
-      muhurta: muh.index + 1,
+      muhurta: muhState.index + 1,
+      muhurtaProgress: muhState.progress,
       wuku: wukuNum,
       pancawara: pancaNum,
       manzil: manzilNum,

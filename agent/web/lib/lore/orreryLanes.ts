@@ -6,17 +6,22 @@
  * Do not center the active cell — that destroys phase information.
  */
 
-import { computeSolarDayEvents } from "../cosmic/astronomy";
-import { MUHURTA_COUNT, MUHURTA_MINUTES } from "../cosmic/math";
 import {
   CREATION_TONES,
   TRIBES_OF_TIME,
   dreamspellKinFromDate,
   galacticDayFromKin,
 } from "../galacticFrequency";
-import { jdFromDate } from "../phase/timeResolution";
+import { precessionAccumulatedDeg } from "../phase/plugins/astronomical";
+import { jdFromDate, zoneForCoords } from "../phase/timeResolution";
 import { QUALIA, byId } from "./qualia";
 import { resolveMoment } from "./resolveMoment";
+import {
+  CHALDEAN_PLANETS,
+  solarDayWindow,
+  unequalMuhurta,
+  unequalPlanetaryHour,
+} from "./solarDayHours";
 
 /** 1 ghati = 24 minutes. Zero-point is local sunrise, not midnight. */
 export const GHATI_MS = 24 * 60 * 1000;
@@ -135,7 +140,7 @@ export const ORRERY_LANE_GROUPS = {
   ] as const satisfies readonly OrreryLaneId[],
   mystical: [
     "precession", "age", "numerology", "prana",
-    "dreamspell-kin", "dreamspell-tone", "dreamspell-wavespell",
+    "dreamspell-kin", "dreamspell-wavespell", "dreamspell-tone",
   ] as const satisfies readonly OrreryLaneId[],
 } as const;
 
@@ -271,7 +276,7 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
   precession: {
     origin: "Axial precession — the Great Year — is the slow wobble that walks the vernal point backward around the ecliptic.",
     usedSince: "Hipparchus measured it in the 2nd century BCE; the period is about 25,772 years in modern IAU models.",
-    curious: "The vernal point slips about 50.3 arcseconds a year, so one degree of precession takes roughly seventy-two years.",
+    curious: "Heliodrome uses IAU 2006 general precession in longitude from J2000 (JD 2451545.0), matching the PHASE CosmicClock stack.",
   },
   ke: {
     origin: "The Chinese kè originally marked a water-clock notch; later civil practice used one hundred kè in a day (14.4 minutes).",
@@ -309,14 +314,14 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
     curious: "The Zǐ hour straddles midnight, roughly 11 p.m.–1 a.m.; therefore a named shí does not begin on the modern even-hour boundary everywhere.",
   },
   "planetary-hour": {
-    origin: "Hellenistic astrologers assigned daylight and night to seven wandering lights in the repeating Chaldean order, beginning each day with its ruling planet.",
+    origin: "Hellenistic astrologers assigned daylight and night to seven wandering lights in the repeating Chaldean order, beginning each day with its ruling planet at sunrise.",
     usedSince: "Planetary-hour schemes are attested in the Greco-Roman world in the early centuries of the Common Era.",
-    curious: "The first-hour ruler generates the weekday sequence: Sun-day, Moon-day, Mars-day and so on—the same planetary ancestry survives in many languages.",
+    curious: "Heliodrome uses unequal hours: twelve from sunrise→sunset and twelve from sunset→next sunrise, so winter night-hours run longer than summer ones.",
   },
   muhurta: {
-    origin: "Muhūrta is an Indic division of the day used in astronomy, ritual timing, and electional traditions; a conventional day contains thirty.",
+    origin: "Muhūrta is an Indic division of the ahorātra into thirty parts used in astronomy, ritual timing, and electional traditions.",
     usedSince: "The term and related divisions occur in ancient Sanskrit literature and were systematized across classical Indian astronomical traditions.",
-    curious: "A muhūrta is conventionally 48 modern minutes, but its cultural meaning can depend on sunrise and context rather than a wall-clock timestamp alone.",
+    curious: "Heliodrome uses fifteen equal parts of daylight and fifteen of night from true local sunrise — not a fixed 48-minute wall-clock slice.",
   },
   ghati: {
     origin: "Ghaṭī or ghaṭikā is an Indic time unit associated with water clocks: sixty ghaṭī complete a day, making each about 24 modern minutes.",
@@ -362,7 +367,7 @@ export type SlowSkyItem = {
   tier: LaneTier;
 };
 
-const CHALDEAN = ["saturn", "jupiter", "mars", "sun", "venus", "mercury", "moon"] as const;
+const CHALDEAN = CHALDEAN_PLANETS;
 /** Sunday→Saturday planetary-day order — matches resolveMoment `PD`. */
 const PLANETARY_DAY_IDS = [
   "pd-sun", "pd-moon", "pd-mars", "pd-mercury", "pd-jupiter", "pd-venus", "pd-saturn",
@@ -432,9 +437,11 @@ function localHourFrac(date: Date, timeZone: string): {
 }
 
 function zoneFor(lat: number, lon: number): string {
-  if (lon >= -100 && lon <= -70 && lat >= 24 && lat <= 50) return "America/Chicago";
-  if (lon >= 30 && lon <= 36 && lat >= 33 && lat <= 36) return "Asia/Nicosia";
-  return "UTC";
+  try {
+    return zoneForCoords(lat, lon);
+  } catch {
+    return "UTC";
+  }
 }
 
 function cellsFromSystem(system: string): OrreryCell[] {
@@ -483,20 +490,21 @@ export function computeOrreryState(
     return { id, label: e?.name ?? id, glyph: e?.glyph };
   });
 
-  // Muhūrta — 30 × 48 min from local midnight in the site timezone (not host TZ).
-  const muhTotal =
-    (hour * 60 + minute + second / 60 + ms / 60_000) / MUHURTA_MINUTES;
-  const muhIndex = Math.floor(mod(muhTotal, MUHURTA_COUNT));
-  const muhProg = mod(muhTotal, 1);
+  // Muhūrta — 15 day + 15 night unequal parts from true sunrise/sunset.
+  const solarWin = solarDayWindow(date, lat, lon, timeZone);
+  const muhState = unequalMuhurta(date, solarWin);
+  const muhIndex = muhState.index;
+  const muhProg = muhState.progress;
 
   // Shí — 2 h cells; Zi straddles 23:00–01:00.
   const shiIndex = Math.floor(((hour + 1) % 24) / 2) % 12;
   const shiProg = mod((hour + 1) % 24, 2) / 2
     + (minute + second / 60 + ms / 60_000) / 120;
 
-  // Planetary hour — equal civil hours (matches resolveMoment Chaldean cascade).
-  const phIndex = CHALDEAN.indexOf(meta.planetaryHour as (typeof CHALDEAN)[number]);
-  const phProg = (minute + second / 60 + ms / 60_000) / 60;
+  // Planetary hour — unequal day/night twelfths (same math as resolveMoment).
+  const phState = unequalPlanetaryHour(date, solarWin);
+  const phIndex = phState.planetIndex;
+  const phProg = phState.progress;
 
   // Moon phase — 8 equal synodic sectors, named phase at sector center.
   // progress = fraction elapsed through the current sector's true boundaries.
@@ -551,13 +559,8 @@ export function computeOrreryState(
   const numIndex = Math.max(0, meta.numerology % 10);
   const numProg = dayFrac;
 
-  // Ghati — 60 × 24 min from local sunrise (not midnight).
-  const solarToday = computeSolarDayEvents(date, lat, lon);
-  let sunrise = solarToday.sunrise;
-  if (date.getTime() < sunrise.getTime()) {
-    const prevDay = new Date(date.getTime() - 86_400_000);
-    sunrise = computeSolarDayEvents(prevDay, lat, lon).sunrise;
-  }
+  // Ghati — 60 × 24 min from the same sunrise that opened this solar day.
+  const sunrise = solarWin.sunrise;
   const ghatiFloat = (date.getTime() - sunrise.getTime()) / GHATI_MS;
   const ghatiIndex = Math.floor(mod(ghatiFloat, 60));
   const ghatiProg = mod(ghatiFloat, 1);
@@ -619,8 +622,8 @@ export function computeOrreryState(
   const centuryIndex = 4;
   const centuryProg = (calYear - centuryStart + yearProg) / 100;
 
-  const yearsFromJ2000 = (date.getTime() - Date.UTC(2000, 0, 1)) / (365.2422 * 86_400_000);
-  const precDeg = mod(yearsFromJ2000 * (50.29 / 3600), 360);
+  const precDeg = mod(precessionAccumulatedDeg(jd), 360);
+  const precArcSec = precDeg * 3600;
   const precCells = Array.from({ length: 12 }, (_, i) => ({
     id: `prec-${i * 30}`,
     label: `${i * 30}°`,
@@ -659,7 +662,7 @@ export function computeOrreryState(
   const regaIndex = Math.floor(mod(regaFloat, REGA_PER_HELEK));
   const regaProg = mod(regaFloat, 1);
 
-  // Display order: north (slow) → south (fast). speedT 1 = blue/north, 0 = red/south.
+  // Display order: top = slowest, bottom = fastest. speedT high = blue/north.
   const lanesNorthToSouth: OrreryLaneState[] = [
     {
       id: "precession",
@@ -670,7 +673,7 @@ export function computeOrreryState(
       index: precIndex,
       progress: precProg,
       cells: precCells,
-      activeLabel: `+${(yearsFromJ2000 * 50.29).toFixed(1)}″ J2000`,
+      activeLabel: `+${precArcSec.toFixed(1)}″ J2000`,
       lore: "Earth's axial wobble — twelve 30° sectors of the Great Year. Slower than any civil calendar on this stack.",
     },
     {
@@ -748,18 +751,6 @@ export function computeOrreryState(
       lore: "Dreamspell's 260-kin count — Argüelles 13:20, not the GMT Tzolk'in. Leap days are skipped.",
     },
     {
-      id: "dreamspell-tone",
-      name: "Dreamspell tone",
-      cycle: "13 days",
-      tier: "celebrated",
-      speedT: 0.99,
-      index: dsToneIndex,
-      progress: dayFrac,
-      cells: dsToneCells,
-      activeLabel: `${dsDay.tone.tone} ${dsDay.tone.name}`,
-      lore: "Thirteen Tones of Creation walking one per day. Magnetic through Cosmic, independent of the Maya tone names.",
-    },
-    {
       id: "dreamspell-wavespell",
       name: "Dreamspell wavespell",
       cycle: "13 days × 20",
@@ -772,11 +763,23 @@ export function computeOrreryState(
       lore: "Twenty wavespells of thirteen kin. Each is named by the tribe that opens it.",
     },
     {
+      id: "dreamspell-tone",
+      name: "Dreamspell tone",
+      cycle: "13 days",
+      tier: "celebrated",
+      speedT: 0.99,
+      index: dsToneIndex,
+      progress: dayFrac,
+      cells: dsToneCells,
+      activeLabel: `${dsDay.tone.tone} ${dsDay.tone.name}`,
+      lore: "Thirteen Tones of Creation walking one per day. Magnetic through Cosmic, independent of the Maya tone names.",
+    },
+    {
       id: "month",
       name: "Month",
       cycle: "12 months",
       tier: "display",
-      speedT: 1,
+      speedT: 0.985,
       index: calMonth - 1,
       progress: monthProg,
       cells: monthCells,
@@ -933,20 +936,20 @@ export function computeOrreryState(
     {
       id: "planetary-hour",
       name: "Planetary hour",
-      cycle: "~60 min",
+      cycle: "day / night 1⁄12",
       tier: "celebrated",
       speedT: 0.45,
       index: Math.max(0, phIndex),
       progress: phProg,
       cells: phCells,
       activeLabel: phCells[Math.max(0, phIndex)]?.label ?? "—",
-      source: byId(`ph-${meta.planetaryHour}`)?.source,
-      lore: "Chaldean planetary hours — each civil hour named for a wandering star in the ancient cascade. Celebrated rulership, not a spectrograph.",
+      source: byId(`ph-${phState.planet}`)?.source,
+      lore: "Classical unequal planetary hours — twelve from sunrise to sunset, twelve from sunset to next sunrise, named in the Chaldean cascade.",
     },
     {
       id: "muhurta",
       name: "Muhūrta",
-      cycle: "~48 min",
+      cycle: "day/night 1⁄15",
       tier: "celebrated",
       speedT: 0.36,
       index: muhIndex,
@@ -954,7 +957,7 @@ export function computeOrreryState(
       cells: muhCells,
       activeLabel: muhCells[muhIndex]?.label ?? `Muhūrta ${muhIndex + 1}`,
       source: byId(`muh-${String(muhIndex + 1).padStart(2, "0")}`)?.source,
-      lore: "Thirty muhūrta of about forty-eight minutes. The auspicious unit of the Indic day — quality-bearing, celebrated.",
+      lore: "Thirty muhūrta of the ahorātra: fifteen equal parts of daylight, fifteen of night — counted from true local sunrise.",
     },
     {
       id: "ghati",
@@ -1154,7 +1157,7 @@ export function computeOrreryState(
 
 export const ALL_ORRERY_LANE_IDS: readonly OrreryLaneId[] = [
   "precession", "age", "century", "year", "season", "tzolkin",
-  "dreamspell-kin", "dreamspell-tone", "dreamspell-wavespell",
+  "dreamspell-kin", "dreamspell-wavespell", "dreamspell-tone",
   "month", "date", "moon",
   "nakshatra", "decan", "wuku", "planetary-day", "pancawara", "manzil", "numerology", "day",
   "shi", "planetary-hour", "muhurta", "ghati", "ke", "min", "beat", "pala",

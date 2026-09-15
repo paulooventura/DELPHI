@@ -242,6 +242,19 @@ export const saturnSidereal = planetSidereal(
 
 export const PRECESSION_PERIOD_YEARS = 25772;
 
+/** J2000 TT epoch used by IAU 2006 precession (JD). */
+export const J2000_JD = 2451545.0;
+
+/**
+ * Accumulated general precession in longitude (degrees) from J2000.
+ * IAU 2006 linear+quadratic terms — same model PHASE uses for the CosmicClock.
+ */
+export function precessionAccumulatedDeg(jd: number): number {
+  const centuries = (jd - J2000_JD) / 36525;
+  const arcsec = 5028.796195 * centuries + 1.1054348 * centuries * centuries;
+  return arcsec / 3600;
+}
+
 export const precession: PhaseCycleDefinition = {
   id: "precession",
   label: "Axial precession (Great Year)",
@@ -257,11 +270,7 @@ export const precession: PhaseCycleDefinition = {
   requiresLocation: false,
   requiresExactTime: false,
   compute(ctx) {
-    const J2000 = 2451545.0;
-    const centuries = (ctx.jd - J2000) / 36525;
-    // IAU 2006 general precession in longitude, arcsec
-    const arcsec = 5028.796195 * centuries + 1.1054348 * centuries * centuries;
-    const degrees = arcsec / 3600;
+    const degrees = precessionAccumulatedDeg(ctx.jd);
     return {
       phase: normalizePhase(degrees / 360),
       meta: { accumulatedDeg: Number(degrees.toFixed(4)) },
