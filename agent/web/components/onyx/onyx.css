@@ -156,48 +156,55 @@ html.chorus-embed .onyx-root {
   position: absolute;
   inset: 0;
   z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: grid;
+  place-items: center;
   pointer-events: none;
 }
 .onyx-access-crystal {
+  grid-area: 1 / 1;
   position: relative;
   z-index: 1;
   display: block;
-  width: min(52vw, 268px);
+  width: min(48vw, 240px);
   height: auto;
-  max-height: min(58vh, 420px);
+  max-height: min(54vh, 400px);
   margin: 0;
   object-fit: contain;
   object-position: center;
-  transform: scale(0.94);
+  transform: translate3d(0, 0, 0) scale(0.94);
   opacity: 0;
   pointer-events: none;
-  filter: drop-shadow(0 0 18px rgba(150, 90, 255, 0.35));
+  /* Isolation: violet rim so the octagon reads on the black void film */
+  filter:
+    drop-shadow(0 0 1px rgba(210, 180, 255, 0.55))
+    drop-shadow(0 0 14px rgba(150, 90, 255, 0.4))
+    drop-shadow(0 0 36px rgba(80, 30, 160, 0.35));
   transition:
     opacity 1.6s cubic-bezier(0.22, 1, 0.36, 1),
     transform 1.8s cubic-bezier(0.22, 1, 0.36, 1),
     filter 1.6s ease;
 }
 .onyx-access-crystal.on {
-  opacity: 0.9;
-  transform: scale(1);
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
   filter:
-    drop-shadow(0 0 22px rgba(168, 110, 255, 0.55))
-    drop-shadow(0 0 48px rgba(90, 40, 180, 0.35));
+    drop-shadow(0 0 1.5px rgba(230, 200, 255, 0.7))
+    drop-shadow(0 0 18px rgba(168, 110, 255, 0.55))
+    drop-shadow(0 0 48px rgba(90, 40, 180, 0.4));
   animation: onyx-access-crystal-breathe 4.2s ease-in-out infinite;
 }
 @keyframes onyx-access-crystal-breathe {
   0%, 100% {
     filter:
-      drop-shadow(0 0 18px rgba(168, 110, 255, 0.45))
-      drop-shadow(0 0 40px rgba(90, 40, 180, 0.28));
+      drop-shadow(0 0 1px rgba(210, 180, 255, 0.55))
+      drop-shadow(0 0 16px rgba(168, 110, 255, 0.45))
+      drop-shadow(0 0 40px rgba(90, 40, 180, 0.32));
   }
   50% {
     filter:
-      drop-shadow(0 0 28px rgba(200, 150, 255, 0.7))
-      drop-shadow(0 0 64px rgba(120, 60, 220, 0.42));
+      drop-shadow(0 0 2px rgba(240, 220, 255, 0.85))
+      drop-shadow(0 0 26px rgba(200, 150, 255, 0.7))
+      drop-shadow(0 0 64px rgba(120, 60, 220, 0.45));
   }
 }
 .onyx-access-cta:not(:disabled):hover .onyx-access-backdrop,
@@ -219,16 +226,15 @@ html.chorus-embed .onyx-root {
   50% { filter: brightness(1.1); }
 }
 .onyx-access-cta-label {
-  position: absolute;
-  left: 50%;
-  top: 50%;
+  grid-area: 1 / 1;
+  position: relative;
   z-index: 3;
-  transform: translate(-50%, -50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   margin: 0;
-  padding: 0 0.2em 0 0.48em; /* optical center for letter-spacing */
+  /* letter-spacing adds trailing space — pad left to keep optical center */
+  padding: 0 0 0 0.28em;
   min-width: 0;
   width: max-content;
   max-width: 90%;
@@ -247,6 +253,7 @@ html.chorus-embed .onyx-root {
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
   opacity: 0;
+  transform: translate3d(0, 0, 0);
   transition: opacity 1.1s ease 0.05s, text-shadow 1.2s ease;
 }
 .onyx-access-cta-label.on {

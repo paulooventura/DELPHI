@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { getClockAudio } from "../../lib/clockSfx";
 import {
@@ -14,9 +14,11 @@ import {
 /**
  * Boot: Historical → Pythia → stairs → Allow gate.
  *
- * Hard rule: exactly one clip’s muted video + that clip’s Web Audio bed.
- * No delay-tail bleed between clips. No mid-sequence skip tap.
- * Audio starts only after that clip’s video fires `playing`.
+ * Hard rules:
+ * - Videos are silent files (no AAC). Only matching Web Audio beds play sound.
+ * - Exactly one clip at a time: kill prior bed hard before the next starts.
+ * - Audio starts only after THAT clip’s muted video `play()` resolves.
+ * - First tap unlocks; no mid-sequence skip (ghost clicks ignored).
  */
 
 type ClipDef = { id: string; video: string; audio: string };
@@ -39,9 +41,10 @@ const CLIPS: readonly ClipDef[] = [
   },
 ] as const;
 
-const HOLD_MS = 700;
+const HOLD_MS = 600;
 const SAFETY_MS = 90_000;
-const UNLOCK_GUARD_MS = 800;
+const UNLOCK_GUARD_MS = 1000;
+const PREVIEW_SRC = `${CLIPS[0]!.video}&preview=1`;
 
 export function OnyxSplash({
   onEnter,
@@ -51,28 +54,29 @@ export function OnyxSplash({
   onPrimeAccess?: () => void;
 }) {
   const entered = useRef(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const clipIdxRef = useRef(0);
   const unlockedRef = useRef(false);
   const unlockingRef = useRef(false);
   const guardUntil = useRef(0);
-  /** Bumps on every kill — stale async audio must bail. */
   const audioGen = useRef(0);
-  /** Clip index that may start audio on the next `playing` event. */
-  const pendingAudioIdx = useRef<number | null>(null);
+  const clipIdxRef = useRef(0);
   const bufferSrcRef = useRef<AudioBufferSourceNode | null>(null);
   const dryGainRef = useRef<GainNode | null>(null);
   const audioCache = useRef<Map<string, AudioBuffer>>(new Map());
   const holdTimer = useRef<number | null>(null);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  /** Invalidates stale load/play/audio handlers. */
+  const sessionRef = useRef(0);
 
+  const [clipIdx, setClipIdx] = useState(0);
+  const [videoKey, setVideoKey] = useState(0);
+  const [filmSrc, setFilmSrc] = useState(PREVIEW_SRC);
   const [videoReady, setVideoReady] = useState(false);
   const [veilOn, setVeilOn] = useState(true);
   const [needTap, setNeedTap] = useState(true);
+  const [unlocked, setUnlocked] = useState(false);
 
-  /** Immediate stop — no delay send, no bleed into the next clip. */
   const killAudioHard = () => {
     audioGen.current += 1;
-    pendingAudioIdx.current = null;
     const src = bufferSrcRef.current;
     const dry = dryGainRef.current;
     bufferSrcRef.current = null;
@@ -82,6 +86,11 @@ export function OnyxSplash({
         const t = dry.context.currentTime;
         dry.gain.cancelScheduledValues(t);
         dry.gain.setValueAtTime(AUDIO_BUS.SILENCE, t);
+      } catch {
+        /* ignore */
+      }
+      try {
+        dry.disconnect();
       } catch {
         /* ignore */
       }
@@ -99,10 +108,9 @@ export function OnyxSplash({
         /* ignore */
       }
     }
-    fadeOut("splash", 30);
+    fadeOut("splash", 40);
   };
 
-  /** Soft fade only when leaving splash for the Allow gate. */
   const dissolveAudioOut = () => {
     const gen = audioGen.current;
     const dry = dryGainRef.current;
@@ -111,8 +119,7 @@ export function OnyxSplash({
       killAudioHard();
       return;
     }
-    const ctx = dry.context;
-    const t = ctx.currentTime;
+    const t = dry.context.currentTime;
     const ms = AUDIO_BUS.CLIP_FADE_OUT_MS;
     try {
       dry.gain.cancelScheduledValues(t);
@@ -131,7 +138,7 @@ export function OnyxSplash({
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
-    pendingAudioIdx.current = null;
+    sessionRef.current += 1;
     if (holdTimer.current != null) {
       window.clearTimeout(holdTimer.current);
       holdTimer.current = null;
@@ -149,33 +156,22 @@ export function OnyxSplash({
     onEnter();
   };
 
-  const playMutedVideo = (v: HTMLVideoElement) => {
-    v.muted = true;
-    v.defaultMuted = true;
-    v.playsInline = true;
-    v.setAttribute("muted", "");
-    v.setAttribute("playsinline", "");
-    return v.play().catch(() => {});
-  };
-
   const ensureBuffer = async (ctx: AudioContext, url: string) => {
     const hit = audioCache.current.get(url);
     if (hit) return hit;
     const res = await fetch(url);
     if (!res.ok) throw new Error(`audio ${res.status}`);
-    const copy = await res.arrayBuffer();
-    const buf = await ctx.decodeAudioData(copy.slice(0));
+    const buf = await ctx.decodeAudioData((await res.arrayBuffer()).slice(0));
     audioCache.current.set(url, buf);
     return buf;
   };
 
-  /**
-   * Start ONLY this clip’s dry audio into the splash bus.
-   * No delay/reverb send while sequencing (avoids cross-clip bleed).
-   */
-  const playClipAudio = async (clipIdx: number) => {
-    const clip = CLIPS[clipIdx];
+  /** Start ONLY forIdx’s dry bed — never another clip’s. */
+  const playClipAudio = async (forIdx: number, session: number) => {
+    const clip = CLIPS[forIdx];
     if (!clip || entered.current) return;
+    if (sessionRef.current !== session) return;
+    if (clipIdxRef.current !== forIdx) return;
 
     killAudioHard();
     const gen = ++audioGen.current;
@@ -189,7 +185,7 @@ export function OnyxSplash({
         return;
       }
     }
-    if (audioGen.current !== gen || entered.current) return;
+    if (audioGen.current !== gen || sessionRef.current !== session) return;
 
     ensureAudioBus(ctx);
     let buf: AudioBuffer;
@@ -198,8 +194,14 @@ export function OnyxSplash({
     } catch {
       return;
     }
-    if (audioGen.current !== gen || entered.current) return;
-    if (clipIdxRef.current !== clipIdx) return;
+    if (
+      audioGen.current !== gen ||
+      sessionRef.current !== session ||
+      clipIdxRef.current !== forIdx ||
+      entered.current
+    ) {
+      return;
+    }
 
     const src = ctx.createBufferSource();
     src.buffer = buf;
@@ -210,10 +212,7 @@ export function OnyxSplash({
 
     const t0 = ctx.currentTime;
     dry.gain.setValueAtTime(AUDIO_BUS.SILENCE, t0);
-    dry.gain.exponentialRampToValueAtTime(
-      1,
-      t0 + AUDIO_BUS.CLIP_FADE_IN_MS / 1000,
-    );
+    dry.gain.exponentialRampToValueAtTime(1, t0 + AUDIO_BUS.CLIP_FADE_IN_MS / 1000);
     fadeIn("splash", AUDIO_BUS.CLIP_FADE_IN_MS, 1);
 
     src.onended = () => {
@@ -227,22 +226,50 @@ export function OnyxSplash({
     dryGainRef.current = dry;
   };
 
-  /** Load one clip’s video; arm audio for that index on next `playing`. */
-  const loadClip = (clipIdx: number) => {
-    const clip = CLIPS[clipIdx];
-    const v = videoRef.current;
-    if (!clip || !v || entered.current) return;
+  /** Remount video on this clip’s silent mp4; audio follows after play(). */
+  const goToClip = (idx: number) => {
+    if (entered.current || idx < 0 || idx >= CLIPS.length) return;
+    const clip = CLIPS[idx];
+    if (!clip) return;
 
-    clipIdxRef.current = clipIdx;
     killAudioHard();
-    pendingAudioIdx.current = clipIdx;
+    const session = ++sessionRef.current;
+    clipIdxRef.current = idx;
+    setClipIdx(idx);
     setVeilOn(true);
     setVideoReady(false);
     guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
+    setFilmSrc(`${clip.video}&i=${idx}&s=${session}`);
+    setVideoKey(k => k + 1);
+  };
 
-    const onReady = () => {
-      v.removeEventListener("loadeddata", onReady);
-      if (entered.current || clipIdxRef.current !== clipIdx) return;
+  /** After each remount: mute → play THIS picture → start THIS bed only. */
+  useEffect(() => {
+    if (!unlocked) return;
+    const session = sessionRef.current;
+    const idx = clipIdxRef.current;
+    const v = videoRef.current;
+    if (!v) return;
+
+    let cancelled = false;
+    v.muted = true;
+    v.defaultMuted = true;
+    v.playsInline = true;
+    v.setAttribute("muted", "");
+    v.setAttribute("playsinline", "");
+
+    void (async () => {
+      await new Promise<void>(resolve => {
+        const done = () => {
+          v.removeEventListener("loadeddata", done);
+          resolve();
+        };
+        if (v.readyState >= 2) resolve();
+        else v.addEventListener("loadeddata", done);
+        window.setTimeout(resolve, 2500);
+      });
+      if (cancelled || entered.current || sessionRef.current !== session) return;
+
       try {
         v.currentTime = 0;
       } catch {
@@ -250,54 +277,36 @@ export function OnyxSplash({
       }
       setVideoReady(true);
       window.setTimeout(() => {
-        if (!entered.current && clipIdxRef.current === clipIdx) setVeilOn(false);
-      }, 90);
-      void playMutedVideo(v);
-    };
+        if (!cancelled && sessionRef.current === session && !entered.current) {
+          setVeilOn(false);
+        }
+      }, 80);
 
-    v.pause();
-    // Unique URL so ended / cached state cannot stick across clips.
-    v.src = `${clip.video}&i=${clipIdx}&t=${Date.now()}`;
-    v.load();
-    v.addEventListener("loadeddata", onReady);
-  };
-
-  const advanceAfterHold = (nextIdx: number) => {
-    if (entered.current) return;
-    if (holdTimer.current != null) {
-      window.clearTimeout(holdTimer.current);
-    }
-    holdTimer.current = window.setTimeout(() => {
-      holdTimer.current = null;
-      if (entered.current) return;
-      if (nextIdx >= CLIPS.length) {
-        finish(false);
-        return;
+      try {
+        await v.play();
+      } catch {
+        /* gesture already unlocked AudioContext */
       }
-      loadClip(nextIdx);
-    }, HOLD_MS);
-  };
+      if (cancelled || entered.current || sessionRef.current !== session) return;
+      if (clipIdxRef.current !== idx) return;
+      await playClipAudio(idx, session);
+    })();
 
-  const onVideoPlaying = () => {
-    setVideoReady(true);
-    if (!unlockedRef.current || entered.current) return;
-    const pending = pendingAudioIdx.current;
-    if (pending == null) return;
-    if (pending !== clipIdxRef.current) return;
-    pendingAudioIdx.current = null;
-    void playClipAudio(pending);
-  };
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unlocked, videoKey, filmSrc]);
 
   const onVideoEnded = () => {
     if (entered.current) return;
 
-    // Pre-unlock mute preview of A — loop.
     if (!unlockedRef.current) {
       const v = videoRef.current;
       if (v) {
         try {
           v.currentTime = 0;
-          void playMutedVideo(v);
+          void v.play().catch(() => {});
         } catch {
           /* ignore */
         }
@@ -305,13 +314,12 @@ export function OnyxSplash({
       return;
     }
 
-    // Spurious ended right after seek/reload.
     if (Date.now() < guardUntil.current) {
       const v = videoRef.current;
       if (v) {
         try {
           v.currentTime = 0;
-          void playMutedVideo(v);
+          void v.play().catch(() => {});
         } catch {
           /* ignore */
         }
@@ -320,16 +328,26 @@ export function OnyxSplash({
     }
 
     killAudioHard();
-    advanceAfterHold(clipIdxRef.current + 1);
+    const next = clipIdxRef.current + 1;
+    if (holdTimer.current != null) window.clearTimeout(holdTimer.current);
+    holdTimer.current = window.setTimeout(() => {
+      holdTimer.current = null;
+      if (entered.current) return;
+      if (next >= CLIPS.length) {
+        finish(false);
+        return;
+      }
+      goToClip(next);
+    }, HOLD_MS);
   };
 
   const unlock = () => {
     if (entered.current || unlockedRef.current || unlockingRef.current) return;
     unlockingRef.current = true;
     unlockedRef.current = true;
-    guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
+    setUnlocked(true);
     setNeedTap(false);
-    setVeilOn(false);
+    guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
 
     const ctx = getClockAudio();
     if (ctx?.state === "suspended") void ctx.resume().catch(() => {});
@@ -341,28 +359,19 @@ export function OnyxSplash({
       }
     }
 
-    // Always restart Historical from frame 0; audio waits for `playing`.
-    loadClip(0);
+    goToClip(0);
     unlockingRef.current = false;
   };
 
-  const onPointerDown = (e: React.PointerEvent) => {
+  const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (entered.current) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
-    if (!unlockedRef.current) {
-      unlock();
-      return;
-    }
-    // Full A→B→C — no mid-sequence skip.
+    if (!unlockedRef.current) unlock();
+    // No mid-sequence skip — full A→B→C only.
   };
 
   useEffect(() => {
-    const v = videoRef.current;
-    if (!v) return;
-    v.src = CLIPS[0]!.video;
-    void playMutedVideo(v);
-
     let cancelled = false;
     (async () => {
       const ctx = getClockAudio();
@@ -376,19 +385,12 @@ export function OnyxSplash({
         }
       }
     })();
-
     return () => {
       cancelled = true;
       killAudioHard();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  useEffect(() => {
-    if (!videoReady) return;
-    const t = window.setTimeout(() => setVeilOn(false), 160);
-    return () => clearTimeout(t);
-  }, [videoReady]);
 
   useEffect(() => {
     const readyFallback = window.setTimeout(() => setVideoReady(true), 2200);
@@ -412,14 +414,16 @@ export function OnyxSplash({
       <div className="onyx-device onyx-splash-only">
         <div className="onyx-film">
           <video
+            key={unlocked ? `clip-${clipIdx}-${videoKey}` : "preview"}
             ref={videoRef}
             autoPlay
             muted
             playsInline
             preload="auto"
+            src={filmSrc}
             className={videoReady ? "onyx-film-ready" : undefined}
             onLoadedData={() => setVideoReady(true)}
-            onPlaying={onVideoPlaying}
+            onPlaying={() => setVideoReady(true)}
             onEnded={onVideoEnded}
           />
         </div>
