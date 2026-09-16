@@ -188,14 +188,16 @@ export function DeviceAccessGate({
             preload="auto"
             aria-hidden
           />
-          <img
-            className={`onyx-access-crystal${crystalOn ? " on" : ""}`}
-            src={CRYSTAL}
-            alt=""
-            draggable={false}
-          />
-          <span className={`onyx-access-cta-label${phraseOn ? " on" : ""}`}>
-            {busy ? "Requesting…" : "Allow access"}
+          <span className="onyx-access-stage" aria-hidden={!crystalOn && !phraseOn}>
+            <img
+              className={`onyx-access-crystal${crystalOn ? " on" : ""}`}
+              src={CRYSTAL}
+              alt=""
+              draggable={false}
+            />
+            <span className={`onyx-access-cta-label${phraseOn ? " on" : ""}`}>
+              {busy ? "Requesting…" : "Allow access"}
+            </span>
           </span>
         </button>
       </div>
