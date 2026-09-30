@@ -1205,6 +1205,7 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
+<script src="/agon-enroll.js?v=2026-09-30b" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -1662,6 +1663,7 @@ troot.innerHTML=`
         <button class="ttab" role="tab" data-ttab="roles" aria-selected="false">◇ Role Dashboards</button>
         <button class="ttab" role="tab" data-ttab="econ" aria-selected="false">▽ Venue &amp; Backers</button>
         <button class="ttab" role="tab" data-ttab="doors" aria-selected="false">◇ Commerce Doors</button>
+        <button class="ttab" role="tab" data-ttab="enroll" aria-selected="false">✦ Enroll</button>
       </div>
 
       <div class="tpanel active" id="tpanel-covenant">
@@ -1756,6 +1758,25 @@ troot.innerHTML=`
         <p class="doornote">When these go live, they'll open through the same outbound gate the rest of Pneuma Mundi uses — a clear "you're leaving to an external site" step before any payment page.</p>
       </div>
     </div>
+
+    <div class="tpanel" id="tpanel-enroll">
+      <div class="enrollpanel">
+        <div class="evcreate">
+          <p class="evseclabel">✦ Enroll in Agon</p>
+          <p class="evcintro">Venues, backers, promoters, and crew — put yourself on the map. Every enrollment is reviewed by hand before it appears below.</p>
+          <div class="evcgrid">
+            <button class="evccard" onclick="agonEnroll('venue',{source:'enroll-tab'})"><span class="evcico">🏛️</span><h4>Venue</h4><p>Offer your room — capacity, what's installed, and the dates you're open.</p></button>
+            <button class="evccard" onclick="agonEnroll('investor',{source:'enroll-tab'})"><span class="evcico">💎</span><h4>Investor</h4><p>Back endeavors for a fair share of the outcome. Capital and curation stay separate.</p></button>
+            <button class="evccard" onclick="agonEnroll('promoter',{source:'enroll-tab'})"><span class="evcico">🎫</span><h4>Promoter</h4><p>Bring a night into the pool — the vision, the scale, the crew it needs.</p></button>
+            <button class="evccard" onclick="agonEnroll('role',{source:'enroll-tab'})"><span class="evcico">🧩</span><h4>Crew / role</h4><p>Find your place on the crew — paid roles or volunteer work-exchange.</p></button>
+          </div>
+        </div>
+        <div class="evsection">
+          <p class="evseclabel">◇ Directory — approved</p>
+          <div id="agon-directory"></div>
+        </div>
+      </div>
+    </div>
     </div><!-- /tview-builder -->
   </div>`;
 
@@ -1773,6 +1794,7 @@ troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
   const id=t.dataset.ttab;
   troot.querySelectorAll(".ttab").forEach(x=>x.setAttribute("aria-selected",String(x===t)));
   troot.querySelectorAll(".tpanel").forEach(p=>p.classList.toggle("active",p.id==="tpanel-"+id));
+  if(id==="enroll"&&window.agonDirectoryMount)window.agonDirectoryMount(troot.querySelector("#agon-directory"));
   document.getElementById("screen-tonal").scrollTo(0,0);
 }));
 
@@ -1782,6 +1804,7 @@ let _rxDept="all", _rxTier=0, _rxEndeavor=null;
 const rxDeptOrder=["foh","talent","audio","site","money","light","stage","video","lead"];
 function rxDeptsOrdered(){return rxDeptOrder.map(id=>TD.roles.depts.find(d=>d.id===id)).filter(Boolean);}
 const certLabel={RF:"RF cert",ELEC:"Electrical",LASER:"Laser safety",FAA:"FAA Part 107",RIG:"Rigging cert",GUARD:"Guard card",ABC:"Alcohol cert",CARE:"Harm-reduction",MED:"Medical",FOOD:"Food safety"};
+window.AGON_ROLES=TD.roles;window.AGON_CERTS=certLabel;
 const rateOrder={"—":0,"$":1,"$$":2,"$$$":3};
 function rxRoleVisible(r){return _rxTier===0||r.t<=_rxTier;}
 // simplest -> most complex: by scale tier, then by pay/complexity, then name
@@ -1910,6 +1933,7 @@ function rxDetail(r,deptId){
       <p class="rxsk">How to fill this role</p>
       <div class="rxsbody"><span class="rxsrc rxsrc-${rxSourceOf(r)}">${esc(rxProviders[rxSourceOf(r)].label)}</span><p>${esc(rxProviders[rxSourceOf(r)].note)}</p></div>
       ${rxSourceOf(r)!=="direct"?`<button class="rxsbtn" onclick="event.stopPropagation();rxProviderModal('${rxSourceOf(r)}')">Find vetted providers →</button>`:""}
+      <button class="rxsbtn" onclick="event.stopPropagation();agonEnroll('role',{dept:'${deptId}',role:'${esc(r.n.replace(/&amp;/g,"&")).replace(/"/g,"&quot;").replace(/'/g,"\\'")}',source:'role-card'})">✦ Put me down for this role</button>
     </div>
     <div class="rxonboard">
       <p class="rxok">Onboarding — what this role provides</p>
@@ -2044,6 +2068,7 @@ window.rxDashModal=(id)=>{const e=rxEvents.find(x=>x.id===id);if(!e)return;
 /* ===== Promoter Create-Event wizard ===== */
 let _wz=null;
 window.rxCreateModal=(who)=>{
+  if(who!=="Promoter"&&window.agonEnroll){agonEnroll(who.toLowerCase(),{source:"create-card"});return;}
   if(who!=="Promoter"){const c=rxCreators.find(x=>x.who===who)||{ico:"✦",who:who,d:""};modal(`<div class="pmwrap"><p class="pmkick">${c.ico} Create as ${esc(who)}</p><p class="pmintro">${esc(c.d)}</p><div class="pmguard">🛡️ Coming soon. The ${esc(who)} flow is next. The Promoter wizard is live now — try it to see the shape.</div><button class="pmclose" onclick="closeModal()">Close</button></div>`);return;}
   _wz={step:0,name:"",date:"",venue:"",tier:2,style:"",cap:"",depts:{},price:"",backers:""};
   wzRender();
@@ -2098,19 +2123,23 @@ function wzReview(){
   ${row('Crew',deptCount+' departments · '+roleTotal+' role functions')}
   ${row('Ticket from',esc(_wz.price))}
   ${row('Backers',esc(_wz.backers))}
-  <p class="pmfoot">On publish this would enter Tonal's staffing pipeline as an upcoming event. Mock preview — no backend yet.</p>`;
+  <p class="pmfoot">Next you'll add your contact details. The endeavor goes to Paulo for review before it enters the staffing pipeline.</p>`;
 }
 function wzBind(){['name','date','venue','style','cap','price','backers'].forEach(k=>{const el=document.getElementById('wz-'+k);if(el)el.oninput=()=>{_wz[k]=el.value;};});}
 window.wzGo=(i)=>{_wz.step=Math.max(0,Math.min(4,i));wzRender();};
 window.wzNext=()=>{if(_wz.step===0&&!_wz.name.trim()){toast('Give your endeavor a name ✦');return;}wzGo(_wz.step+1);};
 window.wzSetTier=(t)=>{_wz.tier=t;_wz.depts={};wzRender();};
 window.wzToggleDept=(id)=>{_wz.depts[id]=_wz.depts[id]===false?true:false;wzRender();};
-window.wzPublish=()=>{closeModal();toast('✦ '+(_wz.name||'Endeavor')+' created — entering the staffing pipeline');};
+window.wzPublish=()=>{
+  if(!window.agonEnroll){closeModal();toast('✦ '+(_wz.name||'Endeavor')+' created — entering the staffing pipeline');return;}
+  const crew=TD.roles.depts.filter(d=>_wz.depts[d.id]!==false&&d.roles.some(r=>r.t<=_wz.tier)).map(d=>d.name.replace(/&amp;/g,"&")).join(", ");
+  agonEnroll("promoter",{source:"endeavor-wizard",event_name:_wz.name,event_date:_wz.date,event_venue:_wz.venue,style:_wz.style,tier:TD.roles.tiers[_wz.tier-1],cap:_wz.cap,price:_wz.price,backers:_wz.backers,crew});
+};
 rolesRender();
 
 tonalRender();
 }
-window.tonalDoor=(name)=>{const isVol=name==="Volunteer sign-up";const msg=isVol?"This isn't wired yet. When it opens, you'll pick an available shift and role, and we'll get you set up — a real spot on the crew in exchange for your way in.":("This door isn't wired to live payment yet. When it opens, it'll route through Pneuma Mundi's outbound gate to the real "+(name==="Ticketing"?"Ticket Fairy":"Stripe")+" flow.");const ico=isVol?"🤝":"🚧";modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">${ico}</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:42ch;margin-left:auto;margin-right:auto">${esc(msg)}</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
+window.tonalDoor=(name)=>{if(name==="Volunteer sign-up"&&window.agonEnroll){agonEnroll("role",{volunteer:true,source:"guest-volunteer"});return;}const isVol=name==="Volunteer sign-up";const msg=isVol?"This isn't wired yet. When it opens, you'll pick an available shift and role, and we'll get you set up — a real spot on the crew in exchange for your way in.":("This door isn't wired to live payment yet. When it opens, it'll route through Pneuma Mundi's outbound gate to the real "+(name==="Ticketing"?"Ticket Fairy":"Stripe")+" flow.");const ico=isVol?"🤝":"🚧";modal(`<div style="text-align:center;padding:8px 4px"><div style="font-size:30px;margin-bottom:12px">${ico}</div><h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">${esc(name)} — coming soon</h3><p style="color:var(--fog);font-size:13.5px;margin:0 0 20px;max-width:42ch;margin-left:auto;margin-right:auto">${esc(msg)}</p><button onclick="closeModal()" style="font:inherit;font-size:13px;font-weight:700;padding:11px 22px;border-radius:10px;cursor:pointer;border:1px solid rgba(232,160,79,.4);background:rgba(232,160,79,.14);color:var(--amber)">Got it</button></div>`);};
 
 let _studiesMounted=false;
 function ensureStudies(){if(_studiesMounted)return;_studiesMounted=true;
