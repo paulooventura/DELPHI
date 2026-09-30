@@ -658,6 +658,8 @@ export function OnyxApp({
         lon={lon}
         onBack={() => setMode("home")}
         natalDate={birth ? birthToDate(birth) : null}
+        birth={birth}
+        onBirthChange={next => setBirth(next)}
         hapticsEnabled={pulseEnabled}
         onArmAudio={pulseEnabled ? onArmAudio : undefined}
       />

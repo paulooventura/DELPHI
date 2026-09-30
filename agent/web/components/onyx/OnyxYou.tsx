@@ -14,6 +14,7 @@ import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
 import type { EmbracedCast } from "../../lib/lore/castStore";
 import { OnyxStarfield } from "./OnyxStarfield";
 import { OnyxBirthDeclareSheet } from "./OnyxBirthDeclareSheet";
+import { NatalTriadPanel } from "./NatalTriadPanel";
 
 function overlap(a: Composition, b: Composition) {
   const nowQ = new Set(a.activeQualities);
@@ -468,6 +469,13 @@ export function OnyxYou({
                   {personal.galactic.tribe.color} {personal.galactic.tribe.name}
                 </b>
               </p>
+              <NatalTriadPanel
+                birth={birth}
+                onBirthChange={next => {
+                  setBirth(next);
+                  onBirthSaved?.(next);
+                }}
+              />
               <p className="onyx-eyebrow" style={{ marginTop: 16 }}>
                 YOUR CHORD
               </p>
