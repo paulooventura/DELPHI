@@ -38,13 +38,29 @@ export const metadata: Metadata = {
     description: "Know Thyself",
     url: SITE_URL,
     siteName: "Paulo Ventura · Pneuma Mundi",
+    type: "website",
+    images: [
+      {
+        url: `/og-image.png?v=${DELPHI_BUILD}`,
+        width: 1200,
+        height: 630,
+        alt: "Pneuma Mundi — Know Thyself",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Pneuma Mundi",
+    description: "Know Thyself",
+    images: [`/og-image.png?v=${DELPHI_BUILD}`],
   },
   icons: {
     icon: [
+      { url: `/favicon.ico?v=${DELPHI_BUILD}`, sizes: "48x48" },
       { url: `/icon.svg?v=${DELPHI_BUILD}`, type: "image/svg+xml" },
       { url: `/icon-192.png?v=${DELPHI_BUILD}`, sizes: "192x192", type: "image/png" },
     ],
-    shortcut: `/icon.svg?v=${DELPHI_BUILD}`,
+    shortcut: `/favicon.ico?v=${DELPHI_BUILD}`,
     apple: {
       url: `/apple-touch-icon.png?v=${DELPHI_BUILD}`,
       sizes: "180x180",

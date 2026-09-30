@@ -1,5 +1,4 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Pneuma Mundi">
-  <rect width="512" height="512" rx="112" fill="#000000"/>
   <path d="M432.00,328.90 L328.90,432.00 L183.10,432.00 L80.00,328.90 L80.00,183.10 L183.10,80.00 L328.90,80.00 L432.00,183.10 Z M382.00,203.81 L308.19,130.00 L203.81,130.00 L130.00,203.81 L130.00,308.19 L203.81,382.00 L308.19,382.00 L382.00,308.19 Z" fill="#FFFFFF" fill-rule="evenodd"/>
   <circle cx="256.00" cy="256.00" r="30.00" fill="#8B6CFF"/>
 </svg>
