@@ -56,6 +56,7 @@ import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
 import { OnyxStarfield } from "./OnyxStarfield";
 import { DeviceAccessGate } from "./DeviceAccessGate";
 import { trackEvent, trackScreen } from "../../lib/telemetry/client";
+import { VAULT_APPLIED_EVENT } from "../../lib/vault/sync";
 import "./onyx.css";
 
 export type OnyxMode =
@@ -106,6 +107,7 @@ const MODE_ALIASES: Record<string, OnyxMode> = {
   rings: "rings",
   me: "you",
   you: "you",
+  account: "you",
   home: "home",
   moment: "home",
   cast: "cast",
@@ -305,6 +307,8 @@ export function OnyxApp({
   const [youExpandCast, setYouExpandCast] = useState(false);
   const [distillPrefs, setDistillPrefs] = useState<DistillPrefs>(loadDistillPrefs);
   const [brains, setBrains] = useState<BrainAvailability | null>(null);
+  /** Bumped when the encrypted backup writes data in — remounts Psyche's form. */
+  const [vaultEpoch, setVaultEpoch] = useState(0);
 
   const openStudies = () => {
     window.location.href = "/studies";
@@ -330,9 +334,18 @@ export function OnyxApp({
   // labeled layers; the phrase brain only receives axis math + quality words.
 
   useEffect(() => {
-    setBirth(loadBirth());
-    setEmbraced(loadEmbraced());
-    setDistillPrefs(loadDistillPrefs());
+    const reload = () => {
+      setBirth(loadBirth());
+      setEmbraced(loadEmbraced());
+      setDistillPrefs(loadDistillPrefs());
+    };
+    reload();
+    const onVault = () => {
+      reload();
+      setVaultEpoch(n => n + 1);
+    };
+    window.addEventListener(VAULT_APPLIED_EVENT, onVault);
+    return () => window.removeEventListener(VAULT_APPLIED_EVENT, onVault);
   }, []);
 
   useEffect(() => {
@@ -790,6 +803,7 @@ export function OnyxApp({
     }
     return (
       <OnyxYou
+        key={vaultEpoch}
         nowChord={homeSnap?.chord ?? activeReading.chord}
         expandDivinations={youExpandCast}
         heldCasts={embraced}

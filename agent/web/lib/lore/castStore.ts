@@ -1,5 +1,7 @@
+import { writeLocal } from "../localChange";
+
 /**
- * Embraced casts — LOCAL ONLY.
+ * Embraced casts — on-device (optional encrypted account backup via lib/vault).
  * Persisted when the user chooses the green gem. Never fed into composeMoment /
  * Layer 0 (computed-only). Folded into the labeled `with-drawn` layer via
  * composeLayers when the user chooses that reading. Home also shows a "Held" strip.
@@ -45,7 +47,7 @@ export function loadEmbraced(): EmbracedCast[] {
 export function saveEmbraced(list: EmbracedCast[]): void {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(list.slice(0, MAX)));
+    writeLocal(KEY, JSON.stringify(list.slice(0, MAX)));
   } catch {
     /* quota */
   }
@@ -54,7 +56,7 @@ export function saveEmbraced(list: EmbracedCast[]): void {
 /** Clear every held draw. Returns empty list for state updates. */
 export function clearEmbraced(): EmbracedCast[] {
   if (typeof window !== "undefined") {
-    localStorage.removeItem(KEY);
+    writeLocal(KEY, null);
   }
   return [];
 }

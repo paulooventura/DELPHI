@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { toSheetRow, validateEnrollment } from "../../../../lib/agon/enroll";
 import { appendEnrollment, sheetConfigured } from "../../../../lib/agon/sheet";
+import { dbConfigured, insertEnrollment } from "../../../../lib/db/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -18,9 +19,9 @@ function rateLimited(ip: string, now: number): boolean {
   return recent.length > MAX_PER_WINDOW;
 }
 
-/** POST /api/agon/enroll — lands as a `pending` row in the Agon sheet. */
+/** POST /api/agon/enroll — lands as a `pending` enrollment (database, else sheet). */
 export async function POST(req: Request) {
-  if (!sheetConfigured()) {
+  if (!dbConfigured() && !sheetConfigured()) {
     return NextResponse.json({ error: "not-configured" }, { status: 503 });
   }
 
@@ -50,6 +51,19 @@ export async function POST(req: Request) {
   const source = typeof (body as Record<string, unknown>).source === "string"
     ? String((body as Record<string, unknown>).source).slice(0, 60)
     : "agon";
+
+  // Database is the record when configured; the sheet is a best-effort mirror.
+  if (dbConfigured()) {
+    try {
+      await insertEnrollment(result.row, source);
+    } catch {
+      return NextResponse.json({ error: "store-failed" }, { status: 502 });
+    }
+    if (sheetConfigured()) {
+      after(() => appendEnrollment(toSheetRow(result.row), { source }).catch(() => {}));
+    }
+    return NextResponse.json({ ok: true });
+  }
 
   try {
     await appendEnrollment(toSheetRow(result.row), { source });

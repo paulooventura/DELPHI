@@ -1,6 +1,7 @@
 import { DELPHI_BUILD } from "../../../../lib/buildStamp";
 import { appendTelemetry, sheetConfigured } from "../../../../lib/agon/sheet";
 import { shapeTrack } from "../../../../lib/telemetry/track";
+import { dbConfigured, insertUsage } from "../../../../lib/db/server";
 
 export const runtime = "nodejs";
 export const maxDuration = 20;
@@ -31,7 +32,7 @@ const done = () => new Response(null, { status: 204 });
 
 /** POST /api/pm/track — beacon sink. Always 204; never tells the client why. */
 export async function POST(req: Request) {
-  if (!sheetConfigured()) return done();
+  if (!dbConfigured() && !sheetConfigured()) return done();
 
   const now = Date.now();
   const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0].trim() || "unknown";
@@ -58,10 +59,10 @@ export async function POST(req: Request) {
   });
   if (!rows) return done();
 
-  try {
-    await appendTelemetry(rows);
-  } catch {
-    /* telemetry is best effort */
-  }
+  // Telemetry is best effort on both sinks.
+  await Promise.allSettled([
+    dbConfigured() ? insertUsage(rows) : Promise.resolve(),
+    sheetConfigured() ? appendTelemetry(rows) : Promise.resolve(),
+  ]);
   return done();
 }

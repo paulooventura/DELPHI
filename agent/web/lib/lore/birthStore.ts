@@ -1,10 +1,13 @@
 /**
- * Birth data — LOCAL ONLY.
+ * Birth data — on-device; never sent in the clear.
  * ----------------------------------------------------------------------------
- * Natal inputs are computed and persisted on-device (localStorage). They are
- * never transmitted: no fetch, no analytics, no distill API body. The YOU layer
- * reads this store in the browser; the server never sees it.
+ * Natal inputs are computed and persisted on-device (localStorage). No fetch,
+ * no analytics, no distill API body ever carries them. The only thing that
+ * leaves is the optional account backup: lib/vault encrypts this store on the
+ * device with a key only the user's recovery key can unwrap.
  */
+
+import { writeLocal } from "../localChange";
 
 export type BirthRecord = {
   year: number;
@@ -38,12 +41,12 @@ export function loadBirth(): BirthRecord | null {
 /** Persist locally. Never call fetch or send this object off-device. */
 export function saveBirth(record: BirthRecord): void {
   if (typeof window === "undefined") return;
-  localStorage.setItem(KEY, JSON.stringify(record));
+  writeLocal(KEY, JSON.stringify(record));
 }
 
 export function clearBirth(): void {
   if (typeof window === "undefined") return;
-  localStorage.removeItem(KEY);
+  writeLocal(KEY, null);
 }
 
 /** Build a Date in the browser's local zone from the civil birth fields. */

@@ -39,6 +39,7 @@
   var off =
     get(ls, "pm-notrack") === "1" ||
     navigator.globalPrivacyControl === true ||
+    /^\/admin/.test(location.pathname) ||
     /^(localhost|127\.|192\.168\.|10\.)/.test(location.hostname);
 
   var noop = function () {};

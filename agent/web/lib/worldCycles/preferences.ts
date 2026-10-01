@@ -1,4 +1,5 @@
 import { ATLAS_PRESETS } from "./presets";
+import { writeLocal } from "../localChange";
 
 const STORAGE_KEY = "delphi.worldCycles.v1";
 
@@ -37,7 +38,7 @@ export function loadPreferences(defaultEnabledIds: string[]): WorldCyclePreferen
 export function savePreferences(prefs: WorldCyclePreferences): void {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    writeLocal(STORAGE_KEY, JSON.stringify(prefs));
   } catch {
     /* ignore quota */
   }

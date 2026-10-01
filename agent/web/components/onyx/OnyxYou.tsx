@@ -16,6 +16,7 @@ import type { EmbracedCast } from "../../lib/lore/castStore";
 import { OnyxStarfield } from "./OnyxStarfield";
 import { OnyxBirthDeclareSheet } from "./OnyxBirthDeclareSheet";
 import { NatalTriadPanel } from "./NatalTriadPanel";
+import { OnyxAccountCard } from "./OnyxAccountCard";
 
 function overlap(a: Composition, b: Composition) {
   const nowQ = new Set(a.activeQualities);
@@ -265,9 +266,12 @@ export function OnyxYou({
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
 
           <div className="onyx-about-block onyx-you-blurb">
-            Birth date, hour, and place are computed here and stored in this browser only. Nothing is
-            uploaded. Pick a city so the chord uses that sky; add your hour for rising / decan math.
+            Birth date, hour, and place are computed here and stored in this browser. They&apos;re never sent
+            in the clear; an optional account keeps an encrypted copy only your recovery key can open. Pick a
+            city so the chord uses that sky; add your hour for rising / decan math.
           </div>
+
+          <OnyxAccountCard />
 
           <p className="onyx-eyebrow">BIRTH DATE</p>
           <div className="onyx-form onyx-form-date">

@@ -19,7 +19,11 @@
  *       AGON_SHEET_SECRET      = the AGON_SECRET value
  *     Redeploy so the env vars take effect.
  *
- * APPROVING
+ * WITH SUPABASE ON (NEXT_PUBLIC_SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY set)
+ *  The database is the record and this sheet becomes a read-only mirror:
+ *  approve/reject at /admin (or in Supabase), not in the status column here.
+ *
+ * APPROVING (sheet-only mode)
  *  New rows arrive with status "pending". Change status to "approved" and the
  *  entry shows in the public Agon directory within ~5 minutes. "rejected" or
  *  "pending" rows never leave the sheet. Email, phone, details, and notes are

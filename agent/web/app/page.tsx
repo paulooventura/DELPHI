@@ -55,6 +55,7 @@ import {
   type WorldCyclePreferences,
 } from "../lib/worldCycles";
 import { WIX_HOME } from "../lib/site";
+import { startVaultSync, VAULT_APPLIED_EVENT } from "../lib/vault/sync";
 import { SkyCompass } from "../components/SkyCompass";
 import { SkyCatalog } from "../components/SkyCatalog";
 import { labelForDistanceRank } from "../lib/starmap";
@@ -367,6 +368,13 @@ export default function Home() {
   useEffect(() => {
     try { localStorage.setItem("cp-active-tab", tab); } catch {}
   }, [tab]);
+
+  useEffect(() => {
+    startVaultSync();
+    const onVault = () => setCyclePrefs(loadPreferences(defaultEnabledIds()));
+    window.addEventListener(VAULT_APPLIED_EVENT, onVault);
+    return () => window.removeEventListener(VAULT_APPLIED_EVENT, onVault);
+  }, []);
 
   const updateCyclePrefs = useCallback((next: WorldCyclePreferences) => {
     setCyclePrefs(next);

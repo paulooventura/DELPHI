@@ -5,6 +5,7 @@
  */
 
 import type { DistillVoice } from "./compose";
+import { writeLocal } from "../localChange";
 import type { PhraseBrainSource } from "./phraseBrain";
 
 export type DistillDepth = "spark" | "deep";
@@ -85,7 +86,7 @@ export function saveDistillPrefs(next: DistillPrefs): DistillPrefs {
   };
   if (typeof window !== "undefined") {
     try {
-      localStorage.setItem(KEY, JSON.stringify(prefs));
+      writeLocal(KEY, JSON.stringify(prefs));
     } catch {
       /* quota */
     }
