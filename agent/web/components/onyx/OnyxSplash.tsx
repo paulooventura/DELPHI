@@ -18,7 +18,8 @@ import {
  * - Videos are silent files (no AAC). Only matching Web Audio beds play sound.
  * - Exactly one clip at a time: kill prior bed hard before the next starts.
  * - Audio starts only after THAT clip’s muted video `play()` resolves.
- * - First tap unlocks; no mid-sequence skip (ghost clicks ignored).
+ * - First tap unlocks; any later tap/click skips straight to the Allow gate
+ *   (after SKIP_GUARD_MS, so the unlocking tap's ghost click can't skip).
  */
 
 type ClipDef = { id: string; video: string; audio: string };
@@ -44,6 +45,7 @@ const CLIPS: readonly ClipDef[] = [
 const HOLD_MS = 600;
 const SAFETY_MS = 90_000;
 const UNLOCK_GUARD_MS = 1000;
+const SKIP_GUARD_MS = 700;
 const PREVIEW_SRC = `${CLIPS[0]!.video}&preview=1`;
 
 export function OnyxSplash({
@@ -57,6 +59,7 @@ export function OnyxSplash({
   const unlockedRef = useRef(false);
   const unlockingRef = useRef(false);
   const guardUntil = useRef(0);
+  const skipAllowedAt = useRef(Number.POSITIVE_INFINITY);
   const audioGen = useRef(0);
   const clipIdxRef = useRef(0);
   const bufferSrcRef = useRef<AudioBufferSourceNode | null>(null);
@@ -348,6 +351,7 @@ export function OnyxSplash({
     setUnlocked(true);
     setNeedTap(false);
     guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
+    skipAllowedAt.current = Date.now() + SKIP_GUARD_MS;
 
     const ctx = getClockAudio();
     if (ctx?.state === "suspended") void ctx.resume().catch(() => {});
@@ -367,9 +371,26 @@ export function OnyxSplash({
     if (entered.current) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
-    if (!unlockedRef.current) unlock();
-    // No mid-sequence skip — full A→B→C only.
+    if (!unlockedRef.current) {
+      unlock();
+      return;
+    }
+    if (Date.now() < skipAllowedAt.current) return;
+    finish(true);
   };
+
+  useEffect(() => {
+    if (!unlocked) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape" && e.key !== "Enter" && e.key !== " ") return;
+      if (Date.now() < skipAllowedAt.current) return;
+      e.preventDefault();
+      finish(true);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [unlocked]);
 
   useEffect(() => {
     let cancelled = false;
@@ -437,6 +458,13 @@ export function OnyxSplash({
           aria-hidden={!needTap}
         >
           Tap to begin
+        </p>
+
+        <p
+          className={`onyx-splash-tap onyx-splash-skip${unlocked && videoReady && !veilOn ? " on" : ""}`}
+          aria-hidden={!unlocked}
+        >
+          Tap to skip
         </p>
 
         <div

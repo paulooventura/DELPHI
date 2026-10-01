@@ -395,6 +395,16 @@ html.chorus-embed .onyx-root {
   transform: translateY(0);
 }
 
+.onyx-splash-skip {
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  color: rgba(255, 248, 240, 0.42);
+}
+
+.onyx-splash-skip.on {
+  opacity: 0.7;
+}
+
 /* Splash: film + DELPHI only. Kill any legacy chrome if a stale bundle leaks it. */
 .onyx-splash-only .onyx-corner,
 .onyx-splash-only .onyx-enter,

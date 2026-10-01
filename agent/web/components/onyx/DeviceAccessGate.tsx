@@ -26,6 +26,8 @@ const CRYSTAL = `/allow-access-crystal.png?v=${DELPHI_BUILD}`;
 /** Crystal reveal at 75% of clip; phrase shortly after. */
 const CRYSTAL_AT = 0.75;
 const PHRASE_AFTER_CRYSTAL_S = 0.55;
+/** Swallows the trailing click from a splash skip tap. */
+const ARM_MS = 600;
 
 export function DeviceAccessGate({
   onAllow,
@@ -42,6 +44,11 @@ export function DeviceAccessGate({
   const [crystalOn, setCrystalOn] = useState(false);
   const [phraseOn, setPhraseOn] = useState(false);
   const [frozen, setFrozen] = useState(false);
+  const armedAt = useRef(0);
+
+  useEffect(() => {
+    armedAt.current = Date.now() + ARM_MS;
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -176,7 +183,10 @@ export function DeviceAccessGate({
           type="button"
           className={`onyx-access-cta${busy ? " busy" : ""}${phraseOn ? " lit" : ""}`}
           disabled={busy}
-          onClick={onAllow}
+          onClick={() => {
+            if (Date.now() < armedAt.current) return;
+            onAllow();
+          }}
         >
           <video
             ref={videoRef}
