@@ -7,6 +7,7 @@ import {
   saveBirth,
   type BirthRecord,
 } from "../../lib/lore/birthStore";
+import { trackEvent } from "../../lib/telemetry/client";
 import { composePerson } from "../../lib/lore/resolvePerson";
 import { type Composition } from "../../lib/lore/compose";
 import { speak } from "../../lib/lore/phrase";
@@ -209,6 +210,7 @@ export function OnyxYou({
       lon: placeLocked ? placeLon : undefined,
     };
     saveBirth(next);
+    trackEvent("natal_saved", "psyche");
     setBirth(next);
     setError(null);
     setDeclareOpen(true);

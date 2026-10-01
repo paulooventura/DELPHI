@@ -55,6 +55,7 @@ import { OnyxOrrery } from "./OnyxOrrery";
 import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
 import { OnyxStarfield } from "./OnyxStarfield";
 import { DeviceAccessGate } from "./DeviceAccessGate";
+import { trackEvent, trackScreen } from "../../lib/telemetry/client";
 import "./onyx.css";
 
 export type OnyxMode =
@@ -83,6 +84,21 @@ const ONYX_MODES: readonly OnyxMode[] = [
   "about",
   "decompose",
 ];
+
+/** Telemetry names match the public screen names (Sessions sheet columns). */
+const TRACK_SCREEN: Record<OnyxMode, string> = {
+  home: "home",
+  sky: "aether",
+  rings: "heliodrome",
+  tools: "tools",
+  atlas: "atlas",
+  senses: "senses",
+  oracle: "oracle",
+  you: "psyche",
+  cast: "cast",
+  about: "about",
+  decompose: "other",
+};
 
 const MODE_ALIASES: Record<string, OnyxMode> = {
   sky: "sky",
@@ -340,6 +356,11 @@ export function OnyxApp({
   const homeReady = bootReady && !showAccessGate && !showSplash;
   void onRingSelect;
 
+  useEffect(() => {
+    if (!bootReady) return;
+    trackScreen(showSplash ? "splash" : showAccessGate ? "gate" : TRACK_SCREEN[mode]);
+  }, [bootReady, showSplash, showAccessGate, mode]);
+
   // Snapshot locks when home opens or when the user returns — not on the clock tick.
   useEffect(() => {
     if (!homeReady || mode !== "home") return;
@@ -559,7 +580,15 @@ export function OnyxApp({
   }
 
   if (showAccessGate && onAllowAccess) {
-    return <DeviceAccessGate onAllow={onAllowAccess} busy={accessBusy} />;
+    return (
+      <DeviceAccessGate
+        onAllow={() => {
+          trackEvent("allow_access");
+          onAllowAccess();
+        }}
+        busy={accessBusy}
+      />
+    );
   }
 
   if (agonSplashPending && agonIntro) {

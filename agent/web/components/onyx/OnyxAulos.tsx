@@ -10,6 +10,7 @@ import { AULOS_SECTIONS, AULOS_TITLE } from "../../lib/aulosLyrics";
 import { setSymphonyDucked } from "../../lib/symphonyDuck";
 import { pulseHaptic } from "../../lib/haptics";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
+import { trackEvent } from "../../lib/telemetry/client";
 
 export const AULOS_SRC = "/aulos-of-delphi.m4a";
 
@@ -36,6 +37,7 @@ export function OnyxAulos({
     audioRef.current = a;
 
     const onPlay = () => {
+      trackEvent("aulos_play");
       setPlaying(true);
       setEnded(false);
       setSymphonyDucked(true);
@@ -45,6 +47,7 @@ export function OnyxAulos({
       setSymphonyDucked(false);
     };
     const onEnded = () => {
+      trackEvent("aulos_finished");
       setPlaying(false);
       setEnded(true);
       setSymphonyDucked(false);

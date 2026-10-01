@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
 import { getClockAudio } from "../../lib/clockSfx";
+import { trackEvent } from "../../lib/telemetry/client";
 import {
   AUDIO_BUS,
   audioBusInput,
@@ -141,6 +142,7 @@ export function OnyxSplash({
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
+    trackEvent(fromGesture ? "splash_skip" : "splash_complete", `clip ${clipIdxRef.current + 1}`);
     sessionRef.current += 1;
     if (holdTimer.current != null) {
       window.clearTimeout(holdTimer.current);

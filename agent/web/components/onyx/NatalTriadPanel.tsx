@@ -11,6 +11,7 @@ import {
   saveBirth,
   type BirthRecord,
 } from "../../lib/lore/birthStore";
+import { trackEvent } from "../../lib/telemetry/client";
 import {
   computeNatalTriadFromBirth,
   searchPlaces,
@@ -163,6 +164,7 @@ export function NatalTriadPanel({
       lon,
     };
     saveBirth(next);
+    trackEvent("natal_saved", "orrery");
     setBirth(next);
     setEditing(false);
     setError(null);
@@ -174,12 +176,14 @@ export function NatalTriadPanel({
       className={`onyx-natal-triad${compact ? " is-compact" : ""}${className ? ` ${className}` : ""}`}
       aria-label="Natal triad"
       ref={wrapRef}
+      data-pm-private
     >
       <div className="onyx-natal-triad-head">
         <p className="onyx-natal-triad-kicker">Natal triad</p>
         <button
           type="button"
           className="onyx-natal-triad-edit"
+          data-pm="natal-edit"
           onClick={() => setEditing(e => !e)}
         >
           {editing ? "Close" : birth ? "Edit" : "Add birth"}

@@ -220,6 +220,7 @@
       "</div>"
     );
     toast("✦ Enrollment received");
+    if (window.pmTrack) window.pmTrack.event("enroll_sent", st.kind);
     st = null;
     if (window.agonDirectoryRefresh) window.agonDirectoryRefresh();
   }
@@ -236,6 +237,7 @@
       error: ""
     };
     Object.keys(prefill).forEach(function (k) { if (k !== "source") st.v[k] = prefill[k]; });
+    if (window.pmTrack) window.pmTrack.event("enroll_open", st.kind + " · " + st.source);
     render();
   };
 

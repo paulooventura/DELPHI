@@ -34,6 +34,7 @@ import {
   type CompassAim,
 } from "../../lib/onyxCompass";
 import { COMPASS_DOOR_LABEL } from "../../lib/chambers";
+import { trackEvent } from "../../lib/telemetry/client";
 
 const MAX = 2;
 
@@ -303,6 +304,7 @@ export function OnyxHome({
   const setPulse = useCallback((enabled: boolean) => {
     hapticRef.current = enabled;
     setHapticOn(enabled);
+    trackEvent(enabled ? "sound_on" : "sound_off");
     onPulseRef.current?.(enabled);
   }, []);
 
