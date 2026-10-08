@@ -10,6 +10,9 @@
 --   usage_events      server only.
 -- Admin access goes through the app's /api/admin routes, which check the
 -- signed-in email against ADMIN_EMAILS and then use the service role.
+--
+-- Grants are explicit, so this works with "Automatically expose new tables"
+-- turned off in the project's Data API settings (recommended).
 
 create extension if not exists pgcrypto;
 
@@ -42,6 +45,8 @@ create policy "vault owner deletes" on public.vaults
   for delete to authenticated using (auth.uid() = user_id);
 
 revoke all on public.vaults from anon;
+grant select, insert, update, delete on public.vaults to authenticated;
+grant all on public.vaults to service_role;
 
 -- ── Agon enrollments ────────────────────────────────────────────────────────
 create table if not exists public.agon_enrollments (
@@ -64,6 +69,7 @@ create table if not exists public.agon_enrollments (
 create index if not exists agon_enrollments_status_idx on public.agon_enrollments (status, created_at desc);
 alter table public.agon_enrollments enable row level security;
 revoke all on public.agon_enrollments from anon, authenticated;
+grant all on public.agon_enrollments to service_role;
 
 -- ── Usage telemetry ─────────────────────────────────────────────────────────
 create table if not exists public.usage_sessions (
@@ -113,3 +119,5 @@ alter table public.usage_sessions enable row level security;
 alter table public.usage_events enable row level security;
 revoke all on public.usage_sessions from anon, authenticated;
 revoke all on public.usage_events from anon, authenticated;
+grant all on public.usage_sessions, public.usage_events to service_role;
+grant usage, select on all sequences in schema public to service_role;
