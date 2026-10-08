@@ -5,6 +5,7 @@ import {
   fadeAllForLeave,
   restoreAfterLeave,
 } from "./audioBus";
+import { bellStrike, harmonic, hourBell, minuteBell, woodKnock } from "./clockVoices";
 
 let sharedCtx: AudioContext | null = null;
 let sharedNoise: AudioBuffer | null = null;
@@ -205,9 +206,11 @@ function keyedTick(
   tip.stop(t + 0.04 * dur);
 }
 
-/** Clear two-tone tick / tock on each second — original wood in the 32.5 key. */
+/** Woody tick / tock on each second, tuned to the Schumann series (clockVoices). */
 export function playSecondTick(ctx: AudioContext, second: number) {
-  keyedTick(ctx, second % 2 === 0, 1, 1, 1);
+  if (audioSilenced || audioParked || clockTimeFrozen) return;
+  if (ctx.state !== "running") void ctx.resume();
+  woodKnock(ctx, masterBus(ctx), noiseBuffer(ctx, 1.5), second % 2 === 0, ctx.currentTime);
 }
 
 /** Tick while scrubbing a frozen orrery — allowed even when running-clock ticks are muted. */
@@ -217,79 +220,18 @@ export function playScrubTick(ctx: AudioContext) {
   keyedTick(ctx, scrubHigh, 1, 0.95, 0.9, true);
 }
 
-/** Deep harmonious gong strike with long resonant tail. */
-function playGongStrike(
-  ctx: AudioContext,
-  t0: number,
-  fundamental: number,
-  gainPeak: number,
-  duration: number,
-) {
-  const out = masterBus(ctx);
-  const echo = createEcho(ctx, out, 0.42, 0.32, 0.26);
-  const room = createEcho(ctx, out, 0.88, 0.22, 0.16);
-
-  // Inharmonic gong partials (not strict harmonics — more bowl-like)
-  const partials = [
-    { mult: 1, level: 1, type: "sine" as OscillatorType },
-    { mult: 1.5, level: 0.55, type: "sine" as OscillatorType },
-    { mult: 2.05, level: 0.35, type: "triangle" as OscillatorType },
-    { mult: 2.7, level: 0.22, type: "sine" as OscillatorType },
-    { mult: 3.4, level: 0.14, type: "sine" as OscillatorType },
-    { mult: 4.2, level: 0.08, type: "triangle" as OscillatorType },
-  ];
-
-  for (const p of partials) {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    const lp = ctx.createBiquadFilter();
-    osc.type = p.type;
-    const f = fundamental * p.mult;
-    osc.frequency.setValueAtTime(f, t0);
-    osc.frequency.exponentialRampToValueAtTime(f * 0.97, t0 + duration);
-    lp.type = "lowpass";
-    lp.frequency.setValueAtTime(Math.min(3500, f * 6), t0);
-    lp.frequency.exponentialRampToValueAtTime(400, t0 + duration);
-    const peak = gainPeak * p.level;
-    gain.gain.setValueAtTime(0.0001, t0);
-    gain.gain.exponentialRampToValueAtTime(peak, t0 + 0.02);
-    gain.gain.exponentialRampToValueAtTime(peak * 0.35, t0 + duration * 0.35);
-    gain.gain.exponentialRampToValueAtTime(0.0001, t0 + duration);
-    osc.connect(lp);
-    lp.connect(gain);
-    gain.connect(out);
-    gain.connect(echo);
-    gain.connect(room);
-    osc.start(t0);
-    osc.stop(t0 + duration + 0.05);
-  }
-
-  // Soft mallet noise attack
-  const attack = ctx.createBufferSource();
-  attack.buffer = noiseBuffer(ctx, 1.5);
-  const atkBp = ctx.createBiquadFilter();
-  atkBp.type = "bandpass";
-  atkBp.frequency.setValueAtTime(fundamental * 3.2, t0);
-  atkBp.Q.setValueAtTime(1.2, t0);
-  const atkGain = ctx.createGain();
-  atkGain.gain.setValueAtTime(gainPeak * 0.35, t0);
-  atkGain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.12);
-  attack.connect(atkBp);
-  atkBp.connect(atkGain);
-  atkGain.connect(out);
-  atkGain.connect(echo);
-  attack.start(t0);
-  attack.stop(t0 + 0.14);
-}
-
-/** Minute — same two-tone family as the second, one octave down. */
+/** Minute bell — resonant strike on the chord's fifth. */
 export function playMinuteBell(ctx: AudioContext) {
-  keyedTick(ctx, new Date().getMinutes() % 2 === 0, 0.5, 1.35, 2.1);
+  if (audioSilenced || audioParked || clockTimeFrozen) return;
+  if (ctx.state !== "running") void ctx.resume();
+  minuteBell(ctx, masterBus(ctx), noiseBuffer(ctx, 1.5), ctx.currentTime);
 }
 
-/** Hour — same two-tone family, deeper still. */
+/** Hour bell — deep strikes on the chord root, one per hour (12-hour face). */
 export function playHourBell(ctx: AudioContext, hour24: number) {
-  keyedTick(ctx, hour24 % 2 === 0, 0.35, 1.45, 2.6);
+  if (audioSilenced || audioParked || clockTimeFrozen) return;
+  if (ctx.state !== "running") void ctx.resume();
+  hourBell(ctx, masterBus(ctx), noiseBuffer(ctx, 1.5), hour24, ctx.currentTime);
 }
 
 const PLANET_HZ: Record<string, number> = {
@@ -454,8 +396,10 @@ export function playDayGate(ctx: AudioContext, gate: "sunrise" | "sunset") {
   if (ctx.state !== "running") void ctx.resume();
   const t0 = ctx.currentTime;
   const rise = gate === "sunrise";
-  playGongStrike(ctx, t0, rise ? 96 : 64, 0.3, 4.4);
-  playGongStrike(ctx, t0 + 0.35, rise ? 144 : 48, 0.16, 3.6);
+  const out = masterBus(ctx);
+  const noise = noiseBuffer(ctx, 1.5);
+  bellStrike(ctx, out, noise, harmonic(rise ? 12 : 8), 0.3, 4.4, t0);
+  bellStrike(ctx, out, noise, harmonic(rise ? 18 : 6), 0.16, 3.6, t0 + 0.35);
 }
 
 /** Slow sky — moon sector, wuku, pancawara, season. Rare on purpose. */

@@ -33,7 +33,8 @@ import {
   type OrreryLaneId,
   type OrreryLaneState,
 } from "./lore/orreryLanes";
-import { NOW_CHORD, lerp, pitchHz, voiceFromSpeed } from "./heliodromeChordConfig";
+import { CLOCK_TUNING } from "./clockVoices";
+import { NOW_CHORD, pitchHz, voiceFromSpeed } from "./heliodromeChordConfig";
 
 const DAY = 86_400;
 const KE_S = 14.4 * 60;
@@ -104,7 +105,6 @@ type ChordRuntime = {
   whir: Map<OrreryLaneId, WhirVoice>;
   pool: StruckVoice[];
   lastIndex: Map<OrreryLaneId, number>;
-  secFlip: boolean;
   schumannPhase: number;
   hapticCount: number;
   duckUntil: number;
@@ -190,50 +190,6 @@ function buildBed(rt: ChordRuntime): void {
 
   bedGain.gain.setValueAtTime(0.0001, t);
   bedGain.gain.exponentialRampToValueAtTime(0.35, t + 2.2);
-}
-
-function exciteHourBell(rt: ChordRuntime, pitch: number, when: number): void {
-  const voice = acquireStruck(rt);
-  if (!voice) return;
-  const ctx = rt.ctx;
-  const t = Math.max(ctx.currentTime, when);
-  const fund = Math.max(40, pitch * 0.5);
-  voice.pan.pan.setValueAtTime(0, t);
-  voice.filter.frequency.setValueAtTime(4200, t);
-  voice.filter.Q.setValueAtTime(1.2, t);
-  voice.gain.gain.cancelScheduledValues(t);
-  voice.gain.gain.setValueAtTime(0.0001, t);
-  voice.gain.gain.exponentialRampToValueAtTime(NOW_CHORD.HOUR_STRIKE_GAIN, t + 0.02);
-  voice.gain.gain.exponentialRampToValueAtTime(0.0001, t + 4.5);
-  voice.busyUntil = t + 4.8;
-
-  const partials = [1, 2.01, 2.76, 3.9];
-  const gains = [1, 0.45, 0.22, 0.12];
-  for (let i = 0; i < partials.length; i++) {
-    const o = ctx.createOscillator();
-    const g = ctx.createGain();
-    o.type = i === 0 ? "sine" : "triangle";
-    o.frequency.value = fund * partials[i]!;
-    g.gain.setValueAtTime(0.0001, t);
-    g.gain.exponentialRampToValueAtTime(0.35 * gains[i]!, t + 0.015);
-    g.gain.exponentialRampToValueAtTime(0.0001, t + 3.8 - i * 0.35);
-    o.connect(g);
-    g.connect(voice.filter);
-    o.start(t);
-    o.stop(t + 4.2);
-  }
-}
-
-/** 12h hour count on civil day-lane rollover (1…12 strikes). */
-function scheduleHourStrikes(rt: ChordRuntime, hour24: number, basePitch: number): void {
-  const h12 = hour24 % 12 || 12;
-  const t0 = rt.ctx.currentTime + 0.05;
-  for (let i = 0; i < h12; i++) {
-    const deg = NOW_CHORD.SCALE[i % NOW_CHORD.SCALE.length]!;
-    const hz = basePitch * 2 ** (deg / 12);
-    exciteHourBell(rt, hz, t0 + i * NOW_CHORD.HOUR_STRIKE_GAP_S);
-  }
-  rt.duckUntil = t0 + h12 * NOW_CHORD.HOUR_STRIKE_GAP_S + NOW_CHORD.DUCK_SEC;
 }
 
 function acquireStruck(rt: ChordRuntime): StruckVoice | null {
@@ -486,7 +442,6 @@ export async function startHeliodromeChord(): Promise<void> {
     whir: new Map(),
     pool,
     lastIndex: new Map(),
-    secFlip: false,
     schumannPhase: 0,
     hapticCount: 0,
     duckUntil: 0,
@@ -598,22 +553,18 @@ export function tickHeliodromeChord(lanes: OrreryLaneState[], hapticsOn: boolean
     }
 
     if (crossed) {
-      let hitPitch = pitch;
-      if (lane.id === "sec") {
-        rt.secFlip = !rt.secFlip;
-        const deg = rt.secFlip ? NOW_CHORD.TIC_DEGREE : NOW_CHORD.TAC_DEGREE;
-        const semi = NOW_CHORD.SCALE[deg % NOW_CHORD.SCALE.length]!;
-        hitPitch = NOW_CHORD.ROOT_HZ * 2 ** (semi / 12) * 4; // mid register tic-tac
-      }
+      // Seconds, minutes and hours are voiced by the clock (wood knock + bells,
+      // lib/clockVoices); the chord only makes room for the hour count.
       if (lane.id === "day") {
-        // Dedicated civil-hour striker — count = 12h face of the local hour.
         if (rt.lastDayHour !== null && rt.lastDayHour !== lane.index) {
-          scheduleHourStrikes(rt, lane.index, pitch);
+          const strikes = lane.index % 12 || 12;
+          rt.duckUntil = t + strikes * CLOCK_TUNING.hourGapS + NOW_CHORD.DUCK_SEC;
         }
         rt.lastDayHour = lane.index;
-      } else {
-        excitePluck(rt, pitch, params, yinYang, hitPitch);
+        continue;
       }
+      if (lane.id === "sec" || lane.id === "min") continue;
+      excitePluck(rt, pitch, params, yinYang, pitch);
       if (s < NOW_CHORD.SLOW_BLOOM_S) {
         rt.duckUntil = t + NOW_CHORD.DUCK_SEC;
       }

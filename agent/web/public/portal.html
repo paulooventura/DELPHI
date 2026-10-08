@@ -1205,8 +1205,8 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
-<script src="/agon-enroll.js?v=2026-10-01d" defer></script>
-<script src="/pm-telemetry.js?v=2026-10-01d" defer></script>
+<script src="/agon-enroll.js?v=2026-10-01e" defer></script>
+<script src="/pm-telemetry.js?v=2026-10-01e" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -2384,39 +2384,6 @@ pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 
-<script>
-(function portalClockBed(){
-  try{if(localStorage.getItem("delphi-clock-sfx")==="0")return;}catch(e){return;}
-  var ctx=null,last=-1;
-  function unlock(){
-    var AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;
-    ctx=ctx||new AC();
-    ctx.resume();
-    var osc=ctx.createOscillator(),g=ctx.createGain();
-    osc.type="triangle";osc.frequency.value=205;g.gain.value=0.0001;
-    osc.connect(g);g.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+0.01);
-    window.removeEventListener("pointerdown",unlock);
-  }
-  window.addEventListener("pointerdown",unlock,{once:true});
-  function tick(){
-    if(!ctx||ctx.state!=="running"||document.visibilityState==="hidden"){requestAnimationFrame(tick);return;}
-    var s=new Date().getSeconds();
-    if(s!==last){
-      last=s;
-      var high=s%2===0,t=ctx.currentTime,out=ctx.destination;
-      var body=ctx.createOscillator(),bg=ctx.createGain();
-      body.type="triangle";body.frequency.setValueAtTime(high?205:160,t);body.frequency.exponentialRampToValueAtTime(high?98:78,t+0.16);
-      bg.gain.setValueAtTime(high?0.028:0.022,t);bg.gain.exponentialRampToValueAtTime(0.0001,t+0.18);
-      body.connect(bg);bg.connect(out);body.start(t);body.stop(t+0.2);
-      var tip=ctx.createOscillator(),tg=ctx.createGain();
-      tip.type="sine";tip.frequency.value=high?680:540;
-      tg.gain.setValueAtTime(0.022,t);tg.gain.exponentialRampToValueAtTime(0.0001,t+0.03);
-      tip.connect(tg);tg.connect(out);tip.start(t);tip.stop(t+0.04);
-    }
-    requestAnimationFrame(tick);
-  }
-  requestAnimationFrame(tick);
-})();
-</script>
+<script src="/pm-clock-bed.js?v=2026-10-01e" defer></script>
 <script>bootPortal();</script>
 </body></html>

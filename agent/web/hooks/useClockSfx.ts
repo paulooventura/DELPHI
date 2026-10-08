@@ -208,8 +208,7 @@ export function useClockSfx(
         const hr = d.getHours();
 
         if (sec !== lastSec.current) {
-          // Heliodrome NOW-Chord owns seconds while the chord is ringing.
-          if (!isHeliodromeChordActive()) playSecondTick(ctx, sec);
+          playSecondTick(ctx, sec);
           lastSec.current = sec;
 
           if (sec === 0) {
