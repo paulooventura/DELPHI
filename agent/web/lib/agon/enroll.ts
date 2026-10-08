@@ -12,7 +12,16 @@
 export const ENROLL_KINDS = ["venue", "investor", "promoter", "role"] as const;
 export type EnrollKind = (typeof ENROLL_KINDS)[number];
 
-export const CHECK_RANGES = ["<$1k", "$1k–$5k", "$5k–$25k", "$25k–$100k", "$100k+"] as const;
+/** How a backer appears publicly. Money is never asked — only presence and intent. */
+export const BACKER_PRESENCE = ["person", "alias", "philanthropist", "anonymous"] as const;
+export type BackerPresence = (typeof BACKER_PRESENCE)[number];
+const PRESENCE_LABEL: Record<BackerPresence, string> = {
+  person: "Backer",
+  alias: "Backer",
+  philanthropist: "Philanthropist",
+  anonymous: "Anonymous backer",
+};
+export const ANONYMOUS_NAME = "Anonymous backer";
 export const VENUE_TYPES = ["Bar / lounge", "Club", "Warehouse / loft", "Concert hall", "Outdoor site", "Gallery / studio", "Other"] as const;
 export const TIERS = ["Bar ≤150", "Club night", "Concert", "Festival 5k+"] as const;
 
@@ -106,17 +115,21 @@ export function validateEnrollment(input: Input, now = Date.now()): EnrollResult
   const kind = oneOf(input.kind, ENROLL_KINDS);
   if (!kind) bad.push("kind");
 
-  const display_name = str(input.display_name, LIMITS.short);
+  const presence: BackerPresence =
+    kind === "investor" ? oneOf(input.presence, BACKER_PRESENCE) || "person" : "person";
+  const anonymous = presence === "anonymous";
+
+  const display_name = anonymous ? ANONYMOUS_NAME : str(input.display_name, LIMITS.short);
   const contact_email = str(input.contact_email, 254).toLowerCase();
   const phone = str(input.phone, 40);
   const city = str(input.city, LIMITS.short);
   const about = str(input.about, LIMITS.long);
-  const rawLink = str(input.link, LIMITS.medium);
+  const rawLink = anonymous ? "" : str(input.link, LIMITS.medium);
   const link = normalizeLink(rawLink);
 
   if (!display_name) bad.push("display_name");
   if (!isEmail(contact_email)) bad.push("contact_email");
-  if (!city) bad.push("city");
+  if (!city && !anonymous) bad.push("city");
   if (rawLink && !link) bad.push("link");
   if (!bool(input.consent)) bad.push("consent");
 
@@ -137,13 +150,13 @@ export function validateEnrollment(input: Input, now = Date.now()): EnrollResult
       ["Open dates", open_dates],
     ]);
   } else if (kind === "investor") {
-    const check_range = oneOf(input.check_range, CHECK_RANGES);
-    const interests = str(input.interests, LIMITS.medium);
-    if (!check_range) bad.push("check_range");
-    headline = ["Backer", interests].filter(Boolean).join(" · ").slice(0, LIMITS.short);
+    const sponsor = str(input.sponsor, LIMITS.medium) || str(input.interests, LIMITS.medium);
+    const private_name = presence === "person" ? "" : str(input.private_name, LIMITS.short);
+    headline = [PRESENCE_LABEL[presence], sponsor].filter(Boolean).join(" · ").slice(0, LIMITS.short);
     details = detailLines([
-      ["Check range", check_range],
-      ["Interests", interests],
+      ["Appears as", presence],
+      ["Wants to sponsor", sponsor],
+      ["Private name", private_name],
     ]);
   } else if (kind === "promoter") {
     const event_name = str(input.event_name, LIMITS.short);

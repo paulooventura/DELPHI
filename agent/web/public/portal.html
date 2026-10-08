@@ -1205,8 +1205,8 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
-<script src="/agon-enroll.js?v=2026-10-01e" defer></script>
-<script src="/pm-telemetry.js?v=2026-10-01e" defer></script>
+<script src="/agon-enroll.js?v=2026-10-01f" defer></script>
+<script src="/pm-telemetry.js?v=2026-10-01f" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -1543,7 +1543,7 @@ const rxEvents=[
 const rxCreators=[
   {ico:"🎫",who:"Promoter",d:"Compose a new endeavor: venue, date, style, and the crew to book. You own the vision and the risk."},
   {ico:"🏛️",who:"Venue",d:"Offer your room to the scene — capacity, existing infrastructure, and the dates you're open."},
-  {ico:"💎",who:"Investor",d:"Back an endeavor's bucket for a fair share of the outcome. Capital and curation stay separate."}
+  {ico:"💎",who:"Backer",d:"Sponsor an endeavor you want to see happen — as yourself, an alias, a philanthropist, or anonymously."}
 ];
 
 function rxEventCard(e){
@@ -1767,7 +1767,7 @@ troot.innerHTML=`
           <p class="evcintro">Venues, backers, promoters, and crew — put yourself on the map. Every enrollment is reviewed by hand before it appears below.</p>
           <div class="evcgrid">
             <button class="evccard" onclick="agonEnroll('venue',{source:'enroll-tab'})"><span class="evcico">🏛️</span><h4>Venue</h4><p>Offer your room — capacity, what's installed, and the dates you're open.</p></button>
-            <button class="evccard" onclick="agonEnroll('investor',{source:'enroll-tab'})"><span class="evcico">💎</span><h4>Investor</h4><p>Back endeavors for a fair share of the outcome. Capital and curation stay separate.</p></button>
+            <button class="evccard" onclick="agonEnroll('investor',{source:'enroll-tab'})"><span class="evcico">💎</span><h4>Backer</h4><p>Sponsor what you want to see happen — as yourself, an alias, a philanthropist, or anonymously.</p></button>
             <button class="evccard" onclick="agonEnroll('promoter',{source:'enroll-tab'})"><span class="evcico">🎫</span><h4>Promoter</h4><p>Bring a night into the pool — the vision, the scale, the crew it needs.</p></button>
             <button class="evccard" onclick="agonEnroll('role',{source:'enroll-tab'})"><span class="evcico">🧩</span><h4>Crew / role</h4><p>Find your place on the crew — paid roles or volunteer work-exchange.</p></button>
           </div>
@@ -2384,6 +2384,6 @@ pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 
-<script src="/pm-clock-bed.js?v=2026-10-01e" defer></script>
+<script src="/pm-clock-bed.js?v=2026-10-01f" defer></script>
 <script>bootPortal();</script>
 </body></html>

@@ -7,16 +7,21 @@
 
   var KINDS = [
     { id: "venue", ico: "🏛️", label: "Venue", lede: "Offer your room to the scene — capacity, what's already installed, and when you're open." },
-    { id: "investor", ico: "💎", label: "Investor", lede: "Back endeavors for a fair share of the outcome. Capital and curation stay separate." },
+    { id: "investor", ico: "💎", label: "Backer", lede: "Sponsor something you want to see happen — as yourself, an alias, a philanthropist, or anonymously. No money talk here; we start with the endeavor." },
     { id: "promoter", ico: "🎫", label: "Promoter", lede: "Bring an endeavor into the pool — the night you want to build and the crew it needs." },
     { id: "role", ico: "🧩", label: "Crew / role", lede: "Put your name down for a role on the crew — paid, or volunteer / work-exchange." }
   ];
-  var CHECK_RANGES = ["<$1k", "$1k–$5k", "$5k–$25k", "$25k–$100k", "$100k+"];
+  var PRESENCE = [
+    { id: "person", ico: "🙂", label: "Myself", name: "Your name" },
+    { id: "alias", ico: "🎭", label: "An alias", name: "Alias" },
+    { id: "philanthropist", ico: "🌱", label: "Philanthropist", name: "Name or foundation" },
+    { id: "anonymous", ico: "🕶️", label: "Anonymous", name: "" }
+  ];
   var VENUE_TYPES = ["Bar / lounge", "Club", "Warehouse / loft", "Concert hall", "Outdoor site", "Gallery / studio", "Other"];
   var TIERS = ["Bar ≤150", "Club night", "Concert", "Festival 5k+"];
   var FIELD_LABELS = {
     display_name: "Name", contact_email: "Email", city: "City", link: "Link",
-    consent: "Consent", capacity: "Capacity", check_range: "Check range", role: "Role", kind: "Type"
+    consent: "Consent", capacity: "Capacity", sponsor: "What you'd sponsor", role: "Role", kind: "Type"
   };
 
   var st = null;
@@ -29,6 +34,9 @@
   }
   function kindOf(id) {
     return KINDS.filter(function (k) { return k.id === id; })[0] || KINDS[0];
+  }
+  function presenceOf(id) {
+    return PRESENCE.filter(function (p) { return p.id === id; })[0] || PRESENCE[0];
   }
 
   function field(name, label, opts) {
@@ -83,9 +91,8 @@
         field("open_dates", "Dates you're open", { ph: "Weeknights, Sundays, Q1…", max: 240 });
     }
     if (st.kind === "investor") {
-      return field("check_range", "Typical check", { req: true, options: CHECK_RANGES }) +
-        field("interests", "What you like to back", { ph: "Warehouse nights, festivals, a specific scene…", max: 240 }) +
-        '<div class="pmguard">🛡️ This is an introduction, not an offer. Nothing is sold or signed here. Capital and curation stay separate; backers recoup first when an endeavor goes live. Not financial advice.</div>';
+      return field("sponsor", "What you'd like to sponsor", { ph: "A warehouse night, a festival, a crew, youth music, a cause…", max: 240 }) +
+        '<div class="pmguard">🛡️ This is an introduction, not an offer. Nothing is sold, signed, or paid here — we talk about the endeavor first. Not financial advice.</div>';
     }
     if (st.kind === "promoter") {
       return field("event_name", "Endeavor name", { ph: "Coupled // Warehouse" }) +
@@ -104,21 +111,37 @@
       return '<button type="button" class="enkind' + (x.id === st.kind ? " on" : "") + '" data-kind="' + x.id + '"><span>' + x.ico + "</span>" + esc(x.label) + "</button>";
     }).join("");
     var err = st.error ? '<div class="enerr">' + esc(st.error) + "</div>" : "";
+    var backer = st.kind === "investor";
+    var pres = presenceOf(st.v.presence);
+    var anon = backer && pres.id === "anonymous";
+    var presence = backer
+      ? '<div class="wzf"><span>How would you like to appear?</span><div class="enpres">' +
+        PRESENCE.map(function (x) {
+          return '<button type="button" class="enkind' + (x.id === pres.id ? " on" : "") + '" data-presence="' + x.id + '"><span>' + x.ico + "</span>" + esc(x.label) + "</button>";
+        }).join("") + "</div></div>" +
+        (anon ? '<p class="ennote">You\'ll show as “Anonymous backer”. Only Paulo sees your email.</p>' : "")
+      : "";
+    var nameLabel = st.kind === "venue" ? "Venue name" : backer ? pres.name : "Name (as it should appear)";
+    var consentText = anon
+      ? "I agree to be contacted about Agon. If approved, I appear only as “Anonymous backer” with what I'd sponsor and my note. Email and phone stay private."
+      : "I agree to be contacted about Agon. If approved, my name, city, headline, about, and link can appear in the public directory. Email and phone stay private.";
     modal(
       '<form class="wzwrap enform" novalidate>' +
         '<p class="pmkick">✦ Enroll in Agon</p>' +
         '<div class="enkinds">' + tabs + "</div>" +
         '<p class="wzsub">' + esc(k.lede) + "</p>" +
-        field("display_name", st.kind === "venue" ? "Venue name" : "Name (as it should appear)", { req: true, auto: st.kind === "venue" ? "organization" : "name" }) +
-        field("city", "City", { req: true, ph: "Nashville, TN", auto: "address-level2" }) +
+        presence +
+        (anon ? "" : field("display_name", nameLabel, { req: true, auto: st.kind === "venue" || pres.id === "philanthropist" ? "organization" : pres.id === "alias" ? "off" : "name" })) +
+        (anon ? "" : field("city", "City", { req: true, ph: "Nashville, TN", auto: "address-level2" })) +
         kindFields() +
-        field("about", "About", { area: true, ph: "A few lines on who you are and what you bring." }) +
-        field("link", "Link", { ph: "Website, Instagram @handle, SoundCloud…", max: 240, auto: "url" }) +
+        field("about", anon ? "A note (optional)" : "About", { area: true, ph: anon ? "Why this matters to you — no names needed." : "A few lines on who you are and what you bring." }) +
+        (anon ? "" : field("link", "Link", { ph: "Website, Instagram @handle, SoundCloud…", max: 240, auto: "url" })) +
         '<p class="enprivate">Private — only Paulo sees these</p>' +
         field("contact_email", "Email", { req: true, type: "email", auto: "email", max: 254 }) +
+        (backer && pres.id !== "person" ? field("private_name", "Your real name (optional)", { auto: "name" }) : "") +
         field("phone", "Phone (optional)", { type: "tel", auto: "tel", max: 40 }) +
         '<label class="enhp" aria-hidden="true">Website <input tabindex="-1" autocomplete="off" data-f="website"></label>' +
-        '<label class="enck"><input type="checkbox" data-f="consent"' + (st.v.consent ? " checked" : "") + '> <span>I agree to be contacted about Agon. If approved, my name, city, headline, about, and link can appear in the public directory. Email and phone stay private.</span></label>' +
+        '<label class="enck"><input type="checkbox" data-f="consent"' + (st.v.consent ? " checked" : "") + "> <span>" + esc(consentText) + "</span></label>" +
         '<p class="enfoot">Never send SSN, W-9, or bank details here — payment platforms handle that when a booking is real.</p>' +
         err +
         '<div class="wznav"><button type="button" class="evbtn" data-act="cancel">Cancel</button><button type="submit" class="evbtn primary"' + (st.busy ? " disabled" : "") + ">" + (st.busy ? "Sending…" : "✦ Submit for review") + "</button></div>" +
@@ -150,6 +173,14 @@
         render();
       };
     });
+    form.querySelectorAll("[data-presence]").forEach(function (b) {
+      b.onclick = function () {
+        collect(form);
+        st.v.presence = b.getAttribute("data-presence");
+        st.error = "";
+        render();
+      };
+    });
     var dept = form.querySelector('[data-f="dept"]');
     if (dept) dept.onchange = function () { collect(form); st.v.role = ""; render(); };
     form.querySelector('[data-act="cancel"]').onclick = function () { closeModal(); };
@@ -164,12 +195,12 @@
     if (st.busy) return;
     var v = st.v;
     var missing = [];
-    if (!String(v.display_name || "").trim()) missing.push("name");
-    if (!String(v.city || "").trim()) missing.push("city");
+    var anon = st.kind === "investor" && v.presence === "anonymous";
+    if (!anon && !String(v.display_name || "").trim()) missing.push("name");
+    if (!anon && !String(v.city || "").trim()) missing.push("city");
     if (!/^\S+@\S+\.\S+$/.test(String(v.contact_email || "").trim())) missing.push("a valid email");
     if (!v.consent) missing.push("the consent box");
     if (st.kind === "venue" && !String(v.capacity || "").trim()) missing.push("capacity");
-    if (st.kind === "investor" && !v.check_range) missing.push("typical check");
     if (st.kind === "role" && !String(v.role || "").trim()) missing.push("a role");
     if (missing.length) {
       st.error = "Still needed: " + missing.join(", ") + ".";
@@ -179,6 +210,10 @@
 
     var payload = { kind: st.kind, started_at: st.startedAt, source: st.source };
     Object.keys(v).forEach(function (k) { payload[k] = v[k]; });
+    if (st.kind === "investor") {
+      payload.presence = presenceOf(v.presence).id;
+      if (anon) { payload.display_name = ""; payload.city = ""; payload.link = ""; }
+    }
     if (st.kind === "role" && v.dept) {
       var d = (window.AGON_ROLES && window.AGON_ROLES.depts || []).filter(function (x) { return x.id === v.dept; })[0];
       if (d) payload.dept = plain(d.name);
@@ -311,6 +346,8 @@
     ".enkind{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;opacity:.62}",
     ".enkind span{font-size:18px}.enkind.on{opacity:1;filter:brightness(1.25)}",
     ".enarea{min-height:78px;resize:vertical}",
+    ".enpres{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}",
+    ".ennote{font-size:12px;color:#cbbcff;margin:-2px 0 10px}",
     "select.wzin{appearance:auto}",
     ".enreq{color:var(--amber);font-weight:700}",
     ".enck{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:12.5px;color:var(--fog);line-height:1.45;cursor:pointer}",
@@ -333,7 +370,7 @@
     ".dirabout{margin:0;color:var(--fog);font-size:12.5px;line-height:1.5}",
     ".dirlink{align-self:flex-start;margin-top:auto}",
     ".dirempty{color:var(--fog);font-size:13px}",
-    "@media (max-width:520px){.enkinds{grid-template-columns:repeat(2,1fr)}}"
+    "@media (max-width:520px){.enkinds,.enpres{grid-template-columns:repeat(2,1fr)}}"
   ].join("\n");
   document.head.appendChild(css);
 })();
