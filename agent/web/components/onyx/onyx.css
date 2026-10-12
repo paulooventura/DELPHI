@@ -4486,13 +4486,15 @@ html[data-sky="twilight"] .onyx-overlay-close {
 }
 .onyx-access-why b { font-weight: 600; letter-spacing: 0.08em; }
 
-/* ── Home inscription: the only line on the Omphalos ──────────────────────── */
+/* ── Home inscription: the only line on the Omphalos, above the clock ─────── */
 .onyx-inscription {
-  position: absolute; left: 50%; top: 25%; transform: translate(-50%, -50%);
+  position: absolute; left: 50%; top: 76px; transform: translateX(-50%);
   z-index: 11; width: min(86vw, 420px); text-align: center; pointer-events: none;
 }
+.onyx-clock { top: 126px; }
+.onyx-clock.under-en { top: 150px; }
 .onyx-inscription-greek {
-  margin: 0;
+  margin: 0; line-height: 1.2;
   font-family: var(--font-voice); font-weight: 500;
   font-size: clamp(22px, 6.4vmin, 34px); letter-spacing: 0.24em; padding-left: 0.24em;
   color: #e9e1cc;

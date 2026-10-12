@@ -462,7 +462,11 @@ export function OnyxHome({
         </button>
         <OnyxPhaseMoon phaseFraction={phaseFraction} onOpenSky={onOpenSky} />
         <p className="onyx-wordmark">Pneuma Mundi</p>
-        <p className="onyx-clock">
+        <div className="onyx-inscription">
+          <p className="onyx-inscription-greek" lang="grc">ΓΝΩΘΙ ΣΑΥΤΟΝ</p>
+          {fresh && <p className="onyx-inscription-en">Know Thyself</p>}
+        </div>
+        <p className={`onyx-clock${fresh ? " under-en" : ""}`}>
           {dateLabel}, {hourMinute}:<span className="sec">{sec}</span>
           {dayPeriod && ` ${dayPeriod}`}
         </p>
@@ -473,11 +477,6 @@ export function OnyxHome({
         />
 
         <OnyxAulos soundAllowed={hapticOn} visible />
-
-        <div className="onyx-inscription">
-          <p className="onyx-inscription-greek" lang="grc">ΓΝΩΘΙ ΣΑΥΤΟΝ</p>
-          {fresh && <p className="onyx-inscription-en">Know Thyself</p>}
-        </div>
 
         <div className={`onyx-compass-wrap onyx-yy-wrap${fresh ? " fresh" : ""}${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}${bowShoot ? " bow-loosing" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
