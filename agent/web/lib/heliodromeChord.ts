@@ -414,8 +414,14 @@ export async function startHeliodromeChord(): Promise<void> {
   const bedGain = ctx.createGain();
   bedGain.gain.value = 0.0001;
 
+  const bassShelf = ctx.createBiquadFilter();
+  bassShelf.type = "lowshelf";
+  bassShelf.frequency.value = NOW_CHORD.BASS_SHELF_HZ;
+  bassShelf.gain.value = NOW_CHORD.BASS_SHELF_DB;
+
   master.connect(compressor);
-  compressor.connect(audioBusInput("chord", ctx));
+  compressor.connect(bassShelf);
+  bassShelf.connect(audioBusInput("chord", ctx));
   whirBus.connect(master);
   bedGain.connect(master);
 

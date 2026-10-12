@@ -19,6 +19,9 @@ export const NOW_CHORD = {
   SCHUMANN_HZ,
   SCHUMANN_HARMONICS: [7.83, 14.3, 20.8, 27.3, 33.8] as readonly number[],
   MASTER_GAIN: 0.7,
+  /** Low shelf on the chord output: +10 dB below ROOT/2 = 62.64 Hz. */
+  BASS_SHELF_HZ: (SCHUMANN_HZ * 2 ** 4) / 2,
+  BASS_SHELF_DB: 10,
   /** Hard cap on fastest band — floor texture only. */
   WHIR_CEILING_GAIN: 0.12,
   /** s above this → continuous whir, not discrete plucks. */
