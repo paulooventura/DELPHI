@@ -443,7 +443,7 @@ export function OnyxHome({
         tabIndex={0}
       >
         <div className="onyx-field">
-          <OnyxHomeFilm soundOn={hapticOn} />
+          <OnyxHomeFilm />
           <div className="onyx-home-vision" aria-hidden />
           <div className="onyx-aura" />
         </div>

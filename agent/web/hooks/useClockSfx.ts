@@ -39,6 +39,7 @@ import { computeOrreryState } from "../lib/lore/orreryLanes";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
 import { AUDIO_BUS } from "../lib/audioBus";
 import { hasAccessThisSession } from "../lib/deviceAccess";
+import { startOmphalosBed, stopOmphalosBed } from "../lib/omphalosBed";
 
 export type ClockObserver = { lat: number; lon: number };
 
@@ -103,6 +104,7 @@ export function useClockSfx(
     if (!enabled) {
       muteClockAudio({ fadeMs: AUDIO_BUS.LEAVE_MS });
       stopHeliodromeChord();
+      stopOmphalosBed();
       setActive(false);
       return;
     }
@@ -117,8 +119,9 @@ export function useClockSfx(
       syncChimeRefs(refs);
       unparkClockAudio();
       unmuteClockAudio();
-      // Heliodrome NOW-Chord is the continuous app voice — skip Schumann pad.
+      // Heliodrome NOW-Chord + the home film's bed are the continuous app voices — skip Schumann pad.
       void startHeliodromeChord();
+      void startOmphalosBed(ctx);
       setActive(true);
     };
 
@@ -280,7 +283,8 @@ export function useClockSfx(
       unparkClockAudio();
       unmuteClockAudio();
       void startHeliodromeChord();
-      // Heliodrome NOW-Chord is the continuous app voice — skip Schumann pad.
+      void startOmphalosBed(ctx);
+      // Heliodrome NOW-Chord + the home film's bed are the continuous app voices — skip Schumann pad.
       setActive(true);
     };
     if (ctx.state === "suspended") {
