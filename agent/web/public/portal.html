@@ -302,6 +302,8 @@
   .screen .pmcompass{border-radius:50%!important;background:rgba(6,6,10,.35)!important}
   .screen .pmstone{clip-path:none!important;border-radius:14px!important;border:.5px solid rgba(190,170,255,.4)!important;background:rgba(120,108,200,.06)!important;box-shadow:none!important;transform:none!important}
   .screen .pmstone.quiet{border-color:rgba(255,255,255,.25)!important;background:rgba(0,0,0,.3)!important}
+  .screen .pmstone span{background:radial-gradient(circle at 50% 50%,#c9b8ff 0 18%,#f2eefc 20%)!important}
+  .screen .pmstone.quiet span{background:linear-gradient(180deg,#6a6384,#2c283a)!important}
 </style>
 <style id="studies-css">
   #screen-studies{background:#010504}
@@ -888,6 +890,7 @@
   .pgcta{margin-top:26px;font:inherit;font-size:13.5px;font-weight:700;padding:13px 26px;border-radius:12px;cursor:pointer;border:1px solid rgba(232,160,79,.42);background:rgba(232,160,79,.13);color:var(--amber);transition:.15s}
   .pgcta:hover{background:rgba(232,160,79,.22);transform:translateY(-1px)}
   .pgsec{margin-bottom:38px}
+  .pgmore{text-align:center;margin:18px 0 0}
   .pgseclabel{font-family:ui-monospace,monospace;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--fogd);text-align:center;margin:0 0 20px}
   /* arc of a night */
   .pgarc{max-width:720px;margin:0 auto;position:relative}
@@ -1227,8 +1230,8 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
-<script src="/agon-enroll.js?v=2026-10-12d" defer></script>
-<script src="/pm-telemetry.js?v=2026-10-12d" defer></script>
+<script src="/agon-enroll.js?v=2026-10-12e" defer></script>
+<script src="/pm-telemetry.js?v=2026-10-12e" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -1585,19 +1588,28 @@ function rxSourceOf(r){return rxRoleSource[rxRoleId(r)]||"direct";}
 const rxEvents=[
   {id:"coupled-live",name:"Coupled // Warehouse",kind:"Club night",tier:2,ico:"🔊",cap:"~450",
    status:"live",date:"This Saturday",venue:"The Annex, Nashville",
-   vibe:"Late-night warehouse party, full system, headliner booked. Tickets are live and the crew is set.",
+   vibe:"Late-night warehouse party, full system, headliner booked. The crew is set.",
+   gvibe:"Late-night warehouse party: a full sound system, proper light, and a headliner.",
    actions:["tickets","dashboard"]},
   {id:"resonance-live",name:"RESONANCE Live",kind:"Concert",tier:3,ico:"🎛️",cap:"~1,800",
    status:"live",date:"Mar 14",venue:"Marathon Music Works",
    vibe:"Ticketed concert with full production — staged, lit, and filmed.",
+   gvibe:"A concert with full production — staged, lit, and filmed.",
    actions:["tickets","dashboard"]},
   {id:"thursday-up",name:"Thursday Warm-Up",kind:"Bar night",tier:1,ico:"🍸",cap:"~120",
    status:"upcoming",date:"Every Thursday",venue:"Duncan St Bar",
    vibe:"Weeknight resident session. Crew roles opening — claim a shift or check the one you're onboarded in.",
+   gvibe:"A weeknight resident DJ session. Low-key, warm, the room a scene grows in.",
+   actions:["roles","dashboard"]},
+  {id:"sunrise-up",name:"Sunrise Session",kind:"Open-air day party",tier:2,ico:"🌅",cap:"~300",
+   status:"upcoming",date:"Nov 1",venue:"Cumberland riverfront, Nashville",
+   vibe:"Dawn-to-noon open-air set by the river. Sound, care, and site crew staffing up now.",
+   gvibe:"Dawn-to-noon music by the river. Come at first light.",
    actions:["roles","dashboard"]},
   {id:"nodefest-up",name:"NODE Festival",kind:"Festival",tier:4,ico:"⛺",cap:"5,000+",
    status:"upcoming",date:"Summer '26",venue:"TBA — outdoor site",
    vibe:"Multi-stage outdoor festival in planning. Departments staffing up now across all 58 roles.",
+   gvibe:"A multi-stage outdoor festival with camping, vendors, and every stage live.",
    actions:["roles","dashboard"]}
 ];
 // what each audience can create
@@ -1616,6 +1628,11 @@ function rxEventCard(e){
     return '';
   }).join('');
   return '<div class="evcard"><div class="evtop"><span class="evico">'+e.ico+'</span><div class="evhead"><h3>'+esc(e.name)+'</h3><span class="evmeta">'+esc(e.kind)+' · '+esc(e.cap)+'</span></div>'+badge+'</div><div class="evwhen">'+esc(e.date)+' · '+esc(e.venue)+'</div><p class="evvibe">'+esc(e.vibe)+'</p><div class="evacts">'+acts+'</div></div>';
+}
+/* Guest view of the same events: what the night is, no crew or ticket actions. */
+function rxGuestCard(e){
+  const badge=e.status==='live'?'<span class="evbadge live">Live</span>':'<span class="evbadge up">Upcoming</span>';
+  return '<div class="evcard"><div class="evtop"><span class="evico">'+e.ico+'</span><div class="evhead"><h3>'+esc(e.name)+'</h3><span class="evmeta">'+esc(e.kind)+'</span></div>'+badge+'</div><div class="evwhen">'+esc(e.date)+' · '+esc(e.venue)+'</div><p class="evvibe">'+esc(e.gvibe||e.vibe)+'</p></div>';
 }
 
 // curated provider directory — opens through the outbound gate. Vetted categories, not endorsements.
@@ -1681,7 +1698,13 @@ troot.innerHTML=`
           <p class="pgeye">${esc(TD.welcome.hero.eye)}</p>
           <h2>${TD.welcome.hero.h}</h2>
           <p class="pglede">${esc(TD.welcome.hero.p)}</p>
-          <span class="pmsoon" aria-disabled="true">Tickets · coming soon</span>
+        </div>
+        <div class="pgsec" id="guest-events">
+          <p class="pgseclabel">Gatherings</p>
+          <div class="evgrid">
+            ${rxEvents.map(e=>rxGuestCard(e)).join("")}
+          </div>
+          <p class="pgmore"><span class="pmsoon" aria-disabled="true">More events coming soon</span></p>
         </div>
         <div class="pgsec">
           <p class="pgseclabel">The arc of a night</p>
@@ -2424,6 +2447,6 @@ pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 
-<script src="/pm-clock-bed.js?v=2026-10-12d" defer></script>
+<script src="/pm-clock-bed.js?v=2026-10-12e" defer></script>
 <script>bootPortal();</script>
 </body></html>
