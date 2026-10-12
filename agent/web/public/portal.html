@@ -205,6 +205,26 @@
     border:0;border-radius:0;clip-path:polygon(var(--cut) 0,calc(100% - var(--cut)) 0,100% var(--cut),100% calc(100% - var(--cut)),calc(100% - var(--cut)) 100%,var(--cut) 100%,0 calc(100% - var(--cut)),0 var(--cut));
     background:linear-gradient(125deg,rgba(255,255,255,.62) 0%,rgba(255,255,255,.08) 16%,transparent 34%),linear-gradient(180deg,hsl(var(--gem)/.42) 0%,transparent 36%),linear-gradient(180deg,hsl(var(--gem)/.92) 0%,hsl(var(--gem)/.38) 46%,hsl(268 28% 7%) 100%)}
   .backhome .compassmark{display:none}
+  /* header right: mini compass + stone switch (same as the app's ChamberHeader) */
+  .screen-mast{padding:0 116px}
+  @media (max-width:420px){.screen-mast-sub{display:none}}
+  .pmhead-right{position:absolute;top:17px;right:14px;z-index:60;display:flex;align-items:center;gap:8px;pointer-events:auto}
+  .pmcompass{width:34px;height:34px;padding:2px;border:0;border-radius:50%;background:rgba(6,6,10,.35);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+  .pmcompass:hover,.pmcompass:focus-visible{background:rgba(120,108,200,.2);outline:none}
+  .pmstone{position:relative;width:58px;height:24px;padding:0;border-radius:14px;border:.5px solid rgba(190,170,255,.4);background:rgba(120,108,200,.06);cursor:pointer}
+  .pmstone span{position:absolute;top:2px;left:3px;width:18px;height:18px;transition:left .45s cubic-bezier(.16,1,.3,1);
+    clip-path:polygon(50% 0,100% 25%,100% 75%,50% 100%,0 75%,0 25%);background:radial-gradient(circle at 50% 50%,#c9b8ff 0 18%,#0b0a12 20%);outline:1px solid rgba(200,185,255,.6)}
+  .pmstone.quiet{border-color:rgba(255,255,255,.25);background:rgba(0,0,0,.3)}
+  .pmstone.quiet span{left:37px;background:linear-gradient(180deg,#6a6384,#2c283a)}
+  /* Agon breadcrumb + honest placeholders */
+  .agcrumbs{position:sticky;top:60px;z-index:65;display:flex;flex-wrap:wrap;align-items:center;gap:4px 6px;margin:0 auto 14px;padding:8px 2px;font-size:11.5px;letter-spacing:.04em;background:linear-gradient(180deg,rgba(1,5,4,.86),rgba(1,5,4,.6) 75%,transparent)}
+  .agcrumbs[hidden]{display:none}
+  .agcrumb{font:inherit;color:rgba(240,236,255,.72);background:none;border:0;padding:2px 0;cursor:pointer;text-decoration:underline;text-decoration-color:rgba(240,236,255,.25);text-underline-offset:3px}
+  span.agcrumb{cursor:default;text-decoration:none}
+  .agcrumb[aria-current]{color:#fff;font-weight:600}
+  .agsep{color:rgba(240,236,255,.4)}
+  .aglink{font:inherit;color:#e9d6a8;background:none;border:0;padding:0;cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+  .pmsoon{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:999px;border:1px dashed rgba(240,236,255,.28);color:rgba(240,236,255,.5);font-size:11px;letter-spacing:.08em;text-transform:uppercase;cursor:default;user-select:none;pointer-events:none}
 
   /* placeholder screens (ME/SKY/CLOCK/TONAL) — evocative, not yet built */
   .soon{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:40px 24px}
@@ -278,6 +298,10 @@
   .ledge.quiet,.ledge.quiet .laxis,.studies-up,.research-open{
     clip-path:none!important;background:transparent!important;box-shadow:none!important;filter:none!important;border:0!important;
   }
+  .screen :is(.agcrumb,.aglink,.pmcompass){clip-path:none!important;background:transparent!important;box-shadow:none!important;border:0!important;transform:none!important}
+  .screen .pmcompass{border-radius:50%!important;background:rgba(6,6,10,.35)!important}
+  .screen .pmstone{clip-path:none!important;border-radius:14px!important;border:.5px solid rgba(190,170,255,.4)!important;background:rgba(120,108,200,.06)!important;box-shadow:none!important;transform:none!important}
+  .screen .pmstone.quiet{border-color:rgba(255,255,255,.25)!important;background:rgba(0,0,0,.3)!important}
 </style>
 <style id="studies-css">
   #screen-studies{background:#010504}
@@ -1203,8 +1227,8 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
-<script src="/agon-enroll.js?v=2026-10-12a" defer></script>
-<script src="/pm-telemetry.js?v=2026-10-12a" defer></script>
+<script src="/agon-enroll.js?v=2026-10-12b" defer></script>
+<script src="/pm-telemetry.js?v=2026-10-12b" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -1251,7 +1275,31 @@ function go(name,dir,fromHistory){clearOverlays();if(!fromHistory)pmPush({screen
   const s=document.getElementById('screen-'+name);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active','from-left','from-right','from-up','from-down','from-center'));
   s.classList.add('active','from-'+dir);if(name==='studies'){if(typeof ensureStudies==='function')ensureStudies();if(typeof pinStudiesDeck==='function')requestAnimationFrame(pinStudiesDeck);maybePlayStudiesIntro();}if(name==='tonal'&&typeof ensureTonal==='function')ensureTonal();window.scrollTo(0,0);}
 function home(fromHistory){const s=pmState();if(location.protocol!=='file:'&&hostedDeepLink()){let fromApp=false;try{fromApp=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch(e){}if(fromApp&&s){history.go(-(s.d+1));return;}location.href='/';return;}if(!fromHistory&&s&&s.d>0){history.go(-s.d);return;}clearOverlays();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';portal.className='';}
-function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);const s=pmState();if(s){if(s.screen==='studies'||s.screen==='tonal'){go(s.screen,s.screen==='studies'?'left':'down',true);if(s.screen==='tonal'&&s.path&&window.tonalPathRestore)window.tonalPathRestore(s.path);}return;}const start=(name==='studies'||name==='tonal')?name:'portal';history.replaceState({pm:1,d:0,screen:start,path:null,modal:0},'');if(start!=='portal')go(start,start==='studies'?'left':'down',true);}catch(e){}}
+/* chamber header (mirrors the app's ChamberHeader): mini compass — tap jumps, hold goes to the Omphalos — and the stone switch */
+const PM_LIT={'screen-sky':'up','screen-clock':'right','screen-tonal':'down','screen-studies':'left','screen-me':'centre'};
+const PM_DOORS=[['home','Omphalos','Home · the centre'],['sky','Aether','The sky above you, live'],['rings','Heliodrome','Every cycle, running now'],['tonal','Agon','Show Thyself · events and crews'],['studies','Mouseion','Studies and scales'],['you','Psyche','Your chord and casts'],['tools','Treasury ✦','Atlas, Senses, About and more']];
+function pmCompassSvg(lit){const c=w=>lit===w?'#fff':'rgba(255,255,255,.38)',s=w=>lit===w?1.6:0.8;return '<svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">'+
+  '<path d="M15 2.5L15 7.5" stroke="'+c('up')+'" stroke-width="'+s('up')+'" stroke-linecap="round"/><path d="M27.5 15L22.5 15" stroke="'+c('right')+'" stroke-width="'+s('right')+'" stroke-linecap="round"/>'+
+  '<path d="M15 27.5L15 22.5" stroke="'+c('down')+'" stroke-width="'+s('down')+'" stroke-linecap="round"/><path d="M2.5 15L7.5 15" stroke="'+c('left')+'" stroke-width="'+s('left')+'" stroke-linecap="round"/>'+
+  '<circle cx="15" cy="15" r="6.2" fill="#f2eefc" stroke="rgba(200,185,255,.6)" stroke-width=".5"/><path d="M15 8.8A6.2 6.2 0 0 1 15 21.2A3.1 3.1 0 0 1 15 15A3.1 3.1 0 0 0 15 8.8Z" fill="#0b0a12"/>'+
+  '<circle cx="15" cy="11.9" r=".9" fill="#0b0a12"/><circle cx="15" cy="18.1" r=".9" fill="#f2eefc"/>'+(lit==='centre'?'<circle cx="15" cy="15" r="8.4" stroke="#fff" stroke-width=".9"/>':'')+'</svg>';}
+function pmSoundOn(){if(window.pmClockSoundOn)return window.pmClockSoundOn();try{return localStorage.getItem('delphi-clock-sfx')!=='0';}catch(e){return true;}}
+function pmStoneSync(){const on=pmSoundOn();document.querySelectorAll('.pmstone').forEach(b=>{b.setAttribute('aria-checked',String(on));b.classList.toggle('quiet',!on);});}
+function pmCompassSheet(){modal('<div class="pmwrap"><p class="pmkick">Jump to a chamber</p><div class="pmlinks">'+PM_DOORS.map(([id,n,d])=>'<button class="pmlink" onclick="pmJump(\''+id+'\')"><span class="pmln">'+n+'</span><span class="pmld">'+d+'</span></button>').join('')+'</div><button class="pmclose" onclick="closeModal()">Close</button></div>');}
+window.pmJump=(id)=>{if(id==='home'){hideModal();home();return;}const a=document.querySelector('.screen.active');const cur=a?a.id.replace('screen-',''):'portal';if(id===cur){closeModal();return;}location.href=id==='tonal'?'/tonal':id==='studies'?'/studies':'/?mode='+id;};
+function pmHeadInit(){
+  document.querySelectorAll('.screen').forEach(sc=>{const ch=sc.querySelector('.screen-chrome');if(!ch||ch.querySelector('.pmhead-right'))return;
+    ch.insertAdjacentHTML('beforeend','<div class="pmhead-right"><button class="pmcompass" aria-label="Compass — tap to jump to any chamber, hold for the Omphalos">'+pmCompassSvg(PM_LIT[sc.id]||null)+'</button><button class="pmstone" role="switch" aria-checked="true" aria-label="Sound and pulse"><span></span></button></div>');});
+  document.querySelectorAll('.pmcompass').forEach(b=>{let t=null,held=false;const clear=()=>{clearTimeout(t);t=null;};
+    b.addEventListener('pointerdown',()=>{held=false;clear();t=setTimeout(()=>{held=true;home();},550);});
+    ['pointerup','pointerleave','pointercancel'].forEach(ev=>b.addEventListener(ev,clear));
+    b.addEventListener('contextmenu',e=>e.preventDefault());
+    b.addEventListener('click',()=>{if(held){held=false;return;}pmCompassSheet();});});
+  document.querySelectorAll('.pmstone').forEach(b=>b.addEventListener('click',()=>{const on=!pmSoundOn();if(window.pmClockSound)window.pmClockSound(on);else{try{localStorage.setItem('delphi-clock-sfx',on?'1':'0');}catch(e){}}pmStoneSync();}));
+  window.addEventListener('storage',e=>{if(e.key==='delphi-clock-sfx')pmStoneSync();});
+  pmStoneSync();
+}
+function bootPortal(){pmHeadInit();try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);const s=pmState();if(s){if(s.screen==='studies'||s.screen==='tonal'){go(s.screen,s.screen==='studies'?'left':'down',true);if(s.screen==='tonal'&&s.path&&window.tonalPathRestore){window.tonalPathRestore(s.path);if(window.agonRestore)window.agonRestore(s);}}return;}const start=(name==='studies'||name==='tonal')?name:'portal';history.replaceState({pm:1,d:0,screen:start,path:null,modal:0},'');if(start!=='portal')go(start,start==='studies'?'left':'down',true);if(start==='tonal'&&window.tonalRememberedPath){const p=window.tonalRememberedPath();if(p)window.tonalPath(p);}}catch(e){}}
 
 /* ===== fluid navigation: scroll, drag/swipe, and hold-to-charge ===== */
 const _dirMap={up:['sky','up'],down:['tonal','down'],left:['studies','left'],right:['clock','right'],center:['me','center']};
@@ -1324,6 +1372,7 @@ window.addEventListener("popstate",()=>{
   const cur=active?active.id.replace("screen-",""):"portal";
   if(s.screen!==cur){if(s.screen==="portal")home(true);else go(s.screen,"center",true);}
   if(s.screen==="tonal"&&window.tonalPathRestore)window.tonalPathRestore(s.path||null);
+  if(s.screen==="tonal"&&window.agonRestore)window.agonRestore(s);
 });
 window.toggleLedge=(id)=>{const el=document.getElementById("ledge-"+id);if(!el)return;el.classList.toggle("open");el.querySelectorAll("[aria-expanded]").forEach(b=>b.setAttribute("aria-expanded",el.classList.contains("open")?"true":"false"));};
 window.studiesToTop=()=>{const home=document.getElementById("studies-home");(home||document.getElementById("studies-hero"))?.scrollIntoView({behavior:"smooth",block:"start"});};
@@ -1540,7 +1589,7 @@ const rxEvents=[
    actions:["tickets","dashboard"]},
   {id:"resonance-live",name:"RESONANCE Live",kind:"Concert",tier:3,ico:"🎛️",cap:"~1,800",
    status:"live",date:"Mar 14",venue:"Marathon Music Works",
-   vibe:"Ticketed concert with full production — staged, lit, and filmed. On sale now.",
+   vibe:"Ticketed concert with full production — staged, lit, and filmed.",
    actions:["tickets","dashboard"]},
   {id:"thursday-up",name:"Thursday Warm-Up",kind:"Bar night",tier:1,ico:"🍸",cap:"~120",
    status:"upcoming",date:"Every Thursday",venue:"Duncan St Bar",
@@ -1559,11 +1608,11 @@ const rxCreators=[
 ];
 
 function rxEventCard(e){
-  const badge=e.status==='live'?'<span class="evbadge live">On sale</span>':'<span class="evbadge up">Staffing</span>';
+  const badge=e.status==='live'?'<span class="evbadge live">Live</span>':'<span class="evbadge up">Staffing</span>';
   const acts=e.actions.map(a=>{
-    if(a==='tickets')return '<button class="evbtn primary" onclick="tonalDoor(\'Ticketing\')">🎫 Buy tickets</button>';
+    if(a==='tickets')return '<span class="pmsoon" aria-disabled="true">Tickets · coming soon</span>';
     if(a==='roles')return '<button class="evbtn primary" onclick="rolesPickEndeavor(\''+e.id+'\')">🧩 Find a role</button>';
-    if(a==='dashboard')return '<button class="evbtn" onclick="rxDashModal(\''+e.id+'\')">◫ Role dashboard</button>';
+    if(a==='dashboard')return '<span class="pmsoon" aria-disabled="true">Dashboard · coming soon</span>';
     return '';
   }).join('');
   return '<div class="evcard"><div class="evtop"><span class="evico">'+e.ico+'</span><div class="evhead"><h3>'+esc(e.name)+'</h3><span class="evmeta">'+esc(e.kind)+' · '+esc(e.cap)+'</span></div>'+badge+'</div><div class="evwhen">'+esc(e.date)+' · '+esc(e.venue)+'</div><p class="evvibe">'+esc(e.vibe)+'</p><div class="evacts">'+acts+'</div></div>';
@@ -1607,6 +1656,7 @@ const rxProviderLinks={
 
 troot.innerHTML=`
   <div class="twrap">
+    <nav class="agcrumbs" id="agcrumbs" aria-label="You are here" hidden></nav>
 
     <!-- FORK: choose your path -->
     <div class="tfork" id="tfork">
@@ -1631,7 +1681,7 @@ troot.innerHTML=`
           <p class="pgeye">${esc(TD.welcome.hero.eye)}</p>
           <h2>${TD.welcome.hero.h}</h2>
           <p class="pglede">${esc(TD.welcome.hero.p)}</p>
-          <button class="pgcta" onclick="tonalDoor('Ticketing')">Find the way in</button>
+          <span class="pmsoon" aria-disabled="true">Tickets · coming soon</span>
         </div>
         <div class="pgsec">
           <p class="pgseclabel">The arc of a night</p>
@@ -1673,8 +1723,8 @@ troot.innerHTML=`
 
       <div class="ttabs" role="tablist">
         <button class="ttab" role="tab" data-ttab="covenant" aria-selected="true">▽ The Covenant</button>
-        <button class="ttab" role="tab" data-ttab="roles" aria-selected="false">◇ Role Dashboards</button>
-        <button class="ttab" role="tab" data-ttab="econ" aria-selected="false">▽ Venue &amp; Backers</button>
+        <button class="ttab" role="tab" data-ttab="roles" aria-selected="false">◇ Events</button>
+        <button class="ttab" role="tab" data-ttab="econ" aria-selected="false">▽ How it's funded</button>
         <button class="ttab" role="tab" data-ttab="doors" aria-selected="false">◇ Commerce Doors</button>
         <button class="ttab" role="tab" data-ttab="enroll" aria-selected="false">✦ Enroll</button>
       </div>
@@ -1692,11 +1742,11 @@ troot.innerHTML=`
         <!-- STEP 1: the events hub -->
         <div id="endeavor-picker">
           <div class="rxintro">
-            <p>Start with an <strong>event</strong>. Live events are on sale now; upcoming ones are staffing up. Pick one to buy in, find a role, or open your dashboard — or create a new one.</p>
+            <p>Start with an <strong>event</strong>. Upcoming ones are staffing up. Pick one to find a role, or create a new one. Tickets and dashboards are coming soon.</p>
           </div>
 
           <div class="evsection">
-            <p class="evseclabel">🔴 Live now — on sale</p>
+            <p class="evseclabel">🔴 Live now</p>
             <div class="evgrid">
               ${rxEvents.filter(e=>e.status==="live").map(e=>rxEventCard(e)).join("")}
             </div>
@@ -1711,12 +1761,13 @@ troot.innerHTML=`
 
           <div class="evcreate">
             <p class="evseclabel">✦ Create an event</p>
-            <p class="evcintro">Bring a new endeavor into the pool. Choose how you're stepping in:</p>
+            <p class="evcintro">Promoting a night? Compose it here: venue, date, style, and the crew to book.</p>
             <div class="evcgrid">
-              ${rxCreators.map(c=>`<button class="evccard" onclick="rxCreateModal('${esc(c.who)}')">
-                <span class="evcico">${c.ico}</span><h4>${esc(c.who)}</h4><p>${esc(c.d)}</p>
-              </button>`).join("")}
+              <button class="evccard" onclick="rxCreateModal('Promoter')">
+                <span class="evcico">🎫</span><h4>Create an event</h4><p>${esc(rxCreators[0].d)}</p>
+              </button>
             </div>
+            <p class="evcintro">Offering a venue or backing a night? <button class="aglink" onclick="agonTab('enroll')">Enroll in Agon →</button></p>
           </div>
         </div>
 
@@ -1765,7 +1816,7 @@ troot.innerHTML=`
         <p class="doorintro">Two doors open off the ground — one public, one for backers. Both are placeholders for now; the flows below aren't wired to live payment yet.</p>
         <div class="doors">
           ${TD.doors.map((d,i)=>`<div class="door"><div class="dico">${d.ico}</div><h3>${esc(d.h)}</h3><p>${esc(d.desc)}</p>
-            <button onclick="tonalDoor('${esc(d.h)}')">${esc(d.label)}</button>
+            <span class="pmsoon" aria-disabled="true">${esc(d.label)} · coming soon</span>
             <div class="stub">${esc(d.stub)}</div></div>`).join("")}
         </div>
         <p class="doornote">When these go live, they'll open through the same outbound gate the rest of Pneuma Mundi uses — a clear "you're leaving to an external site" step before any payment page.</p>
@@ -1800,17 +1851,54 @@ function tonalRender(){
   g.style.display = _tonalPath==="guest"?"block":"none";
   b.style.display = _tonalPath==="builder"?"block":"none";
   document.getElementById("screen-tonal").scrollTo(0,0);
+  agCrumbs();
 }
-window.tonalPath=(p)=>{const s=pmState();if(!p&&s&&s.path&&s.d>0){history.back();return;}_tonalPath=p;tonalRender();if(p)pmPush({screen:"tonal",path:p});};
+/* The path you last chose (guest / builder) is remembered on this device. */
+const AG_PATH_KEY="pm-agon-path";
+window.tonalPath=(p)=>{const s=pmState();if(!p&&s&&s.path&&s.d>0){history.back();return;}_tonalPath=p;tonalRender();if(p){try{localStorage.setItem(AG_PATH_KEY,p);}catch(e){}pmPush({screen:"tonal",path:p,tab:null,ev:null});}};
 window.tonalPathRestore=(p)=>{if(_tonalPath===p)return;_tonalPath=p;tonalRender();};
+window.tonalRememberedPath=()=>{try{const p=localStorage.getItem(AG_PATH_KEY);return p==="guest"||p==="builder"?p:null;}catch(e){return null;}};
 
-troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
-  const id=t.dataset.ttab;
-  troot.querySelectorAll(".ttab").forEach(x=>x.setAttribute("aria-selected",String(x===t)));
+const AG_TAB_NAME={covenant:"The Covenant",roles:"Events",econ:"How it's funded",doors:"Commerce Doors",enroll:"Enroll"};
+let _agTab="covenant";
+/* Tabs are siblings: switching replaces the entry, so Back leaves the path instead of stepping through tabs. */
+window.agonTab=(id,fromHistory)=>{
+  if(!AG_TAB_NAME[id])id="covenant";
+  if(id!=="roles"&&_rxEndeavor&&!fromHistory){_rxEndeavor=null;troot.querySelector("#roles-explorer").style.display="none";troot.querySelector("#endeavor-picker").style.display="block";}
+  _agTab=id;
+  troot.querySelectorAll(".ttab").forEach(x=>x.setAttribute("aria-selected",String(x.dataset.ttab===id)));
   troot.querySelectorAll(".tpanel").forEach(p=>p.classList.toggle("active",p.id==="tpanel-"+id));
   if(id==="enroll"&&window.agonDirectoryMount)window.agonDirectoryMount(troot.querySelector("#agon-directory"));
+  if(!fromHistory){const s=pmState();if(s)history.replaceState(Object.assign({},s,{tab:id,ev:null}),"");}
   document.getElementById("screen-tonal").scrollTo(0,0);
-}));
+  agCrumbs();
+};
+troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>agonTab(t.dataset.ttab)));
+
+/* Breadcrumb under the header: Agon › Builder › Events › Night name › Department. Every crumb but the last is a way back. */
+function agCrumbs(){
+  const nav=document.getElementById("agcrumbs");if(!nav)return;
+  if(!_tonalPath){nav.innerHTML="";nav.hidden=true;return;}
+  const c=[{t:"Agon",go:"tonalPath(null)"},{t:_tonalPath==="guest"?"Guest":"Builder",go:_tonalPath==="builder"?"agonTab('covenant')":null}];
+  if(_tonalPath==="builder"){
+    c.push({t:AG_TAB_NAME[_agTab]||"The Covenant",go:"agonTab('"+_agTab+"')"});
+    if(_agTab==="roles"&&_rxEndeavor){
+      c.push({t:_rxEndeavor.name,go:"rolesDept('all')"});
+      if(_rxDept!=="all"){const d=TD.roles.depts.find(x=>x.id===_rxDept);if(d)c.push({t:d.name,go:null});}
+    }
+  }
+  nav.hidden=false;
+  nav.innerHTML=c.map((x,i)=>{const last=i===c.length-1;return (i?'<span class="agsep" aria-hidden="true">›</span>':'')+(last||!x.go?'<span class="agcrumb"'+(last?' aria-current="page"':'')+'>'+esc(x.t)+'</span>':'<button class="agcrumb" onclick="'+x.go+'">'+esc(x.t)+'</button>');}).join("");
+}
+window.agCrumbs=agCrumbs;
+/* Back / Forward inside Agon: restore the tab and the open event. */
+window.agonRestore=(s)=>{
+  if(_tonalPath==="builder"){
+    const tab=s.tab||"covenant";if(tab!==_agTab)agonTab(tab,true);
+    const ev=s.ev||null;if((_rxEndeavor&&_rxEndeavor.id)!==ev)rolesPickEndeavor(ev,true);
+  }
+  agCrumbs();
+};
 
 // ---- roles explorer (department tabs + scale filter) ----
 let _rxDept="all", _rxTier=0, _rxEndeavor=null;
@@ -2001,7 +2089,7 @@ function rolesRender(){
   }
   host.innerHTML=html;
 }
-window.rolesDept=(id)=>{_rxDept=id;troot.querySelectorAll(".depttab").forEach(t=>t.classList.toggle("active",t.dataset.dept===id));rolesRender();};
+window.rolesDept=(id)=>{_rxDept=id;troot.querySelectorAll(".depttab").forEach(t=>t.classList.toggle("active",t.dataset.dept===id));rolesRender();agCrumbs();};
 window.rolesScale=(tier)=>{_rxTier=tier;troot.querySelectorAll(".sfbtn").forEach(b=>b.classList.toggle("active",+b.dataset.tier===tier));rolesRender();};
 window.rolesToggle=(id)=>{const row=troot.querySelector('.rxrow[data-role="'+id+'"]');if(row)row.classList.toggle("open");};
 window.rxProviderModal=(type)=>{
@@ -2023,7 +2111,12 @@ window.rxProviderModal=(type)=>{
     <button class="pmclose" onclick="closeModal()">Close</button>
   </div>`);
 };
-window.rolesPickEndeavor=(id)=>{
+window.rolesPickEndeavor=(id,fromHistory)=>{
+  if(!fromHistory){
+    const s=pmState();
+    if(!id&&s&&s.ev){history.back();return;}
+    if(id)pmPush({screen:"tonal",path:_tonalPath,tab:"roles",ev:id});
+  }
   _rxEndeavor=id?rxEvents.find(e=>e.id===id):null;
   const picker=troot.querySelector("#endeavor-picker"), exp=troot.querySelector("#roles-explorer");
   if(_rxEndeavor){
@@ -2040,45 +2133,8 @@ window.rolesPickEndeavor=(id)=>{
     exp.style.display="none"; picker.style.display="block";
   }
   document.getElementById("screen-tonal").scrollTo(0,0);
+  agCrumbs();
 };
-window.rxDashModal=(id)=>{const e=rxEvents.find(x=>x.id===id);if(!e)return;
-  // pick a representative role for this event's tier from the taxonomy
-  const pool=[];TD.roles.depts.forEach(d=>d.roles.forEach(r=>{if(r.t<=e.tier)pool.push(r);}));
-  const myRole=pool.find(r=>r.n==="Bartender")||pool.find(r=>r.n==="Stagehand")||pool[0];
-  const rid=rxRoleId(myRole);const ag=rxRoleAgreements[rid]||{};
-  const src=rxSourceOf(myRole);const srcLabel=rxProviders[src].label;
-  const crewTotal=pool.length;const staffed=Math.round(crewTotal*(e.status==="live"?0.9:0.55));
-  const payReady=e.status==="live";
-  const call=e.status==="live"?"Doors 9:00 PM · Call 7:30 PM":"Call time TBD — confirm with producer";
-  modal(`<div class="dashwrap">
-    <div class="dashhead"><span class="dashico">${e.ico}</span><div><p class="dashname">${esc(e.name)}</p><p class="dashsub">${esc(e.kind)} · ${esc(e.date)} · ${esc(e.venue)}</p></div><span class="evbadge ${e.status==="live"?"live":"up"}">${e.status==="live"?"On sale":"Staffing"}</span></div>
-
-    <div class="dashrole">
-      <p class="dashlbl">Your role</p>
-      <div class="dashrolerow"><h3>${esc(myRole.n)}</h3><span class="rxsrc rxsrc-${src}">${esc(srcLabel)}</span></div>
-      <p class="dashcall">🕘 ${esc(call)}</p>
-    </div>
-
-    <div class="dashgrid">
-      <div class="dashstat"><span class="dsn">${staffed}/${crewTotal}</span><span class="dsl">Crew staffed</span></div>
-      <div class="dashstat"><span class="dsn ${payReady?"ok":"pend"}">${payReady?"Ready":"Pending"}</span><span class="dsl">Onboarding</span></div>
-      <div class="dashstat"><span class="dsn ${payReady?"ok":"pend"}">${payReady?"Set":"Setup"}</span><span class="dsl">Payment · W-9</span></div>
-    </div>
-
-    ${ag.b?`<div class="dashagree">
-      <p class="dashlbl">Your agreement</p>
-      <div class="dashphase"><span class="dp">Before</span><p>${esc(ag.b)}</p></div>
-      <div class="dashphase"><span class="dp">During</span><p>${esc(ag.d)}</p></div>
-      <div class="dashphase"><span class="dp">After</span><p>${esc(ag.a)}</p></div>
-    </div>`:""}
-
-    <div class="dashacts">
-      ${payReady?`<button class="evbtn primary" onclick="toast('Checked in ✦ — have a great night')">✓ Check in for shift</button>`:`<button class="evbtn primary" onclick="rxProviderModal('payment')">Finish onboarding →</button>`}
-      <button class="evbtn" onclick="rolesPickEndeavor('${e.id}')">Browse all roles</button>
-    </div>
-    <p class="pmfoot">Mock dashboard — a preview of the crew-member view. Real sign-in, live staffing counts, and pay status come with the backend. Your earnings stay private to you and the organizer.</p>
-    <button class="pmclose" onclick="closeModal()">Close</button>
-  </div>`);};
 /* ===== Promoter Create-Event wizard ===== */
 let _wz=null;
 window.rxCreateModal=(who)=>{
@@ -2368,6 +2424,6 @@ pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 
-<script src="/pm-clock-bed.js?v=2026-10-12a" defer></script>
+<script src="/pm-clock-bed.js?v=2026-10-12b" defer></script>
 <script>bootPortal();</script>
 </body></html>

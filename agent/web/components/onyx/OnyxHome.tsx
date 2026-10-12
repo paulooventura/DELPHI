@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import type { Vec3 } from "../../lib/sphericalView";
-import type { CycleReading } from "../../lib/worldCycles";
+import { isFreshVisit } from "../../lib/visits";
+import { getClockAudio, playChargeTick } from "../../lib/clockSfx";
 import {
   cancelHaptic,
   hapticsMuted,
@@ -12,8 +13,6 @@ import {
   unmuteHaptics,
   type HapticKind,
 } from "../../lib/haptics";
-import { claimMarkClass } from "./onyxCopy";
-import { OnyxCrystal } from "./OnyxCrystal";
 import { OnyxPhaseMoon } from "./OnyxPhaseMoon";
 import { OnyxAudioStone } from "./OnyxAudioStone";
 import { OnyxAulos } from "./OnyxAulos";
@@ -24,8 +23,6 @@ import { OnyxCompassRose } from "./OnyxCompassRose";
 import { OnyxYinYang } from "./OnyxYinYang";
 import { OnyxDoorArrows, type DoorArrowDir } from "./OnyxDoorArrows";
 import type { BrainAvailability, DistillPrefs } from "../../lib/lore/distillPrefs";
-import { decompose, poleWord, type Composition, type DistillOptions } from "../../lib/lore/compose";
-import { phraseReason } from "../../lib/lore/phrase";
 import {
   COMPASS_AIM_PX,
   COMPASS_LOCK_PX,
@@ -36,71 +33,31 @@ import {
 import { COMPASS_DOOR_LABEL } from "../../lib/chambers";
 import { trackEvent } from "../../lib/telemetry/client";
 
-const MAX = 2;
+const ARROW_DIR: Record<string, DoorArrowDir | undefined> = {
+  ArrowUp: "up",
+  ArrowDown: "down",
+  ArrowLeft: "left",
+  ArrowRight: "right",
+};
+
 /** Home flick: touch only, long and quick enough that it can't be a scroll. */
 const SWIPE_MIN_PX = 96;
 const SWIPE_MAX_MS = 450;
 
 const COMPASS_FOLLOW_MAX = 28;
 
-export type HeldCastChip = {
-  id: string;
-  label: string;
-  names: string[];
-  spreadLabel?: string;
-};
-
-export type ReadingLayerChip = {
-  id: "moment" | "through-you" | "with-drawn";
-  label: string;
-};
-
 export type OnyxHomeProps = {
   now: Date;
   phaseFraction: number;
-  zodiacSign: string;
-  /** Distilled sentence for the active reading layer. */
+  /** Distilled sentence for the moment — what Share sends. */
   momentLine: string;
-  /** Active chord — tap the phrase to see how the line was distilled. */
-  phraseChord?: Composition | null;
-  /** Same leans the street line used (natal seed + accepted draws). */
-  phraseOpts?: DistillOptions;
-  /** Named sources for the tap-why details — never printed on the street line. */
-  phraseField?: {
-    birthCycles: string[];
-    birthVoices: string[];
-    heldNames: string[];
-  };
-  /** Tier-honest provenance for the locked snapshot (measured vs celebrated). */
-  provenanceLine?: string | null;
-  /** Active layer label — names exactly what's folded in. */
-  readingLayerLabel?: string;
-  /** Available layers for one-tap switch (Layer 0 always first). */
-  readingLayers?: ReadingLayerChip[];
-  activeLayerId?: ReadingLayerChip["id"];
-  onSelectLayer?: (id: ReadingLayerChip["id"]) => void;
   distillPrefs?: DistillPrefs;
   brains?: BrainAvailability | null;
   onDistillPrefs?: (next: DistillPrefs) => void;
-  selfTone: React.ReactNode;
-  selfRet: React.ReactNode;
-  calendarReadings: CycleReading[];
-  /** Land calendar of place (e.g. Cherokee moon) — calendar framing, never personality. */
-  landCalendarLine?: string | null;
-  /** Land acknowledgment at the location fix — first-class, not a footnote. */
-  landAcknowledgment?: { text: string; people: string; pointTo?: string } | null;
-  /** Embraced casts — labeled strip; folds into with-drawn when that layer is active. */
-  heldCasts?: HeldCastChip[];
-  /** Clear every held divination. */
-  onResetHeld?: () => void;
-  /** Release one held draw by id. */
-  onReleaseHeld?: (id: string) => void;
   onOpenSky: () => void;
   onOpenRings: () => void;
   onOpenTools: () => void;
-  onOpenWhy?: () => void;
   onOpenYou?: () => void;
-  onOpenCast?: () => void;
   /** Portal doors — Studies / Tonal live on the HTML portal routes. */
   onOpenStudies?: () => void;
   onOpenTonal?: () => void;
@@ -116,33 +73,14 @@ export type OnyxHomeProps = {
 export function OnyxHome({
   now: _now,
   phaseFraction,
-  zodiacSign,
   momentLine,
-  phraseChord = null,
-  phraseOpts,
-  phraseField,
-  provenanceLine,
-  readingLayerLabel,
-  readingLayers = [],
-  activeLayerId = "moment",
-  onSelectLayer,
   distillPrefs,
   brains = null,
   onDistillPrefs,
-  selfTone,
-  selfRet,
-  calendarReadings,
-  landCalendarLine,
-  landAcknowledgment,
-  heldCasts = [],
-  onResetHeld,
-  onReleaseHeld,
   onOpenSky,
   onOpenRings,
   onOpenTools,
-  onOpenWhy,
   onOpenYou,
-  onOpenCast,
   onOpenStudies,
   onOpenTonal,
   pulseEnabled = true,
@@ -151,8 +89,7 @@ export function OnyxHome({
   headingDeg = null,
   attitudeRef,
 }: OnyxHomeProps) {
-  const [depth, setDepth] = useState(0);
-  const [datesOpen, setDatesOpen] = useState(false);
+  const [fresh] = useState(isFreshVisit);
   const [pulseAnim, setPulseAnim] = useState<"none" | "beat" | "chime">("none");
   const [hapticOn, setHapticOn] = useState(pulseEnabled);
   const [compassLocked, setCompassLocked] = useState(false);
@@ -163,13 +100,10 @@ export function OnyxHome({
   const [ballFlash, setBallFlash] = useState<"copy" | "share" | null>(null);
   const [shareOpen, setShareOpen] = useState(false);
   const [distillOpen, setDistillOpen] = useState(false);
-  const [phraseWhyOpen, setPhraseWhyOpen] = useState(false);
   const [wallNow, setWallNow] = useState(() => _now);
   const deviceRef = useRef<HTMLDivElement>(null);
   const enterTimer = useRef(0);
   const flashTimer = useRef(0);
-  const depthRef = useRef(0);
-  depthRef.current = depth;
   const hapticRef = useRef(pulseEnabled);
   const lastSec = useRef(-1);
   const onPulseRef = useRef(onPulseEnabledChange);
@@ -218,39 +152,16 @@ export function OnyxHome({
     }
   }, []);
 
-  const go = useCallback(
-    (d: number) => {
-      const nd = Math.max(0, Math.min(MAX, d));
-      setDepth(prev => {
-        if (nd === prev) return prev;
-        buzz(nd === MAX ? "deep" : "step");
-        return nd;
-      });
+  /** Swipe / arrow-key door. Sync call keeps the iOS gesture for sensor permission. */
+  const openDoorNow = useCallback(
+    (dir: DoorArrowDir) => {
+      buzz("step");
+      if (dir === "up") onOpenSky();
+      else if (dir === "down") onOpenTonal?.();
+      else if (dir === "left") onOpenStudies?.();
+      else onOpenRings();
     },
-    [buzz],
-  );
-
-  /** Depth step that never reads a stale `depth` from the event closure. */
-  const goDelta = useCallback(
-    (delta: number) => {
-      const prev = depthRef.current;
-      // Street + swipe/scroll up → live sky (sync call keeps iOS gesture for sensors).
-      if (prev === 0 && delta < 0) {
-        buzz("step");
-        onOpenSky();
-        return;
-      }
-      if (prev === 0 && delta > 0) {
-        buzz("step");
-        onOpenTonal?.();
-        return;
-      }
-      const nd = Math.max(0, Math.min(MAX, prev + delta));
-      if (nd === prev) return;
-      buzz(nd === MAX ? "deep" : "step");
-      setDepth(nd);
-    },
-    [buzz, onOpenSky, onOpenTonal],
+    [buzz, onOpenRings, onOpenSky, onOpenStudies, onOpenTonal],
   );
 
   // Own rAF clock — don't depend on parent `now` cadence for the felt second.
@@ -325,12 +236,9 @@ export function OnyxHome({
       else if (door === "tonal") onOpenTonal?.();
       else if (door === "studies") onOpenStudies?.();
       else if (door === "orrery") onOpenRings();
-      else if (door === "you") {
-        if (onOpenYou) onOpenYou();
-        else go(MAX);
-      }
+      else if (door === "you") onOpenYou?.();
     },
-    [go, onOpenRings, onOpenSky, onOpenStudies, onOpenTonal, onOpenYou],
+    [onOpenRings, onOpenSky, onOpenStudies, onOpenTonal, onOpenYou],
   );
 
   const enterDoor = useCallback(
@@ -451,7 +359,11 @@ export function OnyxHome({
     if (aim !== compassAimRef.current) {
       compassAimRef.current = aim;
       setCompassAim(aim);
-      if (aim) buzz("tick");
+      if (aim) {
+        buzz("tick");
+        const ctx = hapticRef.current ? getClockAudio() : null;
+        if (ctx) playChargeTick(ctx);
+      }
     }
   };
 
@@ -476,11 +388,9 @@ export function OnyxHome({
   const swipeTargetIgnored = (t: EventTarget | null) => {
     const el = t as HTMLElement | null;
     if (!el?.closest) return false;
-    // Clock / NOW panel owns vertical gestures for scrolling on phones.
-    if (depthRef.current === 1 && el.closest(".onyx-p2")) return true;
     return Boolean(
       el.closest(
-        ".onyx-stone-track, .onyx-compass, .onyx-phase-moon, .onyx-yy-phrase-btn, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-row, .onyx-rx, .onyx-why, .onyx-side-doors, .onyx-distill-chip, input, textarea, a",
+        ".onyx-stone-track, .onyx-compass, .onyx-phase-moon, .onyx-yy-dot, .onyx-share-sheet, .onyx-share-scrim, .onyx-yy-dirs, .onyx-distill-chip, .onyx-treasury-door, .onyx-aulos-btn, input, textarea, a",
       ),
     );
   };
@@ -499,7 +409,7 @@ export function OnyxHome({
     if (!start) return;
     const dy = e.clientY - start.y;
     if (Math.abs(dy) < SWIPE_MIN_PX || performance.now() - start.t > SWIPE_MAX_MS) return;
-    goDelta(dy > 0 ? 1 : -1);
+    openDoorNow(dy > 0 ? "down" : "up");
   };
 
   return (
@@ -507,7 +417,6 @@ export function OnyxHome({
       <div
         ref={deviceRef}
         className="onyx-device onyx-yy-home"
-        data-depth={depth}
         role="application"
         aria-label="Pneuma Mundi"
         onPointerDown={onPointerDownSwipe}
@@ -516,17 +425,20 @@ export function OnyxHome({
           swipeStart.current = null;
         }}
         onKeyDown={e => {
-          if (e.key === "Escape" && (shareOpen || distillOpen || phraseWhyOpen)) {
+          if (e.key === "Escape" && (shareOpen || distillOpen)) {
             e.preventDefault();
             setShareOpen(false);
             setDistillOpen(false);
-            setPhraseWhyOpen(false);
             return;
           }
           /* Aulos lyrics Esc is handled inside OnyxAulos. */
           if ((e.target as HTMLElement).closest?.("input, textarea, select, [contenteditable]")) return;
-          if (e.key === "ArrowDown") goDelta(1);
-          if (e.key === "ArrowUp") goDelta(-1);
+          if (shareOpen || distillOpen) return;
+          const dir = ARROW_DIR[e.key];
+          if (dir) {
+            e.preventDefault();
+            openDoorNow(dir);
+          }
         }}
         tabIndex={0}
       >
@@ -534,7 +446,6 @@ export function OnyxHome({
           <OnyxHomeFilm soundOn={hapticOn} />
           <div className="onyx-home-vision" aria-hidden />
           <div className="onyx-aura" />
-          {depth !== 0 && <OnyxCrystal sensorsUnlocked={sensorsUnlocked} />}
         </div>
 
         <div className="onyx-vignette" />
@@ -561,214 +472,14 @@ export function OnyxHome({
           onEnabledChange={setPulse}
         />
 
-        <OnyxAulos soundAllowed={hapticOn} visible={depth === 0} />
+        <OnyxAulos soundAllowed={hapticOn} visible />
 
-        {/* 0 STREET — Omphalos moment reading; casts live inside Psyche */}
-        <div className={`onyx-panel onyx-p0${depth === 0 ? " show" : ""}`} />
-
-        {/* 1 MOMENT */}
-        <div className={`onyx-panel onyx-p2${depth === 1 ? " show" : ""}`}>
-          <p className="onyx-eyebrow" style={{ alignSelf: "flex-start", marginBottom: 0 }}>
-            NOW
-          </p>
-          {readingLayerLabel && (
-            <p className="onyx-layer-label" style={{ alignSelf: "flex-start" }}>
-              {readingLayerLabel}
-            </p>
-          )}
-          {readingLayers.length > 1 && (
-            <div className="onyx-layers">
-              <div className="onyx-held-row">
-                {readingLayers.map(l => (
-                  <button
-                    key={l.id}
-                    type="button"
-                    className={`onyx-layer-chip${activeLayerId === l.id ? " on" : ""}`}
-                    onClick={e => {
-                      e.stopPropagation();
-                      buzz("tick");
-                      onSelectLayer?.(l.id);
-                    }}
-                  >
-                    {l.id === "moment"
-                      ? "The moment"
-                      : l.id === "through-you"
-                        ? "Through you"
-                        : "What you drew"}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-          {landAcknowledgment && (
-            <p className="onyx-land-ack" style={{ alignSelf: "flex-start", width: "100%" }}>
-              {landAcknowledgment.text}
-              {landAcknowledgment.pointTo && (
-                <>
-                  {" "}
-                  <a
-                    href={landAcknowledgment.pointTo}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={e => e.stopPropagation()}
-                  >
-                    Learn more
-                  </a>
-                </>
-              )}
-            </p>
-          )}
-          {landCalendarLine && (
-            <p className="onyx-land-cal" style={{ alignSelf: "flex-start", width: "100%" }}>
-              {landCalendarLine}
-            </p>
-          )}
-          <p className="now">{momentLine}</p>
-          {heldCasts.length > 0 && (
-            <HeldStrip
-              casts={heldCasts}
-              eyebrow="Held · not the sky clock"
-              onOpenCast={onOpenCast}
-              onResetHeld={onResetHeld}
-              onReleaseHeld={onReleaseHeld}
-              buzz={buzz}
-            />
-          )}
-          {onOpenWhy && (
-            <button
-              type="button"
-              className="onyx-why"
-              onClick={e => {
-                e.stopPropagation();
-                buzz("tick");
-                onOpenWhy();
-              }}
-            >
-              tap to see why
-            </button>
-          )}
-          <hr className="onyx-seam" />
-          <div className="onyx-rows">
-            <button
-              type="button"
-              className="onyx-row"
-              aria-expanded={datesOpen}
-              onClick={e => {
-                e.stopPropagation();
-                setDatesOpen(v => !v);
-                buzz("tick");
-              }}
-            >
-              <span>Today, according to whom</span>
-              <span className="onyx-row-r">
-                {calendarReadings.length || 0} counts {datesOpen ? "▴" : "▾"}
-              </span>
-            </button>
-            <div className={`onyx-rx${datesOpen ? " open" : ""}`}>
-              <div className="onyx-rx-in">
-                {calendarReadings.map(r => (
-                  <div className="onyx-cl" key={r.systemId}>
-                    <span>
-                      <span className={`onyx-mk ${claimMarkClass(r.claim)}`} />
-                      {r.primary}
-                      {r.secondary ? ` · ${r.secondary}` : ""}
-                    </span>
-                    <span className="sys">{r.title}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <button
-              type="button"
-              className="onyx-row"
-              onClick={() => {
-                buzz("tick");
-                onOpenRings();
-              }}
-            >
-              <span>Orrery</span>
-              <span className="onyx-row-r">open wheel ▾</span>
-            </button>
-            <button
-              type="button"
-              className="onyx-row"
-              onClick={() => {
-                buzz("tick");
-                onOpenTools();
-              }}
-            >
-              <span>Atlas, senses & oracle</span>
-              <span className="onyx-row-r">✦</span>
-            </button>
-          </div>
-          <p className="onyx-prov">
-            <b>Position measured to the arcminute.</b> {zodiacSign} is a Hellenistic reading — one of
-            several a sky can be given.
-          </p>
+        <div className="onyx-inscription">
+          <p className="onyx-inscription-greek" lang="grc">ΓΝΩΘΙ ΣΑΥΤΟΝ</p>
+          {fresh && <p className="onyx-inscription-en">Know Thyself</p>}
         </div>
 
-        {/* 2 SELF */}
-        <div className={`onyx-panel onyx-p3${depth === 2 ? " show" : ""}`}>
-          <div className="onyx-center">
-            <div className="glyph">
-              <svg width="192" height="192" viewBox="0 0 64 64" fill="none" role="img" aria-label="Your tone">
-                <polygon
-                  points="32,4 56,18 56,46 32,60 8,46 8,18"
-                  fill="none"
-                  stroke="var(--onyx-edge-bright)"
-                  strokeWidth="0.75"
-                />
-                <circle cx="32" cy="32" r="13" fill="none" stroke="var(--onyx-light)" strokeWidth="0.5" strokeOpacity={0.7} />
-                <circle cx="32" cy="32" r="4" fill="var(--onyx-core)" fillOpacity={0.85} />
-              </svg>
-            </div>
-            <p className="te">YOUR TONE, THIS MOMENT</p>
-            <p className="tone">{selfTone}</p>
-            <p className="ret">{selfRet}</p>
-            <div className="onyx-side-doors">
-              {onOpenYou && (
-                <button
-                  type="button"
-                  className="onyx-ghost-btn"
-                  onClick={() => {
-                    buzz("tick");
-                    onOpenYou();
-                  }}
-                >
-                  Psyche · natal (local)
-                </button>
-              )}
-              {onOpenYou && (
-                <button
-                  type="button"
-                  className="onyx-ghost-btn"
-                  onClick={() => {
-                    buzz("tick");
-                    onOpenYou();
-                  }}
-                >
-                  Divinations · inside Psyche
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
-
-        <div className="onyx-yy-phrase">
-          <button
-            type="button"
-            className="onyx-yy-phrase-btn"
-            onClick={e => {
-              e.stopPropagation();
-              if (phraseChord) setPhraseWhyOpen(true);
-              else enterDoor("center");
-            }}
-          >
-            <p className="big">{momentLine}</p>
-          </button>
-        </div>
-
-        <div className={`onyx-compass-wrap onyx-yy-wrap${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}${bowShoot ? " bow-loosing" : ""}`}>
+        <div className={`onyx-compass-wrap onyx-yy-wrap${fresh ? " fresh" : ""}${compassLocked ? " holding" : ""}${gemSpin ? " spinning" : ""}${bowShoot ? " bow-loosing" : ""}`}>
           <div className="onyx-compass-stage onyx-yy-stage">
             <div className="onyx-yy-orb">
               <OnyxCompassRose
@@ -782,7 +493,7 @@ export function OnyxHome({
                 <button
                   type="button"
                   className={`onyx-compass onyx-yy-gem${compassLocked ? " locked" : gemSpin || bowShoot ? "" : " floating"}${compassAim ? " aiming" : ""}${gemSpin ? ` spinning spin-${gemSpin}` : ""}`}
-                  aria-label="Hold and drag: up Aether, down Agon, right Heliodrome, left Mouseion. Or release a silver bow. Tap the center for Psyche. The Omphalos reading is the street line."
+                  aria-label="Compass. Hold and drag: up Aether, down Agon, right Heliodrome, left Mouseion. Or release a silver bow. Tap the centre for Psyche."
                   disabled={Boolean(gemSpin) || Boolean(bowShoot)}
                   onPointerDown={e => {
                     if (gemSpin || bowShoot) return;
@@ -864,175 +575,6 @@ export function OnyxHome({
             onClose={() => setDistillOpen(false)}
           />
         )}
-        {phraseWhyOpen && phraseChord && (
-          <div className="onyx-share-scrim" onClick={() => setPhraseWhyOpen(false)}>
-            <section
-              className="onyx-share-sheet onyx-phrase-why"
-              role="dialog"
-              aria-modal="true"
-              aria-label="How this phrase was distilled"
-              onClick={e => e.stopPropagation()}
-            >
-              {(() => {
-                const why = phraseReason(phraseChord, phraseOpts ?? (distillPrefs ? { voice: distillPrefs.voice } : undefined));
-                const voices = decompose(phraseChord).slice(0, 8);
-                const birthCycles = phraseField?.birthCycles ?? [];
-                const birthVoices = phraseField?.birthVoices ?? [];
-                const heldNames = phraseField?.heldNames ?? [];
-                return (
-                  <>
-                    <p className="onyx-share-kicker">How this line was made</p>
-                    <p className="onyx-phrase-why-line">{momentLine}</p>
-                    <p className="onyx-phrase-why-meta">
-                      {why.fieldSize} voices · {why.register.replace("-", " ")}
-                    </p>
-                    {why.root && (
-                      <p className="onyx-phrase-why-row">
-                        <span>Root</span>
-                        {poleWord(why.root.axis, why.root.pole) || why.root.axis}
-                      </p>
-                    )}
-                    {why.tension && (
-                      <p className="onyx-phrase-why-row">
-                        <span>Tension</span>
-                        {why.tension.axis}
-                      </p>
-                    )}
-                    {why.inflection[0] && (
-                      <p className="onyx-phrase-why-row">
-                        <span>Hour</span>
-                        {poleWord(why.inflection[0].axis, why.inflection[0].pole) || why.inflection[0].axis}
-                      </p>
-                    )}
-                    {birthCycles.length > 0 && (
-                      <>
-                        <p className="onyx-share-kicker onyx-distill-kicker-2">Birth clock</p>
-                        <ul className="onyx-phrase-why-voices">
-                          {birthCycles.map(row => (
-                            <li key={row}>
-                              <span>{row}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    {birthVoices.length > 0 && (
-                      <>
-                        <p className="onyx-share-kicker onyx-distill-kicker-2">Through your birth field</p>
-                        <ul className="onyx-phrase-why-voices">
-                          {birthVoices.map(name => (
-                            <li key={name}>
-                              <b>{name}</b>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    {heldNames.length > 0 && (
-                      <>
-                        <p className="onyx-share-kicker onyx-distill-kicker-2">Held with what you accepted</p>
-                        <ul className="onyx-phrase-why-voices">
-                          {heldNames.map(name => (
-                            <li key={name}>
-                              <b>{name}</b>
-                            </li>
-                          ))}
-                        </ul>
-                      </>
-                    )}
-                    <p className="onyx-share-kicker onyx-distill-kicker-2">Voices in the chord</p>
-                    <ul className="onyx-phrase-why-voices">
-                      {voices.map(({ entry, contributes }) => (
-                        <li key={entry.id}>
-                          <b>{entry.name}</b>
-                          <span>{contributes.slice(0, 3).join(" · ")}</span>
-                        </li>
-                      ))}
-                    </ul>
-                    <button
-                      type="button"
-                      className="onyx-share-cancel"
-                      onClick={() => setPhraseWhyOpen(false)}
-                    >
-                      Close
-                    </button>
-                  </>
-                );
-              })()}
-            </section>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function HeldStrip({
-  casts,
-  eyebrow,
-  onOpenCast,
-  onResetHeld,
-  onReleaseHeld,
-  buzz,
-}: {
-  casts: HeldCastChip[];
-  eyebrow: string;
-  onOpenCast?: () => void;
-  onResetHeld?: () => void;
-  onReleaseHeld?: (id: string) => void;
-  buzz: (kind: HapticKind) => void;
-}) {
-  return (
-    <div className="onyx-held">
-      <div className="onyx-held-head">
-        <p className="onyx-held-eyebrow">{eyebrow}</p>
-        {onResetHeld && (
-          <button
-            type="button"
-            className="onyx-held-reset"
-            onClick={e => {
-              e.stopPropagation();
-              buzz("tick");
-              onResetHeld();
-            }}
-          >
-            Reset
-          </button>
-        )}
-      </div>
-      <div className="onyx-held-row">
-        {casts.map(h => (
-          <span key={h.id} className="onyx-held-chip-wrap">
-            <button
-              type="button"
-              className="onyx-held-chip"
-              onClick={e => {
-                e.stopPropagation();
-                buzz("tick");
-                onOpenCast?.();
-              }}
-            >
-              <b>{h.label}</b>
-              {" · "}
-              {h.names.slice(0, 2).join(" · ")}
-              {h.names.length > 2 ? "…" : ""}
-            </button>
-            {onReleaseHeld && (
-              <button
-                type="button"
-                className="onyx-held-release"
-                aria-label={`Release ${h.label}`}
-                onClick={e => {
-                  e.stopPropagation();
-                  buzz("tick");
-                  onReleaseHeld(h.id);
-                }}
-              >
-                ×
-              </button>
-            )}
-          </span>
-        ))}
       </div>
     </div>
   );

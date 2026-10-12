@@ -229,6 +229,12 @@
     if (e.key !== SFX_KEY) return;
     if (soundOff()) park(); else if (ctx) wake();
   });
+  /** Stone switch in the portal header — same key the app's stone writes. */
+  window.pmClockSoundOn = function () { return !soundOff(); };
+  window.pmClockSound = function (on) {
+    try { localStorage.setItem(SFX_KEY, on ? "1" : "0"); } catch (e) { /* private mode */ }
+    if (on) wake(); else park();
+  };
   // Arriving from the app with a live gesture often allows an immediate start.
   wake();
   requestAnimationFrame(frame);

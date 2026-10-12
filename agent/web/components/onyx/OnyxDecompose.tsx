@@ -1,29 +1,25 @@
 "use client";
 
 import { decompose, type Composition } from "../../lib/lore/compose";
+import { ChamberHeader } from "./ChamberHeader";
 
 /** "Tap to see why" — provenance intact: source + claim + tier verbatim. */
 export function OnyxDecompose({
   chord,
   provenanceLine,
-  onBack,
 }: {
   chord: Composition;
   provenanceLine?: string | null;
-  onBack: () => void;
 }) {
   const rows = decompose(chord);
 
   return (
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
-        <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          ‹ Treasury
-        </button>
+        <ChamberHeader title="Why this chord" />
         <div className="onyx-overlay">
-          <p className="onyx-eyebrow">WHY THIS CHORD</p>
           <p className="onyx-layer-lead">
-            The home sentence named the chord — the sum. Here is each voice that built it:
+            The chord of this moment is the sum. Here is each voice that built it:
             provenance intact, nothing invented after the fact.
           </p>
           {provenanceLine && (

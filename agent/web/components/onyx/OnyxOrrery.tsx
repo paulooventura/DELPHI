@@ -19,6 +19,7 @@ import { createPinchGestureController } from "../../lib/cosmic/pinchGesture";
 import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
 import type { BirthRecord } from "../../lib/lore/birthStore";
 import { OnyxHeliodromeFilm } from "./OnyxHeliodromeFilm";
+import { ChamberHeader } from "./ChamberHeader";
 import { NatalTriadPanel } from "./NatalTriadPanel";
 import {
   CENTER_ONLY_LANE_IDS,
@@ -157,6 +158,7 @@ export function OnyxOrrery({
     if (!expanded && !pickerOpen) return;
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         setExpanded(null);
         setPickerOpen(false);
       }
@@ -486,12 +488,10 @@ export function OnyxOrrery({
         className="onyx-device onyx-orrery-device"
       >
         <OnyxHeliodromeFilm />
-        <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          ‹ Omphalos
-        </button>
+        <ChamberHeader title="Heliodrome" onBack={onBack} />
         <div className="onyx-orrery-header">
           <div className="onyx-orrery-mast">
-            <p className="onyx-orrery-title">HELIODROME</p>
+            <div className="onyx-orrery-title" aria-hidden />
             <div className="onyx-orrery-controls">
               <button
                 type="button"

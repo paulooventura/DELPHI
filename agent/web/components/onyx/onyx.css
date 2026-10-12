@@ -1248,13 +1248,13 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-yy-stage > .onyx-yy-dirs {
   position: absolute;
-  inset: -19%;
-  left: auto;
-  top: auto;
+  inset: -52%;
   width: auto;
   height: auto;
   transform: none;
 }
+.onyx-yy-stage > .onyx-yy-dirs .d-left,
+.onyx-yy-stage > .onyx-yy-dirs .d-right { top: calc(50% + 30px); }
 .onyx-yy-dirs button {
   pointer-events: auto;
   padding: 8px 10px;
@@ -4103,6 +4103,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-time-filter,
   .onyx-orrery-filter-btn,
   .onyx-overlay-close,
+  .onyx-chamber-back,
   .onyx-sky-back,
   .onyx-sky-align-btn,
   .onyx-you-chip,
@@ -4159,6 +4160,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-time-filter,
   .onyx-orrery-filter-btn,
   .onyx-overlay-close,
+  .onyx-chamber-back,
   .onyx-sky-back,
   .onyx-sky-align-btn,
   .onyx-you-chip,
@@ -4201,6 +4203,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-time-filter,
   .onyx-orrery-filter-btn,
   .onyx-overlay-close,
+  .onyx-chamber-back,
   .onyx-sky-back,
   .onyx-sky-align-btn,
   .onyx-you-chip,
@@ -4276,6 +4279,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-time-filter,
 .onyx-orrery-filter-btn,
 .onyx-overlay-close,
+.onyx-chamber-back,
 .onyx-sky-back,
 .onyx-sky-align-btn,
 .onyx-you-chip,
@@ -4459,4 +4463,197 @@ html[data-sky="twilight"] .onyx-overlay-close {
   color: #fff;
   opacity: 0.85;
   text-shadow: var(--word-outline);
+}
+
+/* ── First minute: splash promise + why we ask for access ─────────────────── */
+.onyx-splash-promise {
+  position: absolute; left: 24px; right: 24px; z-index: 45; margin: 0;
+  bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 4px));
+  text-align: center;
+  font-family: var(--font-voice); font-style: italic; font-size: 13px; line-height: 1.4;
+  letter-spacing: 0.04em; color: rgba(255, 248, 240, 0.72);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
+  opacity: 0; transition: opacity 900ms ease 400ms; pointer-events: none;
+}
+.onyx-splash-promise.on { opacity: 1; }
+.onyx-access-why {
+  position: absolute; left: 0; right: 0; z-index: 4; margin: 0; padding: 0 28px;
+  top: max(34px, calc(env(safe-area-inset-top, 0px) + 22px));
+  list-style: none; display: grid; gap: 6px; text-align: center; pointer-events: none;
+  font-size: 12px; line-height: 1.45; letter-spacing: 0.03em; color: rgba(245, 240, 255, 0.82);
+  text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
+  animation: onyx-sheet-fade 1.2s ease-out;
+}
+.onyx-access-why b { font-weight: 600; letter-spacing: 0.08em; }
+
+/* ── Home inscription: the only line on the Omphalos ──────────────────────── */
+.onyx-inscription {
+  position: absolute; left: 50%; top: 25%; transform: translate(-50%, -50%);
+  z-index: 11; width: min(86vw, 420px); text-align: center; pointer-events: none;
+}
+.onyx-inscription-greek {
+  margin: 0;
+  font-family: var(--font-voice); font-weight: 500;
+  font-size: clamp(22px, 6.4vmin, 34px); letter-spacing: 0.24em; padding-left: 0.24em;
+  color: #e9e1cc;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18), 0 -1px 0 rgba(0, 0, 0, 0.85), 0 0 18px rgba(0, 0, 0, 0.65);
+}
+.onyx-inscription-en {
+  margin: 8px 0 0;
+  font-family: var(--font-voice); font-style: italic; font-size: 14px; letter-spacing: 0.14em;
+  color: var(--onyx-ink-soft); text-shadow: var(--word-outline);
+  animation: onyx-sheet-fade 2.4s ease-out;
+}
+/* First sessions: compass labels stay readable before anyone holds the gem. */
+.onyx-yy-wrap.fresh .onyx-yy-dirs span { opacity: 0.75; }
+.onyx-yy-wrap.fresh:not(.holding):not(.spinning) .onyx-yy-dirs span {
+  animation: onyx-dir-shimmer 6.4s ease-in-out infinite;
+}
+.onyx-yy-wrap.fresh .onyx-yy-dirs .d-right { animation-delay: 1.6s; }
+.onyx-yy-wrap.fresh .onyx-yy-dirs .d-down { animation-delay: 3.2s; }
+.onyx-yy-wrap.fresh .onyx-yy-dirs .d-left { animation-delay: 4.8s; }
+@keyframes onyx-dir-shimmer {
+  0%, 26%, 100% { opacity: 0.75; text-shadow: var(--word-outline); }
+  10% { opacity: 1; text-shadow: 0 0 14px rgba(176, 156, 255, 0.95), 0 0 4px rgba(255, 255, 255, 0.6), var(--word-outline); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onyx-yy-wrap.fresh .onyx-yy-dirs span { animation: none !important; }
+}
+
+/* ── Chamber header: back · name · mini compass · stone ───────────────────── */
+.onyx-chamber {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 30;
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px;
+  padding: max(18px, env(safe-area-inset-top, 0px)) 14px 10px 18px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.72) 0%, rgba(0, 0, 0, 0.42) 70%, transparent 100%);
+  pointer-events: none;
+}
+.onyx-chamber > * { pointer-events: auto; }
+.onyx-chamber .onyx-chamber-back,
+.onyx-treasury-head .onyx-chamber-back {
+  justify-self: start;
+  width: max-content; height: 32px; padding: 0 12px;
+  display: inline-flex; align-items: center;
+  font-family: inherit; font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+}
+.onyx-chamber-name {
+  margin: 0; max-width: 46vw;
+  font-family: var(--font-ui); font-weight: 600; font-size: 11px; letter-spacing: 0.32em;
+  text-transform: uppercase; color: var(--onyx-ink-soft); text-shadow: var(--word-outline);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
+  pointer-events: none;
+}
+.onyx-chamber-sub { letter-spacing: 0.12em; font-weight: 400; opacity: 0.8; }
+.onyx-chamber-right {
+  justify-self: end; display: flex; align-items: center; gap: 8px;
+}
+.onyx-chamber .onyx-stone-track { position: relative; top: auto; right: auto; }
+.onyx-chamber-compass {
+  width: 34px; height: 34px; padding: 2px; border: 0; border-radius: 50%;
+  background: rgba(6, 6, 10, 0.35); cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  -webkit-touch-callout: none; -webkit-user-select: none; user-select: none;
+  transition: background var(--onyx-lift);
+}
+.onyx-chamber-compass:hover,
+.onyx-chamber-compass:focus-visible { background: rgba(120, 108, 200, 0.18); outline: none; }
+.onyx-device:has(> .onyx-chamber) > .onyx-overlay { padding-top: 64px; }
+.onyx-treasury-head .onyx-chamber-back { justify-self: start; }
+
+/* Compass jump sheet */
+.onyx-compass-sheet-wrap,
+.onyx-treasury-wrap {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: onyx-sheet-fade 220ms ease-out;
+}
+.onyx-compass-sheet,
+.onyx-treasury-sheet {
+  width: min(100vw, 402px); max-height: 86dvh; overflow: auto;
+  padding: 16px 14px calc(18px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(22, 18, 40, 0.97), rgba(6, 5, 12, 0.98));
+  border-top: 0.5px solid var(--onyx-edge-bright);
+  border-radius: 18px 18px 0 0;
+  display: grid; gap: 8px;
+  animation: onyx-sheet-rise 260ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.onyx-compass-row {
+  display: block; width: 100%; text-align: left; cursor: pointer;
+  padding: 12px 14px; border-radius: 12px;
+  border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.06);
+  color: var(--onyx-ink-bright); font-family: inherit; font-size: 14px;
+}
+.onyx-compass-row span { display: block; font-size: 11px; color: var(--onyx-ink-quiet); margin-top: 3px; opacity: 0.8; }
+.onyx-compass-row.is-home { border-color: var(--onyx-edge-bright); }
+.onyx-compass-row.is-here { background: rgba(140, 124, 255, 0.2); }
+.onyx-treasury-head {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; margin-bottom: 6px;
+}
+.onyx-treasury-sheet .onyx-treasury-lede { margin: 0 0 8px; text-align: center; }
+.onyx-treasury-list { display: grid; gap: 8px; }
+@keyframes onyx-sheet-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes onyx-sheet-rise { from { transform: translateY(24px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+/* ── Pronaos: first-run welcome ───────────────────────────────────────────── */
+.onyx-pronaos {
+  position: fixed; inset: 0; z-index: 95;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 24px; text-align: center; cursor: pointer;
+  background: radial-gradient(70% 55% at 50% 45%, rgba(10, 8, 22, 0.72), rgba(0, 0, 0, 0.9));
+  animation: onyx-sheet-fade 420ms ease-out;
+}
+.onyx-pronaos-skip {
+  position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); right: 18px;
+  background: none; border: 0.5px solid var(--onyx-edge); border-radius: 16px;
+  padding: 6px 14px; color: var(--onyx-ink-soft); font-family: inherit; font-size: 11px;
+  letter-spacing: 0.1em; cursor: pointer;
+}
+.onyx-pronaos-beat {
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  max-width: 340px; animation: onyx-sheet-rise 520ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.onyx-pronaos-inscription {
+  margin: 0; font-family: var(--font-voice); font-size: 30px; letter-spacing: 0.22em;
+  color: #efe6cf; text-shadow: 0 0 18px rgba(233, 214, 168, 0.35), var(--word-outline);
+}
+.onyx-pronaos-line {
+  margin: 0; font-family: var(--font-voice); font-size: 22px; line-height: 1.35;
+  color: var(--onyx-ink-bright); text-shadow: var(--word-outline);
+}
+.onyx-pronaos-sub { margin: 0; font-size: 13px; line-height: 1.5; color: var(--onyx-ink-soft); opacity: 0.86; }
+.onyx-pronaos-hint { margin: 0; font-size: 11px; color: var(--onyx-ink-quiet); opacity: 0.7; }
+.onyx-pronaos-step {
+  position: absolute; bottom: max(26px, env(safe-area-inset-bottom, 0px)); margin: 0;
+  font-size: 10px; letter-spacing: 0.24em; color: var(--onyx-ink-quiet); opacity: 0.6;
+}
+.onyx-pronaos-cross { position: relative; width: 230px; height: 190px; }
+.onyx-pronaos-arm {
+  position: absolute; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  color: var(--onyx-ink-quiet); opacity: 0.35; transition: opacity 420ms ease, text-shadow 420ms ease;
+}
+.onyx-pronaos-arm.is-lit { opacity: 1; text-shadow: 0 0 14px rgba(160, 140, 255, 0.9), var(--word-outline); }
+.onyx-pronaos-arm.is-up { top: 0; left: 50%; transform: translateX(-50%); }
+.onyx-pronaos-arm.is-down { bottom: 0; left: 50%; transform: translateX(-50%); }
+.onyx-pronaos-arm.is-left { left: 0; top: 50%; transform: translateY(-50%); }
+.onyx-pronaos-arm.is-right { right: 0; top: 50%; transform: translateY(-50%); }
+.onyx-pronaos-gem {
+  position: absolute; left: 50%; top: 50%; width: 46px; height: 46px; margin: -23px 0 0 -23px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 25%, #0b0a12 0 12%, transparent 13%),
+    radial-gradient(circle at 50% 75%, #f2eefc 0 12%, transparent 13%),
+    linear-gradient(90deg, #f2eefc 50%, #0b0a12 50%);
+  box-shadow: 0 0 22px rgba(140, 124, 255, 0.45);
+  animation: onyx-pronaos-breathe 3.2s ease-in-out infinite;
+}
+.onyx-pronaos-gem.is-solo { position: relative; left: auto; top: auto; margin: 0 0 6px; width: 64px; height: 64px; }
+@keyframes onyx-pronaos-breathe {
+  0%, 100% { box-shadow: 0 0 16px rgba(140, 124, 255, 0.35); }
+  50% { box-shadow: 0 0 34px rgba(140, 124, 255, 0.75); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onyx-pronaos, .onyx-pronaos-beat, .onyx-compass-sheet-wrap, .onyx-treasury-wrap,
+  .onyx-compass-sheet, .onyx-treasury-sheet, .onyx-pronaos-gem { animation: none; }
 }

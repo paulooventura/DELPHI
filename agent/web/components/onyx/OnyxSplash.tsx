@@ -461,6 +461,12 @@ export function OnyxSplash({
         >
           Tap to begin
         </p>
+        <p
+          className={`onyx-splash-promise${needTap && videoReady && !veilOn ? " on" : ""}`}
+          aria-hidden={!needTap}
+        >
+          The breath of the world, tuned to this moment. Know Thyself.
+        </p>
 
         <p
           className={`onyx-splash-tap onyx-splash-skip${unlocked && videoReady && !veilOn ? " on" : ""}`}

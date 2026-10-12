@@ -14,6 +14,7 @@ import { speak } from "../../lib/lore/phrase";
 import { searchPlaces, type PlaceHit } from "../../lib/geo/placeSearch";
 import type { EmbracedCast } from "../../lib/lore/castStore";
 import { OnyxStarfield } from "./OnyxStarfield";
+import { ChamberHeader } from "./ChamberHeader";
 import { OnyxBirthDeclareSheet } from "./OnyxBirthDeclareSheet";
 import { NatalTriadPanel } from "./NatalTriadPanel";
 import { OnyxAccountCard } from "./OnyxAccountCard";
@@ -258,11 +259,8 @@ export function OnyxYou({
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
         <OnyxStarfield />
-        <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          ‹ Omphalos
-        </button>
+        <ChamberHeader title="Psyche" onBack={onBack} />
         <div className="onyx-overlay onyx-you">
-          <p className="onyx-eyebrow">PSYCHE</p>
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
 
           <div className="onyx-about-block onyx-you-blurb">

@@ -210,6 +210,11 @@ export function DeviceAccessGate({
             </span>
           </span>
         </button>
+        <ul className="onyx-access-why">
+          <li><b>Location</b> places the real sky over you.</li>
+          <li><b>Motion</b> lets you point your phone at the planets.</li>
+          <li><b>Sound</b> plays the chord of this moment.</li>
+        </ul>
       </div>
     </div>
   );

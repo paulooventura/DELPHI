@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type MutableRefObject, type ReactNode, type RefObject } from "react";
 import type { CosmicClockState } from "../../lib/cosmic";
 import type { CycleSnapshot } from "../../lib/cycleSystems";
 import type { CycleReading, WorldCyclePreferences } from "../../lib/worldCycles";
@@ -22,7 +22,6 @@ import { birthToDate, loadBirth, type BirthRecord } from "../../lib/lore/birthSt
 import {
   clearEmbraced,
   loadEmbraced,
-  releaseEmbraced,
   type EmbracedCast,
 } from "../../lib/lore/castStore";
 import { natalGalactic, natalOrreryCycles, resolvePerson } from "../../lib/lore/resolvePerson";
@@ -55,6 +54,9 @@ import { OnyxOrrery } from "./OnyxOrrery";
 import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
 import { OnyxStarfield } from "./OnyxStarfield";
 import { DeviceAccessGate } from "./DeviceAccessGate";
+import { TreasurySheet, type TreasuryPick } from "./TreasurySheet";
+import { OnyxPronaos, hasBeenWelcomed, markWelcomed } from "./OnyxPronaos";
+import { ChamberHeader, ChamberNavContext, type ChamberDoor, type ChamberNav, type CompassLit } from "./ChamberHeader";
 import { trackEvent, trackScreen } from "../../lib/telemetry/client";
 import { VAULT_APPLIED_EVENT } from "../../lib/vault/sync";
 import "./onyx.css";
@@ -145,6 +147,28 @@ export const MODE_PARENT: Record<OnyxMode, OnyxMode | null> = {
   oracle: "tools",
   about: "tools",
   decompose: "tools",
+};
+
+/** Names used by back labels and the chamber header. */
+export const MODE_NAME: Record<OnyxMode, string> = {
+  home: "Omphalos",
+  sky: "Aether",
+  rings: "Heliodrome",
+  tools: "Treasury",
+  you: "Psyche",
+  cast: "Cast",
+  atlas: "Atlas",
+  senses: "Senses",
+  oracle: "Oracle",
+  about: "About",
+  decompose: "Why this chord",
+};
+
+const MODE_LIT: Partial<Record<OnyxMode, CompassLit>> = {
+  sky: "up",
+  rings: "right",
+  you: "centre",
+  cast: "centre",
 };
 
 type ModeHistoryState = { pm: 1; mode: OnyxMode; depth: number };
@@ -311,6 +335,23 @@ export function OnyxApp({
     setModeState(parent);
     replaceMode(parent, 0);
   };
+  /** First-run welcome over the live home; once per device (localStorage pm-welcomed). */
+  const [pronaosOpen, setPronaosOpen] = useState(() => !hasBeenWelcomed());
+  /** Set while history unwinds to the Omphalos entry; popstate then pushes this mode. */
+  const pendingJump = useRef<OnyxMode | null>(null);
+  /** Sideways jumps unwind to home first, so Back from the new chamber always names its real parent. */
+  const travel = (target: OnyxMode) => {
+    if (target === mode) return;
+    const s = readHistoryState();
+    if (!s || s.depth === 0) {
+      setModeState(target);
+      if (target === "home") replaceMode("home", 0);
+      else pushMode(target);
+      return;
+    }
+    pendingJump.current = target;
+    window.history.go(-s.depth);
+  };
   const [distilled, setDistilled] = useState<string>("");
   const [birth, setBirth] = useState<BirthRecord | null>(null);
   const [embraced, setEmbraced] = useState<EmbracedCast[]>([]);
@@ -404,9 +445,39 @@ export function OnyxApp({
 
   useEffect(() => {
     seedModeHistory(modeFromSearch());
-    const onPop = () => setModeState(readHistoryState()?.mode ?? modeFromSearch());
+    const onPop = () => {
+      const landed = readHistoryState()?.mode ?? modeFromSearch();
+      const target = pendingJump.current;
+      pendingJump.current = null;
+      if (target && target !== "home" && landed === "home") {
+        setModeState(target);
+        pushMode(target);
+        return;
+      }
+      setModeState(landed);
+    };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
+  }, []);
+
+  const goBackRef = useRef(goBack);
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    goBackRef.current = goBack;
+    modeRef.current = mode;
+  });
+  // Esc: a screen's own sheet handles it first (and preventDefaults); otherwise it is Back.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      window.setTimeout(() => {
+        if (e.defaultPrevented || modeRef.current === "home") return;
+        if (document.querySelector('[role="dialog"], [aria-modal="true"]')) return;
+        goBackRef.current();
+      }, 0);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
   }, []);
 
   function resetHeldDivinations() {
@@ -575,54 +646,9 @@ export function OnyxApp({
     brains,
   ]);
 
-  const zodiacSign = cycles?.westernZodiac?.sign ?? "the sky";
-  // Home street line = distilled chorus of the active reading layer.
-  // Calendar name-drops stay under the clock rows — never concatenated here.
-  // Omphalos home line — axis language from the whole chorus; no tradition names.
+  // Distilled chorus of the active reading layer — what Share sends. No tradition names.
   const momentLine = distilled || "Reading the chord…";
   void multiVoice;
-
-  const dayGalactic = cycles?.galactic;
-  const selfTone = natal ? (
-    <>
-      You are Kin {natal.kin} —
-      <br />
-      {natal.tone.name} {natal.tribe.name}.
-    </>
-  ) : dayGalactic ? (
-    <>
-      Today is Kin {dayGalactic.kin} —
-      <br />
-      {dayGalactic.tone.name} {dayGalactic.tribe.name}.
-    </>
-  ) : (
-    <>
-      You are near the close
-      <br />
-      of a long orbit.
-    </>
-  );
-  const selfRet = natal ? (
-    <>
-      Tone <b>{natal.tone.tone}</b> {natal.tone.name}.
-      <br />
-      {natal.tribe.color} {natal.tribe.name} · {natal.tribe.mayaSign}.
-      <br />
-      {birth?.hour !== undefined
-        ? "Your hour shapes the rising chord beneath this kin."
-        : "Add your birth hour in Psyche — it shapes rising math."}
-    </>
-  ) : dayGalactic ? (
-    <>
-      Tone <b>{dayGalactic.tone.tone}</b> {dayGalactic.tone.name}.
-      <br />
-      {dayGalactic.tribe.color} {dayGalactic.tribe.name} · {dayGalactic.tribe.mayaSign}.
-      <br />
-      Save your birth in Psyche to hear this in your color.
-    </>
-  ) : (
-    <>Hold still. The sky is still reading you.</>
-  );
 
   // Splash + Allow once per app open. Later door trips skip both.
   if (!bootReady) {
@@ -676,6 +702,27 @@ export function OnyxApp({
     setMode("sky");
   };
 
+  const jumpDoor = (door: ChamberDoor) => {
+    if (door === "tonal") return openTonal();
+    if (door === "studies") return openStudies();
+    if (door === "sky") onEnterSky?.();
+    if (door === "you") setYouExpandCast(false);
+    travel(door);
+  };
+  const parentMode = MODE_PARENT[mode] ?? "home";
+  const nav: ChamberNav = {
+    backLabel: MODE_NAME[parentMode],
+    onBack: goBack,
+    onHome: () => travel("home"),
+    onJump: jumpDoor,
+    lit: MODE_LIT[mode] ?? null,
+    pulseEnabled: Boolean(pulseEnabled),
+    onPulseEnabledChange,
+  };
+  const chamber = (el: ReactNode) => (
+    <ChamberNavContext.Provider value={nav}>{el}</ChamberNavContext.Provider>
+  );
+
   if (mode === "sky") {
     if (skyIntro) {
       return (
@@ -691,7 +738,7 @@ export function OnyxApp({
         />
       );
     }
-    return (
+    return chamber(
       <OnyxSky
         now={now}
         lat={lat}
@@ -743,7 +790,7 @@ export function OnyxApp({
         />
       );
     }
-    return (
+    return chamber(
       <OnyxOrrery
         lat={lat}
         lon={lon}
@@ -757,64 +804,6 @@ export function OnyxApp({
     );
   }
 
-  if (mode === "tools") {
-    return (
-      <div className="onyx-root">
-        <div className="onyx-device">
-          <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={goBack}>
-            ‹ Omphalos
-          </button>
-          <div className="onyx-overlay" style={{ position: "relative", background: "transparent" }}>
-            <p className="onyx-eyebrow" style={{ marginTop: 8 }}>
-              TREASURY ✦
-            </p>
-            <p className="onyx-treasury-lede">The instruments behind the four doors.</p>
-            <div className="onyx-tools-grid">
-              <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={() => setMode("atlas")}>
-                Atlas
-                <span>World cycle calendars</span>
-              </button>
-              <button
-                type="button"
-                className="onyx-tool-btn onyx-cut-citrine"
-                onClick={() => {
-                  const preset = presetById("time_compendium");
-                  if (preset) {
-                    onCyclePrefsChange({
-                      ...cyclePrefs,
-                      presetId: preset.id,
-                      enabledIds: [...preset.systemIds],
-                    });
-                  }
-                  setMode("atlas");
-                }}
-              >
-                Time units
-                <span>Helek · ghaṭi · kè · .beat</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-topaz" onClick={() => setMode("senses")}>
-                Senses
-                <span>Device instruments</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => setMode("decompose")}>
-                Why this chord
-                <span>What the moment is made of</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("about")}>
-                About
-                <span>Honesty tiers & integrity</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-ruby" onClick={() => setMode("oracle")}>
-                Oracle
-                <span>The maker&apos;s links · research not wired yet</span>
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
   if (mode === "you") {
     if (youIntro) {
       return (
@@ -830,7 +819,7 @@ export function OnyxApp({
         />
       );
     }
-    return (
+    return chamber(
       <OnyxYou
         key={vaultEpoch}
         nowChord={homeSnap?.chord ?? activeReading.chord}
@@ -848,7 +837,7 @@ export function OnyxApp({
   }
 
   if (mode === "cast") {
-    return (
+    return chamber(
       <OnyxCast
         onBack={goBack}
         held={embraced}
@@ -871,28 +860,40 @@ export function OnyxApp({
   }
 
   if (mode === "about") {
-    return <OnyxAbout onBack={goBack} />;
+    return chamber(<OnyxAbout />);
   }
 
   if (mode === "decompose") {
-    return (
-      <OnyxDecompose
-        chord={activeReading.chord}
-        provenanceLine={snapProvenance?.line}
-        onBack={goBack}
-      />
+    return chamber(
+      <OnyxDecompose chord={activeReading.chord} provenanceLine={snapProvenance?.line} />,
     );
   }
 
+  // Land acknowledgment + land calendar at the location fix: calendar framing, never personality.
+  const landAck = homeSnap?.acknowledgment ?? null;
+  const landCalendar = homeSnap?.landCalendar[0]?.name ?? null;
+
   if (mode === "atlas") {
-    return (
+    return chamber(
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={goBack}>
-            ‹ Treasury
-          </button>
+          <ChamberHeader title="Atlas" />
           <div className="onyx-overlay">
+            {landAck && (
+              <p className="onyx-land-ack">
+                {landAck.text}
+                {landAck.pointTo && (
+                  <>
+                    {" "}
+                    <a href={landAck.pointTo} target="_blank" rel="noopener noreferrer">
+                      Learn more
+                    </a>
+                  </>
+                )}
+              </p>
+            )}
+            {landCalendar && <p className="onyx-land-cal">Land calendar · {landCalendar}</p>}
             <OnyxTimeCompendium prefs={cyclePrefs} onChange={onCyclePrefsChange} />
             <AtlasPanel prefs={cyclePrefs} onChange={onCyclePrefsChange} />
           </div>
@@ -902,13 +903,11 @@ export function OnyxApp({
   }
 
   if (mode === "senses") {
-    return (
+    return chamber(
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={goBack}>
-            ‹ Treasury
-          </button>
+          <ChamberHeader title="Senses" />
           <div className="onyx-overlay">
             <EmfReader
               className="cp-card"
@@ -925,13 +924,11 @@ export function OnyxApp({
   }
 
   if (mode === "oracle") {
-    return (
+    return chamber(
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={goBack}>
-            ‹ Treasury
-          </button>
+          <ChamberHeader title="Oracle" />
           <div className="onyx-overlay">
             <PauloVenturaHub className="cp-card" />
             {oracleExtra}
@@ -941,61 +938,34 @@ export function OnyxApp({
     );
   }
 
-  const landCalendarLine =
-    homeSnap && homeSnap.landCalendar.length > 0
-      ? `Land calendar · ${homeSnap.landCalendar[0]!.name}`
-      : null;
-  const landAcknowledgment = homeSnap?.acknowledgment
-    ? {
-        text: homeSnap.acknowledgment.text,
-        people: homeSnap.acknowledgment.people,
-        pointTo: homeSnap.acknowledgment.pointTo,
+  const pickTreasury = (id: TreasuryPick) => {
+    if (id === "welcome") {
+      setPronaosOpen(true);
+      return;
+    }
+    if (id === "time") {
+      const preset = presetById("time_compendium");
+      if (preset) {
+        onCyclePrefsChange({ ...cyclePrefs, presetId: preset.id, enabledIds: [...preset.systemIds] });
       }
-    : null;
+      setMode("atlas");
+      return;
+    }
+    setMode(id);
+  };
 
-  return (
+  const homeScreen = (
     <OnyxHome
       now={now}
       phaseFraction={phaseFraction}
-      zodiacSign={zodiacSign}
       momentLine={momentLine}
-      phraseChord={activeReading.chord}
-      phraseOpts={distillOpts}
-      phraseField={{
-        birthCycles: birth ? natalOrreryCycles(birth).map(r => `${r.name} · ${r.label}`) : [],
-        birthVoices: natalEntries.map(e => e.name).slice(0, 12),
-        heldNames: embraced.map(c => c.names.join(" · ")).filter(Boolean),
-      }}
-      provenanceLine={snapProvenance?.line}
-      readingLayerLabel={activeReading.label}
-      readingLayers={layered.layers.map(l => ({ id: l.id, label: l.label }))}
-      activeLayerId={layered.active}
-      onSelectLayer={id => setActiveLayerChoice(id)}
       distillPrefs={distillPrefs}
       brains={brains}
       onDistillPrefs={next => setDistillPrefs(saveDistillPrefs(next))}
-      selfTone={selfTone}
-      selfRet={selfRet}
-      calendarReadings={stripReadings.slice(0, 8)}
-      landCalendarLine={landCalendarLine}
-      landAcknowledgment={landAcknowledgment}
-      heldCasts={embraced.slice(0, 3)}
-      onResetHeld={() => {
-        resetHeldDivinations();
-      }}
-      onReleaseHeld={id => {
-        const next = releaseEmbraced(id);
-        setEmbraced(next);
-        if (next.length === 0) {
-          setActiveLayerChoice(prev => (prev === "with-drawn" ? undefined : prev));
-        }
-      }}
       onOpenSky={openSky}
       onOpenRings={() => setMode("rings")}
       onOpenTools={() => setMode("tools")}
-      onOpenWhy={() => setMode("decompose")}
       onOpenYou={() => openYou(false)}
-      onOpenCast={openCastFromYou}
       onOpenStudies={openStudies}
       onOpenTonal={openTonal}
       pulseEnabled={pulseEnabled}
@@ -1004,5 +974,21 @@ export function OnyxApp({
       headingDeg={headingDeg}
       attitudeRef={liveAttitudeRef}
     />
+  );
+
+  return (
+    <>
+      {homeScreen}
+      {mode === "tools" && <TreasurySheet onClose={goBack} onPick={pickTreasury} />}
+      {mode === "home" && homeReady && pronaosOpen && (
+        <OnyxPronaos
+          onDone={meet => {
+            markWelcomed();
+            setPronaosOpen(false);
+            if (meet) openYou(false);
+          }}
+        />
+      )}
+    </>
   );
 }

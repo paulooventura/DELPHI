@@ -12,7 +12,7 @@ import { pulseHaptic } from "../../lib/haptics";
 import { meanLookAzAlt } from "../../lib/orientationCalibration";
 import { altAzToEnu, enuToAltAz } from "../../lib/sphericalView";
 import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
-import { OnyxAudioStone } from "./OnyxAudioStone";
+import { ChamberHeader } from "./ChamberHeader";
 import { cardinalFromHeading } from "./onyxCopy";
 
 const LOCK_HOLD_MS = 3000;
@@ -270,15 +270,9 @@ export function OnyxSky({
         className={`onyx-device onyx-sky-device${lockHold ? " is-lock-hold" : ""}`}
         role="application"
         aria-label="Pneuma Mundi sky view"
-        onKeyDown={e => {
-          if (e.key === "Escape") leave();
-        }}
         tabIndex={0}
       >
-        <button type="button" className="onyx-sky-back" onClick={leave}>
-          ‹ Omphalos
-        </button>
-        <OnyxAudioStone enabled={hapticsEnabled} onEnabledChange={onPulseEnabledChange} />
+        <ChamberHeader title="Aether" onBack={leave} />
 
         <div className="onyx-sky-live">
           <CelestialSkyView

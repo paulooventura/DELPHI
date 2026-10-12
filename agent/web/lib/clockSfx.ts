@@ -213,6 +213,13 @@ export function playSecondTick(ctx: AudioContext, second: number) {
   woodKnock(ctx, masterBus(ctx), noiseBuffer(ctx, 1.5), second % 2 === 0, ctx.currentTime);
 }
 
+/** Home gem charge crossing into a door — a short, quiet knock on the same series. */
+export function playChargeTick(ctx: AudioContext) {
+  if (audioSilenced || audioParked) return;
+  if (ctx.state !== "running") void ctx.resume();
+  woodKnock(ctx, masterBus(ctx), noiseBuffer(ctx, 1.5), true, ctx.currentTime, { gain: 0.55, decay: 0.6 });
+}
+
 /** Tick while scrubbing a frozen orrery — allowed even when running-clock ticks are muted. */
 let scrubHigh = false;
 export function playScrubTick(ctx: AudioContext) {

@@ -1,14 +1,13 @@
 "use client";
 
-export function OnyxAbout({ onBack }: { onBack: () => void }) {
+import { ChamberHeader } from "./ChamberHeader";
+
+export function OnyxAbout() {
   return (
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
-        <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          ‹ Treasury
-        </button>
+        <ChamberHeader title="About" />
         <div className="onyx-overlay">
-          <p className="onyx-eyebrow">ABOUT</p>
           <p className="onyx-layer-lead">Integrity of the reading</p>
 
           <div className="onyx-about-block">
@@ -20,9 +19,9 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
               future — it is offered as a mirror for reflection.
             </p>
             <p style={{ marginTop: 12 }}>
-              The home sentence names the standing wave across the whole chorus — the single
-              emergent character — not Leo, Horse, or any other source. Tap “see why” to open the
-              provenance.
+              The chord of the moment names the standing wave across the whole chorus — the single
+              emergent character — not Leo, Horse, or any other source. Treasury → Why this chord
+              opens the provenance.
             </p>
           </div>
 

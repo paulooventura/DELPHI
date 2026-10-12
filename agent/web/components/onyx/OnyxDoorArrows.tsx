@@ -90,10 +90,10 @@ const BOW_META: {
   rotate: number;
   label: string;
 }[] = [
-  { dir: "up", rotate: 0, label: "Aether — sky map" },
-  { dir: "right", rotate: 90, label: "Heliodrome — orrery" },
-  { dir: "down", rotate: 180, label: "Agon — Show Thyself" },
-  { dir: "left", rotate: -90, label: "Mouseion — studies" },
+  { dir: "up", rotate: 0, label: "Go to Aether — the living sky" },
+  { dir: "right", rotate: 90, label: "Go to Heliodrome — the clocks of the world" },
+  { dir: "down", rotate: 180, label: "Go to Agon — gatherings" },
+  { dir: "left", rotate: -90, label: "Go to Mouseion — the library" },
 ];
 
 export function OnyxDoorArrows({

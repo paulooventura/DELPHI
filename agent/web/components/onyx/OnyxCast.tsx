@@ -22,6 +22,7 @@ import { CAST_SYSTEMS } from "../../lib/lore/qualia";
 import { CastCard } from "./CastCard";
 import { CastCowrie } from "./CastArt";
 import { CastGems, type CastGemChoice } from "./CastGems";
+import { ChamberHeader } from "./ChamberHeader";
 import { CoinTossStage, RuneBagStage, TarotDeckStage } from "./CastGestureStages";
 
 const RITUAL_FADE_MS = 480;
@@ -194,11 +195,8 @@ export function OnyxCast({
   return (
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
-        <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          ‹ Psyche
-        </button>
+        <ChamberHeader title="Cast" onBack={onBack} />
         <div className="onyx-overlay">
-          <p className="onyx-eyebrow">CAST</p>
           <p className="onyx-layer-lead">
             Choose a tradition rooted in its own method — crypto-random, never the sky clock. Off by
             default.
