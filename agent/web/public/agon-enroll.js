@@ -162,9 +162,44 @@
     st.v.certs = certs;
   }
 
+  var DRAFT_KEY = "pm-enroll-draft";
+  var NOT_TYPED = { certs: 1, consent: 1, presence: 1, volunteer: 1, website: 1 };
+
+  function saveDraft() {
+    if (!st) return;
+    try {
+      var v = {};
+      Object.keys(st.v).forEach(function (k) { if (k !== "website") v[k] = st.v[k]; });
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ kind: st.kind, v: v }));
+    } catch (e) { /* private mode */ }
+  }
+  function loadDraft() {
+    try { return JSON.parse(sessionStorage.getItem(DRAFT_KEY) || "null"); } catch (e) { return null; }
+  }
+  function clearDraft() {
+    try { sessionStorage.removeItem(DRAFT_KEY); } catch (e) { /* private mode */ }
+  }
+  function typedSomething() {
+    if (!st) return false;
+    if (st.v.certs && st.v.certs.length) return true;
+    return Object.keys(st.v).some(function (k) { return !NOT_TYPED[k] && String(st.v[k] == null ? "" : st.v[k]).trim(); });
+  }
+
   function bind() {
     var form = document.querySelector("#modalHost .enform");
     if (!form) return;
+    var keep = function () { collect(form); saveDraft(); };
+    form.addEventListener("input", keep);
+    form.addEventListener("change", keep);
+    window.pmModalGuard = function () {
+      if (!st || st.busy) return !st;
+      collect(form);
+      if (!typedSomething()) { clearDraft(); return true; }
+      if (!window.confirm("Discard what you've typed?")) return false;
+      clearDraft();
+      st = null;
+      return true;
+    };
     form.querySelectorAll("[data-kind]").forEach(function (b) {
       b.onclick = function () {
         collect(form);
@@ -256,6 +291,7 @@
     );
     toast("✦ Enrollment received");
     if (window.pmTrack) window.pmTrack.event("enroll_sent", st.kind);
+    clearDraft();
     st = null;
     if (window.agonDirectoryRefresh) window.agonDirectoryRefresh();
   }
@@ -271,6 +307,11 @@
       busy: false,
       error: ""
     };
+    var draft = loadDraft();
+    if (draft && draft.v) {
+      Object.keys(draft.v).forEach(function (k) { st.v[k] = draft.v[k]; });
+      if (!kind && draft.kind) st.kind = kindOf(draft.kind).id;
+    }
     Object.keys(prefill).forEach(function (k) { if (k !== "source") st.v[k] = prefill[k]; });
     if (window.pmTrack) window.pmTrack.event("enroll_open", st.kind + " · " + st.source);
     render();

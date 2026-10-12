@@ -712,6 +712,18 @@ html.chorus-embed .onyx-root {
   border: none; background: transparent; cursor: pointer;
   filter: drop-shadow(0 0 10px rgba(180, 170, 255, 0.35));
 }
+.onyx-treasury-door {
+  position: absolute; top: 18px; left: 18px; z-index: 40;
+  width: 34px; height: 34px; padding: 0; border-radius: 50%;
+  border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.06);
+  color: var(--onyx-ink-quiet); font-size: 15px; line-height: 1; cursor: pointer;
+  transition: color var(--onyx-lift), border-color var(--onyx-lift);
+}
+.onyx-treasury-door:hover,
+.onyx-treasury-door:focus-visible { color: var(--onyx-ink); border-color: var(--onyx-edge-bright); outline: none; }
+.onyx-treasury-lede {
+  font-size: 12px; color: var(--onyx-ink-quiet); margin: -12px 0 18px; letter-spacing: 0.02em;
+}
 .onyx-phase-moon:focus-visible {
   outline: 1px solid var(--onyx-edge-bright);
   outline-offset: 4px;

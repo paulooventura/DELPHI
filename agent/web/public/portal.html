@@ -927,7 +927,6 @@
   .vbtag.builder{color:var(--amber);border-color:rgba(232,160,79,.3);background:rgba(232,160,79,.06)}
   .switchpath{font:inherit;font-size:12px;font-weight:650;padding:8px 15px;border-radius:999px;cursor:pointer;border:1px solid var(--line);background:var(--card);color:var(--fog);transition:.15s}
   .switchpath:hover{color:var(--paper);border-color:var(--fog)}
-  #build-banner{position:fixed;bottom:max(10px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);z-index:999;font-family:ui-monospace,monospace;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--node);opacity:.75;pointer-events:none;white-space:nowrap}
 
   html[data-sky="day"]{--void:#6aa8d4;--ink:#8ec4e8;--card:rgba(255,255,255,.42);--card2:rgba(255,255,255,.28);--paper:#142033;--fog:#3a4d63;--fogd:#4a5f76}
   html[data-sky="day"] body,html[data-sky="day"] #portal{background:radial-gradient(120% 90% at 50% 18%,#e8f4fc 0%,#9fd0ee 42%,#5a9fd0 100%)}
@@ -998,7 +997,6 @@
 </head>
 <body>
 
-<div id="build-banner" aria-hidden="true">portal · build 2026-09-01f</div>
 
 <!-- ===== PORTAL HOME ===== -->
 <div id="portal" data-build="2026-09-01f">
@@ -1035,7 +1033,7 @@
 
 <!-- ===== ME (placeholder) ===== -->
 <section class="screen" id="screen-me">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">PSYCHE</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">‹ Omphalos</button><p class="screen-mast">PSYCHE</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--node)">☉</div>
     <p class="eye">Center · The Self</p>
@@ -1048,7 +1046,7 @@
 
 <!-- ===== SKY (placeholder) ===== -->
 <section class="screen" id="screen-sky">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">AETHER</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">‹ Omphalos</button><p class="screen-mast">AETHER</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--cool)">✦</div>
     <p class="eye">Above · Scroll Up</p>
@@ -1060,7 +1058,7 @@
 
 <!-- ===== CLOCK (placeholder) ===== -->
 <section class="screen" id="screen-clock">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">HELIODROME</p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">‹ Omphalos</button><p class="screen-mast">HELIODROME</p></div>
   <div class="soon">
     <div class="glyph" style="color:var(--violet)">◷</div>
     <p class="eye">Right · Time</p>
@@ -1072,13 +1070,13 @@
 
 <!-- ===== TONAL (the ground — builders & backers) ===== -->
 <section class="screen" id="screen-tonal">
-  <div class="screen-chrome"><button class="backhome" onclick="home()">HOME</button><p class="screen-mast">Agon<span class="screen-mast-sub">Show Thyself</span></p></div>
+  <div class="screen-chrome"><button class="backhome" onclick="home()">‹ Omphalos</button><p class="screen-mast">Agon<span class="screen-mast-sub">Show Thyself</span></p></div>
   <div id="tonal-root"></div>
 </section>
 
 <!-- ===== STUDIES (the folded-in atlas) ===== -->
 <section class="screen" id="screen-studies">
-  <div class="screen-chrome"><button class="backhome" id="studies-home" onclick="home()">HOME</button><p class="screen-mast" id="studies-mast">MOUSEION</p></div>
+  <div class="screen-chrome"><button class="backhome" id="studies-home" onclick="home()">‹ Omphalos</button><p class="screen-mast" id="studies-mast">MOUSEION</p></div>
   <div id="studies-root">
   <div class="wrap">
   <span hidden id="n-polarity"></span><span hidden id="n-materia"></span>
@@ -1205,8 +1203,8 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
-<script src="/agon-enroll.js?v=2026-10-01f" defer></script>
-<script src="/pm-telemetry.js?v=2026-10-01f" defer></script>
+<script src="/agon-enroll.js?v=2026-10-12a" defer></script>
+<script src="/pm-telemetry.js?v=2026-10-12a" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -1244,12 +1242,16 @@ function maybePlayStudiesIntro(){
   clearTimeout(_studiesIntroTimer);intro.classList.remove('leaving');intro.classList.add('show');intro.setAttribute('aria-hidden','false');
   try{video.currentTime=0;const playing=video.play();if(playing&&playing.catch)playing.catch(()=>{});}catch(e){}
 }
-function clearOverlays(){const g=document.getElementById('gate');if(g)g.classList.remove('open');const mh=document.getElementById('modalHost');if(mh)mh.innerHTML='';const bd=document.getElementById('backdrop');if(bd)bd.classList.remove('open');document.body.style.overflow='';}
-function go(name,dir){clearOverlays();portal.style.opacity='0';portal.style.pointerEvents='none';
+function clearOverlays(){window.pmModalGuard=null;const g=document.getElementById('gate');if(g)g.classList.remove('open');const mh=document.getElementById('modalHost');if(mh)mh.innerHTML='';const bd=document.getElementById('backdrop');if(bd)bd.classList.remove('open');document.body.style.overflow='';}
+/* history: every screen, Agon path and popup is one entry, so phone Back steps out one level */
+let _pmPending=0,_pmQueuedModal=false;
+function pmState(){const s=history.state;return s&&s.pm===1?s:null;}
+function pmPush(extra){const s=pmState()||{pm:1,d:0,screen:'portal',path:null,modal:0};history.pushState(Object.assign({},s,{d:s.d+1,modal:0},extra),'');}
+function go(name,dir,fromHistory){clearOverlays();if(!fromHistory)pmPush({screen:name,path:null});portal.style.opacity='0';portal.style.pointerEvents='none';
   const s=document.getElementById('screen-'+name);document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active','from-left','from-right','from-up','from-down','from-center'));
   s.classList.add('active','from-'+dir);if(name==='studies'){if(typeof ensureStudies==='function')ensureStudies();if(typeof pinStudiesDeck==='function')requestAnimationFrame(pinStudiesDeck);maybePlayStudiesIntro();}if(name==='tonal'&&typeof ensureTonal==='function')ensureTonal();window.scrollTo(0,0);}
-function home(){if(location.protocol!=='file:'&&hostedDeepLink()){location.href='/';return;}clearOverlays();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';portal.className='';}
-function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);if(name==='studies'||name==='tonal')go(name,name==='studies'?'left':'down');}catch(e){}}
+function home(fromHistory){const s=pmState();if(location.protocol!=='file:'&&hostedDeepLink()){let fromApp=false;try{fromApp=!!document.referrer&&new URL(document.referrer).origin===location.origin;}catch(e){}if(fromApp&&s){history.go(-(s.d+1));return;}location.href='/';return;}if(!fromHistory&&s&&s.d>0){history.go(-s.d);return;}clearOverlays();document.querySelectorAll('.screen').forEach(x=>x.classList.remove('active'));portal.style.opacity='1';portal.style.pointerEvents='auto';portal.className='';}
+function bootPortal(){try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);const s=pmState();if(s){if(s.screen==='studies'||s.screen==='tonal'){go(s.screen,s.screen==='studies'?'left':'down',true);if(s.screen==='tonal'&&s.path&&window.tonalPathRestore)window.tonalPathRestore(s.path);}return;}const start=(name==='studies'||name==='tonal')?name:'portal';history.replaceState({pm:1,d:0,screen:start,path:null,modal:0},'');if(start!=='portal')go(start,start==='studies'?'left':'down',true);}catch(e){}}
 
 /* ===== fluid navigation: scroll, drag/swipe, and hold-to-charge ===== */
 const _dirMap={up:['sky','up'],down:['tonal','down'],left:['studies','left'],right:['clock','right'],center:['me','center']};
@@ -1260,10 +1262,6 @@ function goLiveOr(name,dir){if(location.protocol!=='file:'&&(name==='sky'||name=
 function fireNav(dir){if(_navBusy||!dir||!_dirMap[dir])return;if(!_portalActive())return;_navBusy=true;const[name,d]=_dirMap[dir];if(location.protocol!=='file:'&&(name==='sky'||name==='clock'||name==='me')){location.href=liveAppHref(name);_navBusy=false;return;}portal.classList.add('charge-'+dir);setTimeout(()=>{go(name,d);portal.className='';_navBusy=false;},620);}
 function _portalActive(){return portal.style.opacity!=='0'&&getComputedStyle(portal).pointerEvents!=='none';}
 function _dirFromDelta(dx,dy){const adx=Math.abs(dx),ady=Math.abs(dy);if(Math.max(adx,ady)<50)return null;return ady>adx?(dy>0?'down':'up'):(dx>0?'right':'left');}
-
-// scroll wheel → up/down
-let _wheelLock=false;
-window.addEventListener('wheel',e=>{if(!_portalActive()||_navBusy||_wheelLock)return;if(Math.abs(e.deltaY)<24)return;_wheelLock=true;setTimeout(()=>_wheelLock=false,700);fireNav(e.deltaY>0?'down':'up');},{passive:true});
 
 // mouse drag → any direction (click-and-drag toward where you want to go)
 let _mdx=0,_mdy=0,_mdown=false;
@@ -1303,16 +1301,30 @@ function closeGate(){document.getElementById('gate').classList.remove('open');_u
 document.getElementById('gate-go').onclick=()=>{if(_url)window.open(_url,'_blank','noopener');closeGate();};
 window.outbound=outbound;
 /* keyboard: esc = home */
-document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('gate').classList.contains('open'))closeGate();else if(typeof closeModal==='function'&&document.getElementById('backdrop')&&document.getElementById('backdrop').classList.contains('open'))closeModal();else home();}});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElementById('gate').classList.contains('open'))closeGate();else if(typeof closeModal==='function'&&document.getElementById('backdrop')&&document.getElementById('backdrop').classList.contains('open'))closeModal();else{const s=pmState();if(s&&s.d>0)history.back();else home();}}});
 </script>
 
 <script>
 /* ===== shared helpers (used by Tonal + Studies) ===== */
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 const backdrop=document.getElementById("backdrop");
-function modal(html){document.getElementById("modalHost").innerHTML=`<div class="modal" onclick="event.stopPropagation()">${html}</div>`;backdrop.classList.add("open");document.body.style.overflow="hidden";}
-window.closeModal=()=>{backdrop.classList.remove("open");document.body.style.overflow="";};
-backdrop.addEventListener("click",window.closeModal);
+function modal(html){window.pmModalGuard=null;document.getElementById("modalHost").innerHTML=`<div class="modal" onclick="event.stopPropagation()">${html}</div>`;backdrop.classList.add("open");document.body.style.overflow="hidden";const s=pmState();if(_pmPending>0)_pmQueuedModal=true;else if(!(s&&s.modal))pmPush({modal:1});}
+function hideModal(){window.pmModalGuard=null;backdrop.classList.remove("open");document.body.style.overflow="";}
+/* pmModalGuard (set by forms with typed data) returns false to keep the popup open. */
+window.closeModal=()=>{if(window.pmModalGuard&&!window.pmModalGuard())return;hideModal();const s=pmState();if(s&&s.modal){_pmPending++;history.back();}};
+backdrop.addEventListener("click",()=>window.closeModal());
+window.addEventListener("popstate",()=>{
+  if(_pmPending>0){_pmPending--;if(_pmQueuedModal){_pmQueuedModal=false;pmPush({modal:1});}return;}
+  const s=pmState();if(!s)return;
+  if(backdrop.classList.contains("open")&&!s.modal){
+    if(window.pmModalGuard&&!window.pmModalGuard()){pmPush({modal:1});return;}
+    hideModal();
+  }
+  const active=document.querySelector(".screen.active");
+  const cur=active?active.id.replace("screen-",""):"portal";
+  if(s.screen!==cur){if(s.screen==="portal")home(true);else go(s.screen,"center",true);}
+  if(s.screen==="tonal"&&window.tonalPathRestore)window.tonalPathRestore(s.path||null);
+});
 window.toggleLedge=(id)=>{const el=document.getElementById("ledge-"+id);if(!el)return;el.classList.toggle("open");el.querySelectorAll("[aria-expanded]").forEach(b=>b.setAttribute("aria-expanded",el.classList.contains("open")?"true":"false"));};
 window.studiesToTop=()=>{const home=document.getElementById("studies-home");(home||document.getElementById("studies-hero"))?.scrollIntoView({behavior:"smooth",block:"start"});};
 
@@ -1619,7 +1631,7 @@ troot.innerHTML=`
           <p class="pgeye">${esc(TD.welcome.hero.eye)}</p>
           <h2>${TD.welcome.hero.h}</h2>
           <p class="pglede">${esc(TD.welcome.hero.p)}</p>
-          <button class="pgcta" onclick="tonalDoor('Ticketing')">Find the way in ↓</button>
+          <button class="pgcta" onclick="tonalDoor('Ticketing')">Find the way in</button>
         </div>
         <div class="pgsec">
           <p class="pgseclabel">The arc of a night</p>
@@ -1645,7 +1657,7 @@ troot.innerHTML=`
             <p class="pgeye">Another way in</p>
             <h3>Volunteer &amp; work-exchange</h3>
             <p class="pgvd">Short on cash, big on heart? Trade a few hours for your way in. Volunteers help with setup, the door, waste and cleanup, or teardown — and become part of how the night gets built. You'll get a clear shift, a real role from the crew list, and the same care and respect as anyone on the team.</p>
-            <button class="pgvbtn" onclick="tonalDoor('Volunteer sign-up')">Volunteer for a shift ↓</button>
+            <button class="pgvbtn" onclick="tonalDoor('Volunteer sign-up')">Volunteer for a shift</button>
             <p class="pgvguard">🛡️ Your safety and dignity come first. Volunteers get a clear shift, a real role, water and breaks, and the same care and consent the whole night runs on — never exploitation dressed as opportunity.</p>
           </div>
         </div>
@@ -1789,7 +1801,8 @@ function tonalRender(){
   b.style.display = _tonalPath==="builder"?"block":"none";
   document.getElementById("screen-tonal").scrollTo(0,0);
 }
-window.tonalPath=(p)=>{_tonalPath=p;tonalRender();};
+window.tonalPath=(p)=>{const s=pmState();if(!p&&s&&s.path&&s.d>0){history.back();return;}_tonalPath=p;tonalRender();if(p)pmPush({screen:"tonal",path:p});};
+window.tonalPathRestore=(p)=>{if(_tonalPath===p)return;_tonalPath=p;tonalRender();};
 
 troot.querySelectorAll(".ttab").forEach(t=>t.addEventListener("click",()=>{
   const id=t.dataset.ttab;
@@ -2071,9 +2084,12 @@ let _wz=null;
 window.rxCreateModal=(who)=>{
   if(who!=="Promoter"&&window.agonEnroll){agonEnroll(who.toLowerCase(),{source:"create-card"});return;}
   if(who!=="Promoter"){const c=rxCreators.find(x=>x.who===who)||{ico:"✦",who:who,d:""};modal(`<div class="pmwrap"><p class="pmkick">${c.ico} Create as ${esc(who)}</p><p class="pmintro">${esc(c.d)}</p><div class="pmguard">🛡️ Coming soon. The ${esc(who)} flow is next. The Promoter wizard is live now — try it to see the shape.</div><button class="pmclose" onclick="closeModal()">Close</button></div>`);return;}
-  _wz={step:0,name:"",date:"",venue:"",tier:2,style:"",cap:"",depts:{},price:"",backers:""};
+  let saved=null;try{saved=JSON.parse(sessionStorage.getItem("pm-wizard-draft")||"null");}catch(e){}
+  _wz=saved||{step:0,name:"",date:"",venue:"",tier:2,style:"",cap:"",depts:{},price:"",backers:""};
   wzRender();
 };
+function wzSaveDraft(){try{if(_wz)sessionStorage.setItem("pm-wizard-draft",JSON.stringify(_wz));}catch(e){}}
+function wzClearDraft(){try{sessionStorage.removeItem("pm-wizard-draft");}catch(e){}}
 const _wzSteps=["Basics","Scale","Crew","Economics","Review"];
 function wzRender(){
   const s=_wz.step;
@@ -2126,14 +2142,19 @@ function wzReview(){
   ${row('Backers',esc(_wz.backers))}
   <p class="pmfoot">Next you'll add your contact details. The endeavor goes to Paulo for review before it enters the staffing pipeline.</p>`;
 }
-function wzBind(){['name','date','venue','style','cap','price','backers'].forEach(k=>{const el=document.getElementById('wz-'+k);if(el)el.oninput=()=>{_wz[k]=el.value;};});}
-window.wzGo=(i)=>{_wz.step=Math.max(0,Math.min(4,i));wzRender();};
+const _wzText=['name','date','venue','style','cap','price','backers'];
+function wzBind(){
+  _wzText.forEach(k=>{const el=document.getElementById('wz-'+k);if(el)el.oninput=()=>{_wz[k]=el.value;wzSaveDraft();};});
+  window.pmModalGuard=()=>{if(!_wz||!_wzText.some(k=>String(_wz[k]||'').trim()))return true;if(!confirm("Discard what you've typed?"))return false;wzClearDraft();_wz=null;return true;};
+}
+window.wzGo=(i)=>{_wz.step=Math.max(0,Math.min(4,i));wzSaveDraft();wzRender();};
 window.wzNext=()=>{if(_wz.step===0&&!_wz.name.trim()){toast('Give your endeavor a name ✦');return;}wzGo(_wz.step+1);};
 window.wzSetTier=(t)=>{_wz.tier=t;_wz.depts={};wzRender();};
 window.wzToggleDept=(id)=>{_wz.depts[id]=_wz.depts[id]===false?true:false;wzRender();};
 window.wzPublish=()=>{
   if(!window.agonEnroll){closeModal();toast('✦ '+(_wz.name||'Endeavor')+' created — entering the staffing pipeline');return;}
   const crew=TD.roles.depts.filter(d=>_wz.depts[d.id]!==false&&d.roles.some(r=>r.t<=_wz.tier)).map(d=>d.name.replace(/&amp;/g,"&")).join(", ");
+  wzClearDraft();
   agonEnroll("promoter",{source:"endeavor-wizard",event_name:_wz.name,event_date:_wz.date,event_venue:_wz.venue,style:_wz.style,tier:TD.roles.tiers[_wz.tier-1],cap:_wz.cap,price:_wz.price,backers:_wz.backers,crew});
 };
 rolesRender();
@@ -2341,49 +2362,12 @@ window.pinStudiesDeck=()=>{window.showStudiesPage("polarity");};
   const pinUp=()=>{if(up)up.hidden=screen.scrollTop<40;};
   screen.addEventListener("scroll",pinUp,{passive:true});
   pinUp();
-  const ignore=(el)=>el&&el.closest&&el.closest("input,textarea,select,[contenteditable]");
-  let sx=0,sy=0;
-  screen.addEventListener("touchstart",e=>{
-    if(ignore(e.target))return;
-    const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;
-  },{passive:true});
-  screen.addEventListener("touchend",e=>{
-    if(ignore(e.target))return;
-    const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;
-    if(Math.abs(dx)<56||Math.abs(dx)<Math.abs(dy))return;
-    if(studiesOnHr()){if(dx>56)window.showStudiesPage("polarity");return;}
-    if(dx<-56)window.showStudiesPage("hr");
-    else if(dx>56)home();
-  },{passive:true});
-  screen.addEventListener("wheel",e=>{
-    if(Math.abs(e.deltaX)<Math.abs(e.deltaY))return;
-    e.preventDefault();
-    if(studiesOnHr()){if(e.deltaX>8)window.showStudiesPage("polarity");return;}
-    if(e.deltaX<-8)window.showStudiesPage("hr");
-    else if(e.deltaX>8)home();
-  },{passive:false});
   requestAnimationFrame(pinStudiesDeck);
-})();
-(function bindTonalSwipe(){
-  const screen=document.getElementById("screen-tonal");
-  if(!screen)return;
-  const ignore=(el)=>el&&el.closest&&el.closest("input,textarea,select,button,a,[contenteditable]");
-  let sx=0,sy=0;
-  screen.addEventListener("touchstart",e=>{
-    if(ignore(e.target))return;
-    const t=e.changedTouches[0];sx=t.clientX;sy=t.clientY;
-  },{passive:true});
-  screen.addEventListener("touchend",e=>{
-    if(ignore(e.target))return;
-    const t=e.changedTouches[0];const dx=t.clientX-sx,dy=t.clientY-sy;
-    if(Math.abs(dy)<72||Math.abs(dy)<Math.abs(dx))return;
-    if(dy<-72)home();
-  },{passive:true});
 })();
 pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 
-<script src="/pm-clock-bed.js?v=2026-10-01f" defer></script>
+<script src="/pm-clock-bed.js?v=2026-10-12a" defer></script>
 <script>bootPortal();</script>
 </body></html>

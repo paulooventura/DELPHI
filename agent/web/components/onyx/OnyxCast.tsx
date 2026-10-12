@@ -169,7 +169,7 @@ export function OnyxCast({
               onBack();
             }}
           >
-            HOME
+            ‹ Psyche
           </button>
           <div className="onyx-cast-film">
             <video
@@ -195,7 +195,7 @@ export function OnyxCast({
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          HOME
+          ‹ Psyche
         </button>
         <div className="onyx-overlay">
           <p className="onyx-eyebrow">CAST</p>

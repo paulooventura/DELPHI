@@ -478,39 +478,16 @@ export function OnyxOrrery({
     setHidden(new Set(visibleOrreryLaneIds().filter(id => !keep.has(id))));
   };
 
-  const swipeRef = useRef<{ x: number; y: number; ignore: boolean } | null>(null);
-  const onSwipeDown = (e: React.PointerEvent) => {
-    const el = e.target as HTMLElement | null;
-    if (el?.closest?.("button, input, label, .onyx-orrery-teach-scrim")) {
-      swipeRef.current = { x: e.clientX, y: e.clientY, ignore: true };
-      return;
-    }
-    swipeRef.current = { x: e.clientX, y: e.clientY, ignore: frozen };
-  };
-  const onSwipeUp = (e: React.PointerEvent) => {
-    const start = swipeRef.current;
-    swipeRef.current = null;
-    if (!start || start.ignore) return;
-    const dx = e.clientX - start.x;
-    const dy = e.clientY - start.y;
-    if (dx < -72 && Math.abs(dx) > Math.abs(dy)) onBack();
-  };
-
   const visibleCount = visibleOrreryLaneIds().filter(id => !hidden.has(id)).length;
 
   return (
     <div className="onyx-root">
       <div
         className="onyx-device onyx-orrery-device"
-        onPointerDown={onSwipeDown}
-        onPointerUp={onSwipeUp}
-        onPointerCancel={() => {
-          swipeRef.current = null;
-        }}
       >
         <OnyxHeliodromeFilm />
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          HOME
+          ‹ Omphalos
         </button>
         <div className="onyx-orrery-header">
           <div className="onyx-orrery-mast">

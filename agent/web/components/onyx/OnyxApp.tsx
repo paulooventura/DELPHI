@@ -132,15 +132,52 @@ function modeFromSearch(): OnyxMode {
   return parseOnyxMode(q.get("mode") || q.get("tab")) ?? "home";
 }
 
-function writeModeToUrl(mode: OnyxMode) {
-  if (typeof window === "undefined") return;
+/** One level up — the place each screen's back button names and returns to. */
+export const MODE_PARENT: Record<OnyxMode, OnyxMode | null> = {
+  home: null,
+  sky: "home",
+  rings: "home",
+  tools: "home",
+  you: "home",
+  cast: "you",
+  atlas: "tools",
+  senses: "tools",
+  oracle: "tools",
+  about: "tools",
+  decompose: "tools",
+};
+
+type ModeHistoryState = { pm: 1; mode: OnyxMode; depth: number };
+
+function readHistoryState(): ModeHistoryState | null {
+  const s = window.history.state as Partial<ModeHistoryState> | null;
+  return s && s.pm === 1 && s.mode && typeof s.depth === "number" ? (s as ModeHistoryState) : null;
+}
+
+function modeUrl(mode: OnyxMode): string {
   const url = new URL(window.location.href);
   if (mode === "home") url.searchParams.delete("mode");
   else url.searchParams.set("mode", mode);
   url.searchParams.delete("tab");
-  const next = `${url.pathname}${url.search}${url.hash}`;
-  const now = `${window.location.pathname}${window.location.search}${window.location.hash}`;
-  if (next !== now) window.history.replaceState(null, "", next);
+  return `${url.pathname}${url.search}${url.hash}`;
+}
+
+function pushMode(mode: OnyxMode) {
+  const depth = (readHistoryState()?.depth ?? 0) + 1;
+  window.history.pushState({ pm: 1, mode, depth } satisfies ModeHistoryState, "", modeUrl(mode));
+}
+
+function replaceMode(mode: OnyxMode, depth: number) {
+  window.history.replaceState({ pm: 1, mode, depth } satisfies ModeHistoryState, "", modeUrl(mode));
+}
+
+/** Cold deep link: seed the parent chain so phone Back lands inside the app. */
+function seedModeHistory(start: OnyxMode) {
+  if (readHistoryState()) return;
+  const chain: OnyxMode[] = [];
+  for (let m: OnyxMode | null = start; m; m = MODE_PARENT[m]) chain.unshift(m);
+  replaceMode(chain[0]!, 0);
+  for (const m of chain.slice(1)) pushMode(m);
 }
 
 export function OnyxApp({
@@ -259,8 +296,20 @@ export function OnyxApp({
 }) {
   const [mode, setModeState] = useState<OnyxMode>(modeFromSearch);
   const setMode = (next: OnyxMode) => {
+    if (next === mode) return;
     setModeState(next);
-    writeModeToUrl(next);
+    pushMode(next);
+  };
+  /** Up one level: same as phone Back when the level above is in history. */
+  const goBack = () => {
+    const parent = MODE_PARENT[mode] ?? "home";
+    const s = readHistoryState();
+    if (s && s.depth > 0) {
+      window.history.back();
+      return;
+    }
+    setModeState(parent);
+    replaceMode(parent, 0);
   };
   const [distilled, setDistilled] = useState<string>("");
   const [birth, setBirth] = useState<BirthRecord | null>(null);
@@ -302,8 +351,6 @@ export function OnyxApp({
       return true;
     }
   });
-  /** Cast opens as an expansion of You, not a home-compass door. */
-  const [castReturn, setCastReturn] = useState<"home" | "you">("you");
   const [youExpandCast, setYouExpandCast] = useState(false);
   const [distillPrefs, setDistillPrefs] = useState<DistillPrefs>(loadDistillPrefs);
   const [brains, setBrains] = useState<BrainAvailability | null>(null);
@@ -325,7 +372,6 @@ export function OnyxApp({
     setMode("you");
   };
   const openCastFromYou = () => {
-    setCastReturn("you");
     setYouExpandCast(true);
     setMode("cast");
   };
@@ -357,7 +403,10 @@ export function OnyxApp({
   }, []);
 
   useEffect(() => {
-    writeModeToUrl(modeFromSearch());
+    seedModeHistory(modeFromSearch());
+    const onPop = () => setModeState(readHistoryState()?.mode ?? modeFromSearch());
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
   }, []);
 
   function resetHeldDivinations() {
@@ -673,7 +722,7 @@ export function OnyxApp({
         warmth={skyWarmth}
         weather={skyWeather}
         sensorDiag={sensorDiag}
-        onBack={() => setMode("home")}
+        onBack={goBack}
       />
     );
   }
@@ -698,7 +747,7 @@ export function OnyxApp({
       <OnyxOrrery
         lat={lat}
         lon={lon}
-        onBack={() => setMode("home")}
+        onBack={goBack}
         natalDate={birth ? birthToDate(birth) : null}
         birth={birth}
         onBirthChange={next => setBirth(next)}
@@ -713,18 +762,15 @@ export function OnyxApp({
       <div className="onyx-root">
         <div className="onyx-device">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            HOME
+          <button type="button" className="onyx-overlay-close" onClick={goBack}>
+            ‹ Omphalos
           </button>
           <div className="onyx-overlay" style={{ position: "relative", background: "transparent" }}>
             <p className="onyx-eyebrow" style={{ marginTop: 8 }}>
-              INSTRUMENTS
+              TREASURY ✦
             </p>
+            <p className="onyx-treasury-lede">The instruments behind the four doors.</p>
             <div className="onyx-tools-grid">
-              <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("rings")}>
-                Heliodrome
-                <span>Stacked lanes · read the now-line</span>
-              </button>
               <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={() => setMode("atlas")}>
                 Atlas
                 <span>World cycle calendars</span>
@@ -751,33 +797,17 @@ export function OnyxApp({
                 Senses
                 <span>Device instruments</span>
               </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("oracle")}>
-                Oracle
-                <span>Ask / research</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-sapphire" onClick={openSky}>
-                Aether
-                <span>Live map of the heavens</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => openYou(false)}>
-                Psyche
-                <span>Natal chord — local only, never sent</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-ruby" onClick={() => setMode("cast")}>
-                Cast
-                <span>Draw — colours a labeled reading layer</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => { window.location.href = "/studies"; }}>
-                Mouseion
-                <span>Studies · Polarity · Materia · Medica</span>
-              </button>
-              <button type="button" className="onyx-tool-btn onyx-cut-citrine" onClick={openTonal}>
-                Agon
-                <span>Show Thyself · covenant · the ground</span>
+              <button type="button" className="onyx-tool-btn onyx-cut-emerald" onClick={() => setMode("decompose")}>
+                Why this chord
+                <span>What the moment is made of</span>
               </button>
               <button type="button" className="onyx-tool-btn onyx-cut-amethyst" onClick={() => setMode("about")}>
                 About
                 <span>Honesty tiers & integrity</span>
+              </button>
+              <button type="button" className="onyx-tool-btn onyx-cut-ruby" onClick={() => setMode("oracle")}>
+                Oracle
+                <span>The maker&apos;s links · research not wired yet</span>
               </button>
             </div>
           </div>
@@ -785,7 +815,6 @@ export function OnyxApp({
       </div>
     );
   }
-
   if (mode === "you") {
     if (youIntro) {
       return (
@@ -808,7 +837,7 @@ export function OnyxApp({
         expandDivinations={youExpandCast}
         heldCasts={embraced}
         onOpenCast={openCastFromYou}
-        onBack={() => setMode("home")}
+        onBack={goBack}
         onBirthSaved={next => {
           setBirth(next);
           setActiveLayerChoice(undefined); // deepen to through-you
@@ -821,12 +850,11 @@ export function OnyxApp({
   if (mode === "cast") {
     return (
       <OnyxCast
-        onBack={() => setMode(castReturn)}
+        onBack={goBack}
         held={embraced}
         onEmbraced={list => {
           setEmbraced(list);
           setActiveLayerChoice(undefined); // deepen to with-drawn
-          setCastReturn("you");
           setYouExpandCast(true);
           // Skip Psyche entry film when returning from a draw.
           try {
@@ -835,7 +863,7 @@ export function OnyxApp({
             /* private mode */
           }
           setYouIntro(false);
-          setMode("you");
+          goBack();
         }}
         onResetHeld={resetHeldDivinations}
       />
@@ -843,7 +871,7 @@ export function OnyxApp({
   }
 
   if (mode === "about") {
-    return <OnyxAbout onBack={() => setMode("home")} />;
+    return <OnyxAbout onBack={goBack} />;
   }
 
   if (mode === "decompose") {
@@ -851,7 +879,7 @@ export function OnyxApp({
       <OnyxDecompose
         chord={activeReading.chord}
         provenanceLine={snapProvenance?.line}
-        onBack={() => setMode("home")}
+        onBack={goBack}
       />
     );
   }
@@ -861,8 +889,8 @@ export function OnyxApp({
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            HOME
+          <button type="button" className="onyx-overlay-close" onClick={goBack}>
+            ‹ Treasury
           </button>
           <div className="onyx-overlay">
             <OnyxTimeCompendium prefs={cyclePrefs} onChange={onCyclePrefsChange} />
@@ -878,8 +906,8 @@ export function OnyxApp({
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            HOME
+          <button type="button" className="onyx-overlay-close" onClick={goBack}>
+            ‹ Treasury
           </button>
           <div className="onyx-overlay">
             <EmfReader
@@ -901,8 +929,8 @@ export function OnyxApp({
       <div className="onyx-root">
         <div className="onyx-device onyx-device-scroll">
           <OnyxStarfield />
-          <button type="button" className="onyx-overlay-close" onClick={() => setMode("home")}>
-            HOME
+          <button type="button" className="onyx-overlay-close" onClick={goBack}>
+            ‹ Treasury
           </button>
           <div className="onyx-overlay">
             <PauloVenturaHub className="cp-card" />

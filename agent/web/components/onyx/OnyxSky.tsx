@@ -211,9 +211,6 @@ export function OnyxSky({
 
   const [phase, setPhase] = useState<"enter" | "live" | "exit">("enter");
   const leavingRef = useRef(false);
-  const swipeY0 = useRef<number | null>(null);
-  const swipeIgnore = useRef(false);
-  const wheelLock = useRef(false);
 
   const dust = useMemo(
     () =>
@@ -252,46 +249,6 @@ export function OnyxSky({
     window.setTimeout(() => onBack(), EXIT_MS);
   }, [onBack]);
 
-  const swipeTargetIgnored = (t: EventTarget | null) => {
-    const el = t as HTMLElement | null;
-    if (!el?.closest) return false;
-    // Detail sheet / chrome controls own their gestures.
-    return Boolean(el.closest(".onyx-sky-back, .onyx-stone-track, .onyx-sky-align, .onyx-sky-lock-hold, .cp-sky-object-panel, button, a, input, textarea"));
-  };
-
-  const onPointerDown = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (e.pointerType === "touch" && e.isPrimary === false) {
-      swipeIgnore.current = true;
-      swipeY0.current = null;
-      return;
-    }
-    if (swipeTargetIgnored(e.target)) {
-      swipeIgnore.current = true;
-      swipeY0.current = null;
-      return;
-    }
-    swipeIgnore.current = false;
-    swipeY0.current = e.clientY;
-  };
-
-  const onPointerUp = (e: React.PointerEvent) => {
-    if (swipeIgnore.current || swipeY0.current == null) {
-      swipeIgnore.current = false;
-      swipeY0.current = null;
-      return;
-    }
-    const dy = e.clientY - swipeY0.current;
-    swipeY0.current = null;
-    // Finger moves down → back to the street (inverse of home → sky).
-    if (dy > 72) leave();
-  };
-
-  const onPointerCancel = () => {
-    swipeY0.current = null;
-    swipeIgnore.current = false;
-  };
-
   const phaseClass =
     phase === "enter" ? " onyx-sky-enter" : phase === "exit" ? " onyx-sky-exit" : "";
 
@@ -302,7 +259,7 @@ export function OnyxSky({
         ? aimed
           ? `${aimed.name} in the reticle · open it, then Lock and hold still`
           : skyLockName
-            ? `Locked to ${skyLockName} · tap an object for details · swipe down for home`
+            ? `Locked to ${skyLockName} · tap an object for details`
             : "Tap a planet or star for details, then Lock and hold still on it"
         : "Hold the phone more upright to lock AR pose"
       : "Allow motion & location — then aim the phone at the sky";
@@ -313,25 +270,13 @@ export function OnyxSky({
         className={`onyx-device onyx-sky-device${lockHold ? " is-lock-hold" : ""}`}
         role="application"
         aria-label="Pneuma Mundi sky view"
-        onPointerDown={onPointerDown}
-        onPointerUp={onPointerUp}
-        onPointerCancel={onPointerCancel}
-        onWheel={e => {
-          if (wheelLock.current) return;
-          if (e.deltaY <= 40) return;
-          wheelLock.current = true;
-          window.setTimeout(() => {
-            wheelLock.current = false;
-          }, 700);
-          leave();
-        }}
         onKeyDown={e => {
-          if (e.key === "Escape" || e.key === "ArrowDown") leave();
+          if (e.key === "Escape") leave();
         }}
         tabIndex={0}
       >
         <button type="button" className="onyx-sky-back" onClick={leave}>
-          HOME
+          ‹ Omphalos
         </button>
         <OnyxAudioStone enabled={hapticsEnabled} onEnabledChange={onPulseEnabledChange} />
 

@@ -5,7 +5,7 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
     <div className="onyx-root">
       <div className="onyx-device" style={{ overflow: "auto" }}>
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          HOME
+          ‹ Treasury
         </button>
         <div className="onyx-overlay">
           <p className="onyx-eyebrow">ABOUT</p>
@@ -59,9 +59,9 @@ export function OnyxAbout({ onBack }: { onBack: () => void }) {
 
           <p className="onyx-eyebrow">YOUR BIRTH DATA</p>
           <p className="onyx-layer-meta">
-            If you enter a birth date under YOU, it is stored only in this browser&apos;s
-            localStorage. It is never transmitted to a server, never included in phrase requests,
-            and never used for analytics.
+            If you enter a birth date in Psyche, it stays on your device unless you turn on
+            encrypted backup — then only an encrypted copy leaves, which only your recovery key can
+            open. It is never included in phrase requests and never used for analytics.
           </p>
         </div>
       </div>

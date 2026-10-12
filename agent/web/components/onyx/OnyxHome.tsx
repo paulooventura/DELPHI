@@ -37,6 +37,9 @@ import { COMPASS_DOOR_LABEL } from "../../lib/chambers";
 import { trackEvent } from "../../lib/telemetry/client";
 
 const MAX = 2;
+/** Home flick: touch only, long and quick enough that it can't be a scroll. */
+const SWIPE_MIN_PX = 96;
+const SWIPE_MAX_MS = 450;
 
 const COMPASS_FOLLOW_MAX = 28;
 
@@ -167,7 +170,6 @@ export function OnyxHome({
   const flashTimer = useRef(0);
   const depthRef = useRef(0);
   depthRef.current = depth;
-  const wheelLock = useRef(false);
   const hapticRef = useRef(pulseEnabled);
   const lastSec = useRef(-1);
   const onPulseRef = useRef(onPulseEnabledChange);
@@ -185,13 +187,17 @@ export function OnyxHome({
     return () => window.clearInterval(id);
   }, []);
 
-  const clockLabel = wallNow.toLocaleString([], {
-    weekday: "short",
-    day: "numeric",
-    month: "short",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  const dateLabel = wallNow
+    .toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" })
+    .toUpperCase()
+    .replace(",", " ·");
+  const timeParts = new Intl.DateTimeFormat([], { hour: "numeric", minute: "2-digit" }).formatToParts(wallNow);
+  const hourMinute = timeParts
+    .filter(p => p.type !== "dayPeriod")
+    .map(p => p.value)
+    .join("")
+    .trim();
+  const dayPeriod = timeParts.find(p => p.type === "dayPeriod")?.value.toUpperCase() ?? "";
   const sec = String(wallNow.getSeconds()).padStart(2, "0");
 
   const buzz = useCallback((kind: HapticKind) => {
@@ -308,29 +314,8 @@ export function OnyxHome({
     onPulseRef.current?.(enabled);
   }, []);
 
-  const onWheel = (e: React.WheelEvent) => {
-    // NOW / clock depth: let the panel scroll instead of stealing the wheel for depth.
-    if (depthRef.current === 1) {
-      const panel = deviceRef.current?.querySelector(".onyx-p2") as HTMLElement | null;
-      if (panel && panel.scrollHeight > panel.clientHeight + 2) {
-        const atTop = panel.scrollTop <= 0;
-        const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 2;
-        if (!(atTop && e.deltaY < 0) && !(atBottom && e.deltaY > 0)) {
-          return;
-        }
-      }
-    }
-    if (wheelLock.current) return;
-    wheelLock.current = true;
-    window.setTimeout(() => {
-      wheelLock.current = false;
-    }, 700);
-    e.preventDefault();
-    goDelta(e.deltaY > 0 ? 1 : -1);
-  };
-
-  const swipeY0 = useRef<number | null>(null);
-  const swipeIgnore = useRef(false);
+  // Only a deliberate touch flick navigates; wheel / trackpad / mouse drags never do.
+  const swipeStart = useRef<{ y: number; t: number } | null>(null);
 
   const commitCompassAim = useCallback(
     (aim: CompassAim) => {
@@ -501,26 +486,19 @@ export function OnyxHome({
   };
 
   const onPointerDownSwipe = (e: React.PointerEvent) => {
-    if (e.pointerType === "mouse" && e.button !== 0) return;
-    if (swipeTargetIgnored(e.target)) {
-      swipeIgnore.current = true;
-      swipeY0.current = null;
+    if (e.pointerType !== "touch" || !e.isPrimary || swipeTargetIgnored(e.target)) {
+      swipeStart.current = null;
       return;
     }
-    swipeIgnore.current = false;
-    swipeY0.current = e.clientY;
+    swipeStart.current = { y: e.clientY, t: performance.now() };
   };
 
   const onPointerUpSwipe = (e: React.PointerEvent) => {
-    if (swipeIgnore.current || swipeY0.current == null) {
-      swipeIgnore.current = false;
-      swipeY0.current = null;
-      return;
-    }
-    const dy = e.clientY - swipeY0.current;
-    swipeY0.current = null;
-    if (Math.abs(dy) < 55) return;
-    // Finger/mouse moves down → go deeper (same as the reference HTML).
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start) return;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dy) < SWIPE_MIN_PX || performance.now() - start.t > SWIPE_MAX_MS) return;
     goDelta(dy > 0 ? 1 : -1);
   };
 
@@ -532,12 +510,10 @@ export function OnyxHome({
         data-depth={depth}
         role="application"
         aria-label="Pneuma Mundi"
-        onWheel={onWheel}
         onPointerDown={onPointerDownSwipe}
         onPointerUp={onPointerUpSwipe}
         onPointerCancel={() => {
-          swipeY0.current = null;
-          swipeIgnore.current = false;
+          swipeStart.current = null;
         }}
         onKeyDown={e => {
           if (e.key === "Escape" && (shareOpen || distillOpen || phraseWhyOpen)) {
@@ -548,6 +524,7 @@ export function OnyxHome({
             return;
           }
           /* Aulos lyrics Esc is handled inside OnyxAulos. */
+          if ((e.target as HTMLElement).closest?.("input, textarea, select, [contenteditable]")) return;
           if (e.key === "ArrowDown") goDelta(1);
           if (e.key === "ArrowUp") goDelta(-1);
         }}
@@ -563,11 +540,20 @@ export function OnyxHome({
         <div className="onyx-vignette" />
         <div className={`onyx-pulse-ring${pulseAnim === "beat" ? " beat" : ""}${pulseAnim === "chime" ? " chime" : ""}`} />
 
+        <button
+          type="button"
+          className="onyx-treasury-door"
+          onClick={onOpenTools}
+          aria-label="Treasury — Atlas, Senses, About and more"
+          title="Treasury"
+        >
+          ✦
+        </button>
         <OnyxPhaseMoon phaseFraction={phaseFraction} onOpenSky={onOpenSky} />
         <p className="onyx-wordmark">Pneuma Mundi</p>
         <p className="onyx-clock">
-          {clockLabel.toUpperCase().replace(",", " ·")}:
-          <span className="sec">{sec}</span>
+          {dateLabel}, {hourMinute}:<span className="sec">{sec}</span>
+          {dayPeriod && ` ${dayPeriod}`}
         </p>
 
         <OnyxAudioStone

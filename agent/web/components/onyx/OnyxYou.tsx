@@ -259,7 +259,7 @@ export function OnyxYou({
       <div className="onyx-device" style={{ overflow: "auto" }}>
         <OnyxStarfield />
         <button type="button" className="onyx-overlay-close" onClick={onBack}>
-          HOME
+          ‹ Omphalos
         </button>
         <div className="onyx-overlay onyx-you">
           <p className="onyx-eyebrow">PSYCHE</p>
