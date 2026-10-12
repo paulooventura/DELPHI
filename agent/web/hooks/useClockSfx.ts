@@ -38,8 +38,19 @@ import { audibleHeliodromeLanes } from "../lib/heliodromeLaneVoice";
 import { computeOrreryState } from "../lib/lore/orreryLanes";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
 import { AUDIO_BUS } from "../lib/audioBus";
+import { hasAccessThisSession } from "../lib/deviceAccess";
 
 export type ClockObserver = { lat: number; lon: number };
+
+/** Allow access granted in this tab, or a Chorus embed (no gate there). */
+function soundAllowedThisSession(): boolean {
+  if (hasAccessThisSession()) return true;
+  try {
+    return new URLSearchParams(window.location.search).get("embed") === "1";
+  } catch {
+    return false;
+  }
+}
 
 function syncChimeRefs(refs: {
   lastSec: MutableRefObject<number>;
@@ -115,6 +126,8 @@ export function useClockSfx(
       const t = ev.target as HTMLElement | null;
       if (t?.closest?.(".onyx-stone-track")) return;
       if (document.visibilityState === "hidden") return;
+      // Sound starts at Allow access (page.tsx arms it there), never on a stray tap.
+      if (!soundAllowedThisSession()) return;
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
       // Resume in the gesture turn — do not wait on an outer await first.
@@ -172,7 +185,8 @@ export function useClockSfx(
       existing &&
       existing.state === "running" &&
       document.visibilityState === "visible" &&
-      !isClockAudioSilenced()
+      !isClockAudioSilenced() &&
+      soundAllowedThisSession()
     ) {
       armBed(existing);
     }

@@ -191,8 +191,13 @@
     requestAnimationFrame(frame);
   }
 
+  /** Same gate as the app: sound only after Allow access in this tab. */
+  function accessGranted() {
+    try { return sessionStorage.getItem("delphi-access-session-v1") === "1"; } catch (e) { return false; }
+  }
+
   function wake() {
-    if (soundOff()) return;
+    if (soundOff() || !accessGranted()) return;
     if (!ctx && !build()) return;
     var p = ctx.resume();
     var go = function () {
