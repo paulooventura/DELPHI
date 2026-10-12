@@ -724,6 +724,8 @@
   .evbadge{font-family:ui-monospace,monospace;font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;padding:3px 9px;border-radius:999px;font-weight:700;flex-shrink:0}
   .evbadge.live{color:#ff5b5b;background:rgba(255,91,91,.1);border:1px solid rgba(255,91,91,.3)}
   .evbadge.up{color:#e8c24f;background:rgba(232,194,79,.1);border:1px solid rgba(232,194,79,.3)}
+  .evbadge.sample{color:#c9b8ff;background:rgba(201,184,255,.1);border:1px solid rgba(201,184,255,.32)}
+  .evlore{color:var(--fog);font-size:11.5px;font-style:italic;line-height:1.45;margin:-6px 0 4px;opacity:.85}
   .evwhen{font-family:ui-monospace,monospace;font-size:10.5px;color:var(--cool);margin-bottom:10px;letter-spacing:.03em}
   .evvibe{color:var(--fog);font-size:12.5px;line-height:1.5;margin:0 0 16px;flex:1}
   .evacts{display:flex;gap:8px;flex-wrap:wrap}
@@ -1230,8 +1232,8 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
-<script src="/agon-enroll.js?v=2026-10-12f" defer></script>
-<script src="/pm-telemetry.js?v=2026-10-12f" defer></script>
+<script src="/agon-enroll.js?v=2026-10-12g" defer></script>
+<script src="/pm-telemetry.js?v=2026-10-12g" defer></script>
 
 <!-- outbound gate -->
 <div class="gate" id="gate">
@@ -1584,43 +1586,40 @@ const rxRoleSource={
 };
 
 function rxSourceOf(r){return rxRoleSource[rxRoleId(r)]||"direct";}
-// mock events — the builder side opens here. Each has a status + audience-aware actions.
+// Sample events (data/agon-sample-events.json in the design): one per scale, set in
+// "Sample City", a placeholder with no real location. Every card says "Sample event".
 const rxEvents=[
-  {id:"coupled-live",name:"Coupled // Warehouse",kind:"Club night",tier:2,ico:"🔊",cap:"~450",
-   status:"live",date:"This Saturday",venue:"The Annex, Nashville",
-   vibe:"Late-night warehouse party, full system, headliner booked. The crew is set.",
-   gvibe:"Late-night warehouse party: a full sound system, proper light, and a headliner.",
-   actions:["tickets","dashboard"]},
-  {id:"resonance-live",name:"RESONANCE Live",kind:"Concert",tier:3,ico:"🎛️",cap:"~1,800",
-   status:"live",date:"Mar 14",venue:"Marathon Music Works",
-   vibe:"Ticketed concert with full production — staged, lit, and filmed.",
-   gvibe:"A concert with full production — staged, lit, and filmed.",
-   actions:["tickets","dashboard"]},
-  {id:"thursday-up",name:"Thursday Warm-Up",kind:"Bar night",tier:1,ico:"🍸",cap:"~120",
-   status:"upcoming",date:"Every Thursday",venue:"Duncan St Bar",
-   vibe:"Weeknight resident session. Crew roles opening — claim a shift or check the one you're onboarded in.",
-   gvibe:"A weeknight resident DJ session. Low-key, warm, the room a scene grows in.",
-   actions:["roles","dashboard"]},
-  {id:"sunrise-up",name:"Sunrise Session",kind:"Open-air day party",tier:2,ico:"🌅",cap:"~300",
-   status:"upcoming",date:"Nov 1",venue:"Cumberland riverfront, Nashville",
-   vibe:"Dawn-to-noon open-air set by the river. Sound, care, and site crew staffing up now.",
-   gvibe:"Dawn-to-noon music by the river. Come at first light.",
-   actions:["roles","dashboard"]},
-  {id:"nodefest-up",name:"NODE Festival",kind:"Festival",tier:4,ico:"⛺",cap:"5,000+",
-   status:"upcoming",date:"Summer '26",venue:"TBA — outdoor site",
-   vibe:"Multi-stage outdoor festival in planning. Departments staffing up now across all 58 roles.",
-   gvibe:"A multi-stage outdoor festival with camping, vendors, and every stage live.",
-   actions:["roles","dashboard"]}
-];
-// what each audience can create
+  {id:"sample-symposion",sample:true,name:"Symposion",kind:"Intimate · music and words",tier:1,ico:"🏺",cap:"30 guests",
+   status:"upcoming",date:"Fri 30 Oct · 7:30 – 11 pm",venue:"The Lyre Room, Sample City",
+   vibe:"Two short acoustic sets, then the cup goes round. Needs a sound hand and someone on tea and wine.",
+   gvibe:"Thirty people, one shared cup, every voice heard once.",
+   lore:"The Greek symposion: music and words around a shared bowl, each guest taking a turn.",
+   actions:["tickets","roles"]},
+  {id:"sample-pythian-nome",sample:true,name:"The Pythian Nome",kind:"Club · music contest",tier:2,ico:"🌿",cap:"400 guests",
+   status:"upcoming",date:"Sat 21 Nov · 9 pm – 2 am",venue:"The Colonnade, Sample City",
+   vibe:"Five producers play five movements; the crowd votes with laurel leaves. Open call for finalists; needs backers, a stage manager and harm reduction.",
+   gvibe:"Five producers, five movements, one laurel. The crowd decides.",
+   lore:"The Pythian Games' music contest: the Pythikos nomos told Apollo's fight with Python in five parts; winners wore laurel.",
+   actions:["tickets","roles"]},
+  {id:"sample-hyperborea",sample:true,name:"Hyperborea: The Return",kind:"Festival · two days",tier:4,ico:"☀️",cap:"5,000 a day",
+   status:"upcoming",date:"Sat 20 – Sun 21 Mar 2027 · spring equinox",venue:"Stadion Fields, Sample City",
+   vibe:"Four stages named for the compass, 12 departments, about 450 people. Sound, security and medical providers confirmed; open calls for performers and vendors.",
+   gvibe:"The god comes back with the light. Two days, four stages, one valley.",
+   lore:"Apollo wintered with the Hyperboreans and returned to Delphi in spring.",
+   actions:["tickets","roles"]}
+];// what each audience can create
 const rxCreators=[
   {ico:"🎫",who:"Promoter",d:"Compose a new endeavor: venue, date, style, and the crew to book. You own the vision and the risk."},
   {ico:"🏛️",who:"Venue",d:"Offer your room to the scene — capacity, existing infrastructure, and the dates you're open."},
   {ico:"💎",who:"Backer",d:"Sponsor an endeavor you want to see happen — as yourself, an alias, a philanthropist, or anonymously."}
 ];
 
+function rxEventBadge(e){
+  if(e.sample)return '<span class="evbadge sample">Sample event</span>';
+  return e.status==='live'?'<span class="evbadge live">Live</span>':'<span class="evbadge up">Staffing</span>';
+}
 function rxEventCard(e){
-  const badge=e.status==='live'?'<span class="evbadge live">Live</span>':'<span class="evbadge up">Staffing</span>';
+  const badge=rxEventBadge(e);
   const acts=e.actions.map(a=>{
     if(a==='tickets')return '<span class="pmsoon" aria-disabled="true">Tickets · coming soon</span>';
     if(a==='roles')return '<button class="evbtn primary" onclick="rolesPickEndeavor(\''+e.id+'\')">🧩 Find a role</button>';
@@ -1631,8 +1630,9 @@ function rxEventCard(e){
 }
 /* Guest view of the same events: what the night is, no crew or ticket actions. */
 function rxGuestCard(e){
-  const badge=e.status==='live'?'<span class="evbadge live">Live</span>':'<span class="evbadge up">Upcoming</span>';
-  return '<div class="evcard"><div class="evtop"><span class="evico">'+e.ico+'</span><div class="evhead"><h3>'+esc(e.name)+'</h3><span class="evmeta">'+esc(e.kind)+'</span></div>'+badge+'</div><div class="evwhen">'+esc(e.date)+' · '+esc(e.venue)+'</div><p class="evvibe">'+esc(e.gvibe||e.vibe)+'</p></div>';
+  const badge=rxEventBadge(e);
+  const lore=e.lore?'<p class="evlore">'+esc(e.lore)+'</p>':'';
+  return '<div class="evcard"><div class="evtop"><span class="evico">'+e.ico+'</span><div class="evhead"><h3>'+esc(e.name)+'</h3><span class="evmeta">'+esc(e.kind)+'</span></div>'+badge+'</div><div class="evwhen">'+esc(e.date)+' · '+esc(e.venue)+'</div><p class="evvibe">'+esc(e.gvibe||e.vibe)+'</p>'+lore+'</div>';
 }
 
 // curated provider directory — opens through the outbound gate. Vetted categories, not endorsements.
@@ -1765,20 +1765,13 @@ troot.innerHTML=`
         <!-- STEP 1: the events hub -->
         <div id="endeavor-picker">
           <div class="rxintro">
-            <p>Start with an <strong>event</strong>. Upcoming ones are staffing up. Pick one to find a role, or create a new one. Tickets and dashboards are coming soon.</p>
+            <p>Start with an <strong>event</strong>. These three are samples, one per scale, set in Sample City. Pick one to find a role, or create your own. Tickets are coming soon.</p>
           </div>
 
           <div class="evsection">
-            <p class="evseclabel">🔴 Live now</p>
+            <p class="evseclabel">🟡 Sample events — staffing up</p>
             <div class="evgrid">
-              ${rxEvents.filter(e=>e.status==="live").map(e=>rxEventCard(e)).join("")}
-            </div>
-          </div>
-
-          <div class="evsection">
-            <p class="evseclabel">🟡 Upcoming — staffing up</p>
-            <div class="evgrid">
-              ${rxEvents.filter(e=>e.status==="upcoming").map(e=>rxEventCard(e)).join("")}
+              ${rxEvents.map(e=>rxEventCard(e)).join("")}
             </div>
           </div>
 
@@ -2447,6 +2440,6 @@ pRender();mRender();if(document.getElementById("d-grid"))dRender();
 }
 </script>
 
-<script src="/pm-clock-bed.js?v=2026-10-12f" defer></script>
+<script src="/pm-clock-bed.js?v=2026-10-12g" defer></script>
 <script>bootPortal();</script>
 </body></html>
