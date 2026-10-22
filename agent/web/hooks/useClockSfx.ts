@@ -186,12 +186,18 @@ export function useClockSfx(
     const existing = getClockAudio();
     if (
       existing &&
-      existing.state === "running" &&
       document.visibilityState === "visible" &&
       !isClockAudioSilenced() &&
       soundAllowedThisSession()
     ) {
-      armBed(existing);
+      if (existing.state === "running") armBed(existing);
+      else {
+        void existing.resume().then(() => {
+          if (!alive || !enabledRef.current || existing.state !== "running") return;
+          if (document.visibilityState === "hidden") return;
+          armBed(existing);
+        }).catch(() => {});
+      }
     }
 
     const loop = () => {

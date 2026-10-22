@@ -18,9 +18,10 @@ import {
  * Hard rules:
  * - Videos are silent files (no AAC). Only matching Web Audio beds play sound.
  * - Exactly one clip at a time: kill prior bed hard before the next starts.
- * - Audio starts only after THAT clip’s muted video `play()` resolves.
- * - First tap unlocks; any later tap/click skips straight to the Allow gate
- *   (after SKIP_GUARD_MS, so the unlocking tap's ghost click can't skip).
+ * - Audio starts with the page: as soon as this splash mounts we resume the
+ *   clock context and begin the first bed. A tap still unlocks if the browser
+ *   held the context, and any later tap skips to the Allow gate
+ *   (after SKIP_GUARD_MS, so that tap's ghost click can't skip).
  */
 
 type ClipDef = { id: string; video: string; audio: string };
@@ -377,6 +378,12 @@ export function OnyxSplash({
       unlock();
       return;
     }
+    const ctx = getClockAudio();
+    if (!bufferSrcRef.current || (ctx && ctx.state !== "running")) {
+      if (ctx?.state === "suspended") void ctx.resume().catch(() => {});
+      void playClipAudio(clipIdxRef.current, sessionRef.current);
+      return;
+    }
     if (Date.now() < skipAllowedAt.current) return;
     finish(true);
   };
@@ -393,6 +400,11 @@ export function OnyxSplash({
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [unlocked]);
+
+  useEffect(() => {
+    unlock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
