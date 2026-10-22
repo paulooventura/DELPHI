@@ -18,9 +18,10 @@ import {
  * Hard rules:
  * - Videos are silent files (no AAC). Only matching Web Audio beds play sound.
  * - Exactly one clip at a time: kill prior bed hard before the next starts.
- * - Audio starts with the page: as soon as this splash mounts we resume the
- *   clock context and begin the first bed. A tap still unlocks if the browser
- *   held the context, and any later tap skips to the Allow gate
+ * - Audio starts with the page. The bed plays as a normal audio file so the
+ *   picture and its sound can open together. The clock context takes over
+ *   only once the browser is actually letting it run. A tap still starts the
+ *   bed if the browser held it, and a later tap skips to the Allow gate
  *   (after SKIP_GUARD_MS, so that tap's ghost click can't skip).
  */
 
@@ -69,6 +70,7 @@ export function OnyxSplash({
   const audioCache = useRef<Map<string, AudioBuffer>>(new Map());
   const holdTimer = useRef<number | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const fileBedRef = useRef<HTMLAudioElement | null>(null);
   /** Invalidates stale load/play/audio handlers. */
   const sessionRef = useRef(0);
 
@@ -121,6 +123,24 @@ export function OnyxSplash({
     const dry = dryGainRef.current;
     const src = bufferSrcRef.current;
     if (!dry || !src) {
+      const file = fileBedRef.current;
+      if (file && !file.paused) {
+        const from = file.volume;
+        const t0 = performance.now();
+        const ms = AUDIO_BUS.CLIP_FADE_OUT_MS;
+        const step = () => {
+          if (fileBedRef.current !== file) return;
+          const k = Math.min(1, (performance.now() - t0) / ms);
+          file.volume = from * (1 - k);
+          if (k < 1) requestAnimationFrame(step);
+          else {
+            try { file.pause(); } catch { /* ignore */ }
+          }
+        };
+        requestAnimationFrame(step);
+        fadeOut("splash", ms);
+        return;
+      }
       killAudioHard();
       return;
     }
@@ -172,6 +192,34 @@ export function OnyxSplash({
     return buf;
   };
 
+  const fileBed = () => {
+    if (!fileBedRef.current) {
+      const el = new Audio();
+      el.preload = "auto";
+      el.autoplay = true;
+      el.addEventListener("playing", () => setNeedTap(false));
+      fileBedRef.current = el;
+    }
+    return fileBedRef.current;
+  };
+
+  /** Speakers first. A suspended clock context stays silent, so the file plays on its own. */
+  const playFileBed = (url: string) => {
+    const el = fileBed();
+    if (el.dataset.bed !== url) {
+      el.dataset.bed = url;
+      el.src = url;
+    }
+    el.volume = 1;
+    void el.play().then(() => setNeedTap(false)).catch(() => {});
+  };
+
+  const stopFileBed = () => {
+    const el = fileBedRef.current;
+    if (!el) return;
+    try { el.pause(); } catch { /* ignore */ }
+  };
+
   /** Start ONLY forIdx’s dry bed — never another clip’s. */
   const playClipAudio = async (forIdx: number, session: number) => {
     const clip = CLIPS[forIdx];
@@ -180,8 +228,21 @@ export function OnyxSplash({
     if (clipIdxRef.current !== forIdx) return;
 
     killAudioHard();
-    const gen = ++audioGen.current;
+    const heard = fileBed();
+    if (heard.dataset.bed !== clip.audio) {
+      heard.dataset.bed = clip.audio;
+      heard.src = clip.audio;
+    }
+    heard.volume = 1;
+    try {
+      await heard.play();
+      setNeedTap(false);
+      return;
+    } catch {
+      /* The file was held. The clock context is the other door. */
+    }
 
+    const gen = ++audioGen.current;
     const ctx = getClockAudio();
     if (!ctx) return;
     if (ctx.state === "suspended") {
@@ -191,6 +252,7 @@ export function OnyxSplash({
         return;
       }
     }
+    if (ctx.state !== "running") return;
     if (audioGen.current !== gen || sessionRef.current !== session) return;
 
     ensureAudioBus(ctx);
@@ -227,7 +289,9 @@ export function OnyxSplash({
         dryGainRef.current = null;
       }
     };
+    stopFileBed();
     src.start(0);
+    setNeedTap(false);
     bufferSrcRef.current = src;
     dryGainRef.current = dry;
   };
@@ -352,7 +416,6 @@ export function OnyxSplash({
     unlockingRef.current = true;
     unlockedRef.current = true;
     setUnlocked(true);
-    setNeedTap(false);
     guardUntil.current = Date.now() + UNLOCK_GUARD_MS;
     skipAllowedAt.current = Date.now() + SKIP_GUARD_MS;
 
@@ -376,11 +439,16 @@ export function OnyxSplash({
     e.preventDefault();
     if (!unlockedRef.current) {
       unlock();
+      setNeedTap(false);
       return;
     }
     const ctx = getClockAudio();
-    if (!bufferSrcRef.current || (ctx && ctx.state !== "running")) {
+    const file = fileBedRef.current;
+    const fileOn = !!(file && !file.paused);
+    const webOn = !!(bufferSrcRef.current && ctx && ctx.state === "running");
+    if (!fileOn && !webOn) {
       if (ctx?.state === "suspended") void ctx.resume().catch(() => {});
+      setNeedTap(false);
       void playClipAudio(clipIdxRef.current, sessionRef.current);
       return;
     }
@@ -402,7 +470,17 @@ export function OnyxSplash({
   }, [unlocked]);
 
   useEffect(() => {
+    playFileBed(CLIPS[0]!.audio);
     unlock();
+    const retry = window.setInterval(() => {
+      if (entered.current) return;
+      const ctx = getClockAudio();
+      const webOn = !!(bufferSrcRef.current && ctx && ctx.state === "running");
+      if (webOn) return;
+      const el = fileBedRef.current;
+      if (el && el.paused) void el.play().then(() => setNeedTap(false)).catch(() => {});
+    }, 500);
+    return () => window.clearInterval(retry);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
