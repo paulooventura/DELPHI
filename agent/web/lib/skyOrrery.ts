@@ -14,14 +14,14 @@ import { SKY_BODIES } from "./skyPositions";
 
 export type Vec3 = { x: number; y: number; z: number };
 
-export type OrreryBodyKind = "star" | "planet" | "dwarf" | "moon" | "asteroid" | "comet";
+export type OrreryBodyKind = "star" | "planet" | "dwarf" | "moon" | "asteroid" | "comet" | "spacecraft";
 
 export type OrreryBody = {
   id: string;
   name: string;
   kind: OrreryBodyKind;
-  /** Body it circles; null for the Sun. */
-  parent: "sun" | "earth" | "jupiter" | null;
+  /** Body it circles ("sun" or a planet id); null for the Sun. */
+  parent: string | null;
   color: string;
   /** On-screen radius at the solar-system zoom (sizes are not to scale). */
   sizePx: number;
@@ -85,8 +85,8 @@ export const ORRERY_BODIES: OrreryBody[] = [
   ...MINOR_BODY_ORBITS.map(m => ({
     id: m.id,
     name: m.name,
-    kind: m.kind,
-    parent: "sun" as const,
+    kind: (m.id === "ceres" ? "dwarf" : m.kind) as OrreryBodyKind,
+    parent: "sun",
     color: m.color,
     sizePx: m.kind === "comet" ? 1.7 : 1.4,
     rotationDays: MINOR_SPIN_DAYS[m.id] ?? 0.4,
@@ -122,7 +122,7 @@ export function helioEcliptic(id: string, date: Date): Vec3 {
   throw new Error(`No heliocentric orbit for ${id}`);
 }
 
-export type SatelliteState = { parent: "earth" | "jupiter"; pos: Vec3; vel: Vec3; mu: number };
+export type SatelliteState = { parent: string; pos: Vec3; vel: Vec3; mu: number };
 
 /** Moon + Galilean moons relative to their planet (ecliptic AU, AU/day). */
 export function satelliteStates(date: Date): Record<string, SatelliteState> {
@@ -130,7 +130,7 @@ export function satelliteStates(date: Date): Record<string, SatelliteState> {
   const moon = GeoMoonState(time);
   const jm = JupiterMoons(time);
   const jup = (s: StateVector): SatelliteState => ({
-    parent: "jupiter",
+    parent: "jupiter" as const,
     pos: eqjToEcliptic(vecOf(s)),
     vel: eqjToEcliptic(velOf(s)),
     mu: MU_JUPITER,

@@ -339,7 +339,7 @@ async function buildSpacecraft() {
 
 /* ── Dust clouds (SBDB query) ─────────────────────────────────────── */
 
-async function cloud(params, limit) {
+async function cloud(params, limit, aMin, aMax, cap) {
   const fields = "full_name,epoch,e,a,i,om,w,ma,H";
   const j = await get(
     `https://ssd-api.jpl.nasa.gov/sbdb_query.api?fields=${fields}&sort=H&limit=${limit}&full-prec=true&${params}`,
@@ -347,7 +347,8 @@ async function cloud(params, limit) {
   const rows = [];
   for (const d of j.data ?? []) {
     const [, epoch, e, a, i, om, w, ma, H] = d.map(num);
-    if (!(a > 0) || !(e >= 0) || e >= 0.98 || ma == null) continue;
+    if (!(a > aMin && a < aMax) || !(e >= 0) || e >= 0.98 || ma == null) continue;
+    if (rows.length / 7 >= cap) break;
     const n = GAUSS_DEG_PER_DAY / a ** 1.5;
     const M = (((ma + n * (CLOUD_EPOCH_JD - epoch)) % 360) + 360) % 360;
     rows.push(
@@ -444,11 +445,11 @@ if (on("spacecraft")) {
 }
 if (on("asteroids")) {
   await writeJson("asteroids", {
-    source: "JPL SSD Small-Body Database, numbered asteroids by absolute magnitude",
+    source: "JPL SSD Small-Body Database, brightest numbered asteroids inside 6 AU by absolute magnitude",
     epochJd: CLOUD_EPOCH_JD,
     stride: 7,
     fields: ["a*1e4", "e*1e4", "i*100", "om*100", "w*100", "M*100", "H*10"],
-    rows: await cloud("sb-kind=a&sb-ns=n", 20000),
+    rows: await cloud("sb-kind=a&sb-ns=n", 21000, 0, 6, 20000),
   });
 }
 if (on("kuiper")) {
@@ -457,6 +458,6 @@ if (on("kuiper")) {
     epochJd: CLOUD_EPOCH_JD,
     stride: 7,
     fields: ["a*1e4", "e*1e4", "i*100", "om*100", "w*100", "M*100", "H*10"],
-    rows: await cloud("sb-class=TNO", 5000),
+    rows: await cloud("sb-class=TNO", 5000, 30, 1e4, 5000),
   });
 }
