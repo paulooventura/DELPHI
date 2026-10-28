@@ -4676,6 +4676,47 @@ html[data-sky="twilight"] .onyx-overlay-close {
   display: block; touch-action: none; cursor: grab;
 }
 .onyx-orr-canvas:active { cursor: grabbing; }
+.onyx-orr-gl {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  display: block; pointer-events: none;
+}
+.onyx-orr-card {
+  position: absolute; z-index: 3;
+  top: calc(max(16px, env(safe-area-inset-top, 0px)) + 46px); right: 10px;
+  width: min(264px, 70%); max-height: 44%; overflow-y: auto; overscroll-behavior: contain;
+  padding: 10px 12px 8px; border-radius: 14px;
+  background: rgba(6, 6, 14, 0.84); border: 0.5px solid var(--onyx-edge);
+  backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+  font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--onyx-ink-soft);
+}
+.onyx-orr-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.onyx-orr-card h2 {
+  margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.03em; color: var(--onyx-ink-bright);
+}
+.onyx-orr-card header p { margin: 2px 0 6px; font-size: 9.5px; letter-spacing: 0.08em; opacity: 0.75; }
+.onyx-orr-card-x {
+  width: 24px; height: 24px; padding: 0; border-radius: 50%; flex: none;
+  border: 0.5px solid var(--onyx-edge); background: transparent; color: var(--onyx-ink-soft);
+  font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+}
+.onyx-orr-card dl { margin: 0; display: grid; gap: 3px; }
+.onyx-orr-card dl > div { display: grid; grid-template-columns: 42% 1fr; gap: 6px; }
+.onyx-orr-card dt { opacity: 0.68; }
+.onyx-orr-card dd { margin: 0; color: var(--onyx-ink-bright); text-align: right; }
+.onyx-orr-measure { border-color: rgba(125, 255, 200, 0.35); }
+.onyx-orr-tools { align-items: center; }
+.onyx-orr-find { display: flex; flex: 1 1 150px; max-width: 240px; }
+.onyx-orr-find input {
+  width: 100%; min-width: 0; padding: 7px 11px; border-radius: 16px;
+  border: 0.5px solid var(--onyx-edge); background: rgba(6, 6, 10, 0.6);
+  color: var(--onyx-ink-bright); font: inherit; font-size: 16px; letter-spacing: 0.02em;
+  transform: scale(0.72); transform-origin: left center; width: 139%; margin-right: -39%;
+}
+.onyx-orr-find input::placeholder { color: var(--onyx-ink-faint); }
+.onyx-orr-credit {
+  margin: 0; font-size: 8px; letter-spacing: 0.06em; color: var(--onyx-ink-faint); opacity: 0.55;
+  text-align: center;
+}
 .onyx-orr-head {
   position: absolute; top: 0; left: 0; right: 0; z-index: 2;
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
