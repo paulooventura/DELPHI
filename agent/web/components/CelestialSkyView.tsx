@@ -106,6 +106,10 @@ export type CelestialSkyViewProps = {
   /** Parent (Onyx sky) renders the sheet above chrome. */
   onSelectDetail?: (detail: SkyObjectDetail | null) => void;
   openAimedDetailRef?: MutableRefObject<(() => void) | null>;
+  /** Skip drawing while a full-screen sub-view (the orrery) covers the sky. */
+  paused?: boolean;
+  /** A tap that hit no sky object (CSS px inside the canvas). */
+  onEmptyTap?: (x: number, y: number, width: number, height: number) => void;
 };
 
 export type AimedSkyObject = {
@@ -930,8 +934,14 @@ export function CelestialSkyView({
   skyLookSnapRef,
   onSelectDetail,
   openAimedDetailRef,
+  paused = false,
+  onEmptyTap,
 }: CelestialSkyViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const pausedRef = useRef(paused);
+  pausedRef.current = paused;
+  const onEmptyTapRef = useRef(onEmptyTap);
+  onEmptyTapRef.current = onEmptyTap;
   const hapticsRef = useRef(createSkyHapticController());
   const pinchRef = useRef(createPinchGestureController());
   const groundBlendRef = useRef(0);
@@ -1066,8 +1076,10 @@ export function CelestialSkyView({
           if (hapticsEnabled) {
             try { navigator.vibrate?.([4, 36, 8]); } catch { /* ignore */ }
           }
+          return;
         }
       }
+      onEmptyTapRef.current?.(px, py, rect.width, rect.height);
     };
     const onPointerCancel = () => { tapRef.current = null; };
 
@@ -1156,6 +1168,11 @@ export function CelestialSkyView({
     let last = performance.now();
 
     const paint = (now: number) => {
+      if (pausedRef.current || document.hidden) {
+        last = now;
+        frame = requestAnimationFrame(paint);
+        return;
+      }
       const dt = Math.min(0.064, (now - last) / 1000);
       last = now;
       pulseRef.current += dt * 2.6;

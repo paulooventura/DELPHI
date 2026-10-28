@@ -14,6 +14,7 @@ import { altAzToEnu, enuToAltAz } from "../../lib/sphericalView";
 import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
 import { ChamberHeader } from "./ChamberHeader";
 import { cardinalFromHeading } from "./onyxCopy";
+import { SkyOrrery } from "./SkyOrrery";
 
 const LOCK_HOLD_MS = 3000;
 const LOCK_SAMPLE_MS = 400;
@@ -28,6 +29,8 @@ type PendingSkyLock = {
 
 const CARD = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
 const EXIT_MS = 480;
+const PULL_ARM_MS = 1600;
+const PULL_DISTANCE_PX = 60;
 
 function formatLatLon(lat: number, lon: number): string {
   const ns = lat >= 0 ? "N" : "S";
@@ -212,6 +215,83 @@ export function OnyxSky({
   const [phase, setPhase] = useState<"enter" | "live" | "exit">("enter");
   const leavingRef = useRef(false);
 
+  // The orrery is a sub-view with its own history entry, so phone/browser Back closes it.
+  const [orreryOpen, setOrreryOpen] = useState(false);
+  const [orreryRise, setOrreryRise] = useState(false);
+  const [pullArm, setPullArm] = useState(0);
+  useEffect(() => {
+    const sync = () => {
+      const s = window.history.state as { skyOrrery?: number } | null;
+      setOrreryOpen(Boolean(s?.skyOrrery));
+    };
+    sync();
+    window.addEventListener("popstate", sync);
+    return () => window.removeEventListener("popstate", sync);
+  }, []);
+  const openOrrery = useCallback((rise = false) => {
+    const s = (window.history.state ?? {}) as { depth?: number };
+    window.history.pushState(
+      { ...s, depth: (s.depth ?? 0) + 1, skyOrrery: 1 },
+      "",
+      window.location.href,
+    );
+    setSkyDetail(null);
+    setPullArm(0);
+    setOrreryRise(rise);
+    setOrreryOpen(true);
+  }, []);
+
+  // Centre tap arms a short window; a scroll / swipe UP inside it pulls back into the orrery.
+  // Without the tap, scrolling stays inert.
+  const onEmptySkyTap = useCallback((x: number, y: number, w: number, h: number) => {
+    if (Math.abs(x - w / 2) > w * 0.15 || Math.abs(y - h / 2) > h * 0.15) return;
+    setPullArm(n => n + 1);
+  }, []);
+  useEffect(() => {
+    if (!pullArm || orreryOpen) return;
+    const expire = window.setTimeout(() => setPullArm(0), PULL_ARM_MS);
+    let wheelUp = 0;
+    let swipe: { id: number; x: number; y: number } | null = null;
+    const onWheel = (e: WheelEvent) => {
+      const unit = e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? 400 : 1;
+      if (e.deltaY < 0) wheelUp += -e.deltaY * unit;
+      if (wheelUp >= PULL_DISTANCE_PX) openOrrery(true);
+    };
+    const onDown = (e: PointerEvent) => {
+      swipe = { id: e.pointerId, x: e.clientX, y: e.clientY };
+    };
+    const onMove = (e: PointerEvent) => {
+      if (!swipe || e.pointerId !== swipe.id) return;
+      const up = swipe.y - e.clientY;
+      const side = Math.abs(e.clientX - swipe.x);
+      if (up >= PULL_DISTANCE_PX && side < up * 0.6) {
+        swipe = null;
+        openOrrery(true);
+      }
+    };
+    const onUp = (e: PointerEvent) => {
+      if (swipe && e.pointerId === swipe.id) swipe = null;
+    };
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("pointerdown", onDown);
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
+    return () => {
+      window.clearTimeout(expire);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("pointerdown", onDown);
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+    };
+  }, [pullArm, orreryOpen, openOrrery]);
+  const closeOrrery = useCallback(() => {
+    const s = window.history.state as { skyOrrery?: number } | null;
+    if (s?.skyOrrery) window.history.back();
+    else setOrreryOpen(false);
+  }, []);
+
   const dust = useMemo(
     () =>
       Array.from({ length: 48 }, (_, i) => {
@@ -301,6 +381,8 @@ export function OnyxSky({
             skyLookSnapRef={skyLookSnapRef}
             onSelectDetail={setSkyDetail}
             openAimedDetailRef={openAimedDetailRef}
+            paused={orreryOpen}
+            onEmptyTap={onEmptySkyTap}
           />
         </div>
 
@@ -382,6 +464,14 @@ export function OnyxSky({
             <div className="onyx-sky-align-row">
               <button
                 type="button"
+                className="onyx-sky-align-btn onyx-sky-orrery-btn"
+                onClick={() => openOrrery(false)}
+                title="Pull back and watch the planets and moons cycle on their real orbits"
+              >
+                Orrery
+              </button>
+              <button
+                type="button"
                 className="onyx-sky-align-btn"
                 disabled={!sunAboveHorizon || !onCalibrateSun}
                 onClick={() =>
@@ -450,6 +540,18 @@ export function OnyxSky({
             </button>
           </div>
         ) : null}
+
+        {pullArm > 0 && !orreryOpen ? (
+          <div key={pullArm} className="onyx-sky-pull-cue" role="status" aria-live="polite">
+            <svg width="44" height="44" viewBox="0 0 44 44" aria-hidden>
+              <circle cx="22" cy="22" r="19" fill="none" stroke="var(--onyx-edge-bright)" strokeWidth="0.75" />
+              <path d="M15 25 L22 18 L29 25" fill="none" stroke="var(--onyx-core)" strokeWidth="1.2" strokeLinecap="round" />
+            </svg>
+            <span>scroll up to pull back</span>
+          </div>
+        ) : null}
+
+        {orreryOpen ? <SkyOrrery onClose={closeOrrery} rise={orreryRise} /> : null}
       </div>
     </div>
   );

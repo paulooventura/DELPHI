@@ -626,3 +626,20 @@ export function ringCycleFraction(ring: ClockRingData): number {
       return normalizedProgress;
   }
 }
+
+const MS_PER_DAY = 86_400_000;
+
+/** Sky orrery playback rates, in simulated days per real second. */
+export const ORRERY_SPEEDS = [
+  { id: "day", label: "1 day/s", daysPerSec: 1 },
+  { id: "week", label: "1 wk/s", daysPerSec: 7 },
+  { id: "month", label: "1 mo/s", daysPerSec: SYNODIC_MONTH },
+  { id: "year", label: "1 yr/s", daysPerSec: TROPICAL_YEAR },
+] as const;
+
+export type OrrerySpeedId = (typeof ORRERY_SPEEDS)[number]["id"];
+
+/** Advance a simulated instant by real elapsed seconds at a given rate. */
+export function advanceCosmicClock(simMs: number, daysPerSec: number, realDtSec: number): number {
+  return simMs + daysPerSec * realDtSec * MS_PER_DAY;
+}

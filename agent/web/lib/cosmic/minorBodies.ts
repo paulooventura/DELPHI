@@ -104,7 +104,8 @@ const MINOR_CATALOG: OrbitalElements[] = [
     i: 162.26,
     om: 58.42,
     w: 111.33,
-    M0: 0.0,
+    // Perihelion 1986-02-09 (JD 2446470.5) carried forward to J2000.
+    M0: 66.41,
     epoch: 2451545.0,
     magnitude: 10.0,
     color: "#88c8e8",
@@ -149,6 +150,26 @@ function helioEclipticAu(jd: number, el: OrbitalElements): [number, number, numb
     (-sinΩ * sinω + cosΩ * cosω * cosi) * yp;
   const z = sini * sinω * xp + sini * cosω * yp;
   return [x, y, z];
+}
+
+export const MINOR_BODY_ORBITS: ReadonlyArray<{
+  id: string;
+  name: string;
+  kind: MinorBodyKind;
+  color: string;
+  periodDays: number;
+}> = MINOR_CATALOG.map(el => ({
+  id: el.id,
+  name: el.name,
+  kind: el.kind,
+  color: el.color,
+  periodDays: el.a ** 1.5 * 365.25,
+}));
+
+/** Heliocentric position on the J2000 ecliptic (AU) for a catalogued minor body. */
+export function minorBodyHelioEclipticAu(id: string, date: Date): [number, number, number] | null {
+  const el = MINOR_CATALOG.find(m => m.id === id);
+  return el ? helioEclipticAu(julianDay(date), el) : null;
 }
 
 function eclipticToEquatorial(x: number, y: number, z: number, jd: number): [number, number, number] {
