@@ -1,15 +1,18 @@
 ---
-description: Always commit, push, and deploy Delphi after substantive work (Vercel via main)
+description: Always commit and push Delphi to dev after substantive work; the hourly Homebase Ship takes dev live (Vercel via main)
 alwaysApply: true
 ---
 
-# Auto commit & deploy — Delphi
+# Auto commit & push to dev — Delphi
 
-After completing substantive work in this repo, **commit, push, and deploy without asking**.
+After completing substantive work in this repo, **commit and push to `dev` without asking**.
 
-Pushing `main` to GitHub triggers the Vercel production deploy for **https://delphi.pauloventura.org**.
+Agents work on branch **`dev`** and never push `main`. The hourly Homebase Ship
+(`C:\Users\PVProductions\HOMEBASE\scripts\daily-ship.ps1`, every hour on the hour) merges `dev`
+into `main` after tests pass; pushing `main` triggers the Vercel production deploy for
+**https://delphi.pauloventura.org**.
 
-## When to commit + deploy
+## When to commit + push
 
 - Bug fixes, features, refactors, or config changes under `agent/web/`, root scripts, docs that ship with the app, or deploy files
 - Do **not** commit secrets (`.env.local`, API keys, tokens)
@@ -17,20 +20,23 @@ Pushing `main` to GitHub triggers the Vercel production deploy for **https://del
 
 ## Workflow (every finished task)
 
-1. `git status` and `git diff` — stage only files related to the task
-2. Concise commit message (1–2 sentences, focus on why)
-3. `git add` → `git commit` → `git pull --rebase origin main` if needed → `git push origin HEAD`
-4. Confirm the GitHub deployment for the new SHA (or that push reached `main`)
-5. Tell the user: commit hash, that push succeeded, and that **delphi.pauloventura.org** is deploying via Vercel
-6. Also do the app/game closeout: update Homebase `projects/delphi.md`, rebuild `python scripts/build_index.py`, reply with test URLs, and a pasteable Claude prompt. Do not wait to be asked.
+1. `git switch dev` (first time: `git switch -c dev --track origin/dev`)
+2. `git status` and `git diff` — stage only files related to the task
+3. Readable commit subject (Paulo's changelog in Studio HQ → Builds), 1–2 sentences, focus on why
+4. `git add` → `git commit` → `git pull --rebase origin dev` if needed → `git push origin dev`
+5. Tell the user: commit hash, that it's on `dev` (playable locally via `npm run dev`, port 3000), and live at the next hourly Homebase Ship
+6. Also do the app/game closeout: update Homebase `projects/delphi.md`, rebuild `python scripts/build_index.py`, reply with how to test, and a pasteable Claude prompt. Do not wait to be asked.
+
+Urgent live fix only when Paulo says "ship now" / "push live now":
+`powershell -File C:\Users\PVProductions\HOMEBASE\scripts\daily-ship.ps1 -Only DELPHI`
 
 ## Remote
 
 - Repo: `https://github.com/paulooventura/DELPHI.git`
-- Branch: `main`
+- Work branch: `dev` · Live branch: `main` (only the Homebase Ship pushes it)
 
 ## Do not
 
-- Force-push, amend pushed commits, or skip hooks unless the user explicitly asks
+- Push `main`, force-push, amend pushed commits, or skip hooks unless the user explicitly asks
 - Push `.env*` or credential files
-- Finish a task with unpushed commits on `main`
+- Finish a task with unpushed commits on `dev`

@@ -31,7 +31,7 @@ Canonical Claude diffs (`DELPHI_TONAL_CANONICAL.html`) are **diff references onl
    Copy-Item -Force G:\DELPHI\portal\src\DELPHI_portal.html G:\DELPHI\DELPHI-main\agent\web\public\portal.html
    ```
 3. Confirm the HTML comment near the top: `<!-- build: … -->`.
-4. Commit + push `main` → Vercel Production auto-deploys `delphi.pauloventura.org`.
+4. Commit + push `dev`. The hourly Homebase Ship merges `dev` into `main` after tests → Vercel Production auto-deploys `delphi.pauloventura.org`.
 
 ## Prove live == latest
 

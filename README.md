@@ -33,10 +33,10 @@ Open http://localhost:3000. There is no extra `DELPHI/` parent folder in git.
 
 Do not change those Next rewrites. Do not deploy `master`, GitHub Pages, or Netlify.
 
-On Book the HTML draft is `G:\DELPHI\portal` — copy into `agent/web/public/portal.html` then push `main`. See [docs/PORTAL-SYNC.md](docs/PORTAL-SYNC.md).
+On Book the HTML draft is `G:\DELPHI\portal` — copy into `agent/web/public/portal.html` then push `dev` (live at the next hourly Homebase Ship). See [docs/PORTAL-SYNC.md](docs/PORTAL-SYNC.md).
 
 ## Deploy
 
-Pushes to `main` deploy Vercel production. Settings: [docs/DOMAIN.md](docs/DOMAIN.md) (root directory empty, build overrides off). Alias `delphi-wine.vercel.app` follows the custom domain.
+Agents push `dev`; the hourly Homebase Ship merges `dev` into `main` after tests, and pushes to `main` deploy Vercel production. Settings: [docs/DOMAIN.md](docs/DOMAIN.md) (root directory empty, build overrides off). Alias `delphi-wine.vercel.app` follows the custom domain.
 
 Optional keys in `agent/web/.env.local` or Vercel (never commit them): `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `GEMINI_API_KEY`, `AIRLABS_API_KEY`. Research Console stays free without them. The home distilled phrase uses **Anthropic Sonnet** when `ANTHROPIC_API_KEY` is set (`ANTHROPIC_PHRASE_MODEL` / `ANTHROPIC_DECOMPOSE_MODEL`, default `claude-sonnet-4-6`), then OpenAI `gpt-4o`, then Gemini. No keys → local `speak()` fallback. Birth date/time/place never leave the device — only axis math. Aircraft on Sky uses AirLabs when set, otherwise demo traffic.
