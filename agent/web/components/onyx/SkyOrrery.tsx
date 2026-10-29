@@ -2509,8 +2509,10 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         </p>
         <p className="onyx-orr-credit">
           {globe
-            ? `Orbit data: CelesTrak${orbitInfo ? ` · from ${dateTimeLabel(new Date(orbitInfo.fetchedAt))}` : ""} · SGP4 via satellite.js · Natural Earth`
-            : "Data: NASA/JPL Horizons & Small-Body Database · Yale Bright Star Catalogue · astronomy-engine"}
+            ? `Orbits: CelesTrak${orbitInfo ? ` · from ${dateTimeLabel(new Date(orbitInfo.fetchedAt))}` : ""} · SGP4 via satellite.js · Natural Earth`
+            : "Data: NASA/JPL SSD · Yale Bright Star Catalogue · astronomy-engine"}
+          {" · "}
+          <a href="/credits">Credits</a>
         </p>
       </div>
       </>

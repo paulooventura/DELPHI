@@ -40,6 +40,7 @@ type CardRow = [string, string, boolean?];
 type Card = { title: string; sub: string; rows: CardRow[] };
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
+const ODBL = "https://opendatacommons.org/licenses/odbl/1-0/";
 const POLL_MS = 10_000;
 /** Below this zoom a view spans too many cells to poll politely. */
 const AIRCRAFT_MIN_ZOOM = 4.2;
@@ -790,6 +791,7 @@ export default function EarthMap({
     rows.push(["Position", `${w[1].toFixed(4)}°, ${w[0].toFixed(4)}°`]);
     if (u) rows.push(["From you", fmtKm(haversineKm(u.lat, u.lon, w[1], w[0]))]);
     rows.push(["Source", "NOAA nautical charts"]);
+    rows.push(["Note", "Not for navigation"]);
     return { title: w[5] || "Unnamed wreck", sub: "Shipwreck", rows };
   };
   }, []);
@@ -866,8 +868,10 @@ export default function EarthMap({
         ) : null}
         <p className="onyx-orr-hint">drag to move · pinch out to the globe · tap a plane, satellite or wreck</p>
         <p className="onyx-orr-credit">
-          Aircraft data: adsb.lol (ODbL) · Map: OpenFreeMap © OpenMapTiles © OpenStreetMap contributors · Seafloor: GEBCO · Wrecks: NOAA
-          {status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""} · Orbits: CelesTrak
+          Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map: OpenFreeMap © OpenMapTiles ©{" "}
+          <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:
+          GEBCO · Wrecks: NOAA{status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""}, not for navigation · Orbits:
+          CelesTrak · <a href="/credits">Credits</a>
         </p>
       </div>
     </div>

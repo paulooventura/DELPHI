@@ -69,6 +69,12 @@ export function OnyxAbout() {
             </a>{" "}
             · everything Pneuma Mundi keeps, sends, and how to delete it.
           </p>
+          <p className="onyx-layer-meta">
+            <a href="/credits" style={{ textDecoration: "underline" }}>
+              Credits &amp; data
+            </a>{" "}
+            · the open data, software and type the app is built on.
+          </p>
           <UsageOptIn />
         </div>
       </div>

@@ -4724,9 +4724,10 @@ html[data-sky="twilight"] .onyx-overlay-close {
 }
 .onyx-orr-find input::placeholder { color: var(--onyx-ink-faint); }
 .onyx-orr-credit {
-  margin: 0; font-size: 8px; letter-spacing: 0.06em; color: var(--onyx-ink-faint); opacity: 0.55;
-  text-align: center;
+  margin: 0; font-size: 11px; line-height: 1.4; letter-spacing: 0.02em; color: var(--onyx-ink-faint); opacity: 0.78;
+  text-align: center; pointer-events: auto;
 }
+.onyx-orr-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 .onyx-orr-head {
   position: absolute; top: 0; left: 0; right: 0; z-index: 2;
   display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px;
