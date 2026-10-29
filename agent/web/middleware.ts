@@ -1,10 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { appCorsHeaders } from "./lib/cors";
 
 /** Never cache HTML/shell routes — phones and PWAs otherwise freeze on old builds. */
 export function middleware(request: NextRequest) {
-  const response = NextResponse.next();
   const path = request.nextUrl.pathname;
+  const cors = path.startsWith("/api/") ? appCorsHeaders(request.headers.get("origin")) : null;
+  if (cors && request.method === "OPTIONS") {
+    return new NextResponse(null, { status: 204, headers: cors });
+  }
+  const response = NextResponse.next();
+  if (cors) for (const [k, v] of Object.entries(cors)) response.headers.set(k, v);
   if (
     path.startsWith("/_next/static") ||
     path.startsWith("/_next/image") ||

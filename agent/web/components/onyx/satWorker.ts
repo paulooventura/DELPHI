@@ -5,6 +5,7 @@
  */
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 import { rowToOmm, type GpRow, type OrbitSet } from "../../lib/orbitRows";
+import { apiUrl } from "../../lib/apiBase";
 
 export type SatWorkerIn =
   | { type: "init"; groups: string[] }
@@ -25,7 +26,7 @@ let rows: GpRow[] = [];
 
 async function loadGroup(group: string): Promise<(OrbitSet & { fallback: boolean }) | null> {
   for (const [url, fallback] of [
-    [`/api/orbits/${group}`, false],
+    [apiUrl(`/api/orbits/${group}`), false],
     [`/orbits/${group}.json`, true],
   ] as const) {
     try {

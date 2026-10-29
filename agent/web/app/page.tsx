@@ -69,6 +69,7 @@ import { SkyCatalog } from "../components/SkyCatalog";
 import { labelForDistanceRank } from "../lib/starmap";
 import { estimateOutdoorLux } from "../lib/platform";
 import { weatherAdjustedLux, weatherSlotForHour } from "../lib/cosmic/skyWeather";
+import { apiUrl } from "../lib/apiBase";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -523,7 +524,7 @@ export default function Home() {
     const date = `${local.getFullYear()}-${String(local.getMonth() + 1).padStart(2, "0")}-${String(local.getDate()).padStart(2, "0")}`;
     const qParts = [`tz=${tz}`, `date=${date}`];
     if (lat != null && lon != null) qParts.unshift(`lat=${lat}`, `lon=${lon}`);
-    const data = await fetch(`/api/cycles?${qParts.join("&")}`)
+    const data = await fetch(apiUrl(`/api/cycles?${qParts.join("&")}`))
       .then(r => (r.ok ? r.json() : null))
       .catch(() => null);
     const weather = data?.weather as CycleSnapshot["weather"] | undefined;
@@ -925,7 +926,7 @@ export default function Home() {
     if (maxBudget.trim() && Number.isFinite(budget) && budget > 0) reqBody.maxBudgetUSD = budget;
 
     try {
-      const resp = await fetch("/api/research/v2", {
+      const resp = await fetch(apiUrl("/api/research/v2"), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(reqBody),

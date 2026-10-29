@@ -257,7 +257,7 @@
     st.busy = true;
     st.error = "";
     render();
-    fetch("/api/agon/enroll", {
+    fetch((window.PM_API_BASE || "") + "/api/agon/enroll", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload)
@@ -385,7 +385,7 @@
   function dirLoad() {
     dir.state = "loading";
     dirRender();
-    fetch("/api/agon/directory", { cache: "no-store" })
+    fetch((window.PM_API_BASE || "") + "/api/agon/directory", { cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         dir.entries = j.entries || [];

@@ -17,7 +17,7 @@
   "use strict";
   if (window.pmTrack) return;
 
-  var ENDPOINT = "/api/pm/track";
+  var ENDPOINT = (window.PM_API_BASE || "") + "/api/pm/track";
   var PRIVATE_SCREENS = { psyche: 1 };
   var IDLE_MS = 5 * 60 * 1000;
   var FLUSH_EVERY_MS = 4 * 60 * 1000;

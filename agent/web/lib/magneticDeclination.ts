@@ -5,6 +5,7 @@
  */
 
 import { HOME_DECLINATION_DEG, isNearHome } from "./observerHome";
+import { apiUrl } from "./apiBase";
 
 let cachedKey: string | null = null;
 let cachedDeclinationDeg: number | null = null;
@@ -45,7 +46,7 @@ export async function fetchDeclinationDeg(latDeg: number, lonDeg: number): Promi
       startYear: String(new Date().getFullYear()),
       resultFormat: "json",
     });
-    const res = await fetch(`/api/sky/declination?${params}`, { signal: AbortSignal.timeout(6000) });
+    const res = await fetch(apiUrl(`/api/sky/declination?${params}`), { signal: AbortSignal.timeout(6000) });
     if (res.ok) {
       const json = (await res.json()) as { declinationDeg?: number };
       if (typeof json.declinationDeg === "number" && Number.isFinite(json.declinationDeg)) {

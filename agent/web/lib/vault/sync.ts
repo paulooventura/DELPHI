@@ -21,6 +21,7 @@ import {
 import { forgetDeviceKeys, loadDeviceKey, saveDeviceKey } from "./keystore";
 import { applyPayload, collectPayload, isPayload, mergePayloads, payloadEmpty, type VaultPayload } from "./payload";
 import { supabase } from "./supabase";
+import { apiUrl } from "../apiBase";
 
 export const VAULT_APPLIED_EVENT = "pm-vault-applied";
 
@@ -222,7 +223,7 @@ export async function signOutHere(): Promise<void> {
 export async function deleteAccount(): Promise<string | null> {
   const s = await session();
   if (!s) return "Sign in first.";
-  const res = await fetch("/api/account/delete", {
+  const res = await fetch(apiUrl("/api/account/delete"), {
     method: "POST",
     headers: { Authorization: `Bearer ${s.token}` },
   }).catch(() => null);

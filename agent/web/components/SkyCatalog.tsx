@@ -5,6 +5,7 @@ import { computeCelestialBodies, type CelestialBody } from "../lib/cosmic/celest
 import type { AircraftTrack } from "../lib/cosmic/aircraftTracking";
 import { computeAircraftTracks, generateMockAircraft } from "../lib/cosmic/aircraftTracking";
 import type { NearbyAirport } from "../lib/cosmic/airlabs";
+import { apiUrl } from "../lib/apiBase";
 import {
   computeSatelliteTracks,
   DEFAULT_TLE_CATALOG,
@@ -94,8 +95,8 @@ export function SkyCatalog({ lat, lon, observationTime, observerAltM = 0, classN
       try {
         const q = `lat=${lat}&lon=${lon}&alt=200`;
         const [acRes, satRes] = await Promise.all([
-          fetch(`/api/sky/aircraft?${q}`).then(r => r.ok ? r.json() : null),
-          fetch(`/api/sky/satellites?${q}`).then(r => r.ok ? r.json() : null),
+          fetch(apiUrl(`/api/sky/aircraft?${q}`)).then(r => r.ok ? r.json() : null),
+          fetch(apiUrl(`/api/sky/satellites?${q}`)).then(r => r.ok ? r.json() : null),
         ]);
         if (cancelled) return;
         if (acRes?.aircraft?.length) {

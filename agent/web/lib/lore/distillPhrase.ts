@@ -7,6 +7,7 @@ import type { Composition, DistillOptions } from "./compose";
 import { speak } from "./phrase";
 import { toPhraseBrainPayload } from "./phraseBrain";
 import type { TribeColor } from "./colorLean";
+import { apiUrl } from "../apiBase";
 
 export function phraseCacheKey(
   civilYmd: string,
@@ -97,7 +98,7 @@ export async function requestPhraseBrain(
   init?: { signal?: AbortSignal; prefer?: "auto" | "anthropic" | "openai" | "gemini" },
 ): Promise<{ phrase: string; source: string } | null> {
   try {
-    const res = await fetch("/api/phrase", {
+    const res = await fetch(apiUrl("/api/phrase"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -123,7 +124,7 @@ export async function requestBrainAvailability(
   signal?: AbortSignal,
 ): Promise<{ anthropic: boolean; openai: boolean; gemini: boolean } | null> {
   try {
-    const res = await fetch("/api/phrase", { signal: signal ?? AbortSignal.timeout(8000) });
+    const res = await fetch(apiUrl("/api/phrase"), { signal: signal ?? AbortSignal.timeout(8000) });
     if (!res.ok) return null;
     const json = (await res.json()) as { brains?: { anthropic?: boolean; openai?: boolean; gemini?: boolean } };
     const b = json.brains;

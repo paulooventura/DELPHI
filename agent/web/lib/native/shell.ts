@@ -4,6 +4,7 @@
  */
 
 import { Capacitor } from "@capacitor/core";
+import { apiUrl } from "../apiBase";
 import type { GpRow, OrbitSet } from "../orbitRows";
 import {
   ISS_ID_BASE,
@@ -83,7 +84,7 @@ export async function askAlertPermission(): Promise<boolean> {
 }
 
 async function fetchIssRow(): Promise<GpRow | null> {
-  for (const url of [`/api/orbits/active?norad=${ISS_NORAD}`, "/orbits/active.json"]) {
+  for (const url of [apiUrl(`/api/orbits/active?norad=${ISS_NORAD}`), "/orbits/active.json"]) {
     try {
       const res = await fetch(url);
       if (!res.ok) continue;

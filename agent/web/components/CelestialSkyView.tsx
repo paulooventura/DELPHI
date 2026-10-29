@@ -70,6 +70,7 @@ import { skyObjectsInView } from "../lib/starmap";
 import { generateMockAircraft, computeAircraftTracks } from "../lib/cosmic/aircraftTracking";
 import { loreForSkyObject } from "../lib/skyObjectLore";
 import { SkyObjectDetailPanel, type SkyObjectDetail } from "./SkyObjectDetailPanel";
+import { apiUrl } from "../lib/apiBase";
 
 export type LiveAttitude = { view: Vec3; roll: number };
 
@@ -1115,8 +1116,8 @@ export function CelestialSkyView({
           obsTime,
         );
         const [acRes, satRes] = await Promise.all([
-          fetch(`/api/sky/aircraft?${q}`).then(r => r.ok ? r.json() : null),
-          fetch(`/api/sky/satellites?${q}&live=1`).then(r => r.ok ? r.json() : null),
+          fetch(apiUrl(`/api/sky/aircraft?${q}`)).then(r => r.ok ? r.json() : null),
+          fetch(apiUrl(`/api/sky/satellites?${q}&live=1`)).then(r => r.ok ? r.json() : null),
         ]);
         if (cancelled) return;
         if (acRes?.aircraft?.length) {
