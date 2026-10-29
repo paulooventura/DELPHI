@@ -69,7 +69,11 @@
     set(ss, "pm-started", String(Date.now()));
     set(ss, "pm-entry", location.pathname);
     set(ss, "pm-ref", app ? "" : (document.referrer || "").slice(0, 200));
-    if (!app) set(ls, "pm-visits", String((parseInt(get(ls, "pm-visits") || "0", 10) || 0) + 1));
+  }
+  // One count per tab session, shared with lib/visits.ts (same flag), so a first visit reports 1, not 2.
+  if (!app && get(ss, "pm-visit-counted") !== "1") {
+    set(ls, "pm-visits", String((parseInt(get(ls, "pm-visits") || "0", 10) || 0) + 1));
+    set(ss, "pm-visit-counted", "1");
   }
 
   var vid = sid;
