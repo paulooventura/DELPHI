@@ -274,7 +274,9 @@
       })
       .catch(function () {
         st.busy = false;
-        st.error = "Network hiccup. Try again in a moment.";
+        st.error = navigator.onLine === false
+          ? "Sending needs a connection. Your answers are kept here until you're back online."
+          : "Network hiccup. Try again in a moment.";
         render();
       });
   }
@@ -346,7 +348,9 @@
     var body;
     if (dir.state === "loading") body = '<p class="dirempty">Loading the directory…</p>';
     else if (dir.state === "off") body = '<p class="dirempty">The directory opens once enrollment is connected. Be one of the first — enroll above.</p>';
-    else if (dir.state === "error") body = '<p class="dirempty">Couldn\'t load the directory right now.</p>';
+    else if (dir.state === "error") body = navigator.onLine === false
+      ? '<p class="dirempty">The directory needs a connection.</p>'
+      : '<p class="dirempty">Couldn\'t load the directory right now.</p>';
     else {
       var hidden = hiddenIds();
       var list = (dir.entries || []).filter(function (e) {

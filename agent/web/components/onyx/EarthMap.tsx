@@ -7,6 +7,8 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MlMap, type MapGeoJSONFeature } from "maplibre-gl";
+import { API_BASE, apiUrl } from "../../lib/apiBase";
+import { loadOfflineMapStyle } from "../../lib/offlineMapStyle";
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   cellKey,
@@ -156,6 +158,7 @@ export default function EarthMap({
   const [sel, setSel] = useState<Sel | null>(null);
   const selRef = useRef(sel);
   const [status, setStatus] = useState({ aircraft: 0, note: "", wrecks: 0, ready: false });
+  const [offlineBase, setOfflineBase] = useState(false);
   useEffect(() => {
     selRef.current = sel;
   }, [sel]);
@@ -240,7 +243,7 @@ export default function EarthMap({
       const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
       map.addSource("seafloor", {
         type: "raster",
-        tiles: [`${location.origin}/api/seafloor/{z}/{x}/{y}`],
+        tiles: [`${API_BASE || location.origin}/api/seafloor/{z}/{x}/{y}`],
         tileSize: 256,
         maxzoom: 8,
         attribution: "GEBCO",
@@ -520,7 +523,7 @@ export default function EarthMap({
       if (polling) return;
       polling = true;
       const results = await Promise.allSettled(
-        cells.map(c => fetch(`/api/aircraft?cell=${cellKey(c)}`).then(r => (r.ok ? (r.json() as Promise<AircraftCell>) : Promise.reject(r.status)))),
+        cells.map(c => fetch(apiUrl(`/api/aircraft?cell=${cellKey(c)}`)).then(r => (r.ok ? (r.json() as Promise<AircraftCell>) : Promise.reject(r.status)))),
       );
       polling = false;
       if (!alive) return;
@@ -687,7 +690,7 @@ export default function EarthMap({
       if (cs && !routesRef.current.has(cs)) {
         const r = planesRef.current.get((s as { hex: string }).hex)!.row;
         routesRef.current.set(cs, "loading");
-        fetch(`/api/aircraft/flight/${encodeURIComponent(cs)}?lat=${r[4]}&lon=${r[5]}`)
+        fetch(apiUrl(`/api/aircraft/flight/${encodeURIComponent(cs)}?lat=${r[4]}&lon=${r[5]}`))
           .then(res => (res.ok ? (res.json() as Promise<{ route: FlightRoute | null }>) : { route: null }))
           .then(j => routesRef.current.set(cs, j.route))
           .catch(() => routesRef.current.set(cs, null))
@@ -749,8 +752,22 @@ export default function EarthMap({
       }
     };
 
+    let loaded = false;
+    let fellBack = false;
+    const fallBackToOfflineBase = () => {
+      if (fellBack || loaded || !alive) return;
+      fellBack = true;
+      void loadOfflineMapStyle().then(style => {
+        if (!style || !alive || loaded) return;
+        map.setStyle(style);
+        setOfflineBase(true);
+      });
+    };
+    if (typeof navigator !== "undefined" && navigator.onLine === false) fallBackToOfflineBase();
+
     map.on("load", () => {
       if (!alive) return;
+      loaded = true;
       addLayers();
       if (!reduceMotion) map.easeTo({ zoom: 2.6, duration: 1100 });
       else map.jumpTo({ zoom: 2.6 });
@@ -758,7 +775,9 @@ export default function EarthMap({
       loopDraw();
     });
     map.on("error", () => {
-      /* tile hiccups: MapLibre retries; nothing to show the reader */
+      /* before the first load this is the tile server out of reach: draw the built-in world map.
+         After it, tile hiccups: MapLibre retries; nothing to show the reader. */
+      fallBackToOfflineBase();
     });
     map.on("moveend", onMoveEnd);
     map.on("zoom", onZoom);
@@ -941,7 +960,9 @@ export default function EarthMap({
           <span className="onyx-orr-date" aria-live="polite">
             {!status.ready
               ? "opening the map…"
-              : status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
+              : offlineBase
+                ? "offline · built-in world map; detail, aircraft and seafloor need a connection"
+                : status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
           </span>
         </div>
         {layersOpen ? (
@@ -965,7 +986,7 @@ export default function EarthMap({
         ) : null}
         <p className="onyx-orr-hint">drag to move · pinch out to the globe · tap a plane, satellite, wreck or the Sun</p>
         <p className="onyx-orr-credit">
-          Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map: OpenFreeMap © OpenMapTiles ©{" "}
+          Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map:{offlineBase ? " Natural Earth ·" : ""} OpenFreeMap © OpenMapTiles ©{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:
           GEBCO · Wrecks: NOAA{status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""}, not for navigation · Orbits:
           CelesTrak · <a href="/credits">Credits</a>
