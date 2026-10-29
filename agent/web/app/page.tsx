@@ -95,6 +95,7 @@ const DEFAULT_TOGGLES: SensorToggles = {
 
 const TOGGLES_STORAGE_KEY = "cp-sensor-toggles-v2";
 const RESEARCH_TIER_KEY = "cp-research-tier";
+const RESEARCH_OFFLINE = "Research needs a connection. Sky, orrery, compass and map still work offline.";
 const MANUAL_HEADING_KEY = "cp-manual-heading";
 const SKY_AZ_OFFSET_KEY = "cp-sky-az-offset";
 const SKY_ALT_OFFSET_KEY = "cp-sky-alt-offset";
@@ -910,6 +911,10 @@ export default function Home() {
       setAskAiConsent(true);
       return;
     }
+    if (navigator.onLine === false) {
+      setRes({ phase: "error", error: RESEARCH_OFFLINE });
+      return;
+    }
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -954,7 +959,7 @@ export default function Home() {
       }
     } catch (e: unknown) {
       if (!(e instanceof Error && e.name === "AbortError")) {
-        setRes(prev => ({ ...(prev ?? {}), error: String(e) }));
+        setRes(prev => ({ ...(prev ?? {}), error: navigator.onLine === false ? RESEARCH_OFFLINE : String(e) }));
       }
     } finally {
       setResLoading(false);
