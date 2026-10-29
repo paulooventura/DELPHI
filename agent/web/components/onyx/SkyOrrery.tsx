@@ -73,6 +73,7 @@ import { ORRERY_SPEEDS, advanceCosmicClock, type OrrerySpeedId } from "../../lib
 import { createOrreryGl, type OrreryGl } from "./orreryGl";
 import { pulseHaptic } from "../../lib/haptics";
 import { OrreryShellTools } from "./OrreryShellTools";
+import { createOrreryWhoosh } from "../../lib/orreryWhoosh";
 import type { SatWorkerIn, SatWorkerOut } from "./satWorker";
 import type { MapSat } from "./EarthMap";
 
@@ -787,9 +788,17 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     applyLevel(levelRef.current, modeRef.current);
   };
 
+  // The solar clock's slowest speed is a day per second, so "Now" has to stop it to stay at now.
   const resetNow = () => {
     simMsRef.current = Date.now();
     deepYearsRef.current = 0;
+    if (camRef.current.scene === "earth") {
+      earthSpeedRef.current = "live";
+      setEarthSpeedId("live");
+    } else {
+      playingRef.current = false;
+      setPlaying(false);
+    }
   };
 
   const toggleLayer = (id: LayerId) => {
@@ -1064,6 +1073,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     let enteredScene: SceneKind = camRef.current.scene;
     let last = performance.now();
     let lastReadout = 0;
+    const whoosh = createOrreryWhoosh();
+    let prevCam = { yaw: camRef.current.yaw, pitch: camRef.current.pitch, dist: camRef.current.dist };
 
     const clampDist = (cam: Cam, d: number, fromUser: boolean) => {
       const m = modeRef.current;
@@ -1962,10 +1973,17 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       last = now;
       // The world map covers the stage; the orrery rests underneath until it closes.
       if (mapOpenRef.current) {
+        whoosh.hush();
         raf = requestAnimationFrame(loop);
         return;
       }
       const cam = camRef.current;
+      if (dt > 0) {
+        const turn = Math.hypot(cam.yaw - prevCam.yaw, cam.pitch - prevCam.pitch) / dt;
+        const zoom = Math.abs(Math.log(Math.max(cam.dist, 1e-9) / Math.max(prevCam.dist, 1e-9))) / dt;
+        whoosh.update(turn, Number.isFinite(zoom) ? zoom : 0);
+      }
+      prevCam = { yaw: cam.yaw, pitch: cam.pitch, dist: cam.dist };
       const speed = ORRERY_SPEEDS.find(s => s.id === speedRef.current) ?? ORRERY_SPEEDS[0];
       const deep = DEEP_SPEEDS.find(s => s.id === deepSpeedRef.current) ?? DEEP_SPEEDS[0];
       const earthSpeed = EARTH_SPEEDS.find(s => s.id === earthSpeedRef.current) ?? EARTH_SPEEDS[0];
@@ -2163,6 +2181,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const stop = () => {
       if (raf) cancelAnimationFrame(raf);
       raf = 0;
+      whoosh.hush();
     };
     const onVisibility = () => (document.hidden ? stop() : start());
     document.addEventListener("visibilitychange", onVisibility);
@@ -2172,6 +2191,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       alive = false;
       window.clearTimeout(denseTimer);
       stop();
+      whoosh.dispose();
       worker?.terminate();
       gl?.dispose();
       document.removeEventListener("visibilitychange", onVisibility);
