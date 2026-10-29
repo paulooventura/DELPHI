@@ -50,12 +50,31 @@ import {
   type OrreryFrame,
   type Vec3,
 } from "../../lib/skyOrrery";
+import {
+  NAMED_SATS,
+  ORBIT_CLASS_LABEL,
+  ORBIT_GROUPS,
+  RE_KM,
+  earthLogRadius,
+  earthRotationDeg,
+  extrapolate,
+  measureSat,
+  moonEqjKm,
+  mulMat3,
+  orbitShape,
+  pointClass,
+  temeToEcliptic,
+  type GpRow,
+  type Mat3,
+} from "../../lib/orbits";
 import { ORRERY_SPEEDS, advanceCosmicClock, type OrrerySpeedId } from "../../lib/timeEngine";
 import { createOrreryGl, type OrreryGl } from "./orreryGl";
+import type { SatWorkerIn, SatWorkerOut } from "./satWorker";
 
-type LevelId = "earth" | "inner" | "system" | "galaxy";
+type LevelId = "globe" | "earth" | "inner" | "system" | "galaxy";
 type ScaleMode = "log" | "true";
-type SceneKind = "solar" | "galaxy";
+/** "earth" is the close-up globe level, in Earth radii with Earth at the origin. */
+type SceneKind = "solar" | "galaxy" | "earth";
 
 const LEVELS: Array<{
   id: LevelId;
@@ -64,6 +83,7 @@ const LEVELS: Array<{
   frame: Record<ScaleMode, number>;
   pitchDeg: number;
 }> = [
+  { id: "globe", label: "Earth", focus: "earth", frame: { log: 3.45, true: 8 }, pitchDeg: 16 },
   { id: "earth", label: "Earth · Moon", focus: "earth", frame: { log: 0.16, true: 0.0034 }, pitchDeg: 34 },
   { id: "inner", label: "Inner planets", focus: "sun", frame: { log: 1.32, true: 1.75 }, pitchDeg: 30 },
   { id: "system", label: "Solar system", focus: "sun", frame: { log: 2.8, true: 42 }, pitchDeg: 26 },
@@ -77,6 +97,29 @@ const DEEP_SPEEDS = [
 ] as const;
 type DeepSpeedId = (typeof DEEP_SPEEDS)[number]["id"];
 
+const EARTH_SPEEDS = [
+  { id: "live", label: "Live", secPerSec: 1 },
+  { id: "min", label: "1 min/s", secPerSec: 60 },
+  { id: "five", label: "5 min/s", secPerSec: 300 },
+] as const;
+type EarthSpeedId = (typeof EARTH_SPEEDS)[number]["id"];
+/** Orbit elements stay meaningful for a few days either side of their epoch. */
+const EARTH_SCRUB_H = 72;
+const DEBRIS_LABEL: Record<string, string> = {
+  "cosmos-1408-debris": "Cosmos 1408 debris · 2021 test",
+  "fengyun-1c-debris": "Fengyun-1C debris · 2007 test",
+  "iridium-33-debris": "Iridium 33 debris · 2009 collision",
+  "cosmos-2251-debris": "Cosmos 2251 debris · 2009 collision",
+};
+const SAT_LEGEND: Array<[string, string]> = [
+  ["LEO", "rgb(199, 222, 255)"],
+  ["Starlink", "rgb(153, 178, 255)"],
+  ["GPS · MEO", "rgb(140, 255, 194)"],
+  ["GEO", "rgb(255, 209, 128)"],
+  ["Molniya · HEO", "rgb(255, 143, 199)"],
+  ["Debris", "rgb(242, 133, 107)"],
+];
+
 type LayerId =
   | "planets"
   | "moons"
@@ -86,6 +129,8 @@ type LayerId =
   | "centaurs"
   | "kuiper"
   | "spacecraft"
+  | "satellites"
+  | "debris"
   | "stars";
 const LAYERS: Array<{ id: LayerId; label: string }> = [
   { id: "planets", label: "Planets" },
@@ -96,11 +141,24 @@ const LAYERS: Array<{ id: LayerId; label: string }> = [
   { id: "centaurs", label: "Centaurs" },
   { id: "kuiper", label: "Kuiper belt" },
   { id: "spacecraft", label: "Spacecraft" },
+  { id: "satellites", label: "Satellites" },
+  { id: "debris", label: "Debris" },
   { id: "stars", label: "Stars" },
 ];
 const ALL_LAYERS = Object.fromEntries(LAYERS.map(l => [l.id, true])) as Record<LayerId, boolean>;
 
-type Sel = { type: "body"; id: string } | { type: "star"; i: number };
+type Sel = { type: "body"; id: string } | { type: "star"; i: number } | { type: "sat"; i: number };
+type SatData = {
+  rows: GpRow[];
+  /** 1 = debris group. */
+  layer: Uint8Array;
+  cls: Uint8Array;
+  group: string[];
+  named: Map<number, number>;
+  fetchedAt: string;
+  source: string;
+};
+type SatState = { t: number; pos: Float32Array; vel: Float32Array };
 type CardRow = [string, string];
 type Card = { key: string; title: string; sub: string; rows: CardRow[] };
 type MeasureOut = { a: string; b: string; km: string; au: string; light: string; rawKm: number } | null;
@@ -327,6 +385,9 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 const dateLabel = (d: Date) => d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+const dateTimeLabel = (d: Date) =>
+  d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const minutesLabel = (min: number) => (min < 120 ? `${min.toFixed(1)} min` : `${(min / 60).toFixed(min < 600 ? 1 : 0)} h`);
 const kmS = (v: number) => `${v.toLocaleString(undefined, { maximumFractionDigits: v < 10 ? 2 : 1 })} km/s`;
 
 function bodyCard(index: OrreryIndex, id: string, date: Date): Card | null {
@@ -501,6 +562,9 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   const [mode, setMode] = useState<ScaleMode>("log");
   const [speedId, setSpeedId] = useState<OrrerySpeedId>(reduceMotion ? "day" : "month");
   const [deepSpeedId, setDeepSpeedId] = useState<DeepSpeedId>("tenmyr");
+  const [earthSpeedId, setEarthSpeedId] = useState<EarthSpeedId>(reduceMotion ? "live" : "min");
+  const [orbitInfo, setOrbitInfo] = useState<{ fetchedAt: string; source: string } | null>(null);
+  const [satNamed, setSatNamed] = useState<Array<{ name: string; i: number }>>([]);
   const [playing, setPlaying] = useState(true);
   const [following, setFollowing] = useState<string | null>(null);
   const [readout, setReadout] = useState({ date: "", offset: 0, deep: "", deepMyr: 0 });
@@ -520,6 +584,9 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   const modeRef = useRef(mode);
   const speedRef = useRef(speedId);
   const deepSpeedRef = useRef(deepSpeedId);
+  const earthSpeedRef = useRef(earthSpeedId);
+  const satRef = useRef<SatData | null>(null);
+  const satStateRef = useRef<SatState | null>(null);
   const playingRef = useRef(playing);
   const indexRef = useRef(index);
   const layersRef = useRef(layers);
@@ -531,12 +598,13 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     modeRef.current = mode;
     speedRef.current = speedId;
     deepSpeedRef.current = deepSpeedId;
+    earthSpeedRef.current = earthSpeedId;
     playingRef.current = playing;
     indexRef.current = index;
     layersRef.current = layers;
     selectedRef.current = selected;
     measureRef.current = measure;
-  }, [level, mode, speedId, deepSpeedId, playing, index, layers, selected, measure]);
+  }, [level, mode, speedId, deepSpeedId, earthSpeedId, playing, index, layers, selected, measure]);
 
   // A pull-back entry starts edge-on and close, as if rising off the horizon into space.
   const rising = rise && !reduceMotion;
@@ -580,7 +648,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     (next: LevelId, scaleMode: ScaleMode) => {
       const cam = camRef.current;
       const lv = LEVEL_BY_ID[next];
-      const scene: SceneKind = next === "galaxy" ? "galaxy" : "solar";
+      const scene: SceneKind = next === "galaxy" ? "galaxy" : next === "globe" ? "earth" : "solar";
       cam.goalPitch = (lv.pitchDeg * Math.PI) / 180;
       cam.focus = lv.focus;
       cam.goalDist = presetDist(next, lv.focus, scaleMode);
@@ -637,7 +705,14 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   };
 
   const enableLayerFor = (sel: Sel) => {
-    const layer = sel.type === "star" ? "stars" : layerOf(indexRef.current.byId.get(sel.id) ?? ORRERY_BODIES[0]!);
+    const layer =
+      sel.type === "star"
+        ? "stars"
+        : sel.type === "sat"
+          ? satRef.current?.layer[sel.i]
+            ? "debris"
+            : "satellites"
+          : layerOf(indexRef.current.byId.get(sel.id) ?? ORRERY_BODIES[0]!);
     if (layer && !layersRef.current[layer]) {
       const next = { ...layersRef.current, [layer]: true };
       layersRef.current = next;
@@ -658,6 +733,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     setSelected(sel);
     if (sel.type === "body") {
       if (fly || camRef.current.scene === "solar") focusBody(sel.id);
+    } else if (sel.type === "sat") {
+      if (camRef.current.scene !== "earth") chooseLevel("globe");
     } else if (fly) {
       const s = starsRef.current[sel.i];
       if (!s) return;
@@ -703,21 +780,39 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const out = new Map<string, Sel>();
     for (const b of index.bodies) out.set(b.name, { type: "body", id: b.id });
     for (const s of starNames) if (!out.has(s.name)) out.set(s.name, { type: "star", i: s.i });
+    for (const s of satNamed) out.set(s.name, { type: "sat", i: s.i });
     return out;
-  }, [index, starNames]);
+  }, [index, starNames, satNamed]);
+
+  /** Any tracked object by NORAD number or name prefix (too many for the list). */
+  const findSat = (q: string): Sel | null => {
+    const data = satRef.current;
+    if (!data) return null;
+    const id = /^\d+$/.test(q) ? Number(q) : 0;
+    let prefix = -1;
+    for (let i = 0; i < data.rows.length; i++) {
+      const r = data.rows[i]!;
+      if (id ? r[0] === id : r[1].toLowerCase() === q) return { type: "sat", i };
+      if (!id && prefix < 0 && r[1].toLowerCase().startsWith(q)) prefix = i;
+    }
+    return prefix >= 0 ? { type: "sat", i: prefix } : null;
+  };
 
   const find = (text: string): boolean => {
     const q = text.trim().toLowerCase();
     if (!q) return false;
     let hit: Sel | null = null;
+    let exact = false;
     for (const [name, sel] of searchNames) {
       const n = name.toLowerCase();
       if (n === q) {
         hit = sel;
+        exact = true;
         break;
       }
       if (!hit && n.startsWith(q)) hit = sel;
     }
+    if (!hit || (!exact && hit.type !== "sat" && levelRef.current === "globe")) hit = findSat(q) ?? hit;
     if (!hit) return false;
     enableLayerFor(hit);
     pick(hit, true);
@@ -789,6 +884,121 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     };
     const denseTimer = window.setTimeout(loadDense, 350);
 
+    /* ── Earth level: SGP4 worker + land mask, loaded the first time the globe opens ── */
+    let worker: Worker | null = null;
+    let tickPending = false;
+    let pathPending = false;
+    let satPath: { i: number; t: number; pts: Float32Array } | null = null;
+    const earthView: { M: Mat3; spin: number; sun: Vec3 } = { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], spin: 0, sun: { x: 1, y: 0, z: 0 } };
+    const startEarth = () => {
+      if (worker || !alive) return;
+      const img = new Image();
+      img.onload = () => alive && gl?.setLand(img);
+      img.src = "/orrery/earth-land.png";
+      try {
+        worker = new Worker(new URL("./satWorker.ts", import.meta.url), { type: "module" });
+      } catch {
+        worker = null;
+        return;
+      }
+      worker.onmessage = (e: MessageEvent<SatWorkerOut>) => {
+        const msg = e.data;
+        if (msg.type === "meta") {
+          const n = msg.rows.length;
+          const layer = new Uint8Array(n);
+          const cls = new Uint8Array(n);
+          const group: string[] = new Array(n);
+          const named = new Map<number, number>();
+          for (const s of msg.sets) {
+            const debris = ORBIT_GROUPS[s.group] === "debris";
+            for (let k = s.start; k < s.start + s.count; k++) {
+              const r = msg.rows[k]!;
+              layer[k] = debris ? 1 : 0;
+              cls[k] = pointClass(r, debris ? "debris" : "satellites");
+              group[k] = s.group;
+              if (NAMED_SATS[r[0]] && !named.has(r[0])) named.set(r[0], k);
+            }
+          }
+          const main = msg.sets.find(s => s.group === "active") ?? msg.sets[0];
+          satRef.current = {
+            rows: msg.rows,
+            layer,
+            cls,
+            group,
+            named,
+            fetchedAt: main?.fetchedAt ?? "",
+            source: main?.source ?? "",
+          };
+          gl?.setSatClasses(cls);
+          setOrbitInfo(main ? { fetchedAt: main.fetchedAt, source: main.source } : null);
+          setSatNamed([...named].map(([id, i]) => ({ name: NAMED_SATS[id]!, i })));
+          return;
+        }
+        if (msg.type === "state") {
+          tickPending = false;
+          satStateRef.current = { t: msg.t, pos: msg.pos, vel: msg.vel };
+          gl?.setSatState(msg.pos, msg.vel);
+          const data = satRef.current;
+          if (data) {
+            const c = { satellites: 0, debris: 0, leo: 0, starlink: 0, meo: 0, geo: 0, heo: 0, named: 0 };
+            const keys = ["leo", "starlink", "meo", "geo", "heo", "debris", "named"] as const;
+            for (let i = 0; i < data.rows.length; i++) {
+              if (!msg.pos[i * 3] && !msg.pos[i * 3 + 1]) continue;
+              if (data.layer[i]) c.debris++;
+              else c.satellites++;
+              const k = keys[data.cls[i]!]!;
+              if (k !== "debris") c[k]++;
+            }
+            root.dataset.sats = JSON.stringify(c);
+            root.dataset.sgp4Ms = msg.ms.toFixed(1);
+          }
+          return;
+        }
+        pathPending = false;
+        satPath = { i: msg.i, t: simMsRef.current, pts: msg.pts };
+      };
+      const init: SatWorkerIn = { type: "init", groups: Object.keys(ORBIT_GROUPS) };
+      worker.postMessage(init);
+    };
+    const satPosKm = (i: number, ms: number): Vec3 | null => {
+      const st = satStateRef.current;
+      if (!st || i * 3 + 2 >= st.pos.length) return null;
+      const p = { x: st.pos[i * 3]!, y: st.pos[i * 3 + 1]!, z: st.pos[i * 3 + 2]! };
+      if (!p.x && !p.y && !p.z) return null;
+      const v = { x: st.vel[i * 3]!, y: st.vel[i * 3 + 1]!, z: st.vel[i * 3 + 2]! };
+      return extrapolate(p, v, (ms - st.t) / 1000);
+    };
+    const satVelKm = (i: number): Vec3 => {
+      const st = satStateRef.current!;
+      return { x: st.vel[i * 3]!, y: st.vel[i * 3 + 1]!, z: st.vel[i * 3 + 2]! };
+    };
+    /** Geocentric km (TEME) → Earth scene (Earth radii, ecliptic axes, log-compressed). */
+    const earthScene = (pKm: Vec3, teme = true): Vec3 => {
+      const r = Math.hypot(pKm.x, pKm.y, pKm.z) || 1;
+      const u = teme ? mulMat3(earthView.M, pKm) : pKm;
+      const s = modeRef.current === "log" ? earthLogRadius(r / RE_KM) : r / RE_KM;
+      return scaleV(u, s / r);
+    };
+    const earthCamera = (cam: Cam): Vec3 => {
+      const cp = Math.cos(cam.pitch);
+      return { x: cam.dist * Math.sin(cam.yaw) * cp, y: -cam.dist * Math.cos(cam.yaw) * cp, z: cam.dist * Math.sin(cam.pitch) };
+    };
+    /** True if the globe hides p from the camera. */
+    const behindEarth = (C: Vec3, p: Vec3) => {
+      const d = { x: p.x - C.x, y: p.y - C.y, z: p.z - C.z };
+      const L = Math.hypot(d.x, d.y, d.z) || 1;
+      const b = (C.x * d.x + C.y * d.y + C.z * d.z) / L;
+      const disc = b * b - (C.x * C.x + C.y * C.y + C.z * C.z - 1);
+      if (disc <= 0) return false;
+      const t0 = -b - Math.sqrt(disc);
+      return t0 > 0 && t0 < L;
+    };
+    const satVisible = (i: number) => {
+      const data = satRef.current;
+      if (!data) return false;
+      return data.layer[i] ? layersRef.current.debris : layersRef.current.satellites;
+    };
+
     if (!simMsRef.current) simMsRef.current = Date.now();
     const fontFamily = getComputedStyle(canvas).fontFamily || "system-ui, sans-serif";
     const galaxyStars = galaxyStarField(1400);
@@ -797,25 +1007,39 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const helioBodies = ORRERY_BODIES.filter(b => b.parent === "sun");
     let hits: Array<{ id: string; x: number; y: number; r: number }> = [];
     let raf = 0;
+    let enteredScene: SceneKind = camRef.current.scene;
     let last = performance.now();
     let lastReadout = 0;
 
     const clampDist = (cam: Cam, d: number, fromUser: boolean) => {
       const m = modeRef.current;
+      // A pinch or wheel still going while scenes cross-fade must not drag the new scene's framing.
+      if (fromUser && cam.fadeDir !== 0) return cam.goalDist;
+      // After a level switch the new level's framing (set by applyLevel) stands.
+      const switchTo = (next: LevelId) => {
+        autoLevelRef.current(next);
+        return cam.goalDist;
+      };
+      if (cam.scene === "earth") {
+        const max = (m === "log" ? 4.8 : 75) * DIST_PER_FRAME;
+        if (fromUser && d > max * 0.9) return switchTo("earth");
+        return clamp(d, 1.55, max);
+      }
       if (cam.scene === "solar") {
         const sys = LEVEL_BY_ID.system.frame[m] * DIST_PER_FRAME;
         const min = (m === "log" ? 0.02 : 0.0004) * DIST_PER_FRAME;
-        if (fromUser && d > sys * 3.2 && cam.fadeDir === 0) autoLevelRef.current("galaxy");
+        if (fromUser && d > sys * 3.2) return switchTo("galaxy");
+        if (fromUser && cam.focus === "earth" && d < (m === "log" ? 0.03 : 0.0006) * DIST_PER_FRAME) return switchTo("globe");
         return clamp(d, min, sys * 5);
       }
       const g = LEVEL_BY_ID.galaxy.frame[m] * DIST_PER_FRAME;
-      if (fromUser && d < g * 0.12 && cam.fadeDir === 0) autoLevelRef.current("system");
+      if (fromUser && d < g * 0.12) return switchTo("system");
       return clamp(d, g * 0.08, g * 4);
     };
 
     /* ── input: drag to orbit, pinch / wheel to zoom, tap to pick ── */
     const pointers = new Map<number, { x: number; y: number }>();
-    let pinch: { d: number; dist: number } | null = null;
+    let pinch: { d: number; dist: number; scene: SceneKind } | null = null;
     let moved = 0;
     let multi = false;
     const pairDistance = () => {
@@ -831,7 +1055,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       }
       if (pointers.size === 2) {
         multi = true;
-        pinch = { d: pairDistance(), dist: camRef.current.goalDist };
+        pinch = { d: pairDistance(), dist: camRef.current.goalDist, scene: camRef.current.scene };
       }
     };
     const onMove = (e: PointerEvent) => {
@@ -849,6 +1073,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         moved += Math.abs(dx) + Math.abs(dy);
       } else if (pointers.size === 2 && pinch && pinch.d > 0) {
         const d = pairDistance();
+        if (d > 0 && pinch.scene !== cam.scene) pinch = { d, dist: cam.goalDist, scene: cam.scene };
         if (d > 0) cam.goalDist = clampDist(cam, (pinch.dist * pinch.d) / d, true);
       }
     };
@@ -869,6 +1094,27 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       }
       return best?.i ?? null;
     };
+    const pickSatAt = (px: number, py: number, dpr: number): number | null => {
+      const data = satRef.current;
+      if (!data || !satStateRef.current) return null;
+      const cam = camRef.current;
+      const { project } = makeProjector(cam, canvas.width, canvas.height);
+      const C = earthCamera(cam);
+      const reach = 12 * dpr;
+      let best: { i: number; d: number } | null = null;
+      for (let i = 0; i < data.rows.length; i++) {
+        if (!satVisible(i)) continue;
+        const p = satPosKm(i, simMsRef.current);
+        if (!p) continue;
+        const w = earthScene(p);
+        const s = project(w);
+        if (!s) continue;
+        const d = Math.hypot(px - s.x, py - s.y);
+        if (d > reach || (best && d >= best.d) || behindEarth(C, w)) continue;
+        best = { i, d };
+      }
+      return best?.i ?? null;
+    };
     const onUp = (e: PointerEvent) => {
       const wasTap = pointers.size === 1 && !multi && moved < 8;
       pointers.delete(e.pointerId);
@@ -884,8 +1130,23 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         if (d <= Math.max(h.r + 8 * dpr, 16 * dpr) && (!best || d < best.d)) best = { id: h.id, d };
       }
       if (best) {
-        pickRef.current({ type: "body", id: best.id }, false);
+        const sat = best.id.startsWith("sat:") ? Number(best.id.slice(4)) : -1;
+        pickRef.current(sat >= 0 ? { type: "sat", i: sat } : { type: "body", id: best.id }, false);
         return;
+      }
+      if (camRef.current.scene === "earth") {
+        const sat = pickSatAt(px, py, dpr);
+        if (sat !== null) {
+          pickRef.current({ type: "sat", i: sat }, false);
+          return;
+        }
+        const cam = camRef.current;
+        const { project, F } = makeProjector(cam, canvas.width, canvas.height);
+        const c = project(ZERO);
+        if (c && Math.hypot(px - c.x, py - c.y) < F / Math.sqrt(cam.dist * cam.dist - 1)) {
+          pickRef.current({ type: "body", id: "earth" }, false);
+          return;
+        }
       }
       const star = pickStarAt(px, py, dpr);
       if (star !== null) pickRef.current({ type: "star", i: star }, false);
@@ -1369,19 +1630,175 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       ctx.globalAlpha = 1;
     };
 
+    const moonBody = ORRERY_BODIES.find(b => b.id === "moon");
+    let moonRing: { center: number; pts: Vec3[] } | null = null;
+    const moonEclKm = (date: Date) => eqjToEcliptic(moonEqjKm(date));
+
+    const drawEarthScene = (cam: Cam, w: number, h: number, dpr: number, alpha: number, date: Date) => {
+      const L = layersRef.current;
+      const simMs = date.getTime();
+      const { project, projectDir, screenDir } = makeProjector(cam, w, h);
+      const C = earthCamera(cam);
+      const shown = (p: Vec3) => (behindEarth(C, p) ? null : project(p));
+      ctx.globalAlpha = alpha;
+      drawStars(projectDir, 0.8, dpr);
+      ctx.font = `${10 * dpr}px ${fontFamily}`;
+      ctx.textAlign = "center";
+      const placed: Array<[number, number, number, number]> = [];
+      let labels = 0;
+      const label = (text: string, x: number, y: number, a: number, color?: string) => {
+        if (labels < MAX_LABELS && drawLabel(ctx, placed, text, x, y, a, dpr, color)) labels++;
+      };
+      hits = [];
+
+      // Reference shells in the equatorial plane: the GEO ring and the GPS orbit height.
+      if (L.satellites) {
+        for (const ring of [
+          { km: RE_KM + 35_786, text: "GEO ring · 35,786 km", style: "rgba(255, 214, 140, 0.3)", dash: null as number[] | null },
+          { km: RE_KM + 20_200, text: "GPS · 20,200 km", style: "rgba(140, 255, 200, 0.2)", dash: [3 * dpr, 5 * dpr] },
+        ]) {
+          const pts: Vec3[] = [];
+          for (let k = 0; k <= 128; k++) {
+            const a = (k / 128) * Math.PI * 2;
+            pts.push(earthScene({ x: ring.km * Math.cos(a), y: ring.km * Math.sin(a), z: 0 }));
+          }
+          strokePath(pts, shown, ring.style, 0.9 * dpr, ring.dash);
+          let low: Projected | null = null;
+          for (const p of pts) {
+            const s = shown(p);
+            if (s && (!low || s.y > low.y)) low = s;
+          }
+          if (low) label(ring.text, low.x, low.y + 13 * dpr, 0.55, ring.dash ? "160, 255, 210" : "255, 220, 160");
+        }
+      }
+
+      // The Moon at the outer edge, with a faint month of its path.
+      if (!moonRing || Math.abs(moonRing.center - simMs) > 2 * 86_400_000) {
+        const pts: Vec3[] = [];
+        for (let k = 0; k <= 56; k++) pts.push(moonEclKm(new Date(simMs + ((k - 28) / 56) * 27.32 * 86_400_000)));
+        moonRing = { center: simMs, pts };
+      }
+      strokePath(moonRing.pts.map(p => earthScene(p, false)), shown, "rgba(200, 196, 240, 0.18)", 0.8 * dpr, [2 * dpr, 6 * dpr]);
+      const moonKm = moonEclKm(date);
+      const moonPos = earthScene(moonKm, false);
+      const moonS = shown(moonPos);
+      if (moonS && moonBody) {
+        const r = clamp((cam.dist / moonS.depth) * 5.5, 3.5, 9) * dpr;
+        drawBody(ctx, moonS.x, moonS.y, r, moonBody, screenDir(earthView.sun), null, dpr);
+        hits.push({ id: "moon", x: moonS.x, y: moonS.y, r });
+        const km = Math.round(Math.hypot(moonKm.x, moonKm.y, moonKm.z) / 100) * 100;
+        label(`Moon · ${km.toLocaleString()} km`, moonS.x, moonS.y - r - 5 * dpr, 0.85);
+      }
+      const earthS = project(ZERO);
+
+      // Named stations and telescopes, the selected object, Measure A and B.
+      const data = satRef.current;
+      const sel = selectedRef.current;
+      const meas = measureRef.current;
+      const picked = new Set<number>();
+      for (const s of [sel, meas.a, meas.b]) if (s?.type === "sat") picked.add(s.i);
+      if (data && sel?.type === "sat" && satPath?.i === sel.i) {
+        const pts: Vec3[] = [];
+        for (let k = 0; k + 2 < satPath.pts.length; k += 3) {
+          const p = { x: satPath.pts[k]!, y: satPath.pts[k + 1]!, z: satPath.pts[k + 2]! };
+          if (p.x || p.y || p.z) pts.push(earthScene(p));
+        }
+        strokePath(pts, shown, "rgba(190, 220, 255, 0.5)", 1 * dpr, null);
+      }
+      let issPx = "";
+      if (data) {
+        const marks: Array<{ i: number; name: string; must: boolean }> = [];
+        for (const i of picked) marks.push({ i, name: data.rows[i]![1], must: true });
+        if (L.satellites) {
+          for (const [id, i] of data.named) if (!picked.has(i)) marks.push({ i, name: NAMED_SATS[id]!, must: false });
+        }
+        for (const m of marks) {
+          const p = satPosKm(m.i, simMs);
+          if (!p) continue;
+          const s = shown(earthScene(p));
+          if (!s) continue;
+          if (data.rows[m.i]![0] === 25544) issPx = `${(s.x / dpr).toFixed(1)},${(s.y / dpr).toFixed(1)}`;
+          ctx.strokeStyle = m.must ? "rgba(125, 255, 200, 0.85)" : "rgba(255, 255, 255, 0.55)";
+          ctx.lineWidth = 1 * dpr;
+          ctx.beginPath();
+          ctx.arc(s.x, s.y, 5 * dpr, 0, Math.PI * 2);
+          ctx.stroke();
+          hits.push({ id: `sat:${m.i}`, x: s.x, y: s.y, r: 5 * dpr });
+          label(m.name, s.x, s.y - 9 * dpr, m.must ? 0.95 : 0.8, m.must ? "170, 255, 220" : undefined);
+        }
+      }
+      root.dataset.issPx = issPx;
+
+      // Measure A–B inside the Earth level.
+      const posOf = (s: Sel | null): Vec3 | null => {
+        if (!s) return null;
+        if (s.type === "sat") {
+          const p = satPosKm(s.i, simMs);
+          return p ? earthScene(p) : null;
+        }
+        if (s.type === "body" && s.id === "moon") return moonPos;
+        if (s.type === "body" && s.id === "earth") return ZERO;
+        return null;
+      };
+      const pa = meas.on ? posOf(meas.a) : null;
+      const pb = meas.on ? posOf(meas.b) : null;
+      if (pa && pb) {
+        const a = project(pa);
+        const b = project(pb);
+        if (a && b) {
+          ctx.strokeStyle = "rgba(125, 255, 200, 0.8)";
+          ctx.lineWidth = 1.2 * dpr;
+          ctx.setLineDash([5 * dpr, 4 * dpr]);
+          ctx.beginPath();
+          ctx.moveTo(a.x, a.y);
+          ctx.lineTo(b.x, b.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+      }
+
+      // A small key for the point colours.
+      if (data && (L.satellites || L.debris)) {
+        ctx.font = `${9 * dpr}px ${fontFamily}`;
+        ctx.textAlign = "left";
+        let y = 96 * dpr;
+        for (const [name, color] of SAT_LEGEND) {
+          if (name === "Debris" ? !L.debris : !L.satellites) continue;
+          ctx.globalAlpha = alpha * 0.8;
+          ctx.fillStyle = color;
+          ctx.beginPath();
+          ctx.arc(19 * dpr, y - 3 * dpr, 2.2 * dpr, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(236, 232, 255, 0.7)";
+          ctx.fillText(name, 26 * dpr, y);
+          y += 13 * dpr;
+        }
+        ctx.globalAlpha = alpha;
+      }
+
+      const fmt = (s: Projected | null) => (s ? `${(s.x / dpr).toFixed(1)},${(s.y / dpr).toFixed(1)}` : "");
+      root.dataset.earthPx = fmt(earthS);
+      root.dataset.globeR = (makeProjector(cam, w, h).F / Math.sqrt(Math.max(1e-6, cam.dist * cam.dist - 1)) / dpr).toFixed(1);
+      root.dataset.moonPx = fmt(moonS);
+      root.dataset.labels = String(labels);
+      ctx.globalAlpha = 1;
+    };
+
     const drawScaleBar = (cam: Cam, w: number, h: number, dpr: number, alpha: number) => {
       const m = modeRef.current;
-      if (cam.scene === "solar" && m === "log") {
+      if (cam.scene !== "galaxy" && m === "log") {
         ctx.globalAlpha = alpha * 0.7;
         ctx.fillStyle = "rgba(236, 232, 255, 0.7)";
         ctx.font = `${9 * dpr}px ${fontFamily}`;
         ctx.textAlign = "left";
-        ctx.fillText("log distances · sizes not to scale", 16 * dpr, 76 * dpr);
+        const text = cam.scene === "earth" ? "Earth to scale · heights above it log-compressed" : "log distances · sizes not to scale";
+        ctx.fillText(text, 16 * dpr, 76 * dpr);
         ctx.globalAlpha = 1;
         return "log";
       }
       const F = Math.min(w, h) / 2 / Math.tan(FOV_HALF);
-      const unitsPerPx = cam.dist / F;
+      const earthKm = cam.scene === "earth";
+      const unitsPerPx = (cam.dist / F) * (earthKm ? RE_KM : 1);
       const len = niceLength(unitsPerPx * 80 * dpr);
       const px = len / unitsPerPx;
       ctx.globalAlpha = alpha;
@@ -1394,36 +1811,76 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       ctx.fillStyle = "rgba(236, 232, 255, 0.7)";
       ctx.font = `${9 * dpr}px ${fontFamily}`;
       ctx.textAlign = "left";
-      const label = formatScale(len, m, cam.scene);
+      const label = earthKm ? `${len.toLocaleString()} km` : formatScale(len, m, cam.scene);
       ctx.fillText(label, 16 * dpr, 76 * dpr);
       ctx.globalAlpha = 1;
       return label;
     };
 
-    const selPosition = (sel: Sel, jd: number): Vec3 | null => {
+    const selPosition = (sel: Sel, jd: number, date: Date): Vec3 | null => {
       if (sel.type === "body") return indexRef.current.helioAt(sel.id, jd);
+      if (sel.type === "sat") {
+        const p = satPosKm(sel.i, date.getTime());
+        const e = indexRef.current.helioAt("earth", jd);
+        return p && e ? addV(e, scaleV(mulMat3(temeToEcliptic(date), p), 1 / AU_KM)) : null;
+      }
       const s = starsRef.current[sel.i];
       return s ? starHelioAu(s, s.d) : null;
     };
     const selName = (sel: Sel) =>
       sel.type === "body"
         ? (indexRef.current.byId.get(sel.id)?.name ?? sel.id)
-        : starsRef.current[sel.i]
-          ? starName(starsRef.current[sel.i]!)
-          : "star";
+        : sel.type === "sat"
+          ? (satRef.current?.rows[sel.i]?.[1] ?? "satellite")
+          : starsRef.current[sel.i]
+            ? starName(starsRef.current[sel.i]!)
+            : "star";
+
+    const satCard = (i: number, date: Date): Card | null => {
+      const data = satRef.current;
+      const row = data?.rows[i];
+      if (!data || !row) return null;
+      const debris = data.layer[i] === 1;
+      const p = satPosKm(i, date.getTime());
+      const sub = debris
+        ? (DEBRIS_LABEL[data.group[i] ?? ""] ?? "Debris")
+        : `${ORBIT_CLASS_LABEL[orbitShape(row[4], row[5], row[6]).cls]}${/^STARLINK/.test(row[1]) ? " · Starlink" : ""}`;
+      const age: CardRow = ["Orbit data", data.fetchedAt ? `from ${dateTimeLabel(new Date(data.fetchedAt))}` : "—"];
+      if (!p) return { key: `sat-${i}`, title: row[1], sub, rows: [["Status", "no position at this time"], ["NORAD id", String(row[0])], age] };
+      const m = measureSat(row, p, satVelKm(i), date);
+      return {
+        key: `sat-${i}`,
+        title: row[1],
+        sub,
+        rows: [
+          ["Altitude", `${Math.round(m.altKm).toLocaleString()} km`],
+          ["Speed", kmS(m.speedKmS)],
+          ["Orbit", minutesLabel(m.periodMin)],
+          ["Inclination", `${m.incDeg.toFixed(1)}°`],
+          ["Lowest · highest", `${Math.round(m.perigeeKm).toLocaleString()} – ${Math.round(m.apogeeKm).toLocaleString()} km`],
+          ["From Earth's centre", formatKm(m.centreKm)],
+          ["From the Moon", formatKm(m.moonKm)],
+          ["NORAD id", String(m.norad)],
+          ["International id", m.objectId || "—"],
+          ["Launched", m.launch ? String(m.launch) : "—"],
+          age,
+        ],
+      };
+    };
 
     const updatePanels = (date: Date) => {
       const sel = selectedRef.current;
       let c: Card | null = null;
       if (sel?.type === "body") c = bodyCard(indexRef.current, sel.id, date);
+      else if (sel?.type === "sat") c = satCard(sel.i, date);
       else if (sel?.type === "star" && starsRef.current[sel.i]) c = starCard(starsRef.current[sel.i]!, sel.i);
       setCard(c);
       root.dataset.selected = c?.title ?? "";
       const meas = measureRef.current;
       if (meas.on && meas.a && meas.b) {
         const jd = dateToJd(date);
-        const pa = selPosition(meas.a, jd);
-        const pb = selPosition(meas.b, jd);
+        const pa = selPosition(meas.a, jd, date);
+        const pb = selPosition(meas.b, jd, date);
         if (pa && pb) {
           const d = distanceBetween(pa, pb);
           setMeasureOut({
@@ -1448,8 +1905,12 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       const cam = camRef.current;
       const speed = ORRERY_SPEEDS.find(s => s.id === speedRef.current) ?? ORRERY_SPEEDS[0];
       const deep = DEEP_SPEEDS.find(s => s.id === deepSpeedRef.current) ?? DEEP_SPEEDS[0];
+      const earthSpeed = EARTH_SPEEDS.find(s => s.id === earthSpeedRef.current) ?? EARTH_SPEEDS[0];
       if (playingRef.current) {
-        if (cam.scene === "solar") {
+        if (cam.scene === "earth") {
+          const span = EARTH_SCRUB_H * 3_600_000;
+          simMsRef.current = clamp(simMsRef.current + earthSpeed.secPerSec * 1000 * dt, Date.now() - span, Date.now() + span);
+        } else if (cam.scene === "solar") {
           simMsRef.current = clamp(
             advanceCosmicClock(simMsRef.current, speed.daysPerSec, dt),
             Date.now() - SCRUB_YEARS * YEAR_MS,
@@ -1473,8 +1934,9 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           cam.fade = 0;
           cam.fadeDir = 1;
           const toGalaxy = cam.nextScene === "galaxy";
+          const fromEarth = cam.scene === "earth";
           cam.scene = cam.nextScene;
-          cam.dist = cam.goalDist * (toGalaxy ? 0.25 : 4);
+          cam.dist = cam.goalDist * (toGalaxy ? 0.25 : cam.scene === "earth" ? 2.2 : fromEarth ? 0.3 : 4);
           cam.blend = 1;
         }
       } else if (cam.fadeDir > 0) {
@@ -1483,10 +1945,50 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       }
 
       const m = modeRef.current;
+      const inEarth = cam.scene === "earth";
+      if (inEarth && enteredScene !== "earth") {
+        // Orbit elements are only good near their epoch: the globe always opens close to now,
+        // turned so the day side and the terminator both show.
+        if (Math.abs(simMsRef.current - Date.now()) > EARTH_SCRUB_H * 3_600_000) simMsRef.current = Date.now();
+        const e = W.helio.get("earth");
+        if (e) {
+          const az = Math.atan2(-e.y, -e.x) + 0.9;
+          const yaw = Math.atan2(Math.cos(az), -Math.sin(az));
+          if (reduceMotion) cam.yaw = yaw;
+          else cam.goalYaw = yaw;
+        }
+        startEarth();
+      }
+      enteredScene = cam.scene;
+      if (inEarth) {
+        const e = W.helio.get("earth") ?? { x: 1, y: 0, z: 0 };
+        const r = vecLength(e) || 1;
+        earthView.M = temeToEcliptic(date);
+        earthView.spin = (earthRotationDeg(date) * Math.PI) / 180;
+        earthView.sun = { x: -e.x / r, y: -e.y / r, z: -e.z / r };
+        const st = satStateRef.current;
+        if (worker && satRef.current && !tickPending) {
+          const lead = earthSpeed.secPerSec * 1000 * (playingRef.current ? 0.3 : 0);
+          const limit = earthSpeed.secPerSec * 1000 * 0.6 + 1500;
+          if (!st || Math.abs(simMsRef.current - st.t) > limit) {
+            tickPending = true;
+            const tick: SatWorkerIn = { type: "tick", t: simMsRef.current + lead };
+            worker.postMessage(tick);
+          }
+        }
+        const sel = selectedRef.current;
+        if (worker && sel?.type === "sat" && !pathPending && (satPath?.i !== sel.i || Math.abs(simMsRef.current - satPath.t) > 6 * 3_600_000)) {
+          pathPending = true;
+          const req: SatWorkerIn = { type: "path", i: sel.i, t: simMsRef.current, n: 160 };
+          worker.postMessage(req);
+        }
+      }
       const focusPos =
         cam.scene === "galaxy"
           ? scaleV(andromedaShown(m, deepYearsRef.current), 0.42)
-          : scenePos(W, W.helio.has(cam.focus ?? "sun") ? (cam.focus ?? "sun") : "sun", m);
+          : inEarth
+            ? ZERO
+            : scenePos(W, W.helio.has(cam.focus ?? "sun") ? (cam.focus ?? "sun") : "sun", m);
       if (cam.blend < 1) {
         cam.blend = Math.min(1, cam.blend + dt / 0.9);
         cam.target = lerpV(cam.from, focusPos, ease(cam.blend));
@@ -1528,7 +2030,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
             dpr,
             log: m === "log",
           },
-          L.stars ? alpha * (solar ? 1 : 0.6) : 0,
+          L.stars ? alpha * (solar ? 1 : inEarth ? 0.8 : 0.6) : 0,
           {
             asteroids: {
               alpha: solar && L.asteroids ? alpha * 0.38 * clamp((frameR / inner - 0.25) / 0.5, 0, 1) : 0,
@@ -1549,6 +2051,17 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               days: days("kuiper"),
             },
           },
+          inEarth
+            ? {
+                alpha,
+                m: earthView.M,
+                spin: earthView.spin,
+                sun: earthView.sun,
+                dt: satStateRef.current ? (simMsRef.current - satStateRef.current.t) / 1000 : 0,
+                satellites: L.satellites ? 1 : 0,
+                debris: L.debris ? 1 : 0,
+              }
+            : undefined,
         );
         ctx.clearRect(0, 0, w, h);
       } else {
@@ -1556,6 +2069,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         ctx.fillRect(0, 0, w, h);
       }
       if (cam.scene === "solar") drawSolar(f, W, bodies, cam, w, h, dpr, alpha, speed.daysPerSec);
+      else if (inEarth) drawEarthScene(cam, w, h, dpr, alpha, date);
       else drawGalaxy(cam, w, h, dpr, alpha);
       const scaleLabel = drawScaleBar(cam, w, h, dpr, alpha);
 
@@ -1568,7 +2082,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         const offset = (simMsRef.current - Date.now()) / YEAR_MS;
         const lap = (((Math.PI - sunGalacticAngle(deepYearsRef.current)) / (2 * Math.PI)) * 100) % 100;
         setReadout({
-          date: dateLabel(date),
+          date: cam.scene === "earth" ? dateTimeLabel(date) : dateLabel(date),
           offset,
           deep: `+${(deepYearsRef.current / 1e6).toFixed(1)} Myr · Sun's lap ${lap.toFixed(0)}%`,
           deepMyr: Math.round(deepYearsRef.current / 1e6),
@@ -1595,6 +2109,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       alive = false;
       window.clearTimeout(denseTimer);
       stop();
+      worker?.terminate();
       gl?.dispose();
       document.removeEventListener("visibilitychange", onVisibility);
       canvas.removeEventListener("pointerdown", onDown);
@@ -1606,9 +2121,14 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   }, [reduceMotion]);
 
   const galaxy = level === "galaxy";
+  const globe = level === "globe";
   const followName = following ? index.byId.get(following)?.name : null;
-  const offsetLabel =
-    Math.abs(readout.offset) < 0.01
+  const offsetHours = readout.offset * 8765.81;
+  const offsetLabel = globe
+    ? Math.abs(offsetHours) < 0.02
+      ? "now"
+      : `${offsetHours > 0 ? "+" : "−"}${Math.abs(offsetHours).toFixed(Math.abs(offsetHours) < 10 ? 1 : 0)} h`
+    : Math.abs(readout.offset) < 0.01
       ? "now"
       : `${readout.offset > 0 ? "+" : "−"}${Math.abs(readout.offset).toFixed(Math.abs(readout.offset) < 10 ? 2 : 1)} yr`;
   const closeCard = () => {
@@ -1636,6 +2156,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         <p className="onyx-orr-title">
           Orrery
           {followName ? <span className="onyx-orr-sub"> · following {followName}</span> : null}
+          {globe ? <span className="onyx-orr-sub"> · Earth and what circles it</span> : null}
         </p>
         <div className="onyx-orr-scale" role="group" aria-label="Distance scale">
           <button
@@ -1742,7 +2263,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               type="search"
               list="onyx-orr-names"
               value={query}
-              placeholder="Find Titan, Halley, Voyager 1…"
+              placeholder={globe ? "Find ISS, Hubble, Starlink…" : "Find Titan, Halley, Voyager 1…"}
               aria-label="Find an object and fly to it"
               autoComplete="off"
               enterKeyHint="go"
@@ -1809,6 +2330,19 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               deepYearsRef.current = Number(e.target.value) * 1e6;
             }}
           />
+        ) : globe ? (
+          <input
+            className="onyx-orr-scrub"
+            type="range"
+            min={-EARTH_SCRUB_H}
+            max={EARTH_SCRUB_H}
+            step={0.1}
+            value={clamp(offsetHours, -EARTH_SCRUB_H, EARTH_SCRUB_H)}
+            aria-label="Scrub time, hours from now"
+            onChange={e => {
+              simMsRef.current = Date.now() + Number(e.target.value) * 3_600_000;
+            }}
+          />
         ) : (
           <input
             className="onyx-orr-scrub"
@@ -1836,7 +2370,19 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
                   {s.label}
                 </button>
               ))
-            : ORRERY_SPEEDS.map(s => (
+            : globe
+              ? EARTH_SPEEDS.map(s => (
+                  <button
+                    key={s.id}
+                    type="button"
+                    className={`onyx-orr-chip${earthSpeedId === s.id ? " on" : ""}`}
+                    aria-pressed={earthSpeedId === s.id}
+                    onClick={() => setEarthSpeedId(s.id)}
+                  >
+                    {s.label}
+                  </button>
+                ))
+              : ORRERY_SPEEDS.map(s => (
                 <button
                   key={s.id}
                   type="button"
@@ -1861,9 +2407,17 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
             </button>
           ))}
         </div>
-        <p className="onyx-orr-hint">drag to turn · pinch to zoom · tap anything to measure it</p>
+        <p className="onyx-orr-hint">
+          {globe
+            ? "drag to turn · pinch out to leave · tap a satellite to measure it"
+            : level === "earth"
+              ? "pinch into Earth to see its satellites · tap anything to measure it"
+              : "drag to turn · pinch to zoom · tap anything to measure it"}
+        </p>
         <p className="onyx-orr-credit">
-          Data: NASA/JPL Horizons &amp; Small-Body Database · Yale Bright Star Catalogue · astronomy-engine
+          {globe
+            ? `Orbit data: CelesTrak${orbitInfo ? ` · from ${dateTimeLabel(new Date(orbitInfo.fetchedAt))}` : ""} · SGP4 via satellite.js · Natural Earth`
+            : "Data: NASA/JPL Horizons & Small-Body Database · Yale Bright Star Catalogue · astronomy-engine"}
         </p>
       </div>
     </div>

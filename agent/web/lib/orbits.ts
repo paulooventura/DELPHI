@@ -4,7 +4,10 @@
  * SGP4 itself runs in a worker (satellite.js); nothing here imports it.
  */
 import { GeoMoon, MakeTime, Rotation_EQD_EQJ, SiderealTime } from "astronomy-engine";
+import type { GpRow } from "./orbitRows";
 import type { Vec3 } from "./skyOrrery";
+
+export { rowToOmm, type GpRow, type OrbitSet } from "./orbitRows";
 
 export const RE_KM = 6371;
 export const MU_EARTH_KM3_S2 = 398_600.4418;
@@ -12,10 +15,6 @@ const WGS84_A = 6378.137;
 const WGS84_F = 1 / 298.257223563;
 const DEG = Math.PI / 180;
 const OBLIQUITY = 23.4392911 * DEG;
-
-/** [norad, name, objectId, epoch ISO, meanMotion rev/d, ecc, incDeg, raanDeg, argpDeg, maDeg, bstar, ndot, nddot] */
-export type GpRow = [number, string, string, string, number, number, number, number, number, number, number, number, number];
-export type OrbitSet = { group: string; source: string; fetchedAt: string; rows: GpRow[] };
 
 export type OrbitLayer = "satellites" | "debris";
 export const ORBIT_GROUPS: Record<string, OrbitLayer> = {
@@ -62,29 +61,6 @@ export function compactOmm(list: Array<Record<string, unknown>>): GpRow[] {
   return out;
 }
 
-/** Compact row → OMM object for satellite.js json2satrec. */
-export function rowToOmm(r: GpRow) {
-  return {
-    OBJECT_NAME: r[1],
-    OBJECT_ID: r[2],
-    EPOCH: r[3],
-    MEAN_MOTION: r[4],
-    ECCENTRICITY: r[5],
-    INCLINATION: r[6],
-    RA_OF_ASC_NODE: r[7],
-    ARG_OF_PERICENTER: r[8],
-    MEAN_ANOMALY: r[9],
-    EPHEMERIS_TYPE: 0,
-    CLASSIFICATION_TYPE: "U",
-    NORAD_CAT_ID: r[0],
-    ELEMENT_SET_NO: 999,
-    REV_AT_EPOCH: 0,
-    BSTAR: r[10],
-    MEAN_MOTION_DOT: r[11],
-    MEAN_MOTION_DDOT: r[12],
-  };
-}
-
 export function launchYear(objectId: string): number | null {
   const y = Number(objectId.slice(0, 4));
   return y > 1956 && y < 2100 ? y : null;
@@ -123,9 +99,12 @@ export function pointClass(r: GpRow, layer: OrbitLayer): number {
   return s.cls === "LEO" ? 0 : s.cls === "MEO" ? 2 : s.cls === "GEO" ? 3 : 4;
 }
 
-/** Earth-level radius compression (Earth radii): LEO clears the globe, GEO and the Moon still fit. */
+/**
+ * Earth-level radius compression (Earth radii): LEO clears the globe, GEO and the Moon still fit.
+ * The satellite shader in orreryGl.ts repeats this formula.
+ */
 export function earthLogRadius(rRe: number): number {
-  return rRe <= 1 ? rRe : 1 + 0.85 * Math.log10(1 + (rRe - 1) / 0.06);
+  return rRe <= 1 ? rRe : 1 + 0.75 * Math.log10(1 + (rRe - 1) / 0.06);
 }
 
 /** Greenwich apparent sidereal angle, degrees. */

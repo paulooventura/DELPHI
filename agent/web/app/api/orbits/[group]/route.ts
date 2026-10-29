@@ -13,8 +13,8 @@ const UA = "PneumaMundi-orrery/1.0 (+https://pauloventura.org)";
 const cache = new Map<string, { at: number; body: OrbitSet }>();
 const inflight = new Map<string, Promise<OrbitSet>>();
 
-async function fetchJson(url: string): Promise<Array<Record<string, unknown>>> {
-  const res = await fetch(url, { headers: { "user-agent": UA }, cache: "no-store", signal: AbortSignal.timeout(20_000) });
+async function fetchJson(url: string, timeoutMs: number): Promise<Array<Record<string, unknown>>> {
+  const res = await fetch(url, { headers: { "user-agent": UA }, cache: "no-store", signal: AbortSignal.timeout(timeoutMs) });
   if (!res.ok) throw new Error(`${res.status} ${url}`);
   const j = (await res.json()) as unknown;
   if (!Array.isArray(j) || !j.length) throw new Error(`empty ${url}`);
@@ -23,13 +23,13 @@ async function fetchJson(url: string): Promise<Array<Record<string, unknown>>> {
 
 async function load(group: string): Promise<OrbitSet> {
   const sources = [
-    ["CelesTrak", `https://celestrak.org/NORAD/elements/gp.php?GROUP=${group}&FORMAT=json`],
-    ["CelesTrak via satvisor-data mirror", `https://raw.githubusercontent.com/satvisorcom/satvisor-data/master/celestrak/json/${group}.json`],
+    ["CelesTrak", `https://celestrak.org/NORAD/elements/gp.php?GROUP=${group}&FORMAT=json`, 8_000],
+    ["CelesTrak via satvisor-data mirror", `https://raw.githubusercontent.com/satvisorcom/satvisor-data/master/celestrak/json/${group}.json`, 15_000],
   ] as const;
   let lastErr: unknown = null;
-  for (const [source, url] of sources) {
+  for (const [source, url, timeoutMs] of sources) {
     try {
-      const rows = compactOmm(await fetchJson(url));
+      const rows = compactOmm(await fetchJson(url, timeoutMs));
       return { group, source, fetchedAt: new Date().toISOString(), rows };
     } catch (err) {
       lastErr = err;
