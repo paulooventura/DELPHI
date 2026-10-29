@@ -59,7 +59,7 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: `/favicon.ico?v=${DELPHI_BUILD}`, sizes: "48x48" },
-      { url: `/icon.svg?v=${DELPHI_BUILD}`, type: "image/svg+xml" },
+      { url: `/favicon-32.png?v=${DELPHI_BUILD}`, sizes: "32x32", type: "image/png" },
       { url: `/icon-192.png?v=${DELPHI_BUILD}`, sizes: "192x192", type: "image/png" },
     ],
     shortcut: `/favicon.ico?v=${DELPHI_BUILD}`,
