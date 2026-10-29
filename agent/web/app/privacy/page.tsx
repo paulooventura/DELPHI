@@ -45,8 +45,28 @@ export default function PrivacyPage() {
       <ul>
         <li>Your location, when you open the live sky or the world map, so we can return the aircraft and satellites near you. We don&apos;t store it; our host may keep ordinary request logs for a short time.</li>
         <li>For the daily phrase: derived numbers (the &quot;axis math&quot;), never your birth data. These may be passed to an AI provider (Anthropic, OpenAI or Google) to word the phrase.</li>
-        <li>Questions you type into the Research console, which go to research and AI providers to find sources.</li>
+        <li>
+          Questions you type into the Research console, which go to research and AI providers (Anthropic, OpenAI,
+          Google, Perplexity, Exa, Serper and Valyu) to find sources. The app asks your permission once before the
+          first question is sent, and sends nothing else with it.
+        </li>
+      </ul>
+
+      <h2 style={h2}>Sent to Open-Meteo, for weather and place names</h2>
+      <ul>
+        <li>
+          Your device&apos;s coordinates go from your phone to Open-Meteo&apos;s geocoding service to name the place
+          you&apos;re in.
+        </li>
+        <li>
+          For the weather and cycles on the home screen, our server passes your coordinates to Open-Meteo&apos;s
+          forecast service. We don&apos;t store them.
+        </li>
         <li>City names you type into place search go from your device to Open-Meteo&apos;s geocoding service.</li>
+        <li>
+          Open-Meteo answers under its own{" "}
+          <a href="https://open-meteo.com/en/terms">terms</a>.
+        </li>
       </ul>
 
       <h2 style={h2}>Stored by us</h2>

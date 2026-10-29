@@ -33,6 +33,8 @@ import { useSpringValue } from "../hooks/useSpringValue";
 import { useScreenWakeLock } from "../hooks/useScreenWakeLock";
 import { useShowLaunch } from "../components/LaunchScreen";
 import { OnyxApp } from "../components/onyx/OnyxApp";
+import { AiConsentSheet } from "../components/AiConsentSheet";
+import { hasAiConsent } from "../lib/aiConsent";
 import { installHapticLifecycle, muteHaptics, cancelHaptic } from "../lib/haptics";
 import { HOME_LAT as FALLBACK_LAT, HOME_LON as FALLBACK_LON } from "../lib/observerHome";
 import { OracleLogo } from "../components/oracle/OracleLogo";
@@ -300,6 +302,7 @@ export default function Home() {
   const [maxBudget, setMaxBudget] = useState("");
   const [res, setRes]           = useState<ResearchState | null>(null);
   const [resLoading, setResLoading] = useState(false);
+  const [askAiConsent, setAskAiConsent] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const pinchStartRef = useRef<number | null>(null);
   const pinchZoomRef = useRef(1);
@@ -894,6 +897,10 @@ export default function Home() {
   // ConfidenceResult; we merge so progress phases enrich rather than reset.
   async function runResearch() {
     if (!query.trim() || resLoading) return;
+    if (!hasAiConsent()) {
+      setAskAiConsent(true);
+      return;
+    }
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
@@ -1358,6 +1365,15 @@ export default function Home() {
         },
       }}
     />
+    {askAiConsent ? (
+      <AiConsentSheet
+        onAllow={() => {
+          setAskAiConsent(false);
+          void runResearch();
+        }}
+        onCancel={() => setAskAiConsent(false)}
+      />
+    ) : null}
     </>
   );
 
