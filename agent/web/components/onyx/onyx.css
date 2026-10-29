@@ -4704,6 +4704,8 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orr-card dt { opacity: 0.68; }
 .onyx-orr-card dd { margin: 0; color: var(--onyx-ink-bright); text-align: right; }
 .onyx-orr-measure { border-color: rgba(125, 255, 200, 0.35); }
+.onyx-orr-alerts { position: fixed; z-index: 4; text-align: left; }
+.onyx-orr-alerts .onyx-orr-row { justify-content: flex-start; margin-top: 6px; }
 .onyx-orr-tools { align-items: center; }
 .onyx-orr-find { display: flex; flex: 1 1 150px; max-width: 240px; }
 .onyx-orr-find input {

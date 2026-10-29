@@ -71,6 +71,8 @@ import {
 } from "../../lib/orbits";
 import { ORRERY_SPEEDS, advanceCosmicClock, type OrrerySpeedId } from "../../lib/timeEngine";
 import { createOrreryGl, type OrreryGl } from "./orreryGl";
+import { pulseHaptic } from "../../lib/haptics";
+import { OrreryShellTools } from "./OrreryShellTools";
 import type { SatWorkerIn, SatWorkerOut } from "./satWorker";
 import type { MapSat } from "./EarthMap";
 
@@ -733,6 +735,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
 
   /** Tap or search result: in Measure mode fill A then B, otherwise fly there and show the card. */
   const pick = (sel: Sel, fly: boolean) => {
+    void pulseHaptic("tick");
     const m = measureRef.current;
     if (m.on) {
       const next = !m.a || m.b ? { on: true, a: sel, b: null } : { ...m, b: sel };
@@ -2315,6 +2318,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           <button type="button" className={`onyx-orr-chip${measure.on ? " on" : ""}`} aria-pressed={measure.on} onClick={toggleMeasure}>
             Measure
           </button>
+          <OrreryShellTools focus={card?.title ?? followName ?? null} />
           <form
             className="onyx-orr-find"
             role="search"

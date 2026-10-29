@@ -38,12 +38,18 @@ async function load(group: string): Promise<OrbitSet> {
   throw lastErr instanceof Error ? lastErr : new Error("orbit sources unavailable");
 }
 
-export async function GET(_req: Request, { params }: { params: Promise<{ group: string }> }) {
+/** `?norad=25544` trims the set to one object (the app's ISS alerts need only that row). */
+function only(body: OrbitSet, norad: number): OrbitSet {
+  return norad > 0 ? { ...body, rows: body.rows.filter(r => r[0] === norad) } : body;
+}
+
+export async function GET(req: Request, { params }: { params: Promise<{ group: string }> }) {
   const { group } = await params;
   if (!isOrbitGroup(group)) return NextResponse.json({ error: "unknown group" }, { status: 404 });
+  const norad = Math.floor(Number(new URL(req.url).searchParams.get("norad") || 0)) || 0;
   const hit = cache.get(group);
   if (hit && Date.now() - hit.at < TTL_MS) {
-    return NextResponse.json(hit.body, { headers: { "Cache-Control": CACHE_HEADER } });
+    return NextResponse.json(only(hit.body, norad), { headers: { "Cache-Control": CACHE_HEADER } });
   }
   try {
     let p = inflight.get(group);
@@ -53,9 +59,9 @@ export async function GET(_req: Request, { params }: { params: Promise<{ group: 
     }
     const body = await p;
     cache.set(group, { at: Date.now(), body });
-    return NextResponse.json(body, { headers: { "Cache-Control": CACHE_HEADER } });
+    return NextResponse.json(only(body, norad), { headers: { "Cache-Control": CACHE_HEADER } });
   } catch (err) {
-    if (hit) return NextResponse.json(hit.body, { headers: { "Cache-Control": "public, s-maxage=600" } });
+    if (hit) return NextResponse.json(only(hit.body, norad), { headers: { "Cache-Control": "public, s-maxage=600" } });
     return NextResponse.json({ error: String(err) }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }
 }

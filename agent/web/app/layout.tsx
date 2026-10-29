@@ -3,6 +3,7 @@ import { Bodoni_Moda, Manrope, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { SITE_URL } from "../lib/site";
 import { DELPHI_BUILD } from "../lib/buildStamp";
+import { NativeShellBoot } from "../components/NativeShellBoot";
 import "./globals.css";
 
 const fashion = Bodoni_Moda({
@@ -101,6 +102,7 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-clean), system-ui, sans-serif" }}>
         {children}
+        <NativeShellBoot />
         <Script src={`/pm-telemetry.js?v=${DELPHI_BUILD}`} strategy="afterInteractive" />
       </body>
     </html>
