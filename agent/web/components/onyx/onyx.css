@@ -66,6 +66,14 @@ html.chorus-embed .onyx-root {
   user-select: none;
 }
 
+/* Phones fill the screen; the 402×872 frame is for desktop. Large iPhones (428–440 pt) otherwise get black margins. */
+@media (max-width: 480px) {
+  .onyx-device {
+    width: 100vw;
+    height: 100dvh;
+  }
+}
+
 /* Overlay / clock shells that must scroll on phones (touch-action:none blocks pan). */
 .onyx-device.onyx-device-scroll {
   overflow-x: hidden;

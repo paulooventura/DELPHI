@@ -50,7 +50,7 @@
 
         var c = document.getElementById("orrery");
         var g = c.getContext("2d");
-        var W = c.width, mid = W / 2, maxR = W * 0.46;
+        var W = c.width, mid = W / 2, maxR = W * 0.40, placed = [];
         var planets = [
           ["Mercury", "#b7aea3", 4], ["Venus", "#e9d7a6", 6], ["Earth", "#7fb4ff", 6], ["Mars", "#e07a52", 5],
           ["Jupiter", "#e3c49a", 10], ["Saturn", "#e8d7a0", 9], ["Uranus", "#a8e3ea", 7], ["Neptune", "#6f8cff", 7]
@@ -67,7 +67,11 @@
           var x = mid + Math.cos(ang) * scale(au), y = mid - Math.sin(ang) * scale(au);
           g.fillStyle = p[1]; g.beginPath(); g.arc(x, y, p[2], 0, Math.PI * 2); g.fill();
           g.fillStyle = "rgba(232,228,244,0.75)"; g.font = "22px -apple-system, system-ui, sans-serif";
-          g.fillText(p[0], x + p[2] + 6, y + 7);
+          var tw = g.measureText(p[0]).width;
+          var lx = x > mid ? x - p[2] - 6 - tw : x + p[2] + 6, ly = y + 7;
+          while (placed.some(function (b) { return Math.abs(b[1] - ly) < 24 && lx < b[0] + b[2] && b[0] < lx + tw; })) ly += 24;
+          placed.push([lx, ly, tw]);
+          g.fillText(p[0], lx, ly);
         });
         var sun = g.createRadialGradient(mid, mid, 0, mid, mid, 22);
         sun.addColorStop(0, "#fff6d0"); sun.addColorStop(1, "rgba(255,190,80,0)");
