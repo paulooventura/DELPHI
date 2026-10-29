@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { cleanCallsign, createTtlCache, parseRoute, type FlightRoute } from "../../../../../lib/aircraft";
+import { ADSB_ODBL, cleanCallsign, createTtlCache, parseRoute, type FlightRoute } from "../../../../../lib/aircraft";
 
 /**
  * Origin and destination for a callsign, from adsb.lol's route database (ODbL 1.0).
@@ -26,7 +26,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ callsign
       if (!res.ok) throw new Error(`adsb.lol ${res.status}`);
       return parseRoute(await res.json());
     });
-    return NextResponse.json({ route: value }, { headers: { "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400" } });
+    return NextResponse.json({ route: value, ...ADSB_ODBL }, { headers: { "Cache-Control": "public, s-maxage=21600, stale-while-revalidate=86400" } });
   } catch (err) {
     return NextResponse.json({ error: String(err) }, { status: 502, headers: { "Cache-Control": "no-store" } });
   }

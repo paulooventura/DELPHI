@@ -12,6 +12,19 @@ export const AIRCRAFT_TTL_MS = 10_000;
 /** Above this many cells the view is too wide to poll politely. */
 export const MAX_CELLS = 12;
 
+/**
+ * Our aircraft routes serve a derivative of adsb.lol's ODbL database, so every response carries
+ * the notice and offers the feed on the same terms (ODbL 4.4, 4.6). The method is this public file.
+ */
+export const ADSB_ODBL = {
+  licence: "ODbL-1.0",
+  licence_url: "https://opendatacommons.org/licenses/odbl/1-0/",
+  attribution: "Contains information from adsb.lol, made available under the Open Database License (ODbL).",
+  source: "https://adsb.lol/",
+  terms: "This feed is offered under the ODbL 1.0, the same terms as its source.",
+  method: "https://github.com/paulooventura/DELPHI/blob/main/agent/web/lib/aircraft.ts",
+} as const;
+
 export type Cell = { row: number; col: number };
 export type CellBounds = { s: number; n: number; w: number; e: number; lat: number; lon: number };
 

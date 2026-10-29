@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import {
+  ADSB_ODBL,
   AIRCRAFT_TTL_MS,
   CELL_RADIUS_NM,
   cellBounds,
@@ -31,7 +32,7 @@ export async function GET(req: Request) {
   if (!parseCell(key)) return NextResponse.json({ error: "unknown cell" }, { status: 400 });
   try {
     const { value, fresh } = await cache.get(key, () => load(key));
-    return NextResponse.json(value, {
+    return NextResponse.json({ ...value, ...ADSB_ODBL }, {
       headers: { "Cache-Control": fresh ? "public, s-maxage=10, stale-while-revalidate=20" : "public, s-maxage=5" },
     });
   } catch (err) {

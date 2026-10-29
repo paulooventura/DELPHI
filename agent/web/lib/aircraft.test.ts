@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  ADSB_ODBL,
   altitudeLabel,
   distanceToRouteKm,
   routeCheck,
@@ -172,5 +173,14 @@ describe("aircraft cache", () => {
         throw new Error("down");
       }),
     ).rejects.toThrow("down");
+  });
+});
+
+describe("ODbL notice on our aircraft feed", () => {
+  it("names adsb.lol, the licence and its link, and offers our feed on the same terms", () => {
+    expect(ADSB_ODBL.licence).toBe("ODbL-1.0");
+    expect(ADSB_ODBL.licence_url).toBe("https://opendatacommons.org/licenses/odbl/1-0/");
+    expect(ADSB_ODBL.attribution).toMatch(/adsb\.lol.*Open Database License/);
+    expect(ADSB_ODBL.terms).toMatch(/ODbL/);
   });
 });
