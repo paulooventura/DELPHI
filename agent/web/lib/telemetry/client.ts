@@ -7,15 +7,38 @@ type PmTrack = {
   screen: (name: string) => void;
   event: (name: string, detail?: string) => void;
 };
-type PmWindow = Window & { pmTrack?: PmTrack; __pmq?: unknown[][] };
+type PmWindow = Window & {
+  pmTrack?: PmTrack;
+  __pmq?: unknown[][];
+  Capacitor?: { isNativePlatform?: () => boolean };
+};
 
-/** iOS app only: usage counting is off until this is "1". Read by pm-telemetry.js. */
+/** iOS app: usage counting is off until this is "1". Read by pm-telemetry.js. */
 export const USAGE_OPTIN_KEY = "pm-track-optin";
+/** Web: usage counting is on unless this is "1" (also set by ?notrack=1). Read by pm-telemetry.js. */
+export const USAGE_NOTRACK_KEY = "pm-notrack";
 const OPTIN_EVENT = "pm-optin-change";
 
+/** Same test pm-telemetry.js uses, without pulling the Capacitor shell into this module. */
+function inApp(): boolean {
+  try {
+    return !!(window as PmWindow).Capacitor?.isNativePlatform?.();
+  } catch {
+    return false;
+  }
+}
+
+/** Web only: the browser's Global Privacy Control keeps counting off whatever the switch says. */
+export function usageBlockedByBrowser(): boolean {
+  if (typeof navigator === "undefined" || inApp()) return false;
+  return (navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl === true;
+}
+
+/** Whether this device shares anonymous usage counts: opt-in in the iOS app, opt-out on the web. */
 export function usageOptedIn(): boolean {
   try {
-    return localStorage.getItem(USAGE_OPTIN_KEY) === "1";
+    if (inApp()) return localStorage.getItem(USAGE_OPTIN_KEY) === "1";
+    return localStorage.getItem(USAGE_NOTRACK_KEY) !== "1" && !usageBlockedByBrowser();
   } catch {
     return false;
   }
@@ -29,8 +52,11 @@ export function onUsageOptInChange(cb: () => void): () => void {
 /** Takes effect at once: opting in starts the counter, opting out drops anything not yet sent. */
 export function setUsageOptIn(on: boolean, build: string) {
   try {
-    if (on) localStorage.setItem(USAGE_OPTIN_KEY, "1");
-    else localStorage.removeItem(USAGE_OPTIN_KEY);
+    if (inApp()) {
+      if (on) localStorage.setItem(USAGE_OPTIN_KEY, "1");
+      else localStorage.removeItem(USAGE_OPTIN_KEY);
+    } else if (on) localStorage.removeItem(USAGE_NOTRACK_KEY);
+    else localStorage.setItem(USAGE_NOTRACK_KEY, "1");
   } catch {
     return;
   }

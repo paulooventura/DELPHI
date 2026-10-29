@@ -5,7 +5,8 @@
  * Never records typed text, birth data, or anything inside [data-pm-private];
  * on private screens taps are logged only by their data-pm name.
  *
- * Opt out on a device: open any page with ?notrack=1 (undo with ?track=1).
+ * Web: on by default; About > "Don't share" turns it off (localStorage
+ * pm-notrack, also set by ?notrack=1 and cleared by ?track=1).
  * Honors Global Privacy Control. Silent on localhost.
  * iOS app: off by default; About > "Share anonymous usage" turns it on
  * (localStorage pm-track-optin). App beacons use the session id as visitor
@@ -42,6 +43,8 @@
   var cap = window.Capacitor;
   var app = !!(cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform());
   function optedIn() { return get(ls, OPTIN_KEY) === "1"; }
+  // Rechecked at every send, so About's switch takes effect without a reload.
+  function sharing() { return app ? optedIn() : get(ls, "pm-notrack") !== "1"; }
 
   var q = new URLSearchParams(location.search);
   if (q.get("notrack") === "1") set(ls, "pm-notrack", "1");
@@ -118,7 +121,7 @@
 
   function flush() {
     bank();
-    if (app && !optedIn()) { acc = {}; events = []; taps = 0; return; }
+    if (!sharing()) { acc = {}; events = []; taps = 0; return; }
     var active = 0;
     var screens = {};
     Object.keys(acc).forEach(function (k) {

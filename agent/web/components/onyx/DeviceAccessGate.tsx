@@ -8,8 +8,9 @@
  * Soundtrack dissolves via AudioBus delay tail (no hard cut).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { DELPHI_BUILD } from "../../lib/buildStamp";
+import { isNativeShell } from "../../lib/native/shell";
 import { getClockAudio, resumeClockAudio } from "../../lib/clockSfx";
 import {
   AUDIO_BUS,
@@ -28,6 +29,7 @@ const CRYSTAL_AT = 0.75;
 const PHRASE_AFTER_CRYSTAL_S = 0.55;
 /** Swallows the trailing click from a splash skip tap. */
 const ARM_MS = 600;
+const noSubscribe = () => () => {};
 
 export function DeviceAccessGate({
   onAllow,
@@ -47,6 +49,7 @@ export function DeviceAccessGate({
   const [phraseOn, setPhraseOn] = useState(false);
   const [frozen, setFrozen] = useState(false);
   const armedAt = useRef(0);
+  const native = useSyncExternalStore(noSubscribe, isNativeShell, () => false);
 
   useEffect(() => {
     armedAt.current = Date.now() + ARM_MS;
@@ -229,6 +232,11 @@ export function DeviceAccessGate({
           <li><b>Location</b> places the real sky over you.</li>
           <li><b>Motion</b> lets you point your phone at the planets.</li>
           <li><b>Sound</b> plays the chord of this moment.</li>
+          {native ? (
+            <li><b>Anonymous usage counts</b> stay off unless you choose Share under About.</li>
+          ) : (
+            <li><b>Anonymous usage counts</b> (screens and taps, never what you type) tune the beta. Turn them off under About.</li>
+          )}
         </ul>
       </div>
     </div>

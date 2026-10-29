@@ -76,8 +76,10 @@ export default function PrivacyPage() {
           <b>Anonymous usage counts</b>, to tune the beta: time per screen, taps on buttons (labels with digits blanked), named
           feature events, entry page, the site that sent you, device type, OS, browser, screen size, build, a random visitor
           id, and the approximate city, region and country our host derives from your IP address (the IP itself isn&apos;t
-          kept). Never typed text or birth data; on Psyche only the names of buttons. Turn it off on a device by opening{" "}
-          <Link href="/?notrack=1">delphi.pauloventura.org/?notrack=1</Link>. Global Privacy Control is honoured.
+          kept). Never typed text or birth data; on Psyche only the names of buttons. Turn it off on a device with{" "}
+          <b>Don&apos;t share</b> under About, or by opening{" "}
+          <Link href="/?notrack=1">delphi.pauloventura.org/?notrack=1</Link>; anything not yet sent is dropped. Global
+          Privacy Control is honoured.
         </li>
         <li>
           <b>In the iPhone app, usage counts are off</b> unless you choose <b>Share</b> under About. If you do, each
