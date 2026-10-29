@@ -4768,6 +4768,19 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orr-hint {
   margin: 0; font-size: 9px; letter-spacing: 0.1em; color: var(--onyx-ink-faint); opacity: 0.6;
 }
+.onyx-orr-map {
+  position: absolute; inset: 0; z-index: 4; background: #030308;
+  animation: onyx-orr-map-in 600ms ease-out;
+}
+.onyx-orr-map .onyx-orr-map-box { position: absolute; inset: 0; }
+.onyx-orr-map .maplibregl-canvas:focus { outline: none; }
+.onyx-orr-map .onyx-orr-panel { pointer-events: none; }
+.onyx-orr-map .onyx-orr-panel > * { pointer-events: auto; }
+.onyx-orr-chip:disabled { opacity: 0.4; cursor: default; }
+@keyframes onyx-orr-map-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
 .onyx-orr.onyx-orr-rise { animation: onyx-orr-rise 900ms cubic-bezier(0.16, 1, 0.3, 1); }
 @keyframes onyx-orr-rise {
   from { opacity: 0; transform: translateY(18%) scale(1.18); filter: blur(6px); }
@@ -4793,6 +4806,6 @@ html[data-sky="twilight"] .onyx-overlay-close {
   to { transform: translateY(-3px); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .onyx-orr, .onyx-orr.onyx-orr-rise { animation: none; }
+  .onyx-orr, .onyx-orr.onyx-orr-rise, .onyx-orr-map { animation: none; }
   .onyx-sky-pull-cue svg { animation: none; }
 }

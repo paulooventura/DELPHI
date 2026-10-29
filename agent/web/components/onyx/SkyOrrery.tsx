@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import { BRIGHT_STARS } from "../../lib/brightStars";
 import { CONSTELLATION_FIGURES } from "../../lib/constellationLines";
 import {
@@ -64,12 +65,19 @@ import {
   orbitShape,
   pointClass,
   temeToEcliptic,
+  temeToGeodetic,
   type GpRow,
   type Mat3,
 } from "../../lib/orbits";
 import { ORRERY_SPEEDS, advanceCosmicClock, type OrrerySpeedId } from "../../lib/timeEngine";
 import { createOrreryGl, type OrreryGl } from "./orreryGl";
 import type { SatWorkerIn, SatWorkerOut } from "./satWorker";
+import type { MapSat } from "./EarthMap";
+
+/** MapLibre and the map layers load only when the world map first opens. */
+const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false });
+/** Closest the globe camera comes (Earth radii); pinching past it opens the world map. */
+const EARTH_MIN_DIST = 1.55;
 
 type LevelId = "globe" | "earth" | "inner" | "system" | "galaxy";
 type ScaleMode = "log" | "true";
@@ -577,6 +585,9 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   const [card, setCard] = useState<Card | null>(null);
   const [measureOut, setMeasureOut] = useState<MeasureOut>(null);
   const [query, setQuery] = useState("");
+  const [mapOpen, setMapOpen] = useState<{ center: [number, number]; sats: MapSat[] } | null>(null);
+  const mapOpenRef = useRef(false);
+  const openMapRef = useRef<() => void>(() => {});
 
   const simMsRef = useRef(0);
   const deepYearsRef = useRef(0);
@@ -754,6 +765,21 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     };
   });
 
+  const closeMap = () => {
+    mapOpenRef.current = false;
+    setMapOpen(null);
+    if (rootRef.current) delete rootRef.current.dataset.map;
+    const cam = camRef.current;
+    if (cam.scene === "earth") {
+      cam.goalDist = Math.max(cam.goalDist, 2.3);
+      if (reduceMotion) cam.dist = cam.goalDist;
+    }
+  };
+  const closeMapRef = useRef(closeMap);
+  useEffect(() => {
+    closeMapRef.current = closeMap;
+  });
+
   const releaseFocus = () => {
     applyLevel(levelRef.current, modeRef.current);
   };
@@ -828,7 +854,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         el.blur();
         return;
       }
-      onClose();
+      if (mapOpenRef.current) closeMapRef.current();
+      else onClose();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -993,6 +1020,30 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       const t0 = -b - Math.sqrt(disc);
       return t0 > 0 && t0 < L;
     };
+    /** Opens the world map over the point of Earth the camera is looking down on. */
+    openMapRef.current = () => {
+      if (mapOpenRef.current) return;
+      const cam = camRef.current;
+      let center: [number, number] = [0, 20];
+      if (cam.scene === "earth") {
+        const c = earthCamera(cam);
+        const M = earthView.M;
+        // earthView.M is a rotation (TEME → ecliptic); its transpose takes the camera back to TEME.
+        const teme = { x: M[0] * c.x + M[3] * c.y + M[6] * c.z, y: M[1] * c.x + M[4] * c.y + M[7] * c.z, z: M[2] * c.x + M[5] * c.y + M[8] * c.z };
+        const g = temeToGeodetic(scaleV(teme, RE_KM / (Math.hypot(teme.x, teme.y, teme.z) || 1)), new Date(simMsRef.current));
+        center = [g.lonDeg, clamp(g.latDeg, -70, 70)];
+      }
+      const data = satRef.current;
+      const sats: MapSat[] = [];
+      if (data) {
+        for (const [id, i] of data.named) sats.push({ name: NAMED_SATS[id]!, row: data.rows[i]! });
+        const s = selectedRef.current;
+        if (s?.type === "sat" && !NAMED_SATS[data.rows[s.i]?.[0] ?? 0] && data.rows[s.i]) sats.push({ name: data.rows[s.i]![1], row: data.rows[s.i]! });
+      }
+      mapOpenRef.current = true;
+      root.dataset.map = "1";
+      setMapOpen({ center, sats });
+    };
     const satVisible = (i: number) => {
       const data = satRef.current;
       if (!data) return false;
@@ -1023,7 +1074,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       if (cam.scene === "earth") {
         const max = (m === "log" ? 4.8 : 75) * DIST_PER_FRAME;
         if (fromUser && d > max * 0.9) return switchTo("earth");
-        return clamp(d, 1.55, max);
+        if (fromUser && d < EARTH_MIN_DIST * 0.96) {
+          openMapRef.current();
+          return EARTH_MIN_DIST;
+        }
+        return clamp(d, EARTH_MIN_DIST, max);
       }
       if (cam.scene === "solar") {
         const sys = LEVEL_BY_ID.system.frame[m] * DIST_PER_FRAME;
@@ -1902,6 +1957,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const loop = (now: number) => {
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
+      // The world map covers the stage; the orrery rests underneath until it closes.
+      if (mapOpenRef.current) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       const cam = camRef.current;
       const speed = ORRERY_SPEEDS.find(s => s.id === speedRef.current) ?? ORRERY_SPEEDS[0];
       const deep = DEEP_SPEEDS.find(s => s.id === deepSpeedRef.current) ?? DEEP_SPEEDS[0];
@@ -2149,6 +2209,10 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       <canvas ref={glCanvasRef} className="onyx-orr-gl" aria-hidden />
       <canvas ref={canvasRef} className="onyx-orr-canvas" aria-hidden />
 
+      {mapOpen ? (
+        <EarthMap center={mapOpen.center} sats={mapOpen.sats} reduceMotion={reduceMotion} onClose={closeMap} />
+      ) : (
+      <>
       <header className="onyx-orr-head">
         <button type="button" className="onyx-orr-back" onClick={onClose} aria-label="Back to the sky">
           ‹
@@ -2406,10 +2470,15 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               {l.label}
             </button>
           ))}
+          {globe ? (
+            <button type="button" className="onyx-orr-chip" data-level="map" onClick={() => openMapRef.current()}>
+              World map
+            </button>
+          ) : null}
         </div>
         <p className="onyx-orr-hint">
           {globe
-            ? "drag to turn · pinch out to leave · tap a satellite to measure it"
+            ? "drag to turn · pinch in for the world map · tap a satellite to measure it"
             : level === "earth"
               ? "pinch into Earth to see its satellites · tap anything to measure it"
               : "drag to turn · pinch to zoom · tap anything to measure it"}
@@ -2420,6 +2489,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
             : "Data: NASA/JPL Horizons & Small-Body Database · Yale Bright Star Catalogue · astronomy-engine"}
         </p>
       </div>
+      </>
+      )}
     </div>
   );
 }
