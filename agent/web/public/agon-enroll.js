@@ -321,7 +321,7 @@
   var dir = { host: null, entries: null, filter: "all", state: "idle" };
 
   /* Report opens a mail draft (nothing is sent unless the person sends it); Hide keeps a listing off this device. */
-  var REPORT_TO = "hello@pauloventura.org";
+  var REPORT_TO = "delphi@pauloventura.org";
   var HIDDEN_KEY = "agon-hidden-v1";
   function hiddenIds() {
     try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]") || []; } catch (e) { return []; }
