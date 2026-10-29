@@ -928,7 +928,12 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     let tickPending = false;
     let pathPending = false;
     let satPath: { i: number; t: number; pts: Float32Array } | null = null;
-    const earthView: { M: Mat3; spin: number; sun: Vec3 } = { M: [1, 0, 0, 0, 1, 0, 0, 0, 1], spin: 0, sun: { x: 1, y: 0, z: 0 } };
+    const earthView: { M: Mat3; spin: number; sun: Vec3; sunAu: number } = {
+      M: [1, 0, 0, 0, 1, 0, 0, 0, 1],
+      spin: 0,
+      sun: { x: 1, y: 0, z: 0 },
+      sunAu: 1,
+    };
     const startEarth = () => {
       if (worker || !alive) return;
       const img = new Image();
@@ -1702,11 +1707,14 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const moonBody = ORRERY_BODIES.find(b => b.id === "moon");
     let moonRing: { center: number; pts: Vec3[] } | null = null;
     const moonEclKm = (date: Date) => eqjToEcliptic(moonEqjKm(date));
+    let panelAt = -1e9;
+    let panelTop = 0;
+    let cardBottom = 0;
 
     const drawEarthScene = (cam: Cam, w: number, h: number, dpr: number, alpha: number, date: Date) => {
       const L = layersRef.current;
       const simMs = date.getTime();
-      const { project, projectDir, screenDir } = makeProjector(cam, w, h);
+      const { project, projectDir, screenDir, F } = makeProjector(cam, w, h);
       const C = earthCamera(cam);
       const shown = (p: Vec3) => (behindEarth(C, p) ? null : project(p));
       ctx.globalAlpha = alpha;
@@ -1748,16 +1756,106 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         moonRing = { center: simMs, pts };
       }
       strokePath(moonRing.pts.map(p => earthScene(p, false)), shown, "rgba(200, 196, 240, 0.18)", 0.8 * dpr, [2 * dpr, 6 * dpr]);
+      // The Sun and Moon stay findable: drawn where they are when in view, otherwise an edge marker
+      // points the way. The Sun sits at its true direction, beyond everything; its distance is never faked.
+      const now = performance.now();
+      if (now - panelAt > 500) {
+        panelAt = now;
+        const panel = root.querySelector(".onyx-orr-panel");
+        const rb = root.getBoundingClientRect();
+        panelTop = panel ? panel.getBoundingClientRect().top - rb.top : rb.height;
+        const card = root.querySelector(".onyx-orr-card");
+        cardBottom = card ? card.getBoundingClientRect().bottom - rb.top : 0;
+      }
+      const view = { l: 14 * dpr, r: w - 14 * dpr, t: Math.max(70, cardBottom + 14) * dpr, b: Math.min(h, panelTop * dpr) - 10 * dpr };
+      const inView = (s: { x: number; y: number }) => s.x >= view.l && s.x <= view.r && s.y >= view.t && s.y <= view.b;
+      const edges: Array<{ id: string; text: string; dir: { x: number; y: number }; color: string }> = [];
+
       const moonKm = moonEclKm(date);
       const moonPos = earthScene(moonKm, false);
       const moonS = shown(moonPos);
-      if (moonS && moonBody) {
+      const moonText = `Moon · ${(Math.round(Math.hypot(moonKm.x, moonKm.y, moonKm.z) / 100) * 100).toLocaleString()} km`;
+      if (moonS && moonBody && inView(moonS)) {
         const r = clamp((cam.dist / moonS.depth) * 5.5, 3.5, 9) * dpr;
         drawBody(ctx, moonS.x, moonS.y, r, moonBody, screenDir(earthView.sun), null, dpr);
         hits.push({ id: "moon", x: moonS.x, y: moonS.y, r });
-        const km = Math.round(Math.hypot(moonKm.x, moonKm.y, moonKm.z) / 100) * 100;
-        label(`Moon · ${km.toLocaleString()} km`, moonS.x, moonS.y - r - 5 * dpr, 0.85);
+        label(moonText, moonS.x, moonS.y - r - 5 * dpr, 0.85);
+      } else {
+        const raw = project(moonPos);
+        if (raw && inView(raw)) label("Moon · behind Earth", raw.x, raw.y, 0.5);
+        else {
+          const d = { x: moonPos.x - cam.target.x, y: moonPos.y - cam.target.y, z: moonPos.z - cam.target.z };
+          edges.push({ id: "moon", text: moonText, dir: screenDir(d), color: "226, 222, 255" });
+        }
       }
+
+      const sunAu = earthView.sunAu;
+      const sunText = `Sun · ${sunAu.toFixed(3)} AU · ${((sunAu * AU_KM) / 299_792.458 / 60).toFixed(1)} light-min`;
+      const sunS = projectDir(earthView.sun);
+      const sunHidden = behindEarth(C, scaleV(earthView.sun, 1e4));
+      if (sunS && inView(sunS)) {
+        if (!sunHidden) {
+          const r = Math.max(4 * dpr, F * Math.atan(696_000 / (sunAu * AU_KM)));
+          const g = ctx.createRadialGradient(sunS.x, sunS.y, 0, sunS.x, sunS.y, r * 7);
+          g.addColorStop(0, "rgba(255, 244, 214, 0.55)");
+          g.addColorStop(0.18, "rgba(255, 214, 150, 0.22)");
+          g.addColorStop(1, "rgba(255, 190, 120, 0)");
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.arc(sunS.x, sunS.y, r * 7, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = "rgba(255, 248, 228, 0.98)";
+          ctx.beginPath();
+          ctx.arc(sunS.x, sunS.y, r, 0, Math.PI * 2);
+          ctx.fill();
+          hits.push({ id: "sun", x: sunS.x, y: sunS.y, r: Math.max(r, 10 * dpr) });
+          label(sunText, sunS.x, sunS.y - r - 6 * dpr, 0.85, "255, 226, 170");
+        } else {
+          label("Sun · behind Earth", sunS.x, sunS.y, 0.5, "255, 226, 170");
+        }
+      } else {
+        edges.push({ id: "sun", text: sunText, dir: screenDir(earthView.sun), color: "255, 226, 170" });
+      }
+
+      let edgePx = "";
+      for (const e of edges) {
+        const cx = w / 2;
+        const cy = (view.t + view.b) / 2;
+        const tx = e.dir.x > 0 ? (view.r - cx) / e.dir.x : e.dir.x < 0 ? (view.l - cx) / e.dir.x : Infinity;
+        const ty = e.dir.y > 0 ? (view.b - cy) / e.dir.y : e.dir.y < 0 ? (view.t - cy) / e.dir.y : Infinity;
+        const t = Math.min(tx, ty);
+        const x = cx + e.dir.x * t;
+        const y = cy + e.dir.y * t;
+        const ang = Math.atan2(e.dir.y, e.dir.x);
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(ang);
+        ctx.fillStyle = `rgba(${e.color}, 0.85)`;
+        ctx.beginPath();
+        ctx.moveTo(0, 0);
+        ctx.lineTo(-9 * dpr, -5 * dpr);
+        ctx.lineTo(-9 * dpr, 5 * dpr);
+        ctx.closePath();
+        ctx.fill();
+        ctx.restore();
+        // Text sits inward from the arrow, clamped so it never runs off the screen.
+        ctx.font = `${10 * dpr}px ${fontFamily}`;
+        const tw = ctx.measureText(e.text).width;
+        const lx = clamp(x - e.dir.x * 18 * dpr, view.l + 13 * dpr + tw / 2, view.r - 13 * dpr - tw / 2);
+        const ly = clamp(y - e.dir.y * 18 * dpr + 3 * dpr, view.t + 8 * dpr, view.b - 2 * dpr);
+        if (labels < MAX_LABELS) {
+          ctx.fillStyle = `rgba(${e.color}, 0.85)`;
+          ctx.fillText(e.text, lx, ly);
+          placed.push([lx - tw / 2, ly - 10 * dpr, lx + tw / 2, ly + 2 * dpr]);
+          labels++;
+        }
+        // The arrow and the whole label are tappable, ahead of any star behind them.
+        hits.push({ id: e.id, x, y, r: 14 * dpr });
+        for (let k = -tw / 2; k <= tw / 2; k += 16 * dpr) hits.push({ id: e.id, x: lx + k, y: ly - 4 * dpr, r: 12 * dpr });
+        edgePx += `${e.id}:${(x / dpr).toFixed(1)},${(y / dpr).toFixed(1)};`;
+      }
+      root.dataset.edgeMarkers = edgePx;
+      root.dataset.sunPx = sunS && inView(sunS) && !sunHidden ? `${(sunS.x / dpr).toFixed(1)},${(sunS.y / dpr).toFixed(1)}` : "";
       const earthS = project(ZERO);
 
       // Named stations and telescopes, the selected object, Measure A and B.
@@ -1806,6 +1904,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           return p ? earthScene(p) : null;
         }
         if (s.type === "body" && s.id === "moon") return moonPos;
+        if (s.type === "body" && s.id === "sun") return scaleV(earthView.sun, 60);
         if (s.type === "body" && s.id === "earth") return ZERO;
         return null;
       };
@@ -2047,6 +2146,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         earthView.M = temeToEcliptic(date);
         earthView.spin = (earthRotationDeg(date) * Math.PI) / 180;
         earthView.sun = { x: -e.x / r, y: -e.y / r, z: -e.z / r };
+        earthView.sunAu = r;
         const st = satStateRef.current;
         if (worker && satRef.current && !tickPending) {
           const lead = earthSpeed.secPerSec * 1000 * (playingRef.current ? 0.3 : 0);
