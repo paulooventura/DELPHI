@@ -1,11 +1,9 @@
 /**
  * Magnetic declination (east-positive degrees) for compass → true-north correction.
- * Fetches NOAA WMM when online; falls back to a latitude/longitude regression,
- * or the WMM-era home value when the observer is in Nashville.
+ * Computed on the device from the World Magnetic Model (lib/wmm.ts), so it needs no network.
  */
 
-import { HOME_DECLINATION_DEG, isNearHome } from "./observerHome";
-import { apiUrl } from "./apiBase";
+import { wmmDeclinationDeg } from "./wmm";
 
 let cachedKey: string | null = null;
 let cachedDeclinationDeg: number | null = null;
@@ -14,15 +12,10 @@ function cacheKey(latDeg: number, lonDeg: number): string {
   return `${latDeg.toFixed(2)},${lonDeg.toFixed(2)}`;
 }
 
-/** Rough global declination estimate when offline (±3–5° typical error). */
+/** WMM declination at sea level for today. */
 export function estimateDeclinationDeg(latDeg: number, lonDeg: number): number {
-  const lat = latDeg * (Math.PI / 180);
-  const lon = lonDeg * (Math.PI / 180);
-  const dipole =
-    11.2 * Math.sin(lat) * Math.cos(lon * 0.55)
-    - 6.8 * Math.cos(lat * 1.1)
-    + 2.4 * Math.sin(lon * 1.3);
-  return Math.max(-40, Math.min(40, dipole));
+  const d = wmmDeclinationDeg(latDeg, lonDeg);
+  return Number.isFinite(d) ? d : 0;
 }
 
 export function getCachedDeclinationDeg(): number | null {
@@ -37,32 +30,8 @@ export function setDeclinationDeg(deg: number): void {
 export async function fetchDeclinationDeg(latDeg: number, lonDeg: number): Promise<number> {
   const key = cacheKey(latDeg, lonDeg);
   if (cachedKey === key && cachedDeclinationDeg != null) return cachedDeclinationDeg;
-
-  try {
-    const params = new URLSearchParams({
-      lat1: String(latDeg),
-      lon1: String(lonDeg),
-      model: "WMM",
-      startYear: String(new Date().getFullYear()),
-      resultFormat: "json",
-    });
-    const res = await fetch(apiUrl(`/api/sky/declination?${params}`), { signal: AbortSignal.timeout(6000) });
-    if (res.ok) {
-      const json = (await res.json()) as { declinationDeg?: number };
-      if (typeof json.declinationDeg === "number" && Number.isFinite(json.declinationDeg)) {
-        cachedKey = key;
-        cachedDeclinationDeg = json.declinationDeg;
-        return json.declinationDeg;
-      }
-    }
-  } catch {
-    /* offline */
-  }
-
-  const est = isNearHome(latDeg, lonDeg)
-    ? HOME_DECLINATION_DEG
-    : estimateDeclinationDeg(latDeg, lonDeg);
+  const d = estimateDeclinationDeg(latDeg, lonDeg);
   cachedKey = key;
-  cachedDeclinationDeg = est;
-  return est;
+  cachedDeclinationDeg = d;
+  return d;
 }
