@@ -122,6 +122,15 @@ export default function CreditsPage() {
       </p>
       <p>Data sources don&apos;t endorse Pneuma Mundi. Thank you to every one of them.</p>
 
+      <h2 style={h2}>Contact</h2>
+      <p>
+        Questions, corrections or a report about something you saw in the app:{" "}
+        <a href="mailto:delphi@pauloventura.org" style={{ textDecoration: "underline" }}>
+          delphi@pauloventura.org
+        </a>
+        .
+      </p>
+
       <p style={{ marginTop: "2.5rem" }}>
         <Link href="/">← Back to Pneuma Mundi</Link> · <Link href="/privacy">Privacy</Link>
       </p>

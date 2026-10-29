@@ -106,8 +106,9 @@ export default function PrivacyPage() {
 
       <h2 style={h2}>Contact</h2>
       <p>
-        Questions or requests: <a href={WIX_HOME}>pauloventura.org</a>. If this policy changes, the date at the top
-        changes with it.
+        Questions, requests or a report about something you saw in the app:{" "}
+        <a href="mailto:delphi@pauloventura.org">delphi@pauloventura.org</a>. More about the studio:{" "}
+        <a href={WIX_HOME}>pauloventura.org</a>. If this policy changes, the date at the top changes with it.
       </p>
 
       <p style={{ marginTop: "2.5rem" }}>
