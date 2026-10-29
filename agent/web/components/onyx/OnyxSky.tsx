@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type MutableRefObject, type RefObject } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type MutableRefObject,
+  type RefObject,
+} from "react";
 import {
   CelestialSkyView,
   type AimedSkyObject,
@@ -31,6 +40,15 @@ const CARD = ["N", "E", "S", "W", "NE", "SE", "SW", "NW"];
 const EXIT_MS = 480;
 const PULL_ARM_MS = 1600;
 const PULL_DISTANCE_PX = 60;
+
+const SENSOR_GRACE_MS = 2500;
+const noSubscribe = () => () => {};
+/** Raw readouts (sensor counters, canvas HUD) only in development or with ?debug=1. */
+const readDebug = () =>
+  process.env.NODE_ENV === "development" || new URLSearchParams(window.location.search).get("debug") === "1";
+const canAskMotion = () =>
+  typeof DeviceOrientationEvent !== "undefined" &&
+  typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === "function";
 
 function formatLatLon(lat: number, lon: number): string {
   const ns = lat >= 0 ? "N" : "S";
@@ -68,6 +86,7 @@ export function OnyxSky({
   warmth = 0.55,
   weather = null,
   sensorDiag,
+  onAllowMotion,
   onBack,
 }: {
   now: Date;
@@ -99,8 +118,31 @@ export function OnyxSky({
   warmth?: number;
   weather?: SkyWeatherSlot | null;
   sensorDiag?: { events: number; status: "none" | "ok" | "event-but-null" | "denied" };
+  /** Called from a tap so iOS can show its motion prompt. */
+  onAllowMotion?: () => void;
   onBack: () => void;
 }) {
+  const debug = useSyncExternalStore(noSubscribe, readDebug, () => false);
+  const canAsk = useSyncExternalStore(noSubscribe, canAskMotion, () => false);
+  const [sensorGraceOver, setSensorGraceOver] = useState(false);
+  const [motionAsked, setMotionAsked] = useState(false);
+  useEffect(() => {
+    const t = window.setTimeout(() => setSensorGraceOver(true), SENSOR_GRACE_MS);
+    return () => window.clearTimeout(t);
+  }, []);
+  const sensorOff =
+    !!sensorDiag &&
+    (sensorDiag.status === "denied" ||
+      sensorDiag.status === "event-but-null" ||
+      (sensorDiag.status === "none" && sensorGraceOver));
+  const motionAskable = sensorOff && canAsk && !!onAllowMotion && sensorDiag?.status !== "event-but-null";
+  const motionLine = !sensorOff
+    ? null
+    : motionAskable && !motionAsked
+      ? "Compass off: tap to allow motion"
+      : motionAskable
+        ? "Compass off: allow Motion in Settings · drag to look around"
+        : "No compass here · drag to look around";
   const live = liveHeading || livePitch || Boolean(liveAttitudeRef);
   const ribbonRef = useRef<HTMLDivElement>(null);
   const [lookAz, setLookAz] = useState(() => ((headingDeg % 360) + 360) % 360);
@@ -383,6 +425,7 @@ export function OnyxSky({
             openAimedDetailRef={openAimedDetailRef}
             paused={orreryOpen}
             onEmptyTap={onEmptySkyTap}
+            debugHud={debug}
           />
         </div>
 
@@ -415,20 +458,22 @@ export function OnyxSky({
           </svg>
         </div>
 
-        <div className="onyx-sky-top">
-          <span className="onyx-wordmark">Pneuma Mundi</span>
-        </div>
-        <div className="onyx-sky-coords">
-          <span className={!locationLive ? "onyx-sky-coords-warn" : undefined}>
-            {locLine}
-            <span className="onyx-sky-coords-meta"> · {locStatus}</span>
-          </span>
-          <span>{time}</span>
-        </div>
-        <div className="onyx-sky-meta" aria-live="polite">
-          looking {look} · {Math.round(az)}° · pitch {pitchLabel}° · {declLabel}
-          {offsetLabel ? ` · ${offsetLabel}` : ""}
-          {lockLabel ? ` · ${lockLabel}` : ""}
+        <div className="onyx-sky-readout">
+          <div className="onyx-sky-top">
+            <span className="onyx-wordmark">Pneuma Mundi</span>
+          </div>
+          <div className="onyx-sky-coords">
+            <span className={!locationLive ? "onyx-sky-coords-warn" : undefined}>
+              {locLine}
+              <span className="onyx-sky-coords-meta"> · {locStatus}</span>
+            </span>
+            <span>{time}</span>
+          </div>
+          <div className="onyx-sky-meta" aria-live="polite">
+            looking {look} · {Math.round(az)}° · pitch {pitchLabel}° · {declLabel}
+            {offsetLabel ? ` · ${offsetLabel}` : ""}
+            {lockLabel ? ` · ${lockLabel}` : ""}
+          </div>
         </div>
 
         <div className="onyx-heading-mark" aria-hidden>
@@ -506,10 +551,28 @@ export function OnyxSky({
         ) : null}
 
         {!skyDetail && !lockHold ? <p className="onyx-sky-hint">{hint}</p> : null}
-        {sensorDiag ? (
+        {debug && sensorDiag ? (
           <p className="onyx-sky-sensor" aria-live="polite">
             sensor: {sensorDiag.events} events · {sensorDiag.status}
           </p>
+        ) : null}
+        {motionLine && !skyDetail && !lockHold ? (
+          motionAskable && !motionAsked ? (
+            <button
+              type="button"
+              className="onyx-sky-motion"
+              onClick={() => {
+                setMotionAsked(true);
+                onAllowMotion?.();
+              }}
+            >
+              {motionLine}
+            </button>
+          ) : (
+            <p className="onyx-sky-motion" aria-live="polite">
+              {motionLine}
+            </p>
+          )
         ) : null}
 
         {skyDetail ? (

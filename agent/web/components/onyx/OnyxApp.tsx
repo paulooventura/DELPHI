@@ -241,6 +241,7 @@ export function OnyxApp({
   skyWeather = null,
   skyWarmth = 0.55,
   sensorDiag,
+  onAllowMotion,
   onEnterSky,
   cycles,
   cosmic,
@@ -301,6 +302,8 @@ export function OnyxApp({
   skyWeather?: SkyWeatherSlot | null;
   skyWarmth?: number;
   sensorDiag?: { events: number; status: "none" | "ok" | "event-but-null" | "denied" };
+  /** Ask for motion again from a tap on the sky's "Compass off" line. */
+  onAllowMotion?: () => void;
   /** Start orientation/location watches from the sky-open gesture. */
   onEnterSky?: () => void;
   cycles: CycleSnapshot | null;
@@ -780,6 +783,7 @@ export function OnyxApp({
         warmth={skyWarmth}
         weather={skyWeather}
         sensorDiag={sensorDiag}
+        onAllowMotion={onAllowMotion}
         onBack={goBack}
       />
     );

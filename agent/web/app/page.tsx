@@ -1337,6 +1337,7 @@ export default function Home() {
       skyWeather={skyWeatherSlot}
       skyWarmth={spectrumWarmth}
       sensorDiag={sensorDiag}
+      onAllowMotion={() => void startOrientationWatch()}
       onEnterSky={() => {
         // Fresh GPS + orientation on the open gesture — avoid stale Nashville/declination.
         if (toggles.heading || toggles.location) void startOrientationWatch();

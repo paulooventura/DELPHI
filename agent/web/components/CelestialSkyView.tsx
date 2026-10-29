@@ -111,6 +111,8 @@ export type CelestialSkyViewProps = {
   paused?: boolean;
   /** A tap that hit no sky object (CSS px inside the canvas). */
   onEmptyTap?: (x: number, y: number, width: number, height: number) => void;
+  /** Status, layer counts and az/alt text in the top corners: development and ?debug=1 only. */
+  debugHud?: boolean;
 };
 
 export type AimedSkyObject = {
@@ -937,10 +939,15 @@ export function CelestialSkyView({
   openAimedDetailRef,
   paused = false,
   onEmptyTap,
+  debugHud = false,
 }: CelestialSkyViewProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pausedRef = useRef(paused);
   pausedRef.current = paused;
+  const debugHudRef = useRef(debugHud);
+  useEffect(() => {
+    debugHudRef.current = debugHud;
+  }, [debugHud]);
   const onEmptyTapRef = useRef(onEmptyTap);
   onEmptyTapRef.current = onEmptyTap;
   const hapticsRef = useRef(createSkyHapticController());
@@ -1720,29 +1727,32 @@ export function CelestialSkyView({
         }
       }
 
-      ctx.font = `500 10px ${MICRO}`;
-      ctx.fillStyle = skyWarmth > 0.5 ? "rgba(245, 158, 11, 0.88)" : "rgba(226, 232, 240, 0.88)";
-      ctx.textAlign = "left";
-      ctx.fillText(
-        `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${skyTime.toLocaleTimeString()} · ${hudZoomRef.current}${weather?.condition ? ` · ${weather.condition}` : ""}`,
-        10,
-        15,
-      );
-      ctx.font = `500 8px ${MICRO}`;
-      ctx.fillStyle = "rgba(186, 230, 253, 0.62)";
-      ctx.textAlign = "left";
-      ctx.fillText(`${hudLayersRef.current} · tap object for details`, 10, 27);
-      if (nearestAirportRef.current) {
+      const hud = debugHudRef.current;
+      if (hud) {
+        ctx.font = `500 10px ${MICRO}`;
+        ctx.fillStyle = skyWarmth > 0.5 ? "rgba(245, 158, 11, 0.88)" : "rgba(226, 232, 240, 0.88)";
+        ctx.textAlign = "left";
+        ctx.fillText(
+          `${liveHeading || livePitch ? "● Live" : "○ Manual"} · ${skyTime.toLocaleTimeString()} · ${hudZoomRef.current}${weather?.condition ? ` · ${weather.condition}` : ""}`,
+          10,
+          15,
+        );
         ctx.font = `500 8px ${MICRO}`;
-        ctx.fillStyle = "rgba(148, 163, 184, 0.58)";
-        ctx.fillText(`Nearest airport · ${nearestAirportRef.current}`, 10, 39);
+        ctx.fillStyle = "rgba(186, 230, 253, 0.62)";
+        ctx.textAlign = "left";
+        ctx.fillText(`${hudLayersRef.current} · tap object for details`, 10, 27);
+        if (nearestAirportRef.current) {
+          ctx.font = `500 8px ${MICRO}`;
+          ctx.fillStyle = "rgba(148, 163, 184, 0.58)";
+          ctx.fillText(`Nearest airport · ${nearestAirportRef.current}`, 10, 39);
+        }
+        ctx.textAlign = "right";
+        ctx.fillText(
+          `${Math.round(viewHeading).toString().padStart(3, " ")}° az · ${Math.round(viewPitch).toString().padStart(2, " ")}° alt`,
+          w - 10,
+          15,
+        );
       }
-      ctx.textAlign = "right";
-      ctx.fillText(
-        `${Math.round(viewHeading).toString().padStart(3, " ")}° az · ${Math.round(viewPitch).toString().padStart(2, " ")}° alt`,
-        w - 10,
-        15,
-      );
 
       const moon = bodies.find(b => b.id === "moon");
       if (moon && moon.alt > -5) {
@@ -1756,7 +1766,7 @@ export function CelestialSkyView({
         ctx.font = `600 9px ${MICRO}`;
         ctx.fillStyle = sep < 6 ? "rgba(251, 191, 36, 0.95)" : "rgba(226, 232, 240, 0.72)";
         ctx.textAlign = "left";
-        ctx.fillText(moonLabel, 10, nearestAirportRef.current ? 52 : 40);
+        if (hud) ctx.fillText(moonLabel, 10, nearestAirportRef.current ? 52 : 40);
 
         if (sep > 8) {
           const edgePad = 22;
