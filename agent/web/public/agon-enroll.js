@@ -320,6 +320,23 @@
   /* ---------- public directory (approved only) ---------- */
   var dir = { host: null, entries: null, filter: "all", state: "idle" };
 
+  /* Report opens a mail draft (nothing is sent unless the person sends it); Hide keeps a listing off this device. */
+  var REPORT_TO = "hello@pauloventura.org";
+  var HIDDEN_KEY = "agon-hidden-v1";
+  function hiddenIds() {
+    try { return JSON.parse(localStorage.getItem(HIDDEN_KEY) || "[]") || []; } catch (e) { return []; }
+  }
+  function hideId(id) {
+    var h = hiddenIds();
+    if (h.indexOf(id) < 0) h.push(id);
+    try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(h.slice(-500))); } catch (e) { /* private mode */ }
+  }
+  function reportHref(e) {
+    var subject = "Report Agon listing: " + e.display_name + " (" + e.id + ")";
+    var body = "Listing: " + e.display_name + " (" + e.id + ")\n\nWhat's wrong with it:\n\n";
+    return "mailto:" + REPORT_TO + "?subject=" + encodeURIComponent(subject) + "&body=" + encodeURIComponent(body);
+  }
+
   function dirRender() {
     if (!dir.host) return;
     var chips = [{ id: "all", label: "All" }].concat(KINDS.map(function (k) { return { id: k.id, label: k.ico + " " + k.label }; }))
@@ -331,20 +348,30 @@
     else if (dir.state === "off") body = '<p class="dirempty">The directory opens once enrollment is connected. Be one of the first — enroll above.</p>';
     else if (dir.state === "error") body = '<p class="dirempty">Couldn\'t load the directory right now.</p>';
     else {
-      var list = (dir.entries || []).filter(function (e) { return dir.filter === "all" || e.kind === dir.filter; });
+      var hidden = hiddenIds();
+      var list = (dir.entries || []).filter(function (e) {
+        return (dir.filter === "all" || e.kind === dir.filter) && hidden.indexOf(e.id) < 0;
+      });
       body = list.length
         ? '<div class="dirgrid">' + list.map(function (e) {
             var k = kindOf(e.kind);
             var link = e.link ? '<button type="button" class="evbtn dirlink" data-url="' + attr(e.link) + '" data-name="' + attr(e.display_name) + '">Visit ↗</button>' : "";
             return '<div class="dircard"><div class="dirtop"><span class="dirico">' + k.ico + '</span><div><h4>' + esc(e.display_name) + '</h4><span class="dirmeta">' + esc(k.label) + (e.city ? " · " + esc(e.city) : "") + "</span></div></div>" +
               (e.headline ? '<p class="dirhead">' + esc(e.headline) + "</p>" : "") +
-              (e.about ? '<p class="dirabout">' + esc(e.about) + "</p>" : "") + link + "</div>";
+              (e.about ? '<p class="dirabout">' + esc(e.about) + "</p>" : "") + link +
+              '<p class="dirflag" style="margin:8px 0 0;font-size:12px;opacity:.8">' +
+              '<a href="' + attr(reportHref(e)) + '" style="color:inherit;text-decoration:underline">Report this listing</a> · ' +
+              '<button type="button" class="dirhide" data-hide="' + attr(e.id) + '" style="all:unset;cursor:pointer;text-decoration:underline">Hide it</button>' +
+              "</p></div>";
           }).join("") + "</div>"
         : '<p class="dirempty">No approved ' + (dir.filter === "all" ? "entries" : esc(kindOf(dir.filter).label.toLowerCase()) + " entries") + " yet.</p>";
     }
     dir.host.innerHTML = '<div class="dirchips">' + chips + "</div>" + body;
     dir.host.querySelectorAll("[data-dk]").forEach(function (b) {
       b.onclick = function () { dir.filter = b.getAttribute("data-dk"); dirRender(); };
+    });
+    dir.host.querySelectorAll("[data-hide]").forEach(function (b) {
+      b.onclick = function () { hideId(b.getAttribute("data-hide")); dirRender(); };
     });
     dir.host.querySelectorAll(".dirlink").forEach(function (b) {
       b.onclick = function () {
