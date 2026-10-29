@@ -136,9 +136,11 @@ describe("Addendum 4 — orchestration (invariant 12)", () => {
   it("live Nashville fields — registers vary; every voice still in decomposition", () => {
     const lat = 36.16;
     const lon = -86.78;
-    // Known live pair: plain-reading vs trickster-challenge (whole sky chorus)
+    // Known live pair: plain-reading vs trickster-challenge (whole sky chorus).
+    // Unequal sunrise-anchored hours (b3632de) put Abhijit, the bright midday
+    // muhūrta, on 18:00Z; 16:00Z (10 AM local) is trickster with margin either side.
     const plainAt = new Date("2026-01-01T02:00:00Z");
-    const trickAt = new Date("2026-01-05T18:00:00Z");
+    const trickAt = new Date("2026-01-05T16:00:00Z");
 
     const plainSnap = takeSnapshot(
       resolveMoment(jdFromDate(plainAt), lat, lon).entries,

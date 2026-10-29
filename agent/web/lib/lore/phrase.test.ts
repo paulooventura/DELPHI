@@ -29,6 +29,10 @@ function mk(
   } as QualiaEntry;
 }
 
+/** One list of challenge turns for every "dares the reader" assertion. */
+const CHALLENGE =
+  /\byou\b|\byour\b|will you|don't|choose|pick |prove|challenge|your move|which hand|walk through|act like|what will you|what were you|decide|plant |name which|see the split|sit with|turn it|stay with|meet it/;
+
 describe("Addendum 5 — local speak() (invariant 13)", () => {
   it("speak is sync, local, and never calls fetch", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(() => {
@@ -115,9 +119,7 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
     expect(phrase.length).toBeGreaterThan(12);
     expect(phrase).not.toMatch(/\b(Leo|Mars|Saturn|Horse|nakshatra|wuku)\b/i);
     // Challenge turn: second-person dare
-    expect(phrase.toLowerCase()).toMatch(
-      /\byou\b|\byour\b|choose|name which|see the split|sit with|turn it|stay with|don't|will you|prove|challenge|decide|plant one|your move|which hand|walk through|act like|what will you|what were you/,
-    );
+    expect(phrase.toLowerCase()).toMatch(CHALLENGE);
   });
 
   it("every register ends as a challenge to the user", () => {
@@ -147,9 +149,7 @@ describe("Addendum 5 — local speak() (invariant 13)", () => {
     ];
     for (const chord of chords) {
       const phrase = speak(chord);
-      expect(phrase.toLowerCase()).toMatch(
-        /\byou\b|\byour\b|will you|don't |choose|pick |prove|challenge|your move|which hand|walk through|act like|what will you|decide|plant |name which|see the split|sit with|turn it|stay with|meet it/,
-      );
+      expect(phrase.toLowerCase()).toMatch(CHALLENGE);
     }
   });
 
