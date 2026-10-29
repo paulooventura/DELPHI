@@ -19,7 +19,7 @@ export type SbdbElements = { epoch: number; e: number; q: number; i: number; om:
 export type SbdbBodyJson = {
   id: string;
   name: string;
-  kind: "dwarf" | "asteroid" | "comet";
+  kind: "dwarf" | "asteroid" | "centaur" | "comet";
   des: string;
   el: SbdbElements;
   H: number | null;
@@ -37,12 +37,15 @@ export type MoonJson = {
   el: { epoch: number; e: number; i: number; om: number; w: number; n: number; ma: number; a: number };
   diameterKm: number;
   massKg: number;
+  /** Absolute magnitude V(1,0) and geometric albedo (JPL Horizons satellite data). */
+  H?: number | null;
+  albedo?: number | null;
 };
 export type CraftJson = { id: string; name: string; kind: "spacecraft"; launch: number; rows: number[] };
 export type CloudJson = { source: string; epochJd: number; stride: number; rows: number[] };
 export type StarsJson = { source: string; rows: Array<number | string> };
 
-export const ORRERY_LAYER_FILES = ["bodies", "moons", "spacecraft", "stars", "asteroids", "kuiper"] as const;
+export const ORRERY_LAYER_FILES = ["bodies", "moons", "spacecraft", "stars", "asteroids", "centaurs", "kuiper"] as const;
 export type OrreryLayerFile = (typeof ORRERY_LAYER_FILES)[number];
 
 const cache = new Map<string, Promise<unknown>>();
@@ -289,6 +292,7 @@ export type CatalogBody = OrreryBody & {
 const KIND_COLOR: Record<string, string> = {
   dwarf: "#c9b8a6",
   asteroid: "#b9ad9c",
+  centaur: "#d9b38c",
   comet: "#9fd4f0",
   moon: "#cfc8bc",
   spacecraft: "#7dffc8",
@@ -311,7 +315,7 @@ export function buildCatalogBodies(
       kind,
       parent: "sun",
       color: KIND_COLOR[kind]!,
-      sizePx: kind === "dwarf" ? 2 : kind === "comet" ? 1.7 : 1.4,
+      sizePx: kind === "dwarf" ? 2 : kind === "comet" || kind === "centaur" ? 1.7 : 1.4,
       rotationDays: 0.4,
       periodDays: period,
       meta: {
@@ -338,7 +342,7 @@ export function buildCatalogBodies(
       sizePx: m.diameterKm > 1000 ? 1.9 : 1.4,
       rotationDays: 360 / m.el.n,
       periodDays: 360 / m.el.n,
-      meta: { diameterKm: m.diameterKm, massKg: m.massKg },
+      meta: { diameterKm: m.diameterKm, massKg: m.massKg, H: m.H ?? null },
       position: jd => moonOffset(m.el, jd),
       orbit: moonOrbitPath(m.el),
     });

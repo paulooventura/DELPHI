@@ -14,7 +14,7 @@ import { SKY_BODIES } from "./skyPositions";
 
 export type Vec3 = { x: number; y: number; z: number };
 
-export type OrreryBodyKind = "star" | "planet" | "dwarf" | "moon" | "asteroid" | "comet" | "spacecraft";
+export type OrreryBodyKind = "star" | "planet" | "dwarf" | "moon" | "asteroid" | "centaur" | "comet" | "spacecraft";
 
 export type OrreryBody = {
   id: string;

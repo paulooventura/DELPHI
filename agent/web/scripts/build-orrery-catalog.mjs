@@ -60,6 +60,11 @@ const DWARFS = [
   ["orcus", "90482", "Orcus"],
 ];
 
+const CENTAURS = [
+  ["chiron", "2060", "Chiron"],
+  ["pholus", "5145", "Pholus"],
+];
+
 const NOTABLE_ASTEROIDS = [
   ["apophis", "99942", "Apophis"],
   ["bennu", "101955", "Bennu"],
@@ -160,6 +165,7 @@ async function buildBodies() {
   const out = [];
   const jobs = [
     ...DWARFS.map(d => [...d, "dwarf"]),
+    ...CENTAURS.map(d => [...d, "centaur"]),
     ...NOTABLE_ASTEROIDS.map(d => [...d, "asteroid"]),
     ...COMETS.map(d => [...d, "comet"]),
   ];
@@ -202,6 +208,17 @@ const MOONS = [
   ["charon", 901, "Charon", "pluto", 1212, 1.586e21],
 ];
 const PLANET_CENTER = { mars: 499, jupiter: 599, saturn: 699, uranus: 799, neptune: 899, pluto: 999 };
+/** Charon has no V(1,0) in Horizons: H from D = 1212 km and geometric albedo 0.37 (Buie et al. 2006). */
+const MOON_H_FALLBACK = { charon: { H: 1.28, albedo: 0.37 } };
+
+/** Absolute magnitude V(1,0) and geometric albedo from the Horizons satellite data sheet. */
+async function moonPhotometry(id, code) {
+  const j = await get(`https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND='${code}'&OBJ_DATA=YES&MAKE_EPHEM=NO`);
+  const r = j.result ?? "";
+  const H = num(r.match(/V\(1,0\)\s*=\s*([-+]?[\d.]+)/)?.[1]);
+  const albedo = num(r.match(/Geometric\s+Albedo\s*=\s*([\d.]+)/i)?.[1]);
+  return H != null ? { H, albedo } : (MOON_H_FALLBACK[id] ?? { H: null, albedo });
+}
 
 function horizonsUrl(params) {
   const q = Object.entries({ format: "json", OBJ_DATA: "NO", MAKE_EPHEM: "YES", CSV_FORMAT: "YES", ...params })
@@ -264,6 +281,7 @@ async function buildMoons() {
       },
       diameterKm,
       massKg,
+      ...(await moonPhotometry(id, code)),
     });
     process.stdout.write(".");
     await sleep(150);
@@ -459,5 +477,14 @@ if (on("kuiper")) {
     stride: 7,
     fields: ["a*1e4", "e*1e4", "i*100", "om*100", "w*100", "M*100", "H*10"],
     rows: await cloud("sb-class=TNO", 5000, 30, 1e4, 5000),
+  });
+}
+if (on("centaurs")) {
+  await writeJson("centaurs", {
+    source: "JPL SSD Small-Body Database, Centaurs (JPL class CEN, orbits between Jupiter and Neptune)",
+    epochJd: CLOUD_EPOCH_JD,
+    stride: 7,
+    fields: ["a*1e4", "e*1e4", "i*100", "om*100", "w*100", "M*100", "H*10"],
+    rows: await cloud("sb-class=CEN", 5000, 5.5, 30.2, 5000),
   });
 }

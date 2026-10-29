@@ -77,13 +77,23 @@ const DEEP_SPEEDS = [
 ] as const;
 type DeepSpeedId = (typeof DEEP_SPEEDS)[number]["id"];
 
-type LayerId = "planets" | "moons" | "dwarfs" | "comets" | "asteroids" | "kuiper" | "spacecraft" | "stars";
+type LayerId =
+  | "planets"
+  | "moons"
+  | "dwarfs"
+  | "comets"
+  | "asteroids"
+  | "centaurs"
+  | "kuiper"
+  | "spacecraft"
+  | "stars";
 const LAYERS: Array<{ id: LayerId; label: string }> = [
   { id: "planets", label: "Planets" },
   { id: "moons", label: "Moons" },
   { id: "dwarfs", label: "Dwarf planets" },
   { id: "comets", label: "Comets" },
   { id: "asteroids", label: "Asteroids" },
+  { id: "centaurs", label: "Centaurs" },
   { id: "kuiper", label: "Kuiper belt" },
   { id: "spacecraft", label: "Spacecraft" },
   { id: "stars", label: "Stars" },
@@ -244,6 +254,8 @@ function layerOf(b: OrreryBody): LayerId | null {
       return "comets";
     case "asteroid":
       return "asteroids";
+    case "centaur":
+      return "centaurs";
     case "spacecraft":
       return "spacecraft";
     default:
@@ -264,6 +276,7 @@ function importance(b: AnyBody): number {
       return (b.meta?.diameterKm ?? 3000) >= 1000 ? 3 : 6;
     case "comet":
     case "asteroid":
+    case "centaur":
       return 4;
     case "spacecraft":
       return 5;
@@ -309,6 +322,7 @@ const KIND_LABEL: Record<string, string> = {
   dwarf: "Dwarf planet",
   comet: "Comet",
   asteroid: "Asteroid",
+  centaur: "Centaur · between Jupiter and Neptune",
   spacecraft: "Spacecraft",
 };
 
@@ -762,7 +776,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         setStarNames(entries.flatMap((s, i) => (s.name ? [{ name: s.name, i }] : [])));
         writeCounts();
         if (!gl) return;
-        for (const name of ["asteroids", "kuiper"] as const) {
+        for (const name of ["asteroids", "centaurs", "kuiper"] as const) {
           const cloud = await loadOrreryLayer<CloudJson>(name);
           if (!alive) return;
           counts[name] = gl.setCloud(name, cloud);
@@ -1521,6 +1535,12 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               color: [0.86, 0.78, 0.62],
               size: 1.1,
               days: days("asteroids"),
+            },
+            centaurs: {
+              alpha: solar && L.centaurs ? alpha * 0.75 * clamp((frameR / sys - 0.15) / 0.35, 0, 1) : 0,
+              color: [1, 0.74, 0.5],
+              size: 1.5,
+              days: days("centaurs"),
             },
             kuiper: {
               alpha: solar && L.kuiper ? alpha * 0.6 * clamp((frameR / sys - 0.2) / 0.4, 0, 1) : 0,

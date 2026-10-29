@@ -46,10 +46,10 @@ const BUILTIN_PHYS: Record<string, { d: number; m?: number; H?: number }> = {
   moon: { d: 3474.8, m: 7.342e22 },
   mars: { d: 6779, m: 6.417e23 },
   jupiter: { d: 139_820, m: 1.898e27 },
-  io: { d: 3643.2, m: 8.932e22 },
-  europa: { d: 3121.6, m: 4.8e22 },
-  ganymede: { d: 5268.2, m: 1.4819e23 },
-  callisto: { d: 4820.6, m: 1.0759e23 },
+  io: { d: 3643.2, m: 8.932e22, H: -1.68 },
+  europa: { d: 3121.6, m: 4.8e22, H: -1.41 },
+  ganymede: { d: 5268.2, m: 1.4819e23, H: -2.09 },
+  callisto: { d: 4820.6, m: 1.0759e23, H: -1.05 },
   saturn: { d: 116_460, m: 5.683e26 },
   uranus: { d: 50_724, m: 8.681e25 },
   neptune: { d: 49_244, m: 1.024e26 },
@@ -228,7 +228,7 @@ export function measureBody(index: OrreryIndex, id: string, date: Date): Measure
     const H = b.meta?.H ?? phys?.H ?? null;
     if (b.meta?.M1 != null) {
       magnitude = b.meta.M1 + 5 * Math.log10(distEarthAu) + (b.meta.K1 ?? 10) * Math.log10(distSunAu);
-    } else if (H != null && !isMoon) {
+    } else if (H != null) {
       const cosPhase = (distSunAu ** 2 + distEarthAu ** 2 - vecLength(earth) ** 2) / (2 * distSunAu * distEarthAu);
       magnitude = hgMagnitude(H, b.meta?.G ?? 0.15, distSunAu, distEarthAu, Math.acos(Math.max(-1, Math.min(1, cosPhase))));
     }
@@ -236,7 +236,7 @@ export function measureBody(index: OrreryIndex, id: string, date: Date): Measure
 
   let nextPeri: Date | null = null;
   let returns = false;
-  if (peri && (b.kind === "comet" || b.kind === "asteroid" || b.kind === "dwarf")) {
+  if (peri && (b.kind === "comet" || b.kind === "asteroid" || b.kind === "centaur" || b.kind === "dwarf")) {
     const n = nextPerihelionJd(peri, jd);
     returns = peri.e < 1;
     nextPeri = n != null ? jdToDate(n) : jdToDate(peri.tp);

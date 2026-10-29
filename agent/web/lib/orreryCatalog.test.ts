@@ -120,6 +120,54 @@ describe("comets, asteroids and spacecraft", () => {
   });
 });
 
+describe("Centaurs", () => {
+  const centaurs = load<CloudJson>("centaurs");
+  it("a cloud of 1,000+ Centaurs, all between Jupiter and Neptune", () => {
+    const n = centaurs.rows.length / centaurs.stride;
+    expect(n).toBeGreaterThan(1000);
+    for (let k = 0; k < n; k++) {
+      const a = centaurs.rows[k * 7]! / 1e4;
+      expect(a).toBeGreaterThan(5.5);
+      expect(a).toBeLessThan(30.2);
+    }
+  });
+  it("Chiron and Pholus are named, measurable bodies", () => {
+    const chiron = measureBody(index, "chiron", FIXED)!;
+    expect(chiron.kind).toBe("centaur");
+    expect(chiron.periodDays! / 365.25).toBeGreaterThan(48);
+    expect(chiron.periodDays! / 365.25).toBeLessThan(53);
+    expect(chiron.diameterKm).toBeGreaterThan(100);
+    expect(chiron.magnitude!).toBeGreaterThan(15);
+    expect(chiron.magnitude!).toBeLessThan(20);
+    expect(measureBody(index, "pholus", FIXED)!.distSunAu).toBeGreaterThan(8);
+  });
+});
+
+describe("moon brightness from Earth", () => {
+  const mag = (id: string, iso: string) => measureBody(index, id, new Date(iso))!.magnitude!;
+  it("Titan ~8.4 at Saturn's 2026 opposition", () => {
+    expect(mag("titan", "2026-10-04T00:00:00Z")).toBeGreaterThan(8.1);
+    expect(mag("titan", "2026-10-04T00:00:00Z")).toBeLessThan(8.6);
+  });
+  it("Triton ~13.5 at Neptune's 2026 opposition", () => {
+    expect(mag("triton", "2026-09-26T00:00:00Z")).toBeGreaterThan(13.2);
+    expect(mag("triton", "2026-09-26T00:00:00Z")).toBeLessThan(13.8);
+  });
+  it("Phobos ~12 at Mars' 2027 opposition (a distant one)", () => {
+    expect(mag("phobos", "2027-02-19T00:00:00Z")).toBeGreaterThan(11);
+    expect(mag("phobos", "2027-02-19T00:00:00Z")).toBeLessThan(12.5);
+  });
+  it("Ganymede ~4.6 at Jupiter's 2026 opposition", () => {
+    expect(mag("ganymede", "2026-01-10T00:00:00Z")).toBeGreaterThan(4.3);
+    expect(mag("ganymede", "2026-01-10T00:00:00Z")).toBeLessThan(5);
+  });
+  it("every moon gets a finite magnitude", () => {
+    for (const b of index.bodies.filter(x => x.kind === "moon")) {
+      expect(Number.isFinite(measureBody(index, b.id, FIXED)!.magnitude), b.id).toBe(true);
+    }
+  });
+});
+
 describe("measurement card", () => {
   it("Moon: ~384,400 km from Earth, ~1.28 light-seconds, ~1 km/s around Earth, ~27.3 day lap", () => {
     const m = measureBody(index, "moon", FIXED)!;
