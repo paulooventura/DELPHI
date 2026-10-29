@@ -76,6 +76,7 @@ import { OrreryShellTools } from "./OrreryShellTools";
 import { createOrreryWhoosh } from "../../lib/orreryWhoosh";
 import type { SatWorkerIn, SatWorkerOut } from "./satWorker";
 import type { MapSat } from "./EarthMap";
+import { API_BASE } from "../../lib/apiBase";
 
 /** MapLibre and the map layers load only when the world map first opens. */
 const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false });
@@ -946,7 +947,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       img.onload = () => alive && gl?.setLand(img);
       img.src = "/orrery/earth-land.png";
       try {
-        worker = new Worker(new URL("./satWorker.ts", import.meta.url), { type: "module" });
+        worker = new Worker("/orrery/sat-worker.js");
       } catch {
         worker = null;
         return;
@@ -1007,7 +1008,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         pathPending = false;
         satPath = { i: msg.i, t: simMsRef.current, pts: msg.pts };
       };
-      const init: SatWorkerIn = { type: "init", groups: Object.keys(ORBIT_GROUPS) };
+      const init: SatWorkerIn = { type: "init", groups: Object.keys(ORBIT_GROUPS), apiBase: API_BASE };
       worker.postMessage(init);
     };
     const satPosKm = (i: number, ms: number): Vec3 | null => {

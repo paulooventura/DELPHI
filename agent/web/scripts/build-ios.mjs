@@ -120,6 +120,7 @@ function run(cmd, args, cwd, env) {
   }
 }
 
+run(process.execPath, [path.join("scripts", "build-sat-worker.mjs")], web, {});
 console.log(`[build-ios] scratch ${scratch}`);
 fs.mkdirSync(scratch, { recursive: true });
 clearScratch();

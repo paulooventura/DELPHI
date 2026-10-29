@@ -6,7 +6,9 @@
     "node": ">=20.9.0"
   },
   "scripts": {
+    "predev": "node scripts/build-sat-worker.mjs",
     "dev": "next dev",
+    "prebuild": "node scripts/build-sat-worker.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

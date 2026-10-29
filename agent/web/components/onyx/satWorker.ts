@@ -1,14 +1,18 @@
 /**
  * SGP4 off the main thread for the orrery's Earth level. Loads the orbit groups
- * (our cached route first, the bundled snapshot second), then answers "tick"
- * with TEME positions (km) and velocities (km/s) for every object at time t.
+ * (the live route first; offline, the newer of the copy kept on this device and the
+ * bundled snapshot), then answers "tick" with TEME positions (km) and velocities (km/s).
+ *
+ * Turbopack copies `new Worker(new URL(...))` targets as raw .ts, so this file is compiled
+ * on its own to public/orrery/sat-worker.js (scripts/build-sat-worker.mjs).
  */
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 import { rowToOmm, type GpRow, type OrbitSet } from "../../lib/orbitRows";
-import { apiUrl } from "../../lib/apiBase";
+import { newerOrbitSet, orbitFreshness, orbitSourceLabel } from "../../lib/orbitAge";
+import { getCachedOrbitSet, putCachedOrbitSet } from "../../lib/orbitCache";
 
 export type SatWorkerIn =
-  | { type: "init"; groups: string[] }
+  | { type: "init"; groups: string[]; apiBase?: string }
   | { type: "tick"; t: number }
   | { type: "path"; i: number; t: number; n: number };
 
@@ -24,21 +28,28 @@ const ctx = self as unknown as {
 let recs: Array<SatRec | null> = [];
 let rows: GpRow[] = [];
 
-async function loadGroup(group: string): Promise<(OrbitSet & { fallback: boolean }) | null> {
-  for (const [url, fallback] of [
-    [apiUrl(`/api/orbits/${group}`), false],
-    [`/orbits/${group}.json`, true],
-  ] as const) {
-    try {
-      const res = await fetch(url);
-      if (!res.ok) continue;
-      const j = (await res.json()) as OrbitSet;
-      if (j && Array.isArray(j.rows) && j.rows.length) return { ...j, fallback };
-    } catch {
-      /* next source */
-    }
+async function fetchSet(url: string): Promise<OrbitSet | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const j = (await res.json()) as OrbitSet;
+    return j && Array.isArray(j.rows) && j.rows.length ? j : null;
+  } catch {
+    return null;
   }
-  return null;
+}
+
+async function loadGroup(group: string, apiBase: string): Promise<(OrbitSet & { fallback: boolean }) | null> {
+  const live = await fetchSet(`${apiBase}/api/orbits/${group}`);
+  if (live) {
+    void putCachedOrbitSet(group, live);
+    return { ...live, fallback: false };
+  }
+  const kept = await getCachedOrbitSet(group);
+  const bundled = await fetchSet(`/orbits/${group}.json`);
+  const best = newerOrbitSet(kept ? { ...kept, fallback: false } : null, bundled ? { ...bundled, fallback: true } : null);
+  if (!best || orbitFreshness(best.fetchedAt) === "expired") return null;
+  return { ...best, source: orbitSourceLabel(best.source, best.fetchedAt) };
 }
 
 function stateAt(rec: SatRec | null, date: Date) {
@@ -55,7 +66,8 @@ function stateAt(rec: SatRec | null, date: Date) {
 ctx.onmessage = async (e: MessageEvent<SatWorkerIn>) => {
   const msg = e.data;
   if (msg.type === "init") {
-    const sets = await Promise.all(msg.groups.map(loadGroup));
+    const apiBase = (msg.apiBase ?? "").replace(/\/+$/, "");
+    const sets = await Promise.all(msg.groups.map(g => loadGroup(g, apiBase)));
     const meta: Array<{ group: string; source: string; fetchedAt: string; start: number; count: number }> = [];
     rows = [];
     recs = [];

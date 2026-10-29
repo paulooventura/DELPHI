@@ -22,6 +22,8 @@
 /build
 # bundled iOS export (npm run build:ios)
 /www-ios/
+# compiled satellite worker (scripts/build-sat-worker.mjs)
+/public/orrery/sat-worker.js
 
 # misc
 .DS_Store
