@@ -5,7 +5,13 @@ import type { NextRequest } from "next/server";
 export function middleware(request: NextRequest) {
   const response = NextResponse.next();
   const path = request.nextUrl.pathname;
-  if (path.startsWith("/_next/static") || path.startsWith("/_next/image") || path.startsWith("/api/orbits/")) {
+  if (
+    path.startsWith("/_next/static") ||
+    path.startsWith("/_next/image") ||
+    path.startsWith("/api/orbits/") ||
+    path.startsWith("/api/aircraft") ||
+    path.startsWith("/api/seafloor/")
+  ) {
     return response;
   }
   response.headers.set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0");
