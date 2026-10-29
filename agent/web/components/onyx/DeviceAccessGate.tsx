@@ -235,7 +235,7 @@ export function DeviceAccessGate({
           {native ? (
             <li><b>Anonymous usage counts</b> stay off unless you choose Share under About.</li>
           ) : (
-            <li><b>Anonymous usage counts</b> (screens and taps, never what you type) tune the beta. Turn them off under About.</li>
+            <li><b>Anonymous usage counts</b> (screens and taps, never what you type) tune Pneuma. Turn them off under About.</li>
           )}
         </ul>
       </div>

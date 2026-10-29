@@ -29,7 +29,7 @@ export function UsageOptIn() {
         </p>
       ) : (
         <p className="onyx-layer-meta">
-          Anonymous usage counts help tune the beta: which screens you spend time on and which buttons you tap,
+          Anonymous usage counts help tune Pneuma: which screens you spend time on and which buttons you tap,
           with a random visitor id and the approximate city your connection suggests. Never what you type, never
           birth data. Every feature works the same either way, and you can change this any time.
         </p>

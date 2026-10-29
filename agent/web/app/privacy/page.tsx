@@ -73,7 +73,7 @@ export default function PrivacyPage() {
       <h2 style={h2}>Stored by us</h2>
       <ul>
         <li>
-          <b>Anonymous usage counts</b>, to tune the beta: time per screen, taps on buttons (labels with digits blanked), named
+          <b>Anonymous usage counts</b>, to tune Pneuma: time per screen, taps on buttons (labels with digits blanked), named
           feature events, entry page, the site that sent you, device type, OS, browser, screen size, build, a random visitor
           id, and the approximate city, region and country our host derives from your IP address (the IP itself isn&apos;t
           kept). Never typed text or birth data; on Psyche only the names of buttons. Turn it off on a device with{" "}
