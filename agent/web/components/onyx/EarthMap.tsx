@@ -19,13 +19,15 @@ import {
   type AircraftCell,
   type FlightRoute,
 } from "../../lib/aircraft";
+import { fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElevation } from "../../lib/daynight";
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 
 export type MapSat = { name: string; row: GpRow };
 
-type LayerId = "aircraft" | "satellites" | "seafloor" | "wrecks";
+type LayerId = "daynight" | "aircraft" | "satellites" | "seafloor" | "wrecks";
 const LAYERS: Array<{ id: LayerId; label: string }> = [
+  { id: "daynight", label: "Day & night" },
   { id: "aircraft", label: "Aircraft" },
   { id: "satellites", label: "Satellites" },
   { id: "seafloor", label: "Seafloor" },
@@ -33,7 +35,10 @@ const LAYERS: Array<{ id: LayerId; label: string }> = [
 ];
 
 type Plane = { row: AcRow; at: number; seen: number; trail: Array<[number, number, number]> };
-type Sel = { kind: "plane"; hex: string } | { kind: "sat"; norad: number } | { kind: "wreck"; i: number };
+type Sel = { kind: "plane"; hex: string } | { kind: "sat"; norad: number } | { kind: "wreck"; i: number } | { kind: "sun" };
+/** Stacked night fill per band (sunset line, civil, nautical, astronomical): deep night ≈ 0.5. */
+const NIGHT_OPACITY = [0.16, 0.12, 0.1, 0.12];
+const NIGHT_EVERY_MS = 60_000;
 type WreckSet = { fetchedAt: string; source: string; cats: string[]; rows: Array<[number, number, number, number | null, number | null, string, number | null]> };
 /** [label, value, dimmed]: dimmed rows are shown greyed as unsure. */
 type CardRow = [string, string, boolean?];
@@ -144,7 +149,8 @@ export default function EarthMap({
     onCloseRef.current = onClose;
   }, [onClose]);
 
-  const [layers, setLayers] = useState<Record<LayerId, boolean>>({ aircraft: true, satellites: true, seafloor: true, wrecks: true });
+  const subRef = useRef<{ lat: number; lon: number; distAu: number } | null>(null);
+  const [layers, setLayers] = useState<Record<LayerId, boolean>>({ daynight: true, aircraft: true, satellites: true, seafloor: true, wrecks: true });
   const layersRef = useRef(layers);
   const [layersOpen, setLayersOpen] = useState(false);
   const [sel, setSel] = useState<Sel | null>(null);
@@ -252,6 +258,41 @@ export default function EarthMap({
       map.setPaintProperty("water", "fill-opacity", 0.55);
 
       const empty = fc([]);
+      map.addSource("night", { type: "geojson", data: empty });
+      map.addLayer(
+        {
+          id: "night",
+          type: "fill",
+          source: "night",
+          paint: {
+            "fill-color": "#01030c",
+            "fill-opacity": ["match", ["get", "band"], 0, NIGHT_OPACITY[0]!, 1, NIGHT_OPACITY[1]!, 2, NIGHT_OPACITY[2]!, NIGHT_OPACITY[3]!],
+            "fill-antialias": false,
+          },
+        },
+        firstSymbol,
+      );
+      map.addSource("sun", { type: "geojson", data: empty });
+      map.addLayer(
+        {
+          id: "sun-glow",
+          type: "circle",
+          source: "sun",
+          paint: { "circle-radius": 15, "circle-color": "#ffd98a", "circle-opacity": 0.22, "circle-blur": 1 },
+        },
+        firstSymbol,
+      );
+      map.addLayer(
+        {
+          id: "sun",
+          type: "circle",
+          source: "sun",
+          paint: { "circle-radius": 5, "circle-color": "#ffe9b0", "circle-stroke-color": "#ffbf5a", "circle-stroke-width": 1.2 },
+        },
+        firstSymbol,
+      );
+      updateNight();
+
       map.addSource("wrecks", { type: "geojson", data: empty });
       map.addLayer(
         {
@@ -394,6 +435,7 @@ export default function EarthMap({
       if (!map.getLayer("planes")) return;
       const L = layersRef.current;
       const vis = (on: boolean) => (on ? "visible" : "none");
+      for (const id of ["night", "sun-glow", "sun"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
       for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft));
       for (const id of ["sat-footprints", "sat-footprint-edge", "sat-tracks", "sat-points", "sat-names"]) map.setLayoutProperty(id, "visibility", vis(L.satellites));
       map.setLayoutProperty("seafloor", "visibility", vis(L.seafloor));
@@ -402,6 +444,21 @@ export default function EarthMap({
       if (L.wrecks && !wrecksRef.current) loadWrecks();
     };
     applyVisRef.current = applyVisibility;
+
+    /* ── day and night: the subsolar point and the twilight bands, once a minute ── */
+    let nightTimer = 0;
+    const updateNight = () => {
+      window.clearTimeout(nightTimer);
+      if (!alive) return;
+      const { sub, features } = nightBands(new Date());
+      subRef.current = sub;
+      (map.getSource("night") as GeoJSONSource | undefined)?.setData(fc(features));
+      (map.getSource("sun") as GeoJSONSource | undefined)?.setData(
+        fc([{ type: "Feature", geometry: { type: "Point", coordinates: [sub.lon, sub.lat] }, properties: {} }]),
+      );
+      root.dataset.subsolar = `${sub.lat.toFixed(2)},${sub.lon.toFixed(2)}`;
+      nightTimer = window.setTimeout(updateNight, NIGHT_EVERY_MS);
+    };
 
     const loadWrecks = () => {
       if (wrecksRef.current) return;
@@ -602,6 +659,11 @@ export default function EarthMap({
       }
       (map.getSource("sat-tracks") as GeoJSONSource).setData(fc([...tracks.filter(f => f.properties?.kind === "footprint"), ...lastTracks]));
       root.dataset.sats = String(points.length);
+      const sub = subRef.current;
+      if (sub) {
+        const q = map.project([sub.lon, sub.lat]);
+        root.dataset.sunPx = `${q.x.toFixed(1)},${q.y.toFixed(1)}`;
+      }
 
       const u = userRef.current;
       (map.getSource("you") as GeoJSONSource).setData(fc(u ? [{ type: "Feature", geometry: { type: "Point", coordinates: [u.lon, u.lat] }, properties: {} }] : []));
@@ -640,19 +702,20 @@ export default function EarthMap({
         [e.point.x - r, e.point.y - r],
         [e.point.x + r, e.point.y + r],
       ];
-      const ids = ["planes", "sat-points", "wrecks"].filter(id => map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
+      const ids = ["planes", "sat-points", "wrecks", "sun"].filter(id => map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
       const feats = map.queryRenderedFeatures(box, { layers: ids });
       let best: { f: MapGeoJSONFeature; d: number } | null = null;
       for (const f of feats) {
         if (f.geometry.type !== "Point") continue;
         const pt = map.project(f.geometry.coordinates as [number, number]);
-        const d = Math.hypot(pt.x - e.point.x, pt.y - e.point.y) - (f.layer.id === "wrecks" ? 0 : 4);
+        const d = Math.hypot(pt.x - e.point.x, pt.y - e.point.y) - (f.layer.id === "wrecks" ? 0 : f.layer.id === "sun" ? 2 : 4);
         if (!best || d < best.d) best = { f, d };
       }
       if (!best) return;
       const pr = best.f.properties as Record<string, unknown>;
       if (best.f.layer.id === "planes") setSel({ kind: "plane", hex: String(pr.hex) });
       else if (best.f.layer.id === "sat-points") setSel({ kind: "sat", norad: Number(pr.norad) });
+      else if (best.f.layer.id === "sun") setSel({ kind: "sun" });
       else setSel({ kind: "wreck", i: Number(pr.i) });
     };
 
@@ -669,6 +732,7 @@ export default function EarthMap({
       } else {
         poll();
         loopDraw();
+        updateNight();
       }
     };
 
@@ -693,6 +757,7 @@ export default function EarthMap({
       window.clearTimeout(pollTimer);
       window.clearTimeout(drawTimer);
       window.clearTimeout(moveTimer);
+      window.clearTimeout(nightTimer);
       document.removeEventListener("visibilitychange", onVisibility);
       map.remove();
       mapRef.current = null;
@@ -782,6 +847,25 @@ export default function EarthMap({
       rows.push(["NORAD id", String(m.norad)]);
       return { title: sat.name, sub: `${ORBIT_CLASS_LABEL[m.cls]} · ${sat.row[1]}`, rows };
     }
+    if (sel.kind === "sun") {
+      const s = subRef.current;
+      if (!s) return null;
+      const rows: CardRow[] = [
+        ["Over", `${Math.abs(s.lat).toFixed(2)}° ${s.lat >= 0 ? "N" : "S"}, ${Math.abs(s.lon).toFixed(2)}° ${s.lon >= 0 ? "E" : "W"}`],
+        ["Local solar time", "12:00 here, solar noon"],
+      ];
+      if (u) {
+        const el = sunElevation(u.lat, u.lon, s);
+        rows.push(["Your solar time", fmtSolarTime(solarTimeHours(u.lon, s.lon))]);
+        rows.push(["Sun from you", `${el >= 0 ? "" : "−"}${Math.abs(el).toFixed(1)}° · ${lightAt(el)}`]);
+        rows.push(["From you", fmtKm(haversineKm(u.lat, u.lon, s.lat, s.lon))]);
+      }
+      const c = mapRef.current?.getCenter();
+      if (c) rows.push(["Map centre", `${fmtSolarTime(solarTimeHours(c.lng, s.lon))} solar time · ${lightAt(sunElevation(c.lat, c.lng, s))}`]);
+      rows.push(["Sun distance", `${s.distAu.toFixed(4)} AU · ${((s.distAu * 149_597_870.7) / 299_792.458 / 60).toFixed(1)} light-min`]);
+      rows.push(["Shading", "night, then civil, nautical and astronomical twilight, updated each minute"]);
+      return { title: "Sun overhead here", sub: "Subsolar point", rows };
+    }
     const w = wrecksRef.current?.rows[sel.i];
     if (!w) return null;
     const rows: Array<[string, string]> = [["Kind", wrecksRef.current!.cats[w[2]] ?? "wreck"]];
@@ -866,7 +950,7 @@ export default function EarthMap({
             </button>
           </div>
         ) : null}
-        <p className="onyx-orr-hint">drag to move · pinch out to the globe · tap a plane, satellite or wreck</p>
+        <p className="onyx-orr-hint">drag to move · pinch out to the globe · tap a plane, satellite, wreck or the Sun</p>
         <p className="onyx-orr-credit">
           Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map: OpenFreeMap © OpenMapTiles ©{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:

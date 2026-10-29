@@ -157,10 +157,13 @@ void main() {
   vec2 uv = vec2(fract(lon / 6.28318530718 + 0.5), 0.5 - lat / 3.14159265359);
   float land = uHasLand > 0.5 ? texture2D(uLand, uv).r : 0.0;
   float mu = dot(n, uSun);
-  float day = smoothstep(-0.12, 0.14, mu);
-  vec3 dayCol = mix(vec3(0.05, 0.14, 0.29), vec3(0.33, 0.39, 0.29), land) * (0.42 + 0.58 * max(mu, 0.0));
-  vec3 nightCol = mix(vec3(0.010, 0.014, 0.032), vec3(0.030, 0.036, 0.052), land);
+  float day = smoothstep(-0.05, 0.09, mu);
+  vec3 dayCol = mix(vec3(0.05, 0.14, 0.29), vec3(0.33, 0.39, 0.29), land) * (0.5 + 0.5 * max(mu, 0.0));
+  vec3 nightCol = mix(vec3(0.008, 0.011, 0.026), vec3(0.026, 0.031, 0.046), land);
   vec3 col = mix(nightCol, dayCol, day);
+  // Twilight: a thin warm band where the Sun is 0-6 degrees below the horizon (sin 6 deg ~ 0.105).
+  float tw = smoothstep(-0.115, -0.04, mu) * (1.0 - smoothstep(-0.01, 0.05, mu));
+  col += vec3(0.50, 0.27, 0.10) * tw * 0.32;
   float rim = pow(1.0 - max(dot(n, -dir), 0.0), 2.5);
   col += vec3(0.30, 0.52, 1.0) * rim * (0.12 + 0.5 * day);
   gl_FragColor = vec4(col * uAlpha, uAlpha);
