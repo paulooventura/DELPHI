@@ -1,18 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { askAlertPermission, isNativeShell, refreshSkyAlerts, shareMoment } from "../../lib/native/shell";
 import { loadAlertPrefs, roundPlace, saveAlertPrefs, type AlertPrefs } from "../../lib/native/skyAlerts";
 
 const LIVE_SKY = "https://delphi.pauloventura.org/?mode=sky";
+const noSubscribe = () => () => {};
 
 /** Share + (in the iOS app) opt-in sky alerts, for the orrery's tool row. */
 export function OrreryShellTools({ focus }: { focus: string | null }) {
-  const [native, setNative] = useState(false);
+  const native = useSyncExternalStore(noSubscribe, isNativeShell, () => false);
   const [open, setOpen] = useState(false);
   const [note, setNote] = useState("");
-
-  useEffect(() => setNative(isNativeShell()), []);
 
   const share = async () => {
     const when = new Date().toLocaleString([], { dateStyle: "medium", timeStyle: "short" });

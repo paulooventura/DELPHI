@@ -62,6 +62,12 @@ export function OnyxAbout() {
             encrypted backup — then only an encrypted copy leaves, which only your recovery key can
             open. It is never included in phrase requests and never used for analytics.
           </p>
+          <p className="onyx-layer-meta">
+            <a href="/privacy" style={{ textDecoration: "underline" }}>
+              Privacy policy
+            </a>{" "}
+            · everything Pneuma Mundi keeps, sends, and how to delete it.
+          </p>
         </div>
       </div>
     </div>
