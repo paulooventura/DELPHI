@@ -8,14 +8,6 @@ import { Body, Equator, Observer, SiderealTime } from "astronomy-engine";
 const D = Math.PI / 180;
 const EARTH_CENTRE = new Observer(0, 0, 0);
 
-/** Sun elevation thresholds, degrees: sunset (refraction + half disc), civil, nautical, astronomical. */
-export const TWILIGHT = [
-  { id: "day-edge", deg: -0.833 },
-  { id: "civil", deg: -6 },
-  { id: "nautical", deg: -12 },
-  { id: "astro", deg: -18 },
-] as const;
-
 const wrap180 = (lon: number) => ((((lon + 180) % 360) + 360) % 360) - 180;
 
 /** Latitude and longitude where the Sun is at the zenith right now (apparent, of date). */
@@ -78,13 +70,16 @@ export function nightRing(sub: { lat: number; lon: number }, elevDeg: number, n 
   return pts;
 }
 
-/** One polygon per twilight band, darkest last, for a stacked translucent fill. */
+/** Steps from the sunset line to astronomical night; stacked equal fills give a soft gradient. */
+export const NIGHT_STEPS = [-0.833, -2, -3.5, -5, -6, -7.5, -9, -10.5, -12, -14, -16, -18];
+
+/** One polygon per step, darkest last, for a stacked translucent fill. */
 export function nightBands(date: Date): { sub: ReturnType<typeof subsolarPoint>; features: GeoJSON.Feature[] } {
   const sub = subsolarPoint(date);
-  const features: GeoJSON.Feature[] = TWILIGHT.map((t, i) => ({
+  const features: GeoJSON.Feature[] = NIGHT_STEPS.map((deg, i) => ({
     type: "Feature",
-    geometry: { type: "Polygon", coordinates: [nightRing(sub, t.deg)] },
-    properties: { band: i, id: t.id },
+    geometry: { type: "Polygon", coordinates: [nightRing(sub, deg)] },
+    properties: { band: i, deg },
   }));
   return { sub, features };
 }

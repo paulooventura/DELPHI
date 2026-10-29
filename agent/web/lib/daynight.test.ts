@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fmtSolarTime, lightAt, nightBands, nightRing, solarTimeHours, subsolarPoint, sunElevation } from "./daynight";
+import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, nightRing, solarTimeHours, subsolarPoint, sunElevation } from "./daynight";
 
 describe("day and night", () => {
   it("puts the subsolar point on the Tropic of Cancer near Greenwich at June solstice noon UTC", () => {
@@ -49,9 +49,12 @@ describe("day and night", () => {
     expect(lightAt(-30)).toBe("night");
   });
 
-  it("builds four nested bands", () => {
+  it("builds nested steps from the sunset line to astronomical night, through civil and nautical", () => {
     const { features } = nightBands(new Date("2026-10-29T21:00:00Z"));
-    expect(features).toHaveLength(4);
-    expect(features.map(f => f.properties?.id)).toEqual(["day-edge", "civil", "nautical", "astro"]);
+    expect(features).toHaveLength(NIGHT_STEPS.length);
+    const degs = features.map(f => f.properties?.deg);
+    expect(degs[0]).toBe(-0.833);
+    expect(degs.at(-1)).toBe(-18);
+    expect(degs).toEqual(expect.arrayContaining([-6, -12]));
   });
 });

@@ -19,7 +19,7 @@ import {
   type AircraftCell,
   type FlightRoute,
 } from "../../lib/aircraft";
-import { fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElevation } from "../../lib/daynight";
+import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElevation } from "../../lib/daynight";
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 
@@ -36,8 +36,8 @@ const LAYERS: Array<{ id: LayerId; label: string }> = [
 
 type Plane = { row: AcRow; at: number; seen: number; trail: Array<[number, number, number]> };
 type Sel = { kind: "plane"; hex: string } | { kind: "sat"; norad: number } | { kind: "wreck"; i: number } | { kind: "sun" };
-/** Stacked night fill per band (sunset line, civil, nautical, astronomical): deep night ≈ 0.5. */
-const NIGHT_OPACITY = [0.16, 0.12, 0.1, 0.12];
+/** Each night step's fill; stacked over every step, deep night ≈ 0.62. */
+const NIGHT_STEP_OPACITY = 1 - Math.pow(0.38, 1 / NIGHT_STEPS.length);
 const NIGHT_EVERY_MS = 60_000;
 type WreckSet = { fetchedAt: string; source: string; cats: string[]; rows: Array<[number, number, number, number | null, number | null, string, number | null]> };
 /** [label, value, dimmed]: dimmed rows are shown greyed as unsure. */
@@ -266,9 +266,19 @@ export default function EarthMap({
           source: "night",
           paint: {
             "fill-color": "#01030c",
-            "fill-opacity": ["match", ["get", "band"], 0, NIGHT_OPACITY[0]!, 1, NIGHT_OPACITY[1]!, 2, NIGHT_OPACITY[2]!, NIGHT_OPACITY[3]!],
+            "fill-opacity": NIGHT_STEP_OPACITY,
             "fill-antialias": false,
           },
+        },
+        firstSymbol,
+      );
+      map.addLayer(
+        {
+          id: "night-edge",
+          type: "line",
+          source: "night",
+          filter: ["==", ["geometry-type"], "LineString"],
+          paint: { "line-color": "#ffc978", "line-opacity": 0.4, "line-width": 1, "line-blur": 1.5 },
         },
         firstSymbol,
       );
@@ -435,7 +445,7 @@ export default function EarthMap({
       if (!map.getLayer("planes")) return;
       const L = layersRef.current;
       const vis = (on: boolean) => (on ? "visible" : "none");
-      for (const id of ["night", "sun-glow", "sun"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
+      for (const id of ["night", "night-edge", "sun-glow", "sun"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
       for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft));
       for (const id of ["sat-footprints", "sat-footprint-edge", "sat-tracks", "sat-points", "sat-names"]) map.setLayoutProperty(id, "visibility", vis(L.satellites));
       map.setLayoutProperty("seafloor", "visibility", vis(L.seafloor));
@@ -452,7 +462,10 @@ export default function EarthMap({
       if (!alive) return;
       const { sub, features } = nightBands(new Date());
       subRef.current = sub;
-      (map.getSource("night") as GeoJSONSource | undefined)?.setData(fc(features));
+      const edge = (features[0]!.geometry as GeoJSON.Polygon).coordinates[0]!.filter(p => Math.abs(p[1]!) < 90);
+      (map.getSource("night") as GeoJSONSource | undefined)?.setData(
+        fc([...features, { type: "Feature", geometry: { type: "LineString", coordinates: edge }, properties: { band: -1 } }]),
+      );
       (map.getSource("sun") as GeoJSONSource | undefined)?.setData(
         fc([{ type: "Feature", geometry: { type: "Point", coordinates: [sub.lon, sub.lat] }, properties: {} }]),
       );
