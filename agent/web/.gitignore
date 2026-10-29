@@ -20,6 +20,8 @@
 
 # production
 /build
+# bundled iOS export (npm run build:ios)
+/www-ios/
 
 # misc
 .DS_Store

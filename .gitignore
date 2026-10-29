@@ -376,3 +376,5 @@ exports/DELPHI-UE-Export.zip
 
 # Local UI screenshot scratch
 agent/web/.tmp-ui/
+# bundled iOS build scratch (agent/web/scripts/build-ios.mjs)
+/agent/.ios-build/

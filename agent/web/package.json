@@ -14,6 +14,7 @@
     "test:watch": "vitest",
     "sky:accuracy": "vitest run lib/skyAccuracy.test.ts",
     "notices": "node scripts/gen-notices.mjs",
+    "build:ios": "node scripts/build-ios.mjs",
     "cap:sync": "npx cap sync ios",
     "cap:open": "npx cap open ios"
   },

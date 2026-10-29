@@ -3,6 +3,33 @@ import Capacitor
 import AVFoundation
 import WebKit
 
+/// The bundled build is a static export: "/privacy" lives in privacy.html and "/portal" in portal.html.
+/// Capacitor's default router sends every extensionless path to index.html, which would open the wrong page.
+struct PneumaRouter: Router {
+    var basePath: String = ""
+
+    func route(for path: String) -> String {
+        if !URL(fileURLWithPath: path).pathExtension.isEmpty {
+            return basePath + path
+        }
+        let trimmed = path.hasSuffix("/") ? String(path.dropLast()) : path
+        if !trimmed.isEmpty {
+            for candidate in [trimmed + ".html", trimmed + "/index.html"] {
+                if FileManager.default.fileExists(atPath: basePath + candidate) {
+                    return basePath + candidate
+                }
+            }
+        }
+        return basePath + "/index.html"
+    }
+}
+
+class PneumaViewController: CAPBridgeViewController {
+    override func router() -> Router {
+        return PneumaRouter()
+    }
+}
+
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
