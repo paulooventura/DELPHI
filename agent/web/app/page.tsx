@@ -7,7 +7,13 @@ import { CelestialSkyView } from "../components/CelestialSkyView";
 import type { ResearchTier, ConfidenceResult, SourceResult, ScoredClaim, ConfidenceLabel } from "../lib/researchEngine";
 import { getLocation, requestOrientationPermission, watchDeviceOrientation, getMagneticField, getNetworkInfo, watchLocation, type GeoFix } from "../lib/localSignals";
 import { watchMagnetometer, magnetometerSupported } from "../lib/deviceSensors";
-import { hasAccessThisSession, requestDeviceAccessPermissions } from "../lib/deviceAccess";
+import {
+  accessChoice,
+  hasAccessThisSession,
+  markAccessThisSession,
+  requestDeviceAccessPermissions,
+  setAccessChoice,
+} from "../lib/deviceAccess";
 import { resetOrientationCalibration, restoreOrientationCalibration, describeSkyPose, skyPoseHintMessage, getCompassYawOffsetDeg, compassNeedsPortraitLock, type SkyPoseHint } from "../lib/sphericalView";
 import {
   setMagneticDeclinationDeg,
@@ -337,7 +343,9 @@ export default function Home() {
       const embed = new URLSearchParams(window.location.search).get("embed") === "1";
       setChorusEmbed(embed);
       document.documentElement.classList.toggle("chorus-embed", embed);
-      setNeedsAccessGate(!embed && !hasAccessThisSession());
+      const choice = accessChoice();
+      if (!embed && choice === "continue" && !hasAccessThisSession()) markAccessThisSession();
+      setNeedsAccessGate(!embed && !hasAccessThisSession() && choice === null);
     } catch {
       setNeedsAccessGate(true);
     }
@@ -1291,8 +1299,14 @@ export default function Home() {
       onAllowAccess={() => {
         // Unlock Web Audio in the same gesture as Allow — orrery chord is ready
         // before Heliodrome opens; home film soundtrack can unmute after.
+        setAccessChoice("continue");
         armAudio();
         void primeDeviceAccess();
+      }}
+      onLaterAccess={() => {
+        setAccessChoice("later");
+        armAudio();
+        setNeedsAccessGate(false);
       }}
       accessBusy={accessBusy}
       now={cosmic?.now ?? animNow}

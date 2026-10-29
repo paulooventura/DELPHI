@@ -3,11 +3,10 @@
  * Must run from a user gesture (Allow button). iOS will not show
  * DeviceOrientation/Motion dialogs from a mount effect.
  *
- * The permissions UI shows after the splash, once per app open
- * (sessionStorage). Closing the tab/page or uninstalling clears it.
- * Returning from Studies, Tonal, or other doors in the same open does not
- * show it again. OS dialogs only appear when the browser still needs
- * consent; if already granted, Allow just starts watches.
+ * The permissions screen shows after the splash once per install (App Review 5.1.1):
+ * "Continue" asks now; "Not now" asks nothing, and each feature asks on the tap that
+ * needs it (the sky on open, Cast and the sensor array for motion, alerts on their chip).
+ * Later opens with "continue" start watches like a same-session return.
  */
 
 import { requestOrientationPermission } from "./localSignals";
@@ -53,6 +52,31 @@ export function markAccessThisSession(): void {
     /* private mode */
   }
   markDeviceAccessPrimed();
+}
+
+/** The one-time answer on the permissions screen. */
+const CHOICE_KEY = "delphi-access-choice-v1";
+export type AccessChoice = "continue" | "later";
+
+/** Stored answer; installs that granted before this screen count as "continue". */
+export function accessChoice(): AccessChoice | null {
+  try {
+    if (typeof localStorage === "undefined") return null;
+    const v = localStorage.getItem(CHOICE_KEY);
+    if (v === "continue" || v === "later") return v;
+  } catch {
+    return null;
+  }
+  return hasPrimedDeviceAccess() ? "continue" : null;
+}
+
+export function setAccessChoice(choice: AccessChoice): void {
+  try {
+    if (typeof localStorage === "undefined") return;
+    localStorage.setItem(CHOICE_KEY, choice);
+  } catch {
+    /* private mode: the screen shows again next open */
+  }
 }
 
 export type DeviceAccessGrants = {

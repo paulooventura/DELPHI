@@ -211,6 +211,7 @@ export function OnyxApp({
   onPrimeAccess,
   showAccessGate = false,
   onAllowAccess,
+  onLaterAccess,
   accessBusy = false,
   sensorsUnlocked = false,
   now,
@@ -267,6 +268,8 @@ export function OnyxApp({
   /** After splash, once per app open until Allow. */
   showAccessGate?: boolean;
   onAllowAccess?: () => void;
+  /** "Not now": skip the up-front ask; features ask when first used. */
+  onLaterAccess?: () => void;
   accessBusy?: boolean;
   /** True after Allow access — crystal + sky can bind to DeviceOrientation. */
   sensorsUnlocked?: boolean;
@@ -674,6 +677,14 @@ export function OnyxApp({
           trackEvent("allow_access");
           onAllowAccess();
         }}
+        onLater={
+          onLaterAccess
+            ? () => {
+                trackEvent("access_later");
+                onLaterAccess();
+              }
+            : undefined
+        }
         busy={accessBusy}
       />
     );

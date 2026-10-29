@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  accessChoice,
   hasAccessThisSession,
+  setAccessChoice,
   hasPrimedDeviceAccess,
   markAccessThisSession,
   markDeviceAccessPrimed,
@@ -80,5 +82,14 @@ describe("deviceAccess — ask on open gesture", () => {
     sessionStorage.removeItem("delphi-access-session-v1");
     expect(hasAccessThisSession()).toBe(false);
     expect(hasPrimedDeviceAccess()).toBe(true);
+  });
+
+  it("asks once per install: no choice, then the stored one; earlier grants count as continue", () => {
+    expect(accessChoice()).toBe(null);
+    setAccessChoice("later");
+    expect(accessChoice()).toBe("later");
+    localStorage.clear();
+    markDeviceAccessPrimed();
+    expect(accessChoice()).toBe("continue");
   });
 });

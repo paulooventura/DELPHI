@@ -4493,6 +4493,15 @@ html[data-sky="twilight"] .onyx-overlay-close {
   animation: onyx-sheet-fade 1.2s ease-out;
 }
 .onyx-access-why b { font-weight: 600; letter-spacing: 0.08em; }
+.onyx-access-later {
+  position: absolute; left: 50%; z-index: 5; transform: translateX(-50%);
+  bottom: max(40px, calc(env(safe-area-inset-bottom, 0px) + 28px));
+  padding: 12px 22px; border: 1px solid rgba(245, 240, 255, 0.28); border-radius: 999px;
+  background: rgba(3, 3, 8, 0.45); color: rgba(245, 240, 255, 0.86);
+  font: inherit; font-size: 13px; letter-spacing: 0.1em; cursor: pointer;
+  opacity: 0; transition: opacity 900ms ease; pointer-events: none;
+}
+.onyx-access-later.on { opacity: 1; pointer-events: auto; }
 
 /* ── Home inscription: the only line on the Omphalos, above the clock ─────── */
 .onyx-inscription {

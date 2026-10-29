@@ -3,7 +3,7 @@
 /**
  * Permission screen after splash:
  * Locked-off void film plays once → freezes on last frame.
- * At ~3/4 duration the purple octagon crystal fades in; “Allow access”
+ * At ~3/4 duration the purple octagon crystal fades in; “Continue”
  * rises from its center slightly later and keeps glowing until tap.
  * Soundtrack dissolves via AudioBus delay tail (no hard cut).
  */
@@ -31,9 +31,11 @@ const ARM_MS = 600;
 
 export function DeviceAccessGate({
   onAllow,
+  onLater,
   busy = false,
 }: {
   onAllow: () => void;
+  onLater?: () => void;
   busy?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -177,7 +179,7 @@ export function DeviceAccessGate({
   }, []);
 
   return (
-    <div className="onyx-root" role="dialog" aria-label="Allow location and sensors">
+    <div className="onyx-root" role="dialog" aria-label="Location, motion and sound">
       <div className={`onyx-device onyx-access-gate${frozen ? " frozen" : ""}`}>
         <button
           type="button"
@@ -206,10 +208,23 @@ export function DeviceAccessGate({
               draggable={false}
             />
             <span className={`onyx-access-cta-label${phraseOn ? " on" : ""}`}>
-              {busy ? "Requesting…" : "Allow access"}
+              {busy ? "Requesting…" : "Continue"}
             </span>
           </span>
         </button>
+        {onLater ? (
+          <button
+            type="button"
+            className={`onyx-access-later${phraseOn ? " on" : ""}`}
+            disabled={busy}
+            onClick={() => {
+              if (Date.now() < armedAt.current) return;
+              onLater();
+            }}
+          >
+            Not now
+          </button>
+        ) : null}
         <ul className="onyx-access-why">
           <li><b>Location</b> places the real sky over you.</li>
           <li><b>Motion</b> lets you point your phone at the planets.</li>
