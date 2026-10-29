@@ -4,19 +4,20 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta http-equiv="Cache-Control" content="no-store" />
-    <title>DELPHI</title>
+    <title>Pneuma Mundi</title>
     <style>
-      html, body { margin: 0; background: #000; color: #8f8ca3; font-family: system-ui, sans-serif; }
+      html, body { margin: 0; background: #000; color: #8f8ca3; font-family: -apple-system, system-ui, sans-serif; }
       main { min-height: 100dvh; display: grid; place-items: center; padding: 2rem; text-align: center; }
     </style>
     <script>
-      // If the native shell ever falls back to bundled www/, bounce to live.
-      location.replace("https://delphi.pauloventura.org/?b=2026-09-01f");
+      // The shell normally loads the live app (capacitor server.url). If it ever lands on
+      // bundled www/, go live when online, otherwise show the offline orrery.
+      location.replace(navigator.onLine === false ? "offline.html" : "https://delphi.pauloventura.org/");
     </script>
   </head>
   <body>
     <main>
-      <p>DELPHI — opening live app…</p>
+      <p>Pneuma Mundi · opening…</p>
     </main>
   </body>
 </html>

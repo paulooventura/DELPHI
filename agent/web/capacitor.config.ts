@@ -15,13 +15,20 @@ const config: CapacitorConfig = {
   appId: "org.pauloventura.delphi",
   appName: "Pneuma Mundi",
   webDir: "www",
+  backgroundColor: "#000000",
   server: {
     url: serverUrl,
     cleartext: serverUrl.startsWith("http://"),
+    // No network at launch: show the bundled offline orrery (www/offline.html).
+    errorPath: "offline.html",
   },
   ios: {
-    contentInset: "automatic",
+    // The web app pads itself with env(safe-area-inset-*) (viewport-fit=cover), so the sky runs edge to edge.
+    contentInset: "never",
     preferredContentMode: "mobile",
+  },
+  plugins: {
+    StatusBar: { style: "DARK", overlaysWebView: true },
   },
 };
 

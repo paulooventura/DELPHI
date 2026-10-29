@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="dark" />
+    <title>Pneuma Mundi · offline</title>
+    <!-- Bundled in the iOS app (capacitor server.errorPath). Works with no network:
+         planets and moon come from astronomy-engine (MIT, Don Cross), shipped next to this file. -->
+    <style>
+      html, body { margin: 0; background: #000; color: #b9b5cc; font-family: -apple-system, system-ui, sans-serif; }
+      main {
+        min-height: 100dvh; box-sizing: border-box; display: flex; flex-direction: column; align-items: center;
+        padding: max(28px, env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
+        text-align: center; gap: 14px;
+      }
+      .kicker { letter-spacing: 0.28em; font-size: 11px; text-transform: uppercase; color: #8f8ca3; margin: 0; }
+      h1 { font-weight: 400; font-size: 22px; color: #f4f1ff; margin: 0; }
+      p { margin: 0; font-size: 14px; line-height: 1.5; max-width: 340px; }
+      canvas { width: min(88vw, 420px); height: min(88vw, 420px); }
+      dl { display: grid; grid-template-columns: auto auto; gap: 4px 16px; margin: 0; font-size: 13px; font-variant-numeric: tabular-nums; }
+      dt { text-align: right; color: #8f8ca3; } dd { margin: 0; text-align: left; color: #e8e4f4; }
+      button {
+        margin-top: 6px; padding: 10px 22px; border-radius: 20px; border: 0.5px solid rgba(255,255,255,0.25);
+        background: rgba(255,255,255,0.06); color: #f4f1ff; font: inherit; font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="kicker">Pneuma Mundi</p>
+      <h1>You're offline</h1>
+      <p>The live sky needs a connection. Meanwhile, here is the solar system right now, worked out on this phone.</p>
+      <canvas id="orrery" width="840" height="840" aria-label="Planets around the Sun, seen from above, right now"></canvas>
+      <dl id="moon"></dl>
+      <button id="retry" type="button">Try again</button>
+    </main>
+    <script src="astronomy.browser.min.js"></script>
+    <script>
+      (function () {
+        var LIVE = "https://delphi.pauloventura.org/";
+        function goLive() { location.replace(LIVE); }
+        document.getElementById("retry").addEventListener("click", goLive);
+        window.addEventListener("online", goLive);
+
+        var A = window.Astronomy;
+        if (!A) return;
+        var now = new Date();
+        var fmt = function (d) { return d.toLocaleDateString([], { month: "short", day: "numeric" }); };
+
+        var c = document.getElementById("orrery");
+        var g = c.getContext("2d");
+        var W = c.width, mid = W / 2, maxR = W * 0.46;
+        var planets = [
+          ["Mercury", "#b7aea3", 4], ["Venus", "#e9d7a6", 6], ["Earth", "#7fb4ff", 6], ["Mars", "#e07a52", 5],
+          ["Jupiter", "#e3c49a", 10], ["Saturn", "#e8d7a0", 9], ["Uranus", "#a8e3ea", 7], ["Neptune", "#6f8cff", 7]
+        ];
+        // sqrt distance so Mercury and Neptune share one screen; 30.1 AU sits at the edge.
+        var scale = function (au) { return maxR * Math.sqrt(au / 30.1); };
+        g.fillStyle = "#000"; g.fillRect(0, 0, W, W);
+        planets.forEach(function (p) {
+          var v = A.HelioVector(p[0], now);
+          var au = Math.hypot(v.x, v.y);
+          g.strokeStyle = "rgba(255,255,255,0.09)"; g.lineWidth = 1.5;
+          g.beginPath(); g.arc(mid, mid, scale(au), 0, Math.PI * 2); g.stroke();
+          var ang = Math.atan2(v.y, v.x);
+          var x = mid + Math.cos(ang) * scale(au), y = mid - Math.sin(ang) * scale(au);
+          g.fillStyle = p[1]; g.beginPath(); g.arc(x, y, p[2], 0, Math.PI * 2); g.fill();
+          g.fillStyle = "rgba(232,228,244,0.75)"; g.font = "22px -apple-system, system-ui, sans-serif";
+          g.fillText(p[0], x + p[2] + 6, y + 7);
+        });
+        var sun = g.createRadialGradient(mid, mid, 0, mid, mid, 22);
+        sun.addColorStop(0, "#fff6d0"); sun.addColorStop(1, "rgba(255,190,80,0)");
+        g.fillStyle = sun; g.beginPath(); g.arc(mid, mid, 22, 0, Math.PI * 2); g.fill();
+
+        var lit = A.Illumination("Moon", now).phase_fraction;
+        var full = A.SearchMoonPhase(180, now, 40), nw = A.SearchMoonPhase(0, now, 40);
+        var rows = [
+          ["Today", now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" })],
+          ["Moon", Math.round(lit * 100) + "% lit"],
+          ["Next full moon", full ? fmt(full.date) : "–"],
+          ["Next new moon", nw ? fmt(nw.date) : "–"]
+        ];
+        var dl = document.getElementById("moon");
+        rows.forEach(function (r) {
+          var dt = document.createElement("dt"); dt.textContent = r[0];
+          var dd = document.createElement("dd"); dd.textContent = r[1];
+          dl.appendChild(dt); dl.appendChild(dd);
+        });
+      })();
+    </script>
+  </body>
+</html>

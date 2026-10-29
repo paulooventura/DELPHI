@@ -19,14 +19,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             // Best-effort — Web Audio still works when the session is available.
         }
 
-        // Drop stale WKWebView website data when the shell build bumps so the
-        // app refetches delphi.pauloventura.org instead of a frozen HTML shell.
+        // Drop stale WKWebView caches when the shell build bumps so the app
+        // refetches delphi.pauloventura.org instead of a frozen HTML shell.
+        // Caches only: local storage and IndexedDB hold the user's on-device
+        // birth data, casts, sky-alert place and backup key, and must survive updates.
         // Keep this string in sync with agent/web/lib/buildStamp.ts.
-        let shellBuild = "2026-09-01f"
+        let shellBuild = "2026-10-29c"
         let buildKey = "delphi.shellBuild"
         let previous = UserDefaults.standard.string(forKey: buildKey)
         if previous != shellBuild {
-            let types = WKWebsiteDataStore.allWebsiteDataTypes()
+            let types: Set<String> = [
+                WKWebsiteDataTypeDiskCache,
+                WKWebsiteDataTypeMemoryCache,
+                WKWebsiteDataTypeFetchCache,
+                WKWebsiteDataTypeServiceWorkerRegistrations,
+            ]
             let since = Date(timeIntervalSince1970: 0)
             WKWebsiteDataStore.default().removeData(ofTypes: types, modifiedSince: since) { }
             UserDefaults.standard.set(shellBuild, forKey: buildKey)
