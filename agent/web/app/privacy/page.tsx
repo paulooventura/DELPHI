@@ -39,6 +39,7 @@ export default function PrivacyPage() {
         <li>Your birth date, hour and place (Psyche), your casts and your preferences, stored in the app&apos;s local storage.</li>
         <li>Sky alerts: the place you save for alerts (rounded to about 1 km) and the alert schedule. Notifications are planned and delivered by your phone.</li>
         <li>The sky, orrery and clock math. Your live location is used on the device to draw your sky.</li>
+        <li>For offline use: the satellite orbits last downloaded, and the map pieces you&apos;ve viewed (up to 60 MB; the oldest are dropped first).</li>
       </ul>
 
       <h2 style={h2}>Sent to our servers, used only to answer the request</h2>

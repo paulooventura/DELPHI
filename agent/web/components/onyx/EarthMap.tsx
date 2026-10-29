@@ -9,6 +9,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type GeoJSONSource, type Map as MlMap, type MapGeoJSONFeature } from "maplibre-gl";
 import { API_BASE, apiUrl } from "../../lib/apiBase";
 import { loadOfflineMapStyle } from "../../lib/offlineMapStyle";
+import { TILE_CACHE_PROTOCOL, cacheableUrl, cachedTileLoad } from "../../lib/tileCache";
+
+let tileProtocolAdded = false;
 import "maplibre-gl/dist/maplibre-gl.css";
 import {
   cellKey,
@@ -210,9 +213,17 @@ export default function EarthMap({
     const root = rootRef.current;
     if (!box || !root) return;
     let alive = true;
+    if (!tileProtocolAdded) {
+      maplibregl.addProtocol(TILE_CACHE_PROTOCOL, cachedTileLoad);
+      tileProtocolAdded = true;
+    }
     const map = new maplibregl.Map({
       container: box,
       style: STYLE_URL,
+      transformRequest: url => {
+        const cached = cacheableUrl(url);
+        return cached ? { url: cached } : undefined;
+      },
       center,
       zoom: 1.7,
       minZoom: 0.6,
@@ -962,7 +973,9 @@ export default function EarthMap({
               ? "opening the map…"
               : offlineBase
                 ? "offline · built-in world map; detail, aircraft and seafloor need a connection"
-                : status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
+                : typeof navigator !== "undefined" && navigator.onLine === false
+                  ? "offline · places you've viewed are kept; aircraft and seafloor need a connection"
+                  : status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
           </span>
         </div>
         {layersOpen ? (
