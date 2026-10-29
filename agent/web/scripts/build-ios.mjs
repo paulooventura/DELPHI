@@ -92,6 +92,16 @@ function stripDynamicExports(file) {
   if (next !== src) fs.writeFileSync(file, next);
 }
 
+/** The scratch folder is gitignored, which throws off Tailwind's automatic scan; name the sources. */
+function pinTailwindSources(file) {
+  const src = fs.readFileSync(file, "utf8");
+  const pinned = [
+    '@import "tailwindcss" source(none);',
+    ...["../app", "../components", "../lib", "../hooks", "../public"].map((d) => `@source "${d}";`),
+  ].join("\n");
+  fs.writeFileSync(file, src.replace(/^@import "tailwindcss";$/m, pinned));
+}
+
 function htmlFiles(dir, acc = []) {
   for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
     const p = path.join(dir, ent.name);
@@ -102,7 +112,8 @@ function htmlFiles(dir, acc = []) {
 }
 
 function run(cmd, args, cwd, env) {
-  const r = spawnSync(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: "inherit", shell: process.platform === "win32" });
+  const shell = process.platform === "win32" && cmd !== process.execPath;
+  const r = spawnSync(cmd, args, { cwd, env: { ...process.env, ...env }, stdio: "inherit", shell });
   if (r.status !== 0) {
     console.error(`[build-ios] ${cmd} ${args.join(" ")} failed (${r.status})`);
     process.exit(r.status ?? 1);
@@ -116,8 +127,9 @@ copyTree(web, scratch);
 linkNodeModules();
 fs.writeFileSync(path.join(scratch, "next.config.ts"), exportConfig());
 stripDynamicExports(path.join(scratch, "app", "layout.tsx"));
+pinTailwindSources(path.join(scratch, "app", "globals.css"));
 
-run("node", [path.join("node_modules", "next", "dist", "bin", "next"), "build"], scratch, {
+run(process.execPath, [path.join("node_modules", "next", "dist", "bin", "next"), "build"], scratch, {
   NEXT_PUBLIC_API_BASE: apiBase,
   NEXT_TELEMETRY_DISABLED: "1",
 });
