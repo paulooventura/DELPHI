@@ -113,13 +113,16 @@ export function shapeTrack(
 
   if (!active && !events.length) return null;
 
+  // iOS app beacons are opt-in and must stay unlinked: no device id, no place, no referrer.
+  const inApp = str(b.app, 8) === "ios";
+  const geo = inApp ? { city: "", region: "", country: "" } : ctx.geo;
   const dev = parseDevice(ctx.ua);
   const session: SessionRow = {
     session_id: sid,
-    visitor_id: vid,
+    visitor_id: inApp ? sid : vid,
     segment: int(b.seg, 1, 10_000),
-    from: sheetSafe(str(b.from, 32).toLowerCase().replace(/[^a-z0-9_-]/g, "")),
-    visit_number: int(b.visit, 1, 100_000),
+    from: inApp ? "ios-app" : sheetSafe(str(b.from, 32).toLowerCase().replace(/[^a-z0-9_-]/g, "")),
+    visit_number: inApp ? 1 : int(b.visit, 1, 100_000),
     session_started_at: started,
     segment_started_at: segStart,
     segment_ended_at: ended,
@@ -127,14 +130,14 @@ export function shapeTrack(
     taps: int(b.taps, 0, 100_000),
     entry_path: sheetSafe(str(b.entry, 60)),
     exit_path: sheetSafe(str(b.path, 60)),
-    referrer: sheetSafe(refHost(str(b.ref, 200))),
+    referrer: inApp ? "" : sheetSafe(refHost(str(b.ref, 200))),
     device: dev.device,
     os: dev.os,
     browser: dev.browser,
     viewport: `${int(b.vw, 0, 10000)}x${int(b.vh, 0, 10000)}`,
-    city: sheetSafe(ctx.geo.city.slice(0, 60)),
-    region: sheetSafe(ctx.geo.region.slice(0, 20)),
-    country: sheetSafe(ctx.geo.country.slice(0, 4)),
+    city: sheetSafe(geo.city.slice(0, 60)),
+    region: sheetSafe(geo.region.slice(0, 20)),
+    country: sheetSafe(geo.country.slice(0, 4)),
     build: ctx.build,
     other_s: other,
   };

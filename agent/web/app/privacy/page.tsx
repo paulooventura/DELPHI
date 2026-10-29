@@ -59,6 +59,11 @@ export default function PrivacyPage() {
           <Link href="/?notrack=1">delphi.pauloventura.org/?notrack=1</Link>. Global Privacy Control is honoured.
         </li>
         <li>
+          <b>In the iPhone app, usage counts are off</b> unless you choose <b>Share</b> under About. If you do, each
+          session is counted on its own: no lasting visitor id, no city, region or country, no referring site. Choose{" "}
+          <b>Don&apos;t share</b> any time; anything not yet sent is dropped. Every feature works the same either way.
+        </li>
+        <li>
           <b>An optional account</b> (email sign-in code) for encrypted backup. Your data is encrypted on your device before
           upload, with a key only your recovery key can open; we hold only the ciphertext and your email.
         </li>

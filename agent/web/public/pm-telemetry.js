@@ -7,6 +7,9 @@
  *
  * Opt out on a device: open any page with ?notrack=1 (undo with ?track=1).
  * Honors Global Privacy Control. Silent on localhost.
+ * iOS app: off by default; About > "Share anonymous usage" turns it on
+ * (localStorage pm-track-optin). App beacons use the session id as visitor
+ * id and the server drops location and referrer for them.
  *
  * API: pmTrack.screen(name)  pmTrack.event(name, detail?)
  */
@@ -33,10 +36,18 @@
     return Array.prototype.map.call(a, function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
   }
 
+  // iOS app: off unless the person opts in (About). Opted-in beacons carry a
+  // session-only id and no location, so they stay unlinked to anyone.
+  var OPTIN_KEY = "pm-track-optin";
+  var cap = window.Capacitor;
+  var app = !!(cap && typeof cap.isNativePlatform === "function" && cap.isNativePlatform());
+  function optedIn() { return get(ls, OPTIN_KEY) === "1"; }
+
   var q = new URLSearchParams(location.search);
   if (q.get("notrack") === "1") set(ls, "pm-notrack", "1");
   if (q.get("track") === "1") { try { ls && ls.removeItem("pm-notrack"); } catch (e) { /* ignore */ } }
   var off =
+    (app && !optedIn()) ||
     get(ls, "pm-notrack") === "1" ||
     navigator.globalPrivacyControl === true ||
     /^\/admin/.test(location.pathname) ||
@@ -46,16 +57,9 @@
   var pending = Array.isArray(window.__pmq) ? window.__pmq : [];
   window.__pmq = undefined;
   if (off) {
-    window.pmTrack = { screen: noop, event: noop, enabled: false };
+    window.pmTrack = { screen: noop, event: noop, enabled: false, live: false, app: app };
     return;
   }
-
-  var vid = get(ls, "pm-vid");
-  if (!vid) { vid = rid(); set(ls, "pm-vid", vid); }
-
-  var from = (q.get("from") || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32);
-  if (from) { set(ss, "pm-from", from); if (!get(ls, "pm-first-from")) set(ls, "pm-first-from", from); }
-  else from = get(ss, "pm-from") || get(ls, "pm-first-from") || "";
 
   var sid = get(ss, "pm-sid");
   var newSession = !sid;
@@ -64,8 +68,18 @@
     set(ss, "pm-sid", sid);
     set(ss, "pm-started", String(Date.now()));
     set(ss, "pm-entry", location.pathname);
-    set(ss, "pm-ref", (document.referrer || "").slice(0, 200));
-    set(ls, "pm-visits", String((parseInt(get(ls, "pm-visits") || "0", 10) || 0) + 1));
+    set(ss, "pm-ref", app ? "" : (document.referrer || "").slice(0, 200));
+    if (!app) set(ls, "pm-visits", String((parseInt(get(ls, "pm-visits") || "0", 10) || 0) + 1));
+  }
+
+  var vid = sid;
+  var from = "ios-app";
+  if (!app) {
+    vid = get(ls, "pm-vid");
+    if (!vid) { vid = rid(); set(ls, "pm-vid", vid); }
+    from = (q.get("from") || "").toLowerCase().replace(/[^a-z0-9_-]/g, "").slice(0, 32);
+    if (from) { set(ss, "pm-from", from); if (!get(ls, "pm-first-from")) set(ls, "pm-first-from", from); }
+    else from = get(ss, "pm-from") || get(ls, "pm-first-from") || "";
   }
   var segment = parseInt(get(ss, "pm-seg") || "0", 10) || 0;
 
@@ -100,6 +114,7 @@
 
   function flush() {
     bank();
+    if (app && !optedIn()) { acc = {}; events = []; taps = 0; return; }
     var active = 0;
     var screens = {};
     Object.keys(acc).forEach(function (k) {
@@ -111,11 +126,12 @@
     set(ss, "pm-seg", String(segment));
     var body = JSON.stringify({
       v: 1,
+      app: app ? "ios" : "",
       sid: sid,
       vid: vid,
       seg: segment,
       from: from,
-      visit: parseInt(get(ls, "pm-visits") || "1", 10) || 1,
+      visit: app ? 1 : parseInt(get(ls, "pm-visits") || "1", 10) || 1,
       started: parseInt(get(ss, "pm-started") || String(segStart), 10),
       segStart: segStart,
       ended: now(),
@@ -188,6 +204,8 @@
 
   window.pmTrack = {
     enabled: true,
+    live: true,
+    app: app,
     screen: setScreen,
     event: function (name, detail) { push(name, detail); }
   };

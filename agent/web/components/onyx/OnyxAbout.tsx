@@ -1,6 +1,7 @@
 "use client";
 
 import { ChamberHeader } from "./ChamberHeader";
+import { UsageOptIn } from "./UsageOptIn";
 
 export function OnyxAbout() {
   return (
@@ -68,6 +69,7 @@ export function OnyxAbout() {
             </a>{" "}
             · everything Pneuma Mundi keeps, sends, and how to delete it.
           </p>
+          <UsageOptIn />
         </div>
       </div>
     </div>

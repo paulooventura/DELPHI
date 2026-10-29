@@ -38,6 +38,14 @@ function beacon(over: Record<string, unknown> = {}) {
 }
 
 describe("shapeTrack", () => {
+  it("keeps iOS app beacons unlinked: session id only, no place, no referrer", () => {
+    const s = shapeTrack(beacon({ app: "ios" }), ctx)!.session;
+    expect(s.visitor_id).toBe(s.session_id);
+    expect(s.visit_number).toBe(1);
+    expect(s.from).toBe("ios-app");
+    expect([s.city, s.region, s.country, s.referrer]).toEqual(["", "", "", ""]);
+  });
+
   it("shapes a session row with every screen column", () => {
     const rows = shapeTrack(beacon(), ctx)!;
     expect(rows.session.home_s).toBe(60);
