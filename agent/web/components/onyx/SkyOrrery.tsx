@@ -176,6 +176,7 @@ type MeasureOut = { a: string; b: string; km: string; au: string; light: string;
 type StarEntry = CatalogStar & { d: Vec3 };
 
 const MAX_LABELS = 25;
+const LONG_PRESS_MS = 450;
 const FOV_HALF = (20 * Math.PI) / 180;
 /** Camera distance that fits a sphere of radius 1 on the short screen side. */
 const DIST_PER_FRAME = 1.08 / Math.tan(FOV_HALF);
@@ -415,6 +416,11 @@ function bodyCard(index: OrreryIndex, id: string, date: Date): Card | null {
   if (id !== "earth") {
     rows.push(["From Earth", `${formatAu(m.distEarthAu)} · ${formatKm(m.distEarthAu * AU_KM)}`]);
     rows.push(["Light-time", formatLightTime(m.lightTimeSec)]);
+  } else {
+    const mk = moonEqjKm(date);
+    rows.push(["From the Moon", `${formatKm(Math.hypot(mk.x, mk.y, mk.z))} centre to centre`]);
+    rows.push(["Radius", `${RE_KM.toLocaleString(undefined, { maximumFractionDigits: 0 })} km`]);
+    rows.push(["Turns once in", "23 h 56 min 4 s · axis tilted 23.44°"]);
   }
   if (moonOf && m.distParentKm != null) {
     if (b.parent !== "earth") rows.push([`From ${moonOf}`, formatKm(m.distParentKm)]);
@@ -1115,6 +1121,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const pointers = new Map<number, { x: number; y: number }>();
     let pinch: { d: number; dist: number; scene: SceneKind } | null = null;
     let moved = 0;
+    let downAt = 0;
     let multi = false;
     const pairDistance = () => {
       const [a, b] = [...pointers.values()];
@@ -1125,6 +1132,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       pointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       if (pointers.size === 1) {
         moved = 0;
+        downAt = performance.now();
         multi = false;
       }
       if (pointers.size === 2) {
@@ -1168,14 +1176,16 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       }
       return best?.i ?? null;
     };
-    const pickSatAt = (px: number, py: number, dpr: number): number | null => {
+    /** Nearest visible satellite within reach; with `aloneCss`, only if no other dot is that close. */
+    const pickSatAt = (px: number, py: number, dpr: number, reachCss = 12, aloneCss = 0): number | null => {
       const data = satRef.current;
       if (!data || !satStateRef.current) return null;
       const cam = camRef.current;
       const { project } = makeProjector(cam, canvas.width, canvas.height);
       const C = earthCamera(cam);
-      const reach = 12 * dpr;
+      const reach = Math.max(reachCss, aloneCss) * dpr;
       let best: { i: number; d: number } | null = null;
+      let near = 0;
       for (let i = 0; i < data.rows.length; i++) {
         if (!satVisible(i)) continue;
         const p = satPosKm(i, simMsRef.current);
@@ -1184,10 +1194,12 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         const s = project(w);
         if (!s) continue;
         const d = Math.hypot(px - s.x, py - s.y);
-        if (d > reach || (best && d >= best.d) || behindEarth(C, w)) continue;
-        best = { i, d };
+        if (d > reach || behindEarth(C, w)) continue;
+        near++;
+        if (!best || d < best.d) best = { i, d };
       }
-      return best?.i ?? null;
+      if (!best || best.d > reachCss * dpr || (aloneCss && near > 1)) return null;
+      return best.i;
     };
     const onUp = (e: PointerEvent) => {
       const wasTap = pointers.size === 1 && !multi && moved < 8;
@@ -1209,15 +1221,19 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         return;
       }
       if (camRef.current.scene === "earth") {
-        const sat = pickSatAt(px, py, dpr);
+        const cam = camRef.current;
+        const { project, F } = makeProjector(cam, canvas.width, canvas.height);
+        const c = project(ZERO);
+        const onDisc = !!c && Math.hypot(px - c.x, py - c.y) < F / Math.sqrt(cam.dist * cam.dist - 1);
+        // Over the globe the swarm is dense: only a direct hit on a dot standing alone picks a
+        // satellite, and a long press always means Earth, so Earth itself stays selectable.
+        const longPress = performance.now() - downAt > LONG_PRESS_MS;
+        const sat = onDisc ? (longPress ? null : pickSatAt(px, py, dpr, 3, 7)) : pickSatAt(px, py, dpr);
         if (sat !== null) {
           pickRef.current({ type: "sat", i: sat }, false);
           return;
         }
-        const cam = camRef.current;
-        const { project, F } = makeProjector(cam, canvas.width, canvas.height);
-        const c = project(ZERO);
-        if (c && Math.hypot(px - c.x, py - c.y) < F / Math.sqrt(cam.dist * cam.dist - 1)) {
+        if (onDisc) {
           pickRef.current({ type: "body", id: "earth" }, false);
           return;
         }
@@ -2602,7 +2618,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         </div>
         <p className="onyx-orr-hint">
           {globe
-            ? "drag to turn · pinch in for the world map · tap a satellite to measure it"
+            ? "drag to turn · pinch in for the world map · tap a satellite or Earth to measure it"
             : level === "earth"
               ? "pinch into Earth to see its satellites · tap anything to measure it"
               : "drag to turn · pinch to zoom · tap anything to measure it"}
