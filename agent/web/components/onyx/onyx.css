@@ -4777,6 +4777,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orr-map .onyx-orr-panel { pointer-events: none; }
 .onyx-orr-map .onyx-orr-panel > * { pointer-events: auto; }
 .onyx-orr-chip:disabled { opacity: 0.4; cursor: default; }
+.onyx-orr-card dl > div.onyx-orr-dim { opacity: 0.5; font-style: italic; }
 @keyframes onyx-orr-map-in {
   from { opacity: 0; }
   to { opacity: 1; }

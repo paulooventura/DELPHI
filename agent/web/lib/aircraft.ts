@@ -95,8 +95,9 @@ export function parseAircraft(json: unknown, b: CellBounds): AcRow[] {
     if (num(a.seen_pos) > 60) continue;
     if (lat < b.s || lat >= b.n || lon < b.w || lon >= b.e) continue;
     const ground = a.alt_baro === "ground";
-    const alt = ground ? 0 : num(a.alt_baro);
     const altGeom = num(a.alt_geom);
+    // Geometric (GPS) altitude when the feed has it; barometric drifts below zero near the ground.
+    const alt = ground ? 0 : Number.isFinite(altGeom) ? altGeom : num(a.alt_baro);
     const dbFlags = num(a.dbFlags);
     const flags = (Number.isFinite(dbFlags) && dbFlags & 1 ? 1 : 0) | (ground ? 2 : 0);
     const track = num(a.track);
@@ -109,7 +110,7 @@ export function parseAircraft(json: unknown, b: CellBounds): AcRow[] {
       str(a.t),
       round(lat, 1e5),
       round(lon, 1e5),
-      Math.round(Number.isFinite(alt) ? alt : Number.isFinite(altGeom) ? altGeom : 0),
+      Math.round(Number.isFinite(alt) ? alt : 0),
       Number.isFinite(num(a.gs)) ? round(num(a.gs), 10) : 0,
       Number.isFinite(heading) ? round(heading, 10) : -1,
       Number.isFinite(vr) ? Math.round(vr) : Number.isFinite(num(a.geom_rate)) ? Math.round(num(a.geom_rate)) : 0,
@@ -147,6 +148,47 @@ export function parseRoute(json: unknown): FlightRoute | null {
   const to = ap(list[list.length - 1]!);
   if (!from.name || !to.name) return null;
   return { callsign: str(j.callsign), from, to, plausible: j.plausible === true || j.plausible === 1 };
+}
+
+/** Card altitude: the feed's ground flag wins; small negative readings mean "at the ground". */
+export function altitudeLabel(altFt: number, ground: boolean): string {
+  if (ground) return "on the ground";
+  if (altFt < 0 && altFt > -500) return "near ground (~0 ft)";
+  if (altFt <= -500) return `${Math.round(altFt).toLocaleString("en-US")} ft (reading looks off)`;
+  return `${Math.round(altFt).toLocaleString("en-US")} ft · ${Math.round(altFt * 0.3048).toLocaleString("en-US")} m`;
+}
+
+const toVec = (lat: number, lon: number) => {
+  const p = (lat * Math.PI) / 180;
+  const l = (lon * Math.PI) / 180;
+  return [Math.cos(p) * Math.cos(l), Math.cos(p) * Math.sin(l), Math.sin(p)] as const;
+};
+const cross = (a: readonly number[], b: readonly number[]) => [a[1]! * b[2]! - a[2]! * b[1]!, a[2]! * b[0]! - a[0]! * b[2]!, a[0]! * b[1]! - a[1]! * b[0]!];
+const dot = (a: readonly number[], b: readonly number[]) => a[0]! * b[0]! + a[1]! * b[1]! + a[2]! * b[2]!;
+
+/** Km from a point to the great-circle segment between two airports. */
+export function distanceToRouteKm(lat: number, lon: number, a: { lat: number; lon: number }, b: { lat: number; lon: number }): number {
+  const A = toVec(a.lat, a.lon);
+  const B = toVec(b.lat, b.lon);
+  const P = toVec(lat, lon);
+  const n = cross(A, B);
+  const nl = Math.hypot(n[0]!, n[1]!, n[2]!);
+  const ends = Math.min(haversineKm(lat, lon, a.lat, a.lon), haversineKm(lat, lon, b.lat, b.lon));
+  if (nl < 1e-9) return ends;
+  const N = n.map(v => v / nl);
+  const s = dot(P, N);
+  const C = [P[0] - s * N[0]!, P[1] - s * N[1]!, P[2] - s * N[2]!];
+  const between = dot(cross(A, C), N) >= 0 && dot(cross(C, B), N) >= 0;
+  return between ? 6371.0088 * Math.asin(Math.min(1, Math.abs(s))) : ends;
+}
+
+export const ROUTE_TOLERANCE_KM = 150;
+
+/** Whether a route looks right for where the plane actually is; callsign-only routes never count as sure. */
+export function routeCheck(route: FlightRoute, lat: number, lon: number): { sure: boolean; offKm: number } {
+  const ok = [route.from.lat, route.from.lon, route.to.lat, route.to.lon].every(Number.isFinite);
+  const offKm = ok ? distanceToRouteKm(lat, lon, route.from, route.to) : Infinity;
+  return { sure: route.plausible && offKm <= ROUTE_TOLERANCE_KM, offKm };
 }
 
 /** Upstream callsigns: letters and digits only, as adsb.lol expects in the path. */

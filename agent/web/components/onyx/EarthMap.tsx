@@ -12,7 +12,9 @@ import {
   cellKey,
   cellsForView,
   deadReckon,
+  altitudeLabel,
   haversineKm,
+  routeCheck,
   type AcRow,
   type AircraftCell,
   type FlightRoute,
@@ -33,7 +35,9 @@ const LAYERS: Array<{ id: LayerId; label: string }> = [
 type Plane = { row: AcRow; at: number; seen: number; trail: Array<[number, number, number]> };
 type Sel = { kind: "plane"; hex: string } | { kind: "sat"; norad: number } | { kind: "wreck"; i: number };
 type WreckSet = { fetchedAt: string; source: string; cats: string[]; rows: Array<[number, number, number, number | null, number | null, string, number | null]> };
-type Card = { title: string; sub: string; rows: Array<[string, string]> };
+/** [label, value, dimmed]: dimmed rows are shown greyed as unsure. */
+type CardRow = [string, string, boolean?];
+type Card = { title: string; sub: string; rows: CardRow[] };
 
 const STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
 const POLL_MS = 10_000;
@@ -727,15 +731,8 @@ export default function EarthMap({
       const r = p.row;
       const ground = !!(r[12] & 2);
       const [lat, lon] = deadReckon(r[4], r[5], r[8], ground ? 0 : r[7], Math.min(90, (now - p.at) / 1000));
-      const rows: Array<[string, string]> = [
-        [
-          "Altitude",
-          ground
-            ? "on the ground"
-            : r[6] <= 0
-              ? `near the ground (pressure altitude ${fmtInt(r[6])} ft)`
-              : `${fmtInt(r[6])} ft · ${fmtInt(r[6] * 0.3048)} m`,
-        ],
+      const rows: CardRow[] = [
+        ["Altitude", altitudeLabel(r[6], ground)],
         ["Speed", `${fmtInt(r[7])} kt · ${fmtInt(r[7] * 1.852)} km/h`],
         ["Heading", r[8] >= 0 ? `${Math.round(r[8])}°` : "—"],
       ];
@@ -748,9 +745,10 @@ export default function EarthMap({
       const route = r[1] ? routesRef.current.get(r[1]) : undefined;
       if (route === "loading") rows.push(["Route", "looking up…"]);
       else if (route) {
-        rows.push(["From", `${route.from.iata || route.from.icao} · ${route.from.city || route.from.name}`]);
-        rows.push(["To", `${route.to.iata || route.to.icao} · ${route.to.city || route.to.name}`]);
-        if (!route.plausible) rows.push(["Route note", "from the callsign; may not match"]);
+        const { sure } = routeCheck(route, lat, lon);
+        rows.push(["From", `${route.from.iata || route.from.icao} · ${route.from.city || route.from.name}`, !sure]);
+        rows.push(["To", `${route.to.iata || route.to.icao} · ${route.to.city || route.to.name}`, !sure]);
+        if (!sure) rows.push(["Route note", "route from callsign, may not match", true]);
       } else if (r[1]) rows.push(["Route", "not in the open route data"]);
       if (u) rows.push(["From you", fmtKm(haversineKm(u.lat, u.lon, lat, lon))]);
       rows.push(["Position", `${lat.toFixed(3)}°, ${lon.toFixed(3)}°`]);
@@ -821,8 +819,8 @@ export default function EarthMap({
             </button>
           </header>
           <dl>
-            {card.rows.map(([k, v]) => (
-              <div key={k}>
+            {card.rows.map(([k, v, dim]) => (
+              <div key={k} className={dim ? "onyx-orr-dim" : undefined}>
                 <dt>{k}</dt>
                 <dd>{v}</dd>
               </div>

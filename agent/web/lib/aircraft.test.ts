@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  altitudeLabel,
+  distanceToRouteKm,
+  routeCheck,
   CELL_RADIUS_NM,
   cellAt,
   cellBounds,
@@ -101,6 +104,32 @@ describe("aircraft parsing", () => {
     expect(parseRoute({ _airports: [{ name: "x" }] })).toBeNull();
     expect(cleanCallsign(" aal1597 ")).toBe("AAL1597");
     expect(cleanCallsign("../etc")).toBeNull();
+  });
+
+  it("labels altitude: ground flag, small negative readings, geometric first", () => {
+    expect(altitudeLabel(0, true)).toBe("on the ground");
+    expect(altitudeLabel(-350, false)).toBe("near ground (~0 ft)");
+    expect(altitudeLabel(29725, false)).toBe("29,725 ft · 9,060 m");
+    const b = { s: 35, n: 45, w: -80, e: -70, lat: 40, lon: -75 };
+    const [row] = parseAircraft({ ac: [{ hex: "aa127e", alt_baro: -350, alt_geom: 125, lat: 40.69, lon: -74.17, seen_pos: 1 }] }, b);
+    expect(row![6]).toBe(125);
+    const [baroOnly] = parseAircraft({ ac: [{ hex: "aa127f", alt_baro: -350, lat: 40.69, lon: -74.17, seen_pos: 1 }] }, b);
+    expect(altitudeLabel(baroOnly![6], false)).toBe("near ground (~0 ft)");
+  });
+
+  it("flags a route that does not pass near the plane", () => {
+    const ap = (iata: string, lat: number, lon: number) => ({ iata, icao: `K${iata}`, name: iata, city: iata, lat, lon });
+    const cltOrd = { callsign: "RPA3421", from: ap("CLT", 35.214, -80.943), to: ap("ORD", 41.979, -87.905), plausible: true };
+    // Landing at Newark: hundreds of km off the Charlotte → Chicago line.
+    const ewr = routeCheck(cltOrd, 40.69, -74.17);
+    expect(ewr.sure).toBe(false);
+    expect(ewr.offKm).toBeGreaterThan(500);
+    // Over Kentucky / Ohio, on the way.
+    expect(routeCheck(cltOrd, 38.6, -84.4).sure).toBe(true);
+    // Callsign-only routes are never sure, even on the line.
+    expect(routeCheck({ ...cltOrd, plausible: false }, 38.6, -84.4).sure).toBe(false);
+    // Past the end of the segment counts distance to the nearest airport.
+    expect(distanceToRouteKm(43, -89, cltOrd.from, cltOrd.to)).toBeCloseTo(haversineKm(43, -89, 41.979, -87.905), 0);
   });
 
   it("dead-reckons along the track", () => {
