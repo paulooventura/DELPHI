@@ -329,16 +329,18 @@ export default function Home() {
   const loadCyclesRef = useRef<(lat?: number, lon?: number) => Promise<void>>(async () => {});
   const togglesRef = useRef(toggles);
   const observerRef = useRef({ lat: FALLBACK_LAT, lon: FALLBACK_LON });
-  const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn, observerRef);
-  const armAudio = useCallback(() => {
-    if (clockSfxOn) enableSfx();
-  }, [clockSfxOn, enableSfx]);
   const [showLaunch, completeLaunch, launchReady] = useShowLaunch();
   /** After splash: true until this app session has granted (or just granted). */
   const [needsAccessGate, setNeedsAccessGate] = useState(false);
   const [accessReady, setAccessReady] = useState(false);
   /** Choir / Tina iframe — skip splash + gate so the sky can fill their canvas. */
   const [chorusEmbed, setChorusEmbed] = useState(false);
+  /** The opening films and their beds own the speakers until the home opens. */
+  const openingOn = !chorusEmbed && (!launchReady || !accessReady || showLaunch || needsAccessGate);
+  const { active: sfxActive, enable: enableSfx } = useClockSfx(clockSfxOn, observerRef, openingOn);
+  const armAudio = useCallback(() => {
+    if (clockSfxOn) enableSfx();
+  }, [clockSfxOn, enableSfx]);
   const resumedSessionRef = useRef(false);
   useLayoutEffect(() => {
     try {
@@ -467,10 +469,10 @@ export default function Home() {
   // this session already passed Allow (or Chorus embed). First open waits for the
   // Allow-access gesture so iOS keeps the AudioContext running.
   useEffect(() => {
-    if (showLaunch || !clockSfxOn) return;
+    if (!launchReady || !accessReady || showLaunch || !clockSfxOn) return;
     if (!chorusEmbed && needsAccessGate) return;
     void enableSfx();
-  }, [showLaunch, clockSfxOn, enableSfx, chorusEmbed, needsAccessGate]);
+  }, [launchReady, accessReady, showLaunch, clockSfxOn, enableSfx, chorusEmbed, needsAccessGate]);
 
   // Same-session return (Studies/Tonal → home) skipped splash, so start
   // watches here. First open still waits for splash + Allow.

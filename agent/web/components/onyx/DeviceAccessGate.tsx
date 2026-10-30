@@ -19,6 +19,7 @@ import {
   fadeIn,
   fadeOut,
 } from "../../lib/audioBus";
+import { CAKE_LAST_FRAME } from "./OnyxSplash";
 
 const VOID_VIDEO = `/pneuma-boot-void.mp4?v=${DELPHI_BUILD}`;
 const VOID_AUDIO = `/pneuma-boot-void-audio.m4a?v=${DELPHI_BUILD}`;
@@ -31,14 +32,21 @@ const PHRASE_AFTER_CRYSTAL_S = 0.55;
 const ARM_MS = 600;
 const noSubscribe = () => () => {};
 
+/** Crystal and phrase over the held cake frame when the opening already played the film. */
+const HELD_CRYSTAL_MS = 250;
+const HELD_PHRASE_MS = 800;
+
 export function DeviceAccessGate({
   onAllow,
   onLater,
   busy = false,
+  fromCake = false,
 }: {
   onAllow: () => void;
   onLater?: () => void;
   busy?: boolean;
+  /** The opening just ended on the cake film: hold its last frame, its bed has played. */
+  fromCake?: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const srcRef = useRef<AudioBufferSourceNode | null>(null);
@@ -56,6 +64,18 @@ export function DeviceAccessGate({
   }, []);
 
   useEffect(() => {
+    if (!fromCake) return;
+    setFrozen(true);
+    const c = window.setTimeout(() => setCrystalOn(true), HELD_CRYSTAL_MS);
+    const p = window.setTimeout(() => setPhraseOn(true), HELD_PHRASE_MS);
+    return () => {
+      window.clearTimeout(c);
+      window.clearTimeout(p);
+    };
+  }, [fromCake]);
+
+  useEffect(() => {
+    if (fromCake) return;
     let cancelled = false;
     const v = videoRef.current;
 
@@ -179,6 +199,7 @@ export function DeviceAccessGate({
         fadeOut("splash", AUDIO_BUS.CLIP_FADE_OUT_MS);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
@@ -193,16 +214,20 @@ export function DeviceAccessGate({
             onAllow();
           }}
         >
-          <video
-            ref={videoRef}
-            className="onyx-access-backdrop"
-            src={VOID_VIDEO}
-            autoPlay
-            muted
-            playsInline
-            preload="auto"
-            aria-hidden
-          />
+          {fromCake ? (
+            <img className="onyx-access-backdrop" src={CAKE_LAST_FRAME} alt="" aria-hidden draggable={false} />
+          ) : (
+            <video
+              ref={videoRef}
+              className="onyx-access-backdrop"
+              src={VOID_VIDEO}
+              autoPlay
+              muted
+              playsInline
+              preload="auto"
+              aria-hidden
+            />
+          )}
           <span className="onyx-access-stage" aria-hidden={!crystalOn && !phraseOn}>
             <img
               className={`onyx-access-crystal${crystalOn ? " on" : ""}`}

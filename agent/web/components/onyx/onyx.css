@@ -416,6 +416,43 @@ html.chorus-embed .onyx-root {
   opacity: 0.7;
 }
 
+/* The cake offering is shown at full light, as under the access gate. */
+.onyx-dimmer.off { animation: none; opacity: 0; }
+
+.onyx-splash-enter {
+  position: absolute;
+  left: 50%;
+  bottom: max(56px, calc(24px + env(safe-area-inset-bottom, 0px)));
+  z-index: 46;
+  min-width: 132px;
+  min-height: 44px;
+  padding: 10px 30px;
+  border: 1px solid rgba(255, 248, 240, 0.42);
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.42);
+  color: rgba(255, 248, 240, 0.92);
+  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+  font-size: 14px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
+  opacity: 0;
+  transform: translate(-50%, 6px);
+  pointer-events: none;
+  transition: opacity 900ms ease, transform 900ms ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.onyx-splash-enter.on {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+.onyx-splash-enter:focus { outline: none; }
+.onyx-splash-enter:focus-visible {
+  outline: 2px solid rgba(255, 248, 240, 0.85);
+  outline-offset: 3px;
+}
+
 /* Splash: film + DELPHI only. Kill any legacy chrome if a stale bundle leaks it. */
 .onyx-splash-only .onyx-corner,
 .onyx-splash-only .onyx-enter,

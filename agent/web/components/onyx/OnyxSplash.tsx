@@ -11,9 +11,18 @@ import {
   fadeIn,
   fadeOut,
 } from "../../lib/audioBus";
+import {
+  afterClip,
+  LAST_CLIP,
+  skipTo,
+  type OpeningClipId,
+  type OpeningPlan,
+  type OpeningStep,
+} from "../../lib/openingSequence";
 
 /**
- * Boot: Historical → Pythia → stairs → Allow gate.
+ * Boot: Historical → Pythia → stairs → the cake offering (void), then the Allow gate
+ * over the cake's last frame, or one quiet Enter into the home.
  *
  * Hard rules:
  * - Videos are silent files (no AAC). Only matching Web Audio beds play sound.
@@ -21,11 +30,12 @@ import {
  * - Audio starts with the page. The bed plays as a normal audio file so the
  *   picture and its sound can open together. The clock context takes over
  *   only once the browser is actually letting it run. A tap still starts the
- *   bed if the browser held it, and a later tap skips to the Allow gate
- *   (after SKIP_GUARD_MS, so that tap's ghost click can't skip).
+ *   bed if the browser held it, and a later tap skips to the cake's last frame
+ *   (after SKIP_GUARD_MS, so that tap's ghost click can't skip). Enter is armed
+ *   ENTER_ARM_MS after it shows, so one tap never runs through to the home.
  */
 
-type ClipDef = { id: string; video: string; audio: string };
+type ClipDef = { id: OpeningClipId; video: string; audio: string };
 
 const CLIPS: readonly ClipDef[] = [
   {
@@ -43,21 +53,43 @@ const CLIPS: readonly ClipDef[] = [
     video: `/pneuma-boot-stairs-g.mp4?v=${DELPHI_BUILD}`,
     audio: `/pneuma-boot-stairs-audio.m4a?v=${DELPHI_BUILD}`,
   },
+  {
+    id: "void",
+    video: `/pneuma-boot-void.mp4?v=${DELPHI_BUILD}`,
+    audio: `/pneuma-boot-void-audio.m4a?v=${DELPHI_BUILD}`,
+  },
 ] as const;
 
+export const CAKE_LAST_FRAME = `/pneuma-boot-void-last.jpg?v=${DELPHI_BUILD}`;
+
 const HOLD_MS = 600;
-const SAFETY_MS = 90_000;
+const SAFETY_MS = 120_000;
 const UNLOCK_GUARD_MS = 1000;
 const SKIP_GUARD_MS = 700;
+const ENTER_ARM_MS = 650;
+/** A tap aimed at "Tap to begin" that lands just after sound started on its own is not a skip. */
+const BEGIN_TO_SKIP_MS = 1200;
 const PREVIEW_SRC = `${CLIPS[0]!.video}&preview=1`;
 
 export function OnyxSplash({
   onEnter,
   onPrimeAccess,
+  endsAtGate = false,
 }: {
   onEnter: () => void;
   onPrimeAccess?: () => void;
+  /** Allow is still needed: the gate takes over on the cake's last frame. */
+  endsAtGate?: boolean;
 }) {
+  const planRef = useRef<OpeningPlan>({ guide: false, needsGate: endsAtGate });
+  planRef.current.needsGate = endsAtGate;
+  /** The current clip's bed may be (re)started; false once its picture has ended. */
+  const bedWantedRef = useRef(true);
+  const endOnLoadRef = useRef(false);
+  const enterArmedAt = useRef(Number.POSITIVE_INFINITY);
+  const enterRef = useRef<HTMLButtonElement | null>(null);
+  const [atEnd, setAtEnd] = useState(false);
+  const atEndRef = useRef(false);
   const entered = useRef(false);
   const unlockedRef = useRef(false);
   const unlockingRef = useRef(false);
@@ -82,8 +114,13 @@ export function OnyxSplash({
   const [needTap, setNeedTap] = useState(true);
   const [unlocked, setUnlocked] = useState(false);
 
-  const killAudioHard = () => {
+  /** `keepFile`: the bed about to (re)start on the shared file element is left playing. */
+  const killAudioHard = (keepFile?: string) => {
     audioGen.current += 1;
+    const file = fileBedRef.current;
+    if (file && !file.paused && file.dataset.bed !== keepFile) {
+      try { file.pause(); } catch { /* ignore */ }
+    }
     const src = bufferSrcRef.current;
     const dry = dryGainRef.current;
     bufferSrcRef.current = null;
@@ -226,8 +263,9 @@ export function OnyxSplash({
     if (!clip || entered.current) return;
     if (sessionRef.current !== session) return;
     if (clipIdxRef.current !== forIdx) return;
+    if (!bedWantedRef.current) return;
 
-    killAudioHard();
+    killAudioHard(clip.audio);
     const heard = fileBed();
     if (heard.dataset.bed !== clip.audio) {
       heard.dataset.bed = clip.audio;
@@ -266,7 +304,8 @@ export function OnyxSplash({
       audioGen.current !== gen ||
       sessionRef.current !== session ||
       clipIdxRef.current !== forIdx ||
-      entered.current
+      entered.current ||
+      !bedWantedRef.current
     ) {
       return;
     }
@@ -297,12 +336,14 @@ export function OnyxSplash({
   };
 
   /** Remount video on this clip’s silent mp4; audio follows after play(). */
-  const goToClip = (idx: number) => {
+  const goToClip = (idx: number, endOnLoad = false) => {
     if (entered.current || idx < 0 || idx >= CLIPS.length) return;
     const clip = CLIPS[idx];
     if (!clip) return;
 
-    killAudioHard();
+    if (!endOnLoad) killAudioHard(clip.audio);
+    endOnLoadRef.current = endOnLoad;
+    bedWantedRef.current = !endOnLoad;
     const session = ++sessionRef.current;
     clipIdxRef.current = idx;
     setClipIdx(idx);
@@ -339,6 +380,20 @@ export function OnyxSplash({
         window.setTimeout(resolve, 2500);
       });
       if (cancelled || entered.current || sessionRef.current !== session) return;
+
+      if (endOnLoadRef.current) {
+        try {
+          v.pause();
+          if (Number.isFinite(v.duration) && v.duration > 0) v.currentTime = Math.max(0, v.duration - 0.05);
+        } catch {
+          /* the poster already shows the last frame */
+        }
+        setVideoReady(true);
+        window.setTimeout(() => {
+          if (!cancelled && sessionRef.current === session && !entered.current) setVeilOn(false);
+        }, 80);
+        return;
+      }
 
       try {
         v.currentTime = 0;
@@ -397,19 +452,59 @@ export function OnyxSplash({
       return;
     }
 
+    bedWantedRef.current = false;
     killAudioHard();
-    const next = clipIdxRef.current + 1;
+    const step = afterClip(clipIdxRef.current, planRef.current);
+    if (step.kind !== "clip") {
+      runStep(step, false);
+      return;
+    }
     if (holdTimer.current != null) window.clearTimeout(holdTimer.current);
     holdTimer.current = window.setTimeout(() => {
       holdTimer.current = null;
       if (entered.current) return;
-      if (next >= CLIPS.length) {
-        finish(false);
-        return;
-      }
-      goToClip(next);
+      goToClip(step.idx);
     }, HOLD_MS);
   };
+
+  const showEnter = () => {
+    if (atEndRef.current) return;
+    atEndRef.current = true;
+    bedWantedRef.current = false;
+    enterArmedAt.current = Date.now() + ENTER_ARM_MS;
+    setAtEnd(true);
+  };
+
+  const tryEnter = () => {
+    if (!atEndRef.current || Date.now() < enterArmedAt.current) return;
+    finish(true);
+  };
+
+  const runStep = (step: OpeningStep, fromGesture: boolean) => {
+    if (entered.current) return;
+    if (holdTimer.current != null) {
+      window.clearTimeout(holdTimer.current);
+      holdTimer.current = null;
+    }
+    if (step.kind === "clip") {
+      goToClip(step.idx);
+      return;
+    }
+    if (step.kind === "guide") return;
+    if (step.end === "gate") {
+      finish(fromGesture);
+      return;
+    }
+    const v = videoRef.current;
+    const onCakeEnd = clipIdxRef.current === LAST_CLIP && !!v && (v.ended || endOnLoadRef.current);
+    if (!onCakeEnd) {
+      dissolveAudioOut();
+      goToClip(LAST_CLIP, true);
+    }
+    showEnter();
+  };
+
+  const skip = () => runStep(skipTo(planRef.current), true);
 
   const unlock = () => {
     if (entered.current || unlockedRef.current || unlockingRef.current) return;
@@ -442,27 +537,36 @@ export function OnyxSplash({
       setNeedTap(false);
       return;
     }
+    if (atEndRef.current) {
+      tryEnter();
+      return;
+    }
     const ctx = getClockAudio();
     const file = fileBedRef.current;
     const fileOn = !!(file && !file.paused);
     const webOn = !!(bufferSrcRef.current && ctx && ctx.state === "running");
-    if (!fileOn && !webOn) {
+    if (bedWantedRef.current && !fileOn && !webOn) {
       if (ctx?.state === "suspended") void ctx.resume().catch(() => {});
       setNeedTap(false);
       void playClipAudio(clipIdxRef.current, sessionRef.current);
       return;
     }
     if (Date.now() < skipAllowedAt.current) return;
-    finish(true);
+    skip();
   };
 
   useEffect(() => {
     if (!unlocked) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" && e.key !== "Enter" && e.key !== " ") return;
+      if (atEndRef.current) {
+        e.preventDefault();
+        tryEnter();
+        return;
+      }
       if (Date.now() < skipAllowedAt.current) return;
       e.preventDefault();
-      finish(true);
+      skip();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
@@ -478,7 +582,9 @@ export function OnyxSplash({
       const webOn = !!(bufferSrcRef.current && ctx && ctx.state === "running");
       if (webOn) return;
       const el = fileBedRef.current;
-      if (el && el.paused) void el.play().then(() => setNeedTap(false)).catch(() => {});
+      if (!el || !el.paused || el.ended || !bedWantedRef.current) return;
+      if (el.dataset.bed !== CLIPS[clipIdxRef.current]?.audio) return;
+      void el.play().then(() => setNeedTap(false)).catch(() => {});
     }, 500);
     return () => window.clearInterval(retry);
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -507,7 +613,9 @@ export function OnyxSplash({
 
   useEffect(() => {
     const readyFallback = window.setTimeout(() => setVideoReady(true), 2200);
-    const safety = window.setTimeout(() => finish(false), SAFETY_MS);
+    const safety = window.setTimeout(() => {
+      if (!atEndRef.current) runStep(skipTo(planRef.current), false);
+    }, SAFETY_MS);
     return () => {
       clearTimeout(readyFallback);
       clearTimeout(safety);
@@ -516,6 +624,16 @@ export function OnyxSplash({
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (atEnd && !veilOn) enterRef.current?.focus({ preventScroll: true });
+  }, [atEnd, veilOn]);
+
+  useEffect(() => {
+    if (!needTap) skipAllowedAt.current = Math.max(skipAllowedAt.current, Date.now() + BEGIN_TO_SKIP_MS);
+  }, [needTap]);
+
+  const onCake = unlocked && clipIdx === LAST_CLIP;
 
   return (
     <div
@@ -529,11 +647,12 @@ export function OnyxSplash({
           <video
             key={unlocked ? `clip-${clipIdx}-${videoKey}` : "preview"}
             ref={videoRef}
-            autoPlay
+            autoPlay={!atEnd}
             muted
             playsInline
             preload="auto"
             src={filmSrc}
+            poster={onCake ? CAKE_LAST_FRAME : undefined}
             className={videoReady ? "onyx-film-ready" : undefined}
             onLoadedData={() => setVideoReady(true)}
             onPlaying={() => setVideoReady(true)}
@@ -541,7 +660,18 @@ export function OnyxSplash({
           />
         </div>
 
-        <div className="onyx-dimmer" aria-hidden />
+        <div className={`onyx-dimmer${onCake ? " off" : ""}`} aria-hidden />
+
+        <button
+          ref={enterRef}
+          type="button"
+          className={`onyx-splash-enter${atEnd && !veilOn ? " on" : ""}`}
+          tabIndex={atEnd ? 0 : -1}
+          aria-hidden={!atEnd}
+          onClick={tryEnter}
+        >
+          Enter
+        </button>
 
         <p
           className={`onyx-splash-tap${needTap && videoReady && !veilOn ? " on" : ""}`}
@@ -557,8 +687,8 @@ export function OnyxSplash({
         </p>
 
         <p
-          className={`onyx-splash-tap onyx-splash-skip${unlocked && videoReady && !veilOn ? " on" : ""}`}
-          aria-hidden={!unlocked}
+          className={`onyx-splash-tap onyx-splash-skip${unlocked && !needTap && videoReady && !veilOn && !atEnd ? " on" : ""}`}
+          aria-hidden={!unlocked || needTap || atEnd}
         >
           Tap to skip
         </p>

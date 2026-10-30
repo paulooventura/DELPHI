@@ -94,6 +94,8 @@ function fireLaneMarks(ctx: AudioContext, prev: ClockLaneMarks, next: ClockLaneM
 export function useClockSfx(
   enabled: boolean,
   observerRef?: RefObject<ClockObserver>,
+  /** Opening films playing: no ticks, marks or beds yet; `enable()` still arms on purpose. */
+  hold = false,
 ) {
   const [active, setActive] = useState(false);
   const lastSec = useRef(-1);
@@ -102,6 +104,8 @@ export function useClockSfx(
   const lastMarkMs = useRef(0);
   const enabledRef = useRef(enabled);
   enabledRef.current = enabled;
+  const holdRef = useRef(hold);
+  holdRef.current = hold;
 
   const readObserver = (): ClockObserver =>
     observerRef?.current ?? { lat: HOME_LAT, lon: HOME_LON };
@@ -136,7 +140,7 @@ export function useClockSfx(
       if (t?.closest?.(".onyx-stone-track")) return;
       if (document.visibilityState === "hidden") return;
       // Sound starts at Allow access (page.tsx arms it there), never on a stray tap.
-      if (!soundAllowedThisSession()) return;
+      if (!soundAllowedThisSession() || holdRef.current) return;
       window.removeEventListener("pointerdown", unlock);
       window.removeEventListener("keydown", unlock);
       // Resume in the gesture turn — do not wait on an outer await first.
@@ -157,7 +161,7 @@ export function useClockSfx(
     window.addEventListener("keydown", unlock);
 
     const restore = () => {
-      if (!enabledRef.current || document.visibilityState === "hidden") return;
+      if (!enabledRef.current || holdRef.current || document.visibilityState === "hidden") return;
       window.clearTimeout(parkTimer);
       parkTimer = 0;
       void resumeClockAudio().then(ctx => {
@@ -192,6 +196,7 @@ export function useClockSfx(
     const existing = getClockAudio();
     if (
       existing &&
+      !holdRef.current &&
       document.visibilityState === "visible" &&
       !isClockAudioSilenced() &&
       soundAllowedThisSession()
@@ -215,6 +220,7 @@ export function useClockSfx(
       // Drive NOW-Chord every frame app-wide (freeze / Aulos duck handled inside tick).
       if (
         enabledRef.current &&
+        !holdRef.current &&
         document.visibilityState !== "hidden" &&
         isHeliodromeChordWanted() &&
         getClockAudio()?.state === "running"
@@ -225,11 +231,12 @@ export function useClockSfx(
 
       if (
         !enabledRef.current ||
+        holdRef.current ||
         document.visibilityState === "hidden" ||
         isClockAudioSilenced() ||
         isClockTimeFrozen()
       ) {
-        if (isClockTimeFrozen()) {
+        if (isClockTimeFrozen() || holdRef.current) {
           const held = new Date();
           lastSec.current = held.getSeconds();
           lastMarkMs.current = held.getTime();

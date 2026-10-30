@@ -341,6 +341,8 @@ export function OnyxApp({
     setModeState(parent);
     replaceMode(parent, 0);
   };
+  /** The opening ran in this load, so the gate holds on the cake's last frame. */
+  const [openingPlayed, setOpeningPlayed] = useState(false);
   /** First-run welcome over the live home; once per device (localStorage pm-welcomed). */
   const [pronaosOpen, setPronaosOpen] = useState(() => !hasBeenWelcomed());
   /** Set while history unwinds to the Omphalos entry; popstate then pushes this mode. */
@@ -669,13 +671,21 @@ export function OnyxApp({
 
   if (showSplash) {
     return (
-      <OnyxSplash onEnter={onSplashDone} onPrimeAccess={onPrimeAccess} />
+      <OnyxSplash
+        onEnter={() => {
+          setOpeningPlayed(true);
+          onSplashDone();
+        }}
+        onPrimeAccess={onPrimeAccess}
+        endsAtGate={showAccessGate}
+      />
     );
   }
 
   if (showAccessGate && onAllowAccess) {
     return (
       <DeviceAccessGate
+        fromCake={openingPlayed}
         onAllow={() => {
           trackEvent("allow_access");
           onAllowAccess();
