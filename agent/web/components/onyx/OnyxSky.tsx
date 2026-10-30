@@ -211,26 +211,6 @@ export function OnyxSky({
     return () => window.cancelAnimationFrame(raf);
   }, [lockHold, liveAttitudeRef]);
 
-  useEffect(() => {
-    let raf = 0;
-    let lastLabel = 0;
-    const tick = (t: number) => {
-      const view = liveAttitudeRef?.current?.view;
-      const look = view ? enuToAltAz(view) : { az: headingDeg, alt: pitchDeg };
-      const el = ribbonRef.current;
-      const bar = el?.parentElement?.clientWidth || 390;
-      if (el) el.style.transform = `translateX(${skyRibbonTranslateX(look.az, bar).toFixed(2)}px)`;
-      if (t - lastLabel > 120) {
-        lastLabel = t;
-        setLookAz(look.az);
-        setLookAlt(look.alt);
-      }
-      raf = window.requestAnimationFrame(tick);
-    };
-    raf = window.requestAnimationFrame(tick);
-    return () => window.cancelAnimationFrame(raf);
-  }, [headingDeg, pitchDeg, liveAttitudeRef]);
-
   const look = cardinalFromHeading(lookAz);
   const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const pitchLabel = Number.isFinite(lookAlt) ? Math.round(lookAlt) : 0;
@@ -270,6 +250,40 @@ export function OnyxSky({
     window.addEventListener("popstate", sync);
     return () => window.removeEventListener("popstate", sync);
   }, []);
+
+  useEffect(() => {
+    // The orrery covers the sky; the ribbon and readout rest until it closes.
+    if (orreryOpen) return;
+    let raf = 0;
+    let lastLabel = 0;
+    let shownX = "";
+    let shownAz = NaN;
+    let shownAlt = NaN;
+    const tick = (t: number) => {
+      const view = liveAttitudeRef?.current?.view;
+      const look = view ? enuToAltAz(view) : { az: headingDeg, alt: pitchDeg };
+      const el = ribbonRef.current;
+      const bar = el?.parentElement?.clientWidth || 390;
+      const x = skyRibbonTranslateX(look.az, bar).toFixed(1);
+      if (el && x !== shownX) {
+        shownX = x;
+        el.style.transform = `translateX(${x}px)`;
+      }
+      // The readout shows whole degrees; re-render only when it would change.
+      const az = Math.round(look.az);
+      const alt = Math.round(look.alt);
+      if (t - lastLabel > 120 && (az !== shownAz || alt !== shownAlt)) {
+        lastLabel = t;
+        shownAz = az;
+        shownAlt = alt;
+        setLookAz(look.az);
+        setLookAlt(look.alt);
+      }
+      raf = window.requestAnimationFrame(tick);
+    };
+    raf = window.requestAnimationFrame(tick);
+    return () => window.cancelAnimationFrame(raf);
+  }, [headingDeg, pitchDeg, liveAttitudeRef, orreryOpen]);
   const openOrrery = useCallback((rise = false) => {
     const s = (window.history.state ?? {}) as { depth?: number };
     window.history.pushState(
@@ -389,7 +403,7 @@ export function OnyxSky({
   return (
     <div className={`onyx-root${phaseClass}`}>
       <div
-        className={`onyx-device onyx-sky-device${lockHold ? " is-lock-hold" : ""}`}
+        className={`onyx-device onyx-sky-device${lockHold ? " is-lock-hold" : ""}${orreryOpen ? " under-orrery" : ""}`}
         role="application"
         aria-label="Pneuma Mundi sky view"
         tabIndex={0}

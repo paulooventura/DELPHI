@@ -178,6 +178,11 @@ type StarEntry = CatalogStar & { d: Vec3 };
 
 const MAX_LABELS = 25;
 const LONG_PRESS_MS = 450;
+/** Under ~83 fps the loop draws every frame; 120/144 Hz screens draw every other one. */
+const MIN_FRAME_MS = 12;
+/** Paused and still: redraw this often. Any touch, key or worker reply wakes it for KICK_MS. */
+const REST_FRAME_MS = 250;
+const KICK_MS = 800;
 const FOV_HALF = (20 * Math.PI) / 180;
 /** Camera distance that fits a sphere of radius 1 on the short screen side. */
 const DIST_PER_FRAME = 1.08 / Math.tan(FOV_HALF);
@@ -944,7 +949,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     const startEarth = () => {
       if (worker || !alive) return;
       const img = new Image();
-      img.onload = () => alive && gl?.setLand(img);
+      img.onload = () => {
+        if (!alive) return;
+        gl?.setLand(img);
+        kick();
+      };
       img.src = "/orrery/earth-land.png";
       try {
         worker = new Worker("/orrery/sat-worker.js");
@@ -954,6 +963,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       }
       worker.onmessage = (e: MessageEvent<SatWorkerOut>) => {
         const msg = e.data;
+        kick();
         if (msg.type === "meta") {
           const n = msg.rows.length;
           const layer = new Uint8Array(n);
@@ -1085,6 +1095,18 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     let enteredScene: SceneKind = camRef.current.scene;
     let last = performance.now();
     let lastReadout = 0;
+    // Per-frame test readouts (pixel spots, label counts) land on the root with the 4 Hz readout:
+    // an attribute write on the root restyles the whole orrery, so never write it every frame.
+    const probe: Record<string, string> = {};
+    const flushProbe = () => {
+      for (const k in probe) if (root.dataset[k] !== probe[k]) root.dataset[k] = probe[k];
+    };
+    let lastKick = performance.now();
+    const kick = () => {
+      lastKick = performance.now();
+    };
+    const KICK_EVENTS = ["pointerdown", "pointerup", "wheel", "keydown", "click", "input", "change"] as const;
+    for (const ev of KICK_EVENTS) root.addEventListener(ev, kick, { capture: true, passive: true });
     const whoosh = createOrreryWhoosh();
     let prevCam = { yaw: camRef.current.yaw, pitch: camRef.current.pitch, dist: camRef.current.dist };
 
@@ -1593,11 +1615,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
 
       const byId = new Map(drawn.map(d => [d.body.id, d]));
       const fmt = (p?: { s: Projected }) => (p ? `${(p.s.x / dpr).toFixed(1)},${(p.s.y / dpr).toFixed(1)}` : "");
-      root.dataset.earthPx = fmt(byId.get("earth"));
-      root.dataset.moonPx = fmt(byId.get("moon"));
-      root.dataset.sunPx = fmt(byId.get("sun"));
-      root.dataset.labels = String(labels);
-      root.dataset.drawn = String(drawn.length);
+      probe.earthPx = fmt(byId.get("earth"));
+      probe.moonPx = fmt(byId.get("moon"));
+      probe.sunPx = fmt(byId.get("sun"));
+      probe.labels = String(labels);
+      probe.drawn = String(drawn.length);
       ctx.globalAlpha = 1;
     };
 
@@ -1871,8 +1893,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         for (let k = -tw / 2; k <= tw / 2; k += 16 * dpr) hits.push({ id: e.id, x: lx + k, y: ly - 4 * dpr, r: 12 * dpr });
         edgePx += `${e.id}:${(x / dpr).toFixed(1)},${(y / dpr).toFixed(1)};`;
       }
-      root.dataset.edgeMarkers = edgePx;
-      root.dataset.sunPx = sunS && inView(sunS) && !sunHidden ? `${(sunS.x / dpr).toFixed(1)},${(sunS.y / dpr).toFixed(1)}` : "";
+      probe.edgeMarkers = edgePx;
+      probe.sunPx = sunS && inView(sunS) && !sunHidden ? `${(sunS.x / dpr).toFixed(1)},${(sunS.y / dpr).toFixed(1)}` : "";
       const earthS = project(ZERO);
 
       // Named stations and telescopes, the selected object, Measure A and B.
@@ -1911,7 +1933,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           label(m.name, s.x, s.y - 9 * dpr, m.must ? 0.95 : 0.8, m.must ? "170, 255, 220" : undefined);
         }
       }
-      root.dataset.issPx = issPx;
+      probe.issPx = issPx;
 
       // Measure A–B inside the Earth level.
       const posOf = (s: Sel | null): Vec3 | null => {
@@ -1962,10 +1984,10 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       }
 
       const fmt = (s: Projected | null) => (s ? `${(s.x / dpr).toFixed(1)},${(s.y / dpr).toFixed(1)}` : "");
-      root.dataset.earthPx = fmt(earthS);
-      root.dataset.globeR = (makeProjector(cam, w, h).F / Math.sqrt(Math.max(1e-6, cam.dist * cam.dist - 1)) / dpr).toFixed(1);
-      root.dataset.moonPx = fmt(moonS);
-      root.dataset.labels = String(labels);
+      probe.earthPx = fmt(earthS);
+      probe.globeR = (makeProjector(cam, w, h).F / Math.sqrt(Math.max(1e-6, cam.dist * cam.dist - 1)) / dpr).toFixed(1);
+      probe.moonPx = fmt(moonS);
+      probe.labels = String(labels);
       ctx.globalAlpha = 1;
     };
 
@@ -2085,6 +2107,27 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     };
 
     const loop = (now: number) => {
+      // 120/144 Hz screens: one draw per ~60 Hz frame is enough for this view.
+      if (now - last < MIN_FRAME_MS) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
+      const cam = camRef.current;
+      // Paused, camera settled and nobody touching: nothing on screen changes, so redraw only
+      // a few times a second (late textures, fonts, panel text) instead of every frame.
+      const resting =
+        !playingRef.current &&
+        pointers.size === 0 &&
+        cam.goalYaw === null &&
+        cam.goalPitch === null &&
+        cam.blend >= 1 &&
+        cam.fadeDir === 0 &&
+        Math.abs(Math.log(Math.max(cam.dist, 1e-12) / Math.max(cam.goalDist, 1e-12))) < 1e-4 &&
+        now - lastKick > KICK_MS;
+      if (resting && now - last < REST_FRAME_MS) {
+        raf = requestAnimationFrame(loop);
+        return;
+      }
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       // The world map covers the stage; the orrery rests underneath until it closes.
@@ -2093,7 +2136,6 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         raf = requestAnimationFrame(loop);
         return;
       }
-      const cam = camRef.current;
       if (dt > 0) {
         const turn = Math.hypot(cam.yaw - prevCam.yaw, cam.pitch - prevCam.pitch) / dt;
         const zoom = Math.abs(Math.log(Math.max(cam.dist, 1e-9) / Math.max(prevCam.dist, 1e-9))) / dt;
@@ -2273,10 +2315,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
 
       if (now - lastReadout > 250) {
         lastReadout = now;
-        root.dataset.simMs = String(Math.round(simMsRef.current));
-        root.dataset.scene = cam.scene;
-        root.dataset.scale = scaleLabel;
-        root.dataset.focus = cam.focus ?? "";
+        probe.simMs = String(Math.round(simMsRef.current));
+        probe.scene = cam.scene;
+        probe.scale = scaleLabel;
+        probe.focus = cam.focus ?? "";
+        flushProbe();
         const offset = (simMsRef.current - Date.now()) / YEAR_MS;
         const lap = (((Math.PI - sunGalacticAngle(deepYearsRef.current)) / (2 * Math.PI)) * 100) % 100;
         setReadout({
@@ -2306,6 +2349,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
 
     return () => {
       alive = false;
+      for (const ev of KICK_EVENTS) root.removeEventListener(ev, kick, { capture: true });
       window.clearTimeout(denseTimer);
       stop();
       whoosh.dispose();
