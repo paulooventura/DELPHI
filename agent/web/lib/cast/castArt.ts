@@ -67,28 +67,36 @@ const RUNE_FILES: Record<string, string> = {
 };
 
 export function castArtSrcs(system: string, id: string): string[] {
-  const list: string[] = [];
+  if (system === "tarot-major") {
+    const file = TAROT_MAJOR_FILES[id];
+    return file ? [`/cast/tarot/major/${file}.webp`, `/cast/tarot/major/${file}.png`] : [];
+  }
   if (system === "tarot-minor") {
     const m = /^ta-(wands|cups|swords|pentacles)-(.+)$/.exec(id);
-    if (m) {
-      list.push(`/cast/tarot/${m[1]}/${m[2]}.png`);
-      list.push(`/cast/tarot/${m[1]}/suit.png`);
-    }
-    return list;
+    if (!m) return [];
+    return [
+      `/cast/tarot/${m[1]}/${m[2]}.webp`,
+      `/cast/tarot/${m[1]}/${m[2]}.png`,
+      `/cast/tarot/${m[1]}/suit.png`,
+    ];
   }
   const primary = castArtSrc(system, id);
   return primary ? [primary] : [];
 }
 
+export function isTarotSystem(system: string): boolean {
+  return system === "tarot-major" || system === "tarot-minor";
+}
+
 export function castArtSrc(system: string, id: string): string | null {
   if (system === "tarot-major") {
     const file = TAROT_MAJOR_FILES[id];
-    return file ? `/cast/tarot/major/${file}.png` : null;
+    return file ? `/cast/tarot/major/${file}.webp` : null;
   }
   if (system === "tarot-minor") {
     const m = /^ta-(wands|cups|swords|pentacles)-(.+)$/.exec(id);
     if (!m) return null;
-    return `/cast/tarot/${m[1]}/${m[2]}.png`;
+    return `/cast/tarot/${m[1]}/${m[2]}.webp`;
   }
   if (system === "rune-cast") {
     const file = RUNE_FILES[id];

@@ -1,6 +1,7 @@
 "use client";
 
 import type { QualiaEntry } from "../../lib/lore/qualia";
+import { isTarotSystem } from "../../lib/cast/castArt";
 import { CastArt } from "./CastArt";
 
 export function CastCard({
@@ -23,7 +24,7 @@ export function CastCard({
     >
       <div className="onyx-cast-card-face">
         <div className="onyx-cast-card-aura" aria-hidden />
-        <div className="onyx-cast-card-symbol-wrap">
+        <div className={`onyx-cast-card-symbol-wrap${isTarotSystem(system) ? " full-bleed" : ""}`}>
           <CastArt system={system} id={entry.id} glyph={entry.glyph} size={168} />
         </div>
         <div className="onyx-cast-card-band">

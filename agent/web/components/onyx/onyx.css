@@ -2963,6 +2963,14 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   align-items: center;
   justify-content: center;
 }
+.onyx-cast-card-symbol-wrap.full-bleed {
+  top: 0;
+  bottom: 0;
+  height: auto;
+}
+.onyx-cast-card-symbol-wrap.full-bleed .onyx-cast-art-img {
+  object-fit: cover;
+}
 .onyx-cast-symbol {
   filter: drop-shadow(0 0 10px rgba(233, 214, 168, 0.18));
 }
