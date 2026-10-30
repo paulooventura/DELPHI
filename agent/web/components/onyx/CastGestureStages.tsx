@@ -90,11 +90,11 @@ export function RuneBagStage({
 
   /** No question yet: the bag stays quiet and the reason is shown instead of a cast. */
   const needQuestion = (focus: boolean) => {
+    if (focus) questionRef.current?.focus({ preventScroll: true });
     const now = performance.now();
     if (now - lastNudge.current < 900) return;
     lastNudge.current = now;
     setNudge(n => n + 1);
-    if (focus) questionRef.current?.focus({ preventScroll: true });
   };
 
   const bump = (n: number) => {
@@ -135,13 +135,11 @@ export function RuneBagStage({
 
   function onDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (committing) return;
+    e.currentTarget.setPointerCapture(e.pointerId);
     if (!asked) {
-      // Keeps the bag from taking focus back from the question box.
-      e.preventDefault();
-      needQuestion(true);
+      needQuestion(false);
       return;
     }
-    e.currentTarget.setPointerCapture(e.pointerId);
     const p = { x: e.clientX, y: e.clientY, t: performance.now() };
     ptr.current = p;
     last.current = p;
@@ -190,6 +188,11 @@ export function RuneBagStage({
   }
 
   function onUp(e: ReactPointerEvent<HTMLDivElement>) {
+    // Focus on lift, after the press has settled focus, so the question box keeps it.
+    if (!asked && !committing) {
+      if (e.type === "pointerup") questionRef.current?.focus({ preventScroll: true });
+      return;
+    }
     if (!ptr.current || committing) return;
     const dy = e.clientY - ptr.current.y;
     const elapsed = performance.now() - ptr.current.t;
