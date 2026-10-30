@@ -14,8 +14,8 @@ import {
 } from "../galacticFrequency";
 import { precessionAccumulatedDeg } from "../phase/plugins/astronomical";
 import { jdFromDate, zoneForCoords } from "../phase/timeResolution";
-import { QUALIA, byId } from "./qualia";
-import { resolveMoment } from "./resolveMoment";
+import { QUALIA } from "./qualia";
+import { resolveMoment, risingEclipticLon } from "./resolveMoment";
 import {
   CHALDEAN_PLANETS,
   solarDayWindow,
@@ -407,7 +407,105 @@ function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
-function localHourFrac(date: Date, timeZone: string): {
+/* ---------------------------------------------------------------------------
+ * Caches. computeOrreryState runs every animation frame while the clock plays,
+ * so work is redone only when its inputs change:
+ *   - static cell rows, qualia lookups, time zones, date formatters: built once;
+ *   - local calendar/clock fields: once per minute (seconds and ms come straight
+ *     from the timestamp, so every fast lane stays frame-exact);
+ *   - the sunrise→next-sunrise window: until the next sunrise;
+ *   - sky positions (resolveMoment): once per second. The fastest of them, the
+ *     rising degree, moves ~0.004° a second, i.e. <0.0005 of a decan cell.
+ * `{ cache: false }` bypasses the time-based caches (tests compare against it).
+ * ------------------------------------------------------------------------- */
+
+const SKY_QUANTUM_MS = 1000;
+const MINUTE_MS = 60_000;
+
+function lru<V>(max: number) {
+  const m = new Map<string, V>();
+  return {
+    get(k: string): V | undefined {
+      const v = m.get(k);
+      if (v !== undefined) { m.delete(k); m.set(k, v); }
+      return v;
+    },
+    set(k: string, v: V): void {
+      m.set(k, v);
+      if (m.size > max) m.delete(m.keys().next().value as string);
+    },
+  };
+}
+
+const QUALIA_BY_ID = new Map<string, (typeof QUALIA)[number]>();
+for (const q of QUALIA) if (!QUALIA_BY_ID.has(q.id)) QUALIA_BY_ID.set(q.id, q);
+const qid = (id: string) => QUALIA_BY_ID.get(id);
+
+const staticCellRows = new Map<string, OrreryCell[]>();
+function staticCells(key: string, build: () => OrreryCell[]): OrreryCell[] {
+  let row = staticCellRows.get(key);
+  if (!row) { row = build(); staticCellRows.set(key, row); }
+  return row;
+}
+
+const formatters = new Map<string, Intl.DateTimeFormat>();
+function localFormatter(timeZone: string): Intl.DateTimeFormat {
+  let f = formatters.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat("en-US", {
+      timeZone,
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+      second: "numeric",
+      weekday: "short",
+      hourCycle: "h23",
+    });
+    formatters.set(timeZone, f);
+  }
+  return f;
+}
+
+const WD_MAP: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+
+type LocalFields = {
+  year: number; month: number; day: number;
+  hour: number; minute: number; second: number; weekday: number;
+};
+
+function localFieldsAt(date: Date, timeZone: string): LocalFields {
+  const parts = localFormatter(timeZone).formatToParts(date);
+  const num = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0);
+  return {
+    year: num("year"),
+    month: num("month"),
+    day: num("day"),
+    hour: num("hour"),
+    minute: num("minute"),
+    second: num("second"),
+    weekday: WD_MAP[parts.find(p => p.type === "weekday")?.value ?? ""] ?? date.getUTCDay(),
+  };
+}
+
+const minuteFields = lru<LocalFields>(8);
+/** Local fields, formatting once per minute. Falls back to exact formatting for zones with second offsets (LMT). */
+function localFields(date: Date, timeZone: string, cache: boolean): LocalFields {
+  if (!cache) return localFieldsAt(date, timeZone);
+  const t = date.getTime();
+  const minuteStart = Math.floor(t / MINUTE_MS) * MINUTE_MS;
+  const key = `${timeZone}|${minuteStart}`;
+  let base = minuteFields.get(key);
+  if (!base) {
+    base = localFieldsAt(new Date(minuteStart), timeZone);
+    minuteFields.set(key, base);
+  }
+  if (base.second !== 0) return localFieldsAt(date, timeZone);
+  return { ...base, second: Math.floor((t - minuteStart) / 1000) };
+}
+
+function localHourFrac(date: Date, f: LocalFields): {
   dayFrac: number;
   hour: number;
   minute: number;
@@ -415,39 +513,59 @@ function localHourFrac(date: Date, timeZone: string): {
   ms: number;
   weekday: number;
 } {
-  const parts = new Intl.DateTimeFormat("en-US", {
-    timeZone,
-    hour: "numeric",
-    minute: "numeric",
-    second: "numeric",
-    weekday: "short",
-    hourCycle: "h23",
-  }).formatToParts(date);
-  const num = (t: string) => Number(parts.find(p => p.type === t)?.value ?? 0);
-  const wdMap: Record<string, number> = {
-    Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6,
-  };
-  const hour = num("hour");
-  const minute = num("minute");
-  const second = num("second");
+  const { hour, minute, second, weekday } = f;
   const ms = date.getMilliseconds();
   const dayFrac = (hour + minute / 60 + second / 3600 + ms / 3_600_000) / 24;
-  const weekday = wdMap[parts.find(p => p.type === "weekday")?.value ?? ""] ?? date.getUTCDay();
   return { dayFrac, hour, minute, second, ms, weekday };
 }
 
+const zones = new Map<string, string>();
 function zoneFor(lat: number, lon: number): string {
-  try {
-    return zoneForCoords(lat, lon);
-  } catch {
-    return "UTC";
+  const key = `${lat},${lon}`;
+  let z = zones.get(key);
+  if (z === undefined) {
+    try {
+      z = zoneForCoords(lat, lon);
+    } catch {
+      z = "UTC";
+    }
+    zones.set(key, z);
   }
+  return z;
 }
 
 function cellsFromSystem(system: string): OrreryCell[] {
-  return QUALIA.filter(q => q.system === system)
-    .sort((a, b) => a.id.localeCompare(b.id))
-    .map(q => ({ id: q.id, label: q.name, glyph: q.glyph }));
+  return staticCells(`sys:${system}`, () =>
+    QUALIA.filter(q => q.system === system)
+      .sort((a, b) => a.id.localeCompare(b.id))
+      .map(q => ({ id: q.id, label: q.name, glyph: q.glyph })),
+  );
+}
+
+const skyCache = lru<ReturnType<typeof resolveMoment>>(4);
+function skyAt(date: Date, lat: number, lon: number, cache: boolean): ReturnType<typeof resolveMoment> {
+  if (!cache) return resolveMoment(jdFromDate(date), lat, lon);
+  const q = Math.floor(date.getTime() / SKY_QUANTUM_MS) * SKY_QUANTUM_MS;
+  const key = `${lat},${lon}|${q}`;
+  let r = skyCache.get(key);
+  if (!r) {
+    r = resolveMoment(jdFromDate(new Date(q)), lat, lon);
+    skyCache.set(key, r);
+  }
+  return r;
+}
+
+let solarCache: { key: string; win: ReturnType<typeof solarDayWindow> } | null = null;
+/** The window holds from its sunrise until the next sunrise; recompute only when the clock leaves it. */
+function solarWindowAt(date: Date, lat: number, lon: number, timeZone: string, cache: boolean) {
+  if (!cache) return solarDayWindow(date, lat, lon, timeZone);
+  const key = `${lat},${lon}|${timeZone}`;
+  const t = date.getTime();
+  const c = solarCache;
+  if (c && c.key === key && t >= c.win.sunrise.getTime() && t < c.win.nextSunrise.getTime()) return c.win;
+  const win = solarDayWindow(date, lat, lon, timeZone);
+  solarCache = { key, win };
+  return win;
 }
 
 /**
@@ -458,40 +576,43 @@ export function computeOrreryState(
   date: Date,
   lat: number,
   lon: number,
+  opts: { cache?: boolean } = {},
 ): { lanes: OrreryLaneState[]; slowSky: SlowSkyItem[] } {
+  const cache = opts.cache !== false;
   const timeZone = zoneFor(lat, lon);
-  const { dayFrac, hour, minute, second, ms, weekday } = localHourFrac(date, timeZone);
+  const fields = localFields(date, timeZone, cache);
+  const { dayFrac, hour, minute, second, ms, weekday } = localHourFrac(date, fields);
   const jd = jdFromDate(date);
-  const resolved = resolveMoment(jd, lat, lon);
+  const resolved = skyAt(date, lat, lon, cache);
   const meta = resolved.meta;
 
   const muhCells = cellsFromSystem("muhurta");
-  const phCells = CHALDEAN.map(p => {
-    const e = byId(`ph-${p}`);
+  const phCells = staticCells("ph", () => CHALDEAN.map(p => {
+    const e = qid(`ph-${p}`);
     return { id: `ph-${p}`, label: e?.name ?? `${p} hour`, glyph: e?.glyph };
-  });
-  const shiCells = SHI.map((b, i) => ({
+  }));
+  const shiCells = staticCells("shi", () => SHI.map((b, i) => ({
     id: `shi-${b}`,
     label: SHI_LABEL[i]!,
-    glyph: byId(`shi-${b}`)?.glyph,
-  }));
+    glyph: qid(`shi-${b}`)?.glyph,
+  })));
   const pancaCells = cellsFromSystem("pancawara");
-  const pdCells = PLANETARY_DAY_IDS.map(id => {
-    const e = byId(id);
+  const pdCells = staticCells("pd", () => PLANETARY_DAY_IDS.map(id => {
+    const e = qid(id);
     return { id, label: e?.name ?? id, glyph: e?.glyph };
-  });
-  const moonCells = MP_IDS.map(id => {
-    const e = byId(id);
+  }));
+  const moonCells = staticCells("moon", () => MP_IDS.map(id => {
+    const e = qid(id);
     return { id, label: e?.name ?? id, glyph: e?.glyph };
-  });
+  }));
   const wukuCells = cellsFromSystem("pawukon-wuku");
-  const seasonCells = WZ_IDS.map(id => {
-    const e = byId(id);
+  const seasonCells = staticCells("season", () => WZ_IDS.map(id => {
+    const e = qid(id);
     return { id, label: e?.name ?? id, glyph: e?.glyph };
-  });
+  }));
 
   // Muhūrta — 15 day + 15 night unequal parts from true sunrise/sunset.
-  const solarWin = solarDayWindow(date, lat, lon, timeZone);
+  const solarWin = solarWindowAt(date, lat, lon, timeZone, cache);
   const muhState = unequalMuhurta(date, solarWin);
   const muhIndex = muhState.index;
   const muhProg = muhState.progress;
@@ -522,10 +643,10 @@ export function computeOrreryState(
   const pancaIndex = Math.max(0, meta.pancawara - 1);
   const pancaProg = dayFrac; // advances with the civil day
 
-  const tzCells = TZ_IDS.map(id => {
-    const e = byId(id);
+  const tzCells = staticCells("tz", () => TZ_IDS.map(id => {
+    const e = qid(id);
     return { id, label: e?.name ?? id, glyph: e?.glyph };
-  });
+  }));
   const tzSignId = TZ_IDS.find(id => id === (
     {
       Imix: "tz-imix", Ik: "tz-ik", Akbal: "tz-akbal", Kan: "tz-kan",
@@ -548,14 +669,16 @@ export function computeOrreryState(
   const mzProg = mod(meta.moonSiderealDeg / (360 / 28), 1);
 
   const dcCells = cellsFromSystem("egyptian-decan");
-  const dcId = resolved.ids.find(id => id.startsWith("dc-")) ?? "";
+  // The ascendant sweeps a decan in minutes, so it is read exactly each frame, not from the 1 s sky.
+  const rising = risingEclipticLon(jd, lat, lon);
+  const dcId = `dc-${String((Math.floor(rising / 10) % 36) + 1).padStart(2, "0")}`;
   const dcIndex = Math.max(0, dcCells.findIndex(c => c.id === dcId));
-  const dcProg = mod(meta.risingEclipticDeg / 10, 1);
+  const dcProg = mod(rising / 10, 1);
 
-  const numCells = Array.from({ length: 10 }, (_, i) => {
-    const e = byId(`num-${i}`);
+  const numCells = staticCells("num", () => Array.from({ length: 10 }, (_, i) => {
+    const e = qid(`num-${i}`);
     return { id: `num-${i}`, label: e?.name ?? String(i), glyph: e?.glyph };
-  });
+  }));
   const numIndex = Math.max(0, meta.numerology % 10);
   const numProg = dayFrac;
 
@@ -566,68 +689,61 @@ export function computeOrreryState(
   const ghatiProg = mod(ghatiFloat, 1);
 
   // Gregorian year and month
-  const calParts = new Intl.DateTimeFormat("en-US", {
-    timeZone: timeZone,
-    year: "numeric",
-    month: "numeric",
-    day: "numeric",
-  }).formatToParts(date);
-  const calGet = (t: string) => Number(calParts.find(p => p.type === t)?.value ?? 0);
-  const calYear = calGet("year");
-  const calMonth = calGet("month"); // 1-12
-  const calDay = calGet("day");
+  const calYear = fields.year;
+  const calMonth = fields.month; // 1-12
+  const calDay = fields.day;
   const dsKin = dreamspellKinFromDate(calYear, calMonth, calDay);
   const dsDay = galacticDayFromKin(dsKin);
   const dsToneIndex = dsDay.tone.tone - 1;
   const dsWavespell = Math.ceil(dsKin / 13);
   const dsWavespellIndex = dsWavespell - 1;
   const dsWavespellProg = (((dsKin - 1) % 13) + dayFrac) / 13;
-  const dsKinCells = Array.from({ length: 260 }, (_, i) => ({
+  const dsKinCells = staticCells("dsk", () => Array.from({ length: 260 }, (_, i) => ({
     id: `dsk-${i + 1}`,
     label: String(i + 1),
-  }));
-  const dsToneCells = CREATION_TONES.map(t => ({
+  })));
+  const dsToneCells = staticCells("dst", () => CREATION_TONES.map(t => ({
     id: `dst-${t.tone}`,
     label: t.name,
-  }));
-  const dsWavespellCells = Array.from({ length: 20 }, (_, i) => {
+  })));
+  const dsWavespellCells = staticCells("dsw", () => Array.from({ length: 20 }, (_, i) => {
     const startKin = i * 13 + 1;
     const tribe = TRIBES_OF_TIME[(startKin - 1) % 20]!;
     return {
       id: `dsw-${i + 1}`,
       label: tribe.name,
     };
-  });
+  }));
   const daysThisMonth = new Date(calYear, calMonth, 0).getDate();
   const monthProg = (calDay - 1 + dayFrac) / daysThisMonth;
 
   const MONTH_NAMES = ["January","February","March","April","May","June",
     "July","August","September","October","November","December"];
-  const monthCells = MONTH_NAMES.map((n, i) => ({ id: `mo-${i+1}`, label: n }));
+  const monthCells = staticCells("mo", () => MONTH_NAMES.map((n, i) => ({ id: `mo-${i+1}`, label: n })));
 
   // Year lane: decade-scale, 10 years visible
   const yearStart = Math.floor(calYear / 10) * 10;
-  const yearCells = Array.from({ length: 10 }, (_, i) => ({
+  const yearCells = staticCells(`yr-${yearStart}`, () => Array.from({ length: 10 }, (_, i) => ({
     id: `yr-${yearStart + i}`,
     label: String(yearStart + i),
-  }));
+  })));
   const yearInDecade = calYear - yearStart;
   const yearProg = (calMonth - 1 + (calDay - 1) / daysThisMonth) / 12;
 
   const centuryStart = Math.floor(calYear / 100) * 100;
-  const centuryCells = Array.from({ length: 10 }, (_, i) => ({
+  const centuryCells = staticCells(`c-${centuryStart}`, () => Array.from({ length: 10 }, (_, i) => ({
     id: `c-${centuryStart - 400 + i * 100}`,
     label: String(centuryStart - 400 + i * 100),
-  }));
+  })));
   const centuryIndex = 4;
   const centuryProg = (calYear - centuryStart + yearProg) / 100;
 
   const precDeg = mod(precessionAccumulatedDeg(jd), 360);
   const precArcSec = precDeg * 3600;
-  const precCells = Array.from({ length: 12 }, (_, i) => ({
+  const precCells = staticCells("prec", () => Array.from({ length: 12 }, (_, i) => ({
     id: `prec-${i * 30}`,
     label: `${i * 30}°`,
-  }));
+  })));
   const precIndex = Math.floor(precDeg / 30) % 12;
   const precProg = (precDeg % 30) / 30;
 
@@ -635,10 +751,10 @@ export function computeOrreryState(
   const ageFloat = mod(1 - yearsToAquarius / AGE_YEARS, 12); // 1 = Pisces at the hinge
   const ageIndex = Math.floor(ageFloat) % 12;
   const ageProg = ageFloat - Math.floor(ageFloat);
-  const ageCells = AGE_IDS.map((id, i) => {
-    const e = byId(id);
+  const ageCells = staticCells("age", () => AGE_IDS.map((id, i) => {
+    const e = qid(id);
     return { id: `age-${id}`, label: e?.name?.split("·")[0]?.trim() ?? `Age ${i + 1}`, glyph: e?.glyph };
-  });
+  }));
 
   const keFloat = (hour * 3600 + minute * 60 + second + ms / 1000) / 864;
   const keIndex = Math.floor(mod(keFloat, 100));
@@ -650,10 +766,10 @@ export function computeOrreryState(
     86.4;
   const beatIndex = Math.floor(mod(beatFloat, 1000));
   const beatProg = mod(beatFloat, 1);
-  const beatCells = Array.from({ length: 100 }, (_, i) => ({
+  const beatCells = staticCells("bt", () => Array.from({ length: 100 }, (_, i) => ({
     id: `bt-${i * 10}`,
     label: String(i * 10).padStart(3, "0"),
-  }));
+  })));
   const beatLaneIndex = Math.floor(beatIndex / 10) % 100;
   const beatLaneProg = (beatIndex % 10 + beatProg) / 10;
 
@@ -722,7 +838,7 @@ export function computeOrreryState(
       progress: seasonProg,
       cells: seasonCells,
       activeLabel: seasonCells[seasonIndex]?.label ?? "—",
-      source: byId(WZ_IDS[seasonIndex]!)?.source,
+      source: qid(WZ_IDS[seasonIndex]!)?.source,
       lore: "The tropical year cut into twelve 30° signs. Celebrated Hellenistic season — one of several ways a sky can be named, not the only one.",
     },
     {
@@ -735,7 +851,7 @@ export function computeOrreryState(
       progress: tzProg,
       cells: tzCells,
       activeLabel: `${meta.tzolkinTone} ${meta.tzolkinSign}`,
-      source: byId(tzSignId)?.source,
+      source: qid(tzSignId)?.source,
       lore: "The Maya 260-day count — twenty day-signs walking with thirteen tones. Its own row, not folded into wuku.",
     },
     {
@@ -794,10 +910,10 @@ export function computeOrreryState(
       speedT: 0.96,
       index: Math.max(0, calDay - 1),
       progress: dayFrac,
-      cells: Array.from({ length: daysThisMonth }, (_, i) => ({
+      cells: staticCells(`md-${daysThisMonth}`, () => Array.from({ length: daysThisMonth }, (_, i) => ({
         id: `md-${i + 1}`,
         label: String(i + 1),
-      })),
+      }))),
       activeLabel: String(calDay),
       lore: "The numbered civil day — 1 through the last date of this month. The month row names the month; this row is the day inside it.",
     },
@@ -811,7 +927,7 @@ export function computeOrreryState(
       progress: moonProg,
       cells: moonCells,
       activeLabel: moonCells[moonIndex]?.label ?? "—",
-      source: byId(MP_IDS[moonIndex]!)?.source,
+      source: qid(MP_IDS[moonIndex]!)?.source,
       lore: "Eight equal synodic sectors of the real moon. Measured light — the face you can see, not a personality.",
     },
     {
@@ -824,7 +940,7 @@ export function computeOrreryState(
       progress: nkProg,
       cells: nkCells.length ? nkCells : [{ id: "nk-0", label: "—" }],
       activeLabel: nkCells[nkIndex]?.label ?? "—",
-      source: byId(nkId)?.source,
+      source: qid(nkId)?.source,
       lore: "Twenty-seven Vedic lunar mansions. The Moon's sidereal address — measured sky, named in Sanskrit.",
     },
     {
@@ -837,7 +953,7 @@ export function computeOrreryState(
       progress: dcProg,
       cells: dcCells.length ? dcCells : [{ id: "dc-0", label: "—" }],
       activeLabel: dcCells[dcIndex]?.label ?? "—",
-      source: byId(dcId)?.source,
+      source: qid(dcId)?.source,
       lore: "Thirty-six Egyptian star-weeks of ten days. The rising 10° band — celebrated night-clock, later an astrological face.",
     },
     {
@@ -850,7 +966,7 @@ export function computeOrreryState(
       progress: mod(wukuProg, 1),
       cells: wukuCells,
       activeLabel: wukuCells[wukuIndex]?.label ?? "—",
-      source: byId(`wk-${String(meta.wuku).padStart(2, "0")}`)?.source,
+      source: qid(`wk-${String(meta.wuku).padStart(2, "0")}`)?.source,
       lore: "One named week of the Javanese-Balinese Pawukon. Its own row now — no longer sharing the line with Tzolk'in.",
     },
     {
@@ -863,7 +979,7 @@ export function computeOrreryState(
       progress: dayFrac,
       cells: pdCells,
       activeLabel: pdCells[weekday]?.label ?? "—",
-      source: byId(PLANETARY_DAY_IDS[weekday]!)?.source,
+      source: qid(PLANETARY_DAY_IDS[weekday]!)?.source,
       lore: "The seven-day planetary week — each civil day named for its first-hour ruler. Same cascade as the planetary-hour lane, one step slower.",
     },
     {
@@ -876,7 +992,7 @@ export function computeOrreryState(
       progress: pancaProg,
       cells: pancaCells,
       activeLabel: pancaCells[pancaIndex]?.label ?? "—",
-      source: byId(`pc-${meta.pancawara}`)?.source,
+      source: qid(`pc-${meta.pancawara}`)?.source,
       lore: "The Javanese five-day market week. Celebrated social time, not a measured orbit.",
     },
     {
@@ -889,7 +1005,7 @@ export function computeOrreryState(
       progress: mzProg,
       cells: mzCells.length ? mzCells : [{ id: "mz-0", label: "—" }],
       activeLabel: mzCells[mzIndex]?.label ?? "—",
-      source: byId(`mz-${String(meta.manzil).padStart(2, "0")}`)?.source,
+      source: qid(`mz-${String(meta.manzil).padStart(2, "0")}`)?.source,
       lore: "Twenty-eight Arabic lunar stations. The Moon's nightly house in the anwā' / manāzil tradition.",
     },
     {
@@ -912,10 +1028,10 @@ export function computeOrreryState(
       speedT: 0.64,
       index: hour,
       progress: (minute + second / 60) / 60,
-      cells: Array.from({ length: 24 }, (_, i) => ({
+      cells: staticCells("h", () => Array.from({ length: 24 }, (_, i) => ({
         id: `h-${i}`,
         label: `${String(i).padStart(2, "0")}h`,
-      })),
+      }))),
       activeLabel: `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`,
       source: "Local civil day — sunrise→sunset arc as measured light",
       lore: "Twenty-four civil hours of this place. The measured day-arc — light, not a named quality.",
@@ -930,7 +1046,7 @@ export function computeOrreryState(
       progress: mod(shiProg, 1),
       cells: shiCells,
       activeLabel: shiCells[shiIndex]?.label ?? "—",
-      source: byId(`shi-${SHI[shiIndex]!}`)?.source,
+      source: qid(`shi-${SHI[shiIndex]!}`)?.source,
       lore: "Twelve double-hours named by earthly branch. Zi straddles midnight. Celebrated Chinese civil time.",
     },
     {
@@ -943,7 +1059,7 @@ export function computeOrreryState(
       progress: phProg,
       cells: phCells,
       activeLabel: phCells[Math.max(0, phIndex)]?.label ?? "—",
-      source: byId(`ph-${phState.planet}`)?.source,
+      source: qid(`ph-${phState.planet}`)?.source,
       lore: "Classical unequal planetary hours — twelve from sunrise to sunset, twelve from sunset to next sunrise, named in the Chaldean cascade.",
     },
     {
@@ -956,7 +1072,7 @@ export function computeOrreryState(
       progress: muhProg,
       cells: muhCells,
       activeLabel: muhCells[muhIndex]?.label ?? `Muhūrta ${muhIndex + 1}`,
-      source: byId(`muh-${String(muhIndex + 1).padStart(2, "0")}`)?.source,
+      source: qid(`muh-${String(muhIndex + 1).padStart(2, "0")}`)?.source,
       lore: "Thirty muhūrta of the ahorātra: fifteen equal parts of daylight, fifteen of night — counted from true local sunrise.",
     },
     {
@@ -967,10 +1083,10 @@ export function computeOrreryState(
       speedT: 0.27,
       index: ghatiIndex,
       progress: ghatiProg,
-      cells: Array.from({ length: 60 }, (_, i) => ({
+      cells: staticCells("g", () => Array.from({ length: 60 }, (_, i) => ({
         id: `g-${i}`,
         label: `G ${i + 1}`,
-      })),
+      }))),
       activeLabel: `Ghati ${ghatiIndex + 1}`,
       source: "Vedic ghati — 60 × ~24 min from local sunrise (not midnight)",
       lore: "The water-clock mark of the Indic day: sixty ghaṭi from sunrise, each about twenty-four minutes. Display pulse — it measures light, it does not name a mood.",
@@ -983,10 +1099,10 @@ export function computeOrreryState(
       speedT: 0.24,
       index: keIndex,
       progress: keProg,
-      cells: Array.from({ length: 100 }, (_, i) => ({
+      cells: staticCells("ke", () => Array.from({ length: 100 }, (_, i) => ({
         id: `ke-${i}`,
         label: String(i + 1),
-      })),
+      }))),
       activeLabel: `Kè ${keIndex + 1}`,
       lore: "One hundred notches of the later Chinese civil day. Each kè is 14.4 modern minutes from local midnight.",
     },
@@ -998,10 +1114,10 @@ export function computeOrreryState(
       speedT: 0.2,
       index: minute,
       progress: (second + ms / 1000) / 60,
-      cells: Array.from({ length: 60 }, (_, i) => ({
+      cells: staticCells("m", () => Array.from({ length: 60 }, (_, i) => ({
         id: `m-${i}`,
         label: String(i).padStart(2, "0"),
-      })),
+      }))),
       activeLabel: `${String(minute).padStart(2, "0")}m`,
       lore: "Ptolemy's first small part of the hour — sixty of them make the civil hour you already know.",
     },
@@ -1025,10 +1141,10 @@ export function computeOrreryState(
       speedT: 0.16,
       index: Math.floor(mod(ghatiProg * 60, 60)),
       progress: mod(ghatiProg * 60, 1),
-      cells: Array.from({ length: 60 }, (_, i) => ({
+      cells: staticCells("pa", () => Array.from({ length: 60 }, (_, i) => ({
         id: `pa-${i}`,
         label: `P ${i + 1}`,
-      })),
+      }))),
       activeLabel: `Pala ${Math.floor(mod(ghatiProg * 60, 60)) + 1}`,
       source: "Vedic pala / vighaṭi — 1/60 of a ghaṭi ≈ 24 s, counted from sunrise",
       lore: "The older cousin of the minute: sixty pala fill one ghaṭi. Between the civil minute and the civil second, this is how the Indic day subdivides the ghaṭi.",
@@ -1041,10 +1157,10 @@ export function computeOrreryState(
       speedT: 0.13,
       index: Math.floor(mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 6)),
       progress: mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 1),
-      cells: Array.from({ length: 6 }, (_, i) => ({
+      cells: staticCells("pr", () => Array.from({ length: 6 }, (_, i) => ({
         id: `pr-${i}`,
         label: `Breath ${i + 1}`,
-      })),
+      }))),
       activeLabel: `Prāṇa ${Math.floor(mod((date.getTime() - sunrise.getTime()) / PRANA_MS, 6)) + 1}`,
       source: "Vedic prāṇa — a breath, 1/6 of a pala ≈ 4 s from sunrise",
       lore: "A breath: six of them fill a pala. In the sonics it is a tiny warm harmonic pulse — present without drowning the civil second.",
@@ -1057,10 +1173,10 @@ export function computeOrreryState(
       speedT: 0.11,
       index: Math.floor((second + ms / 1000) / (10 / 3)) % 18,
       progress: mod((second + ms / 1000) / (10 / 3), 1),
-      cells: Array.from({ length: 18 }, (_, i) => ({
+      cells: staticCells("hk", () => Array.from({ length: 18 }, (_, i) => ({
         id: `hk-${i}`,
         label: String(i + 1),
-      })),
+      }))),
       activeLabel: `Helek ${Math.floor((second + ms / 1000) / (10 / 3)) % 18 + 1}`,
       source: "Hebrew ḥeleq — 1/1080 of an hour = 3⅓ s. The molad is stated in these parts.",
       lore: "Eighteen ḥalakim fill a civil minute. This is the Jewish calendar's fine gear — the molad (mean conjunction) is written in days, hours, and ḥalakim, not in SI seconds.",
@@ -1073,10 +1189,10 @@ export function computeOrreryState(
       speedT: 0.09,
       index: second,
       progress: ms / 1000,
-      cells: Array.from({ length: 60 }, (_, i) => ({
+      cells: staticCells("s", () => Array.from({ length: 60 }, (_, i) => ({
         id: `s-${i}`,
         label: String(i).padStart(2, "0"),
-      })),
+      }))),
       activeLabel: `${String(second).padStart(2, "0")}s`,
       lore: "The second small part of the hour — SI's base unit, and the pulse you can hear. Display, not a named quality.",
     },
@@ -1088,10 +1204,10 @@ export function computeOrreryState(
       speedT: 0.04,
       index: regaIndex,
       progress: regaProg,
-      cells: Array.from({ length: REGA_PER_HELEK }, (_, i) => ({
+      cells: staticCells("rg", () => Array.from({ length: REGA_PER_HELEK }, (_, i) => ({
         id: `rg-${i}`,
         label: String(i + 1),
-      })),
+      }))),
       activeLabel: `Rega ${regaIndex + 1}`,
       lore: "Seventy-six rega'im fill one ḥeleq. The finest named splinter of the Jewish molad arithmetic.",
     },
@@ -1103,22 +1219,20 @@ export function computeOrreryState(
       speedT: 0,
       index: Math.floor(ms / 100) % 10,
       progress: (ms % 100) / 100,
-      cells: Array.from({ length: 10 }, (_, i) => ({
+      cells: staticCells("ms", () => Array.from({ length: 10 }, (_, i) => ({
         id: `ms-${i}`,
         label: "",
-      })),
+      }))),
       activeLabel: "",
     },
   ];
 
-  const nk = byId(
+  const nk = qid(
     resolved.ids.find(id => id.startsWith("nk-")) ?? "",
   );
-  const mz = byId(`mz-${String(meta.manzil).padStart(2, "0")}`);
-  const dc = byId(
-    resolved.ids.find(id => id.startsWith("dc-")) ?? "",
-  );
-  const num = byId(`num-${meta.numerology}`);
+  const mz = qid(`mz-${String(meta.manzil).padStart(2, "0")}`);
+  const dc = qid(dcId);
+  const num = qid(`num-${meta.numerology}`);
 
   const slowSky: SlowSkyItem[] = [
     {

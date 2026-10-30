@@ -104,7 +104,7 @@ function reduceDigits(n: number): number {
  * Ecliptic longitude of the Ascendant (rising degree) — the 10° band that is
  * currently rising maps to an Egyptian decan. ε ≈ J2000 mean obliquity.
  */
-function risingEclipticLon(jd: number, latDeg: number, lonDeg: number): number {
+export function risingEclipticLon(jd: number, latDeg: number, lonDeg: number): number {
   const D2R = Math.PI / 180;
   const eps = 23.4392911 * D2R;
   const φ = latDeg * D2R;
