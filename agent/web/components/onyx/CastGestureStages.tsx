@@ -83,6 +83,19 @@ export function RuneBagStage({
   const last = useRef<Pt | null>(null);
   const committed = useRef(false);
   const energyRef = useRef(0);
+  const questionRef = useRef<HTMLTextAreaElement>(null);
+  const [nudge, setNudge] = useState(0);
+  const lastNudge = useRef(0);
+  const asked = question.trim().length > 0;
+
+  /** No question yet: the bag stays quiet and the reason is shown instead of a cast. */
+  const needQuestion = (focus: boolean) => {
+    const now = performance.now();
+    if (now - lastNudge.current < 900) return;
+    lastNudge.current = now;
+    setNudge(n => n + 1);
+    if (focus) questionRef.current?.focus({ preventScroll: true });
+  };
 
   const bump = (n: number) => {
     energyRef.current = energyClamp(energyRef.current + n);
@@ -91,6 +104,10 @@ export function RuneBagStage({
 
   const commit = () => {
     if (committed.current || committing) return;
+    if (!asked) {
+      needQuestion(true);
+      return;
+    }
     committed.current = true;
     setMode("pull");
     castBuzz("draw");
@@ -99,6 +116,10 @@ export function RuneBagStage({
 
   useDeviceShake(intensity => {
     if (committing || committed.current) return;
+    if (!asked) {
+      needQuestion(false);
+      return;
+    }
     setMode("shake");
     castBuzz("shake");
     bump(10 + intensity * 18);
@@ -114,6 +135,12 @@ export function RuneBagStage({
 
   function onDown(e: ReactPointerEvent<HTMLDivElement>) {
     if (committing) return;
+    if (!asked) {
+      // Keeps the bag from taking focus back from the question box.
+      e.preventDefault();
+      needQuestion(true);
+      return;
+    }
     e.currentTarget.setPointerCapture(e.pointerId);
     const p = { x: e.clientX, y: e.clientY, t: performance.now() };
     ptr.current = p;
@@ -190,11 +217,22 @@ export function RuneBagStage({
         {spread?.label ?? "From the bag"} — hold a question, then shake, tap, or rub the pouch.
       </p>
 
+      <p
+        key={nudge}
+        id="onyx-rune-need"
+        className={`onyx-rune-need${nudge ? " nudge" : ""}`}
+        role={nudge ? "status" : undefined}
+      >
+        Runes answer a question. Ask yours first; without one the cast has nothing to speak to.
+      </p>
+
       <label className="onyx-rune-question-label" htmlFor="onyx-rune-question">
         Your question
       </label>
       <textarea
+        ref={questionRef}
         id="onyx-rune-question"
+        aria-describedby="onyx-rune-need"
         className="onyx-rune-question"
         rows={3}
         maxLength={280}
@@ -205,7 +243,8 @@ export function RuneBagStage({
       />
 
       <div
-        className={`onyx-gesture-surface onyx-bag-surface${committing ? " committing" : ""} mode-${mode}`}
+        className={`onyx-gesture-surface onyx-bag-surface${committing ? " committing" : ""}${asked ? "" : " quiet"} mode-${mode}`}
+        aria-disabled={!asked || undefined}
         style={{
           transform: `translate3d(${offset.x}px, ${offset.y}px, 0) rotate(${offset.rot}deg)`,
         }}
@@ -219,6 +258,10 @@ export function RuneBagStage({
         onKeyDown={e => {
           if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
+            if (!asked) {
+              needQuestion(true);
+              return;
+            }
             bump(40);
             commit();
           }
@@ -277,13 +320,17 @@ export function RuneBagStage({
         type="button"
         className="onyx-ghost-btn"
         style={{ marginTop: 12 }}
-        disabled={committing || energy < 25}
+        disabled={committing || (asked && energy < 25)}
         onClick={() => {
+          if (!asked) {
+            needQuestion(true);
+            return;
+          }
           bump(40);
           commit();
         }}
       >
-        {energy < 25 ? "Stir the bag first" : pullLabel}
+        {!asked ? "Ask your question first" : energy < 25 ? "Stir the bag first" : pullLabel}
       </button>
 
       <button

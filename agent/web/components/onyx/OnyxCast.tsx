@@ -336,7 +336,7 @@ export function OnyxCast({
           {picker === "rune" && (
             <ModePicker
               title="RUNE CAST"
-              hint="Hold a question. Shake, tap, or rub the bag — then pull."
+              hint="Ask a question first. Then shake, tap, or rub the bag — and pull."
               onBack={() => setPicker(null)}
             >
               {RUNE_SPREADS.map(s => (
@@ -363,7 +363,7 @@ export function OnyxCast({
               }
               onCommit={() => {
                 const g = gesture;
-                if (g.kind !== "rune" || g.committing) return;
+                if (g.kind !== "rune" || g.committing || !g.question.trim()) return;
                 setGesture({ ...g, committing: true });
                 runRitual(castRuneSpread(g.spreadId, g.question));
               }}
