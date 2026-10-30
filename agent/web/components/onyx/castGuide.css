@@ -5,6 +5,13 @@
   scroll-margin-top: calc(max(18px, env(safe-area-inset-top, 0px)) + 54px);
 }
 
+/* The framing line sits in a cut-corner box; keep its first and last letters clear of the cuts. */
+.onyx-cast-result .onyx-cast-frame {
+  box-sizing: border-box;
+  max-width: 100%;
+  padding: 8px 18px;
+}
+
 /* Card name above its orientation, so long or short names never run into "Reversed". */
 .onyx-cast-card .onyx-cast-card-band {
   flex-direction: column;
