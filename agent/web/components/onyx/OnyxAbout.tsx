@@ -2,6 +2,7 @@
 
 import { ChamberHeader } from "./ChamberHeader";
 import { UsageOptIn } from "./UsageOptIn";
+import { requestPilgrimGuideReplay } from "../../lib/openingSequence";
 
 export function OnyxAbout() {
   return (
@@ -74,6 +75,18 @@ export function OnyxAbout() {
               Credits &amp; data
             </a>{" "}
             · the open data, software and type the app is built on.
+          </p>
+          <p className="onyx-layer-meta">
+            <button
+              type="button"
+              className="onyx-about-replay"
+              onClick={() => {
+                requestPilgrimGuideReplay();
+                window.location.assign("/");
+              }}
+            >
+              Walk the pilgrim&apos;s way again
+            </button>
           </p>
           <UsageOptIn />
         </div>

@@ -13,12 +13,16 @@ import {
 } from "../../lib/audioBus";
 import {
   afterClip,
+  afterGuide,
   LAST_CLIP,
+  markPilgrimGuideSeen,
+  pilgrimGuideWanted,
   skipTo,
   type OpeningClipId,
   type OpeningPlan,
   type OpeningStep,
 } from "../../lib/openingSequence";
+import { PILGRIM_INTRO, PILGRIM_STEPS } from "../../lib/lore/pilgrimGuide";
 
 /**
  * Boot: Historical → Pythia → stairs → the cake offering (void), then the Allow gate
@@ -63,7 +67,9 @@ const CLIPS: readonly ClipDef[] = [
 export const CAKE_LAST_FRAME = `/pneuma-boot-void-last.jpg?v=${DELPHI_BUILD}`;
 
 const HOLD_MS = 600;
-const SAFETY_MS = 120_000;
+/** A film that has not ended this long after it was asked to play is treated as ended. */
+const STALL_MS = 25_000;
+const GUIDE_ARM_MS = 500;
 const UNLOCK_GUARD_MS = 1000;
 const SKIP_GUARD_MS = 700;
 const ENTER_ARM_MS = 650;
@@ -81,8 +87,15 @@ export function OnyxSplash({
   /** Allow is still needed: the gate takes over on the cake's last frame. */
   endsAtGate?: boolean;
 }) {
-  const planRef = useRef<OpeningPlan>({ guide: false, needsGate: endsAtGate });
+  const [guideOn] = useState(pilgrimGuideWanted);
+  const planRef = useRef<OpeningPlan>({ guide: guideOn, needsGate: endsAtGate });
   planRef.current.needsGate = endsAtGate;
+  /** Which film's pilgrim box is open over its last frame, or null. */
+  const [guideIdx, setGuideIdx] = useState<number | null>(null);
+  const guideIdxRef = useRef<number | null>(null);
+  const guideArmedAt = useRef(0);
+  const ctaRef = useRef<HTMLButtonElement | null>(null);
+  const stallTimer = useRef<number | null>(null);
   /** The current clip's bed may be (re)started; false once its picture has ended. */
   const bedWantedRef = useRef(true);
   const endOnLoadRef = useRef(false);
@@ -200,6 +213,10 @@ export function OnyxSplash({
   const finish = (fromGesture: boolean) => {
     if (entered.current) return;
     entered.current = true;
+    if (stallTimer.current != null) {
+      window.clearTimeout(stallTimer.current);
+      stallTimer.current = null;
+    }
     trackEvent(fromGesture ? "splash_skip" : "splash_complete", `clip ${clipIdxRef.current + 1}`);
     sessionRef.current += 1;
     if (holdTimer.current != null) {
@@ -345,6 +362,13 @@ export function OnyxSplash({
     endOnLoadRef.current = endOnLoad;
     bedWantedRef.current = !endOnLoad;
     const session = ++sessionRef.current;
+    if (stallTimer.current != null) window.clearTimeout(stallTimer.current);
+    stallTimer.current = endOnLoad
+      ? null
+      : window.setTimeout(() => {
+          stallTimer.current = null;
+          if (sessionRef.current === session && !entered.current) clipFinished();
+        }, STALL_MS);
     clipIdxRef.current = idx;
     setClipIdx(idx);
     setVeilOn(true);
@@ -451,7 +475,16 @@ export function OnyxSplash({
       }
       return;
     }
+    clipFinished();
+  };
 
+  /** The current film reached its last frame (or stalled): hold, open its box, or move on. */
+  const clipFinished = () => {
+    if (entered.current) return;
+    if (stallTimer.current != null) {
+      window.clearTimeout(stallTimer.current);
+      stallTimer.current = null;
+    }
     bedWantedRef.current = false;
     killAudioHard();
     const step = afterClip(clipIdxRef.current, planRef.current);
@@ -490,7 +523,16 @@ export function OnyxSplash({
       goToClip(step.idx);
       return;
     }
-    if (step.kind === "guide") return;
+    if (step.kind === "guide") {
+      if (!PILGRIM_STEPS.some(s => s.id === CLIPS[step.idx]?.id)) {
+        runStep(afterGuide(step.idx, planRef.current), fromGesture);
+        return;
+      }
+      guideIdxRef.current = step.idx;
+      guideArmedAt.current = Date.now() + GUIDE_ARM_MS;
+      setGuideIdx(step.idx);
+      return;
+    }
     if (step.end === "gate") {
       finish(fromGesture);
       return;
@@ -504,7 +546,37 @@ export function OnyxSplash({
     showEnter();
   };
 
-  const skip = () => runStep(skipTo(planRef.current), true);
+  const closeGuide = () => {
+    guideIdxRef.current = null;
+    setGuideIdx(null);
+  };
+
+  const skip = () => {
+    if (planRef.current.guide) markPilgrimGuideSeen();
+    closeGuide();
+    runStep(skipTo(planRef.current), true);
+  };
+
+  /** The box's button: the next film starts in this gesture; after the cake, into the gate or home. */
+  const onGuideNext = () => {
+    const idx = guideIdxRef.current;
+    if (idx == null || Date.now() < guideArmedAt.current) return;
+    const step = afterGuide(idx, planRef.current);
+    closeGuide();
+    if (step.kind === "end") {
+      markPilgrimGuideSeen();
+      finish(true);
+      return;
+    }
+    runStep(step, true);
+  };
+
+  const skipGuide = () => {
+    if (guideIdxRef.current != null && Date.now() < guideArmedAt.current) return;
+    markPilgrimGuideSeen();
+    closeGuide();
+    finish(true);
+  };
 
   const unlock = () => {
     if (entered.current || unlockedRef.current || unlockingRef.current) return;
@@ -530,6 +602,7 @@ export function OnyxSplash({
 
   const onPointerDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (entered.current) return;
+    if (guideIdxRef.current != null) return;
     if (e.pointerType === "mouse" && e.button !== 0) return;
     e.preventDefault();
     if (!unlockedRef.current) {
@@ -559,6 +632,13 @@ export function OnyxSplash({
     if (!unlocked) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape" && e.key !== "Enter" && e.key !== " ") return;
+      if (guideIdxRef.current != null) {
+        if (e.key === "Escape") {
+          e.preventDefault();
+          skipGuide();
+        }
+        return;
+      }
       if (atEndRef.current) {
         e.preventDefault();
         tryEnter();
@@ -613,13 +693,10 @@ export function OnyxSplash({
 
   useEffect(() => {
     const readyFallback = window.setTimeout(() => setVideoReady(true), 2200);
-    const safety = window.setTimeout(() => {
-      if (!atEndRef.current) runStep(skipTo(planRef.current), false);
-    }, SAFETY_MS);
     return () => {
       clearTimeout(readyFallback);
-      clearTimeout(safety);
       if (holdTimer.current != null) clearTimeout(holdTimer.current);
+      if (stallTimer.current != null) clearTimeout(stallTimer.current);
       killAudioHard();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -630,10 +707,15 @@ export function OnyxSplash({
   }, [atEnd, veilOn]);
 
   useEffect(() => {
+    if (guideIdx != null) ctaRef.current?.focus({ preventScroll: true });
+  }, [guideIdx]);
+
+  useEffect(() => {
     if (!needTap) skipAllowedAt.current = Math.max(skipAllowedAt.current, Date.now() + BEGIN_TO_SKIP_MS);
   }, [needTap]);
 
   const onCake = unlocked && clipIdx === LAST_CLIP;
+  const guideStep = guideIdx != null ? PILGRIM_STEPS.find(s => s.id === CLIPS[guideIdx]?.id) : undefined;
 
   return (
     <div
@@ -673,6 +755,40 @@ export function OnyxSplash({
           Enter
         </button>
 
+        <div className="onyx-pilgrim-live" aria-live="polite">
+          {guideStep ? (
+            <section
+              className={`onyx-pilgrim${guideStep.id === "void" ? " onyx-pilgrim-top" : ""}`}
+              aria-labelledby="onyx-pilgrim-title"
+              data-pilgrim-step={guideStep.step}
+              onPointerDown={e => e.stopPropagation()}
+            >
+              {guideStep.step === 1 ? (
+                <div className="onyx-pilgrim-intro">
+                  <p className="onyx-pilgrim-intro-title">{PILGRIM_INTRO.title}</p>
+                  <p>{PILGRIM_INTRO.body}</p>
+                </div>
+              ) : null}
+              <p className="onyx-pilgrim-count">
+                Step {guideStep.step} of {PILGRIM_STEPS.length}
+              </p>
+              <h2 id="onyx-pilgrim-title" className="onyx-pilgrim-title">{guideStep.title}</h2>
+              <p className="onyx-pilgrim-label">Then</p>
+              <p className="onyx-pilgrim-text">{guideStep.then}</p>
+              <p className="onyx-pilgrim-label">Now</p>
+              <p className="onyx-pilgrim-text">{guideStep.now}</p>
+              <div className="onyx-pilgrim-actions">
+                <button ref={ctaRef} type="button" className="onyx-pilgrim-cta" onClick={onGuideNext}>
+                  {guideStep.cta}
+                </button>
+                <button type="button" className="onyx-pilgrim-skip" onClick={skipGuide}>
+                  Skip the guide
+                </button>
+              </div>
+            </section>
+          ) : null}
+        </div>
+
         <p
           className={`onyx-splash-tap${needTap && videoReady && !veilOn ? " on" : ""}`}
           aria-hidden={!needTap}
@@ -687,8 +803,8 @@ export function OnyxSplash({
         </p>
 
         <p
-          className={`onyx-splash-tap onyx-splash-skip${unlocked && !needTap && videoReady && !veilOn && !atEnd ? " on" : ""}`}
-          aria-hidden={!unlocked || needTap || atEnd}
+          className={`onyx-splash-tap onyx-splash-skip${unlocked && !needTap && videoReady && !veilOn && !atEnd && guideIdx == null ? " on" : ""}`}
+          aria-hidden={!unlocked || needTap || atEnd || guideIdx != null}
         >
           Tap to skip
         </p>

@@ -52,9 +52,15 @@ export function hasSeenPilgrimGuide(): boolean {
   }
 }
 
+/** Seen or skipped: later opens play without pauses, and a pending About replay is used up. */
 export function markPilgrimGuideSeen(): void {
   try {
     localStorage.setItem(PILGRIM_GUIDE_KEY, "seen");
+  } catch {
+    /* private mode */
+  }
+  try {
+    sessionStorage.removeItem(PILGRIM_REPLAY_KEY);
   } catch {
     /* private mode */
   }
@@ -69,12 +75,10 @@ export function requestPilgrimGuideReplay(): void {
   }
 }
 
-/** Read once per opening; a replay request is used up by the opening that shows it. */
-export function takePilgrimGuideWanted(): boolean {
+export function pilgrimGuideWanted(): boolean {
   let replay = false;
   try {
     replay = sessionStorage.getItem(PILGRIM_REPLAY_KEY) === "1";
-    if (replay) sessionStorage.removeItem(PILGRIM_REPLAY_KEY);
   } catch {
     replay = false;
   }

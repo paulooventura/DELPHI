@@ -8,8 +8,8 @@ import {
   OPENING_CLIPS,
   PILGRIM_GUIDE_KEY,
   requestPilgrimGuideReplay,
+  pilgrimGuideWanted,
   skipTo,
-  takePilgrimGuideWanted,
   type OpeningPlan,
   type OpeningStep,
 } from "./openingSequence";
@@ -86,16 +86,18 @@ describe("pilgrim guide flag", () => {
 
   it("shows on the first-ever open and not after it is seen", () => {
     expect(hasSeenPilgrimGuide()).toBe(false);
-    expect(takePilgrimGuideWanted()).toBe(true);
+    expect(pilgrimGuideWanted()).toBe(true);
     markPilgrimGuideSeen();
     expect(localStorage.getItem(PILGRIM_GUIDE_KEY)).toBe("seen");
-    expect(takePilgrimGuideWanted()).toBe(false);
+    expect(pilgrimGuideWanted()).toBe(false);
   });
 
-  it("About's replay shows it once more, then it is used up", () => {
+  it("About's replay shows it again until that walk is finished or skipped", () => {
     markPilgrimGuideSeen();
     requestPilgrimGuideReplay();
-    expect(takePilgrimGuideWanted()).toBe(true);
-    expect(takePilgrimGuideWanted()).toBe(false);
+    expect(pilgrimGuideWanted()).toBe(true);
+    expect(pilgrimGuideWanted()).toBe(true);
+    markPilgrimGuideSeen();
+    expect(pilgrimGuideWanted()).toBe(false);
   });
 });
