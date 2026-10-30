@@ -33,7 +33,13 @@ import {
   unmuteClockAudio,
   unparkClockAudio,
 } from "../lib/clockSfx";
-import { isHeliodromeChordActive, startHeliodromeChord, stopHeliodromeChord, tickHeliodromeChord } from "../lib/heliodromeChord";
+import {
+  isHeliodromeChordActive,
+  isHeliodromeChordWanted,
+  startHeliodromeChord,
+  stopHeliodromeChord,
+  tickHeliodromeChord,
+} from "../lib/heliodromeChord";
 import { audibleHeliodromeLanes } from "../lib/heliodromeLaneVoice";
 import { computeOrreryState } from "../lib/lore/orreryLanes";
 import { HOME_LAT, HOME_LON } from "../lib/observerHome";
@@ -203,9 +209,17 @@ export function useClockSfx(
     const loop = () => {
       if (!alive) return;
       const obs = readObserver();
+      const now = new Date();
+      // Full orrery state is costly; compute it at most once per frame, and only when sound uses it.
+      let lanes: ReturnType<typeof computeOrreryState>["lanes"] | undefined;
       // Drive NOW-Chord every frame app-wide (freeze / Aulos duck handled inside tick).
-      if (enabledRef.current && document.visibilityState !== "hidden") {
-        const { lanes } = computeOrreryState(new Date(), obs.lat, obs.lon);
+      if (
+        enabledRef.current &&
+        document.visibilityState !== "hidden" &&
+        isHeliodromeChordWanted() &&
+        getClockAudio()?.state === "running"
+      ) {
+        lanes = computeOrreryState(now, obs.lat, obs.lon).lanes;
         tickHeliodromeChord(audibleHeliodromeLanes(lanes), enabledRef.current);
       }
 
@@ -225,7 +239,7 @@ export function useClockSfx(
       }
       const ctx = getClockAudio();
       if (ctx?.state === "running") {
-        const d = new Date();
+        const d = now;
         const sec = d.getSeconds();
         const min = d.getMinutes();
         const hr = d.getHours();
@@ -244,16 +258,17 @@ export function useClockSfx(
           }
         }
 
-        const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current);
-        const prev = lastMarks.current;
-        if (
-          !isHeliodromeChordActive() &&
-          prev &&
-          (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)
-        ) {
-          fireLaneMarks(ctx, prev, next);
+        if (isHeliodromeChordActive()) {
+          // The chord voices the lanes; marks re-baseline (no burst) once it stops.
+          lastMarks.current = null;
+        } else {
+          const next = readClockLaneMarks(d, obs.lat, obs.lon, lastMarkMs.current, lanes);
+          const prev = lastMarks.current;
+          if (prev && (marksKey(next) !== marksKey(prev) || next.crossedSunrise || next.crossedSunset)) {
+            fireLaneMarks(ctx, prev, next);
+          }
+          lastMarks.current = next;
         }
-        lastMarks.current = next;
         lastMarkMs.current = d.getTime();
       }
       raf = requestAnimationFrame(loop);

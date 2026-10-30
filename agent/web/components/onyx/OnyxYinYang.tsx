@@ -91,21 +91,34 @@ export function OnyxYinYang({
       );
     };
 
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const painted: Light = { lx: -1, ly: -1 };
+    let lastPaint = 0;
     const tick = () => {
       const now = performance.now();
       // Idle breathe when nothing is steering the ball.
-      if (now - lastInput.current > 1400 && !spinningRef.current) {
+      const idle = now - lastInput.current > 1400 && !spinningRef.current;
+      if (idle) {
         const t = (now - idleT0.current) / 1000;
-        target.current = {
-          lx: IDLE.lx + Math.sin(t * 0.55) * 7 + Math.sin(t * 0.19) * 3,
-          ly: IDLE.ly + Math.cos(t * 0.48) * 5 + Math.sin(t * 0.31) * 2.5,
-        };
+        target.current = still.matches
+          ? { ...IDLE }
+          : {
+              lx: IDLE.lx + Math.sin(t * 0.55) * 7 + Math.sin(t * 0.19) * 3,
+              ly: IDLE.ly + Math.cos(t * 0.48) * 5 + Math.sin(t * 0.31) * 2.5,
+            };
       }
       const c = current.current;
       const t = target.current;
       c.lx = lerp(c.lx, t.lx, 0.12);
       c.ly = lerp(c.ly, t.ly, 0.12);
-      paint(c);
+      // Each paint re-rasterizes the blurred SVG: skip sub-pixel moves, and breathe at ~20 fps.
+      const moved = Math.abs(c.lx - painted.lx) + Math.abs(c.ly - painted.ly);
+      if (moved > 0.05 && (!idle || now - lastPaint > 48)) {
+        paint(c);
+        painted.lx = c.lx;
+        painted.ly = c.ly;
+        lastPaint = now;
+      }
       raf.current = requestAnimationFrame(tick);
     };
     raf.current = requestAnimationFrame(tick);

@@ -70,11 +70,17 @@ export function OnyxCompassRose({
 
   useEffect(() => {
     let raf = 0;
+    let shown = "";
     const apply = (az: number) => {
       const deg = -(((az % 360) + 360) % 360);
-      dialRef.current?.setAttribute("transform", `rotate(${deg.toFixed(2)} 50 50)`);
+      // Tenth-degree steps are invisible on the dial; skip writes that change nothing.
+      const next = `rotate(${deg.toFixed(1)} 50 50)`;
+      if (next === shown) return;
+      shown = next;
+      dialRef.current?.setAttribute("transform", next);
     };
     if (headingDeg != null && Number.isFinite(headingDeg)) apply(headingDeg);
+    if (!attitudeRef) return;
     const tick = () => {
       const view = attitudeRef?.current?.view;
       if (view) apply(enuToAltAz(view).az);

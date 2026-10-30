@@ -64,7 +64,7 @@ export function OnyxAgonSplash({ onEnter }: { onEnter: () => void }) {
       onClick={finish}
     >
       <div className="onyx-device onyx-splash-only">
-        <div className="onyx-film">
+        <div className="onyx-film onyx-film-graded">
           <video
             ref={videoRef}
             autoPlay
@@ -76,12 +76,10 @@ export function OnyxAgonSplash({ onEnter }: { onEnter: () => void }) {
             onPlaying={() => setVideoReady(true)}
             onEnded={finish}
           >
-            <source src={`/agon-intro.mp4?v=${DELPHI_BUILD}`} type="video/mp4" />
+            <source src={`/agon-intro-g.mp4?v=${DELPHI_BUILD}`} type="video/mp4" />
           </video>
         </div>
 
-        <div className="onyx-grade" aria-hidden />
-        <div className="onyx-tint" aria-hidden />
         <div className="onyx-dimmer" aria-hidden />
 
         <div

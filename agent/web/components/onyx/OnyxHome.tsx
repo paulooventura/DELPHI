@@ -551,6 +551,7 @@ export function OnyxHome({
                 <span
                   key={dir}
                   className={`d-${dir}${compassAim === dir || gemSpin === dir || bowShoot === dir ? " on" : ""}`}
+                  data-label={COMPASS_DOOR_LABEL[door]}
                 >
                   {COMPASS_DOOR_LABEL[door]}
                 </span>

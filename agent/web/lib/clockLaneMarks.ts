@@ -81,8 +81,9 @@ export function readClockLaneMarks(
   lat: number,
   lon: number,
   prevMs?: number,
+  lanesNow?: ReturnType<typeof computeOrreryState>["lanes"],
 ): ClockLaneMarks {
-  const { lanes } = computeOrreryState(date, lat, lon);
+  const lanes = lanesNow ?? computeOrreryState(date, lat, lon).lanes;
   const phIdx = Math.max(0, laneIndex(lanes, "planetary-hour")) % PLANETS.length;
   const solar = computeSolarDayEvents(date, lat, lon);
   const nowMs = date.getTime();

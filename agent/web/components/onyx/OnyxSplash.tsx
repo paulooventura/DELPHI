@@ -30,17 +30,17 @@ type ClipDef = { id: string; video: string; audio: string };
 const CLIPS: readonly ClipDef[] = [
   {
     id: "historical",
-    video: `/pneuma-boot-historical.mp4?v=${DELPHI_BUILD}`,
+    video: `/pneuma-boot-historical-g.mp4?v=${DELPHI_BUILD}`,
     audio: `/pneuma-boot-historical-audio.m4a?v=${DELPHI_BUILD}`,
   },
   {
     id: "pythia",
-    video: `/pneuma-boot-pythia.mp4?v=${DELPHI_BUILD}`,
+    video: `/pneuma-boot-pythia-g.mp4?v=${DELPHI_BUILD}`,
     audio: `/pneuma-boot-pythia-audio.m4a?v=${DELPHI_BUILD}`,
   },
   {
     id: "stairs",
-    video: `/pneuma-boot-stairs.mp4?v=${DELPHI_BUILD}`,
+    video: `/pneuma-boot-stairs-g.mp4?v=${DELPHI_BUILD}`,
     audio: `/pneuma-boot-stairs-audio.m4a?v=${DELPHI_BUILD}`,
   },
 ] as const;
@@ -525,7 +525,7 @@ export function OnyxSplash({
       onPointerDown={onPointerDown}
     >
       <div className="onyx-device onyx-splash-only">
-        <div className="onyx-film">
+        <div className="onyx-film onyx-film-graded">
           <video
             key={unlocked ? `clip-${clipIdx}-${videoKey}` : "preview"}
             ref={videoRef}
@@ -541,8 +541,6 @@ export function OnyxSplash({
           />
         </div>
 
-        <div className="onyx-grade" aria-hidden />
-        <div className="onyx-tint" aria-hidden />
         <div className="onyx-dimmer" aria-hidden />
 
         <p

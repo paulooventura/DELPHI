@@ -367,6 +367,9 @@ html.chorus-embed .onyx-root {
   transform: translate(-50%, -50%) scale(1);
   animation: none;
 }
+/* *-g.mp4 films carry the filter, .onyx-grade and .onyx-tint baked in; re-bake if those change.
+   A CSS filter or blend layer over a playing video forces a full repaint every frame. */
+.onyx-film-graded video { filter: none; }
 
 /* Pure black boot/exit veil — no imagery. */
 .onyx-splash-veil {
@@ -464,10 +467,11 @@ html.chorus-embed .onyx-root {
   50% { opacity: calc(var(--o, 0.5) * 0.4); transform: scale(0.82); }
 }
 /* Occasional bright flash — mostly quiet, then a quick shimmer. */
+/* Opacity + scale only (the dust's own glow scales with it), so it stays on the compositor. */
 @keyframes onyx-shimmer {
-  0%, 78%, 100% { opacity: var(--o, 0.35); transform: scale(1); box-shadow: none; }
-  84% { opacity: 1; transform: scale(1.55); box-shadow: 0 0 6px 1px rgba(230, 220, 255, 0.75); }
-  90% { opacity: 0.55; transform: scale(1.1); box-shadow: 0 0 2px rgba(200, 190, 255, 0.35); }
+  0%, 78%, 100% { opacity: var(--o, 0.35); transform: scale(1); }
+  84% { opacity: 1; transform: scale(1.7); }
+  90% { opacity: 0.55; transform: scale(1.15); }
 }
 
 .onyx-grade {
@@ -742,15 +746,34 @@ html.chorus-embed .onyx-root {
   width: 6px; height: 6px; border-radius: 50%; background: var(--onyx-light); opacity: 0;
   pointer-events: none;
 }
+/* The spreading ring is a scaled pseudo-element (transform + opacity), not an animated box-shadow. */
+.onyx-pulse-ring::after {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: rgba(140, 124, 255, 0.5); opacity: 0; transform: scale(1);
+}
 .onyx-pulse-ring.beat { opacity: 0.35; animation: onyx-beat 1s ease-out; }
+.onyx-pulse-ring.beat::after { animation: onyx-beat-ring 1s ease-out; }
 .onyx-pulse-ring.chime { opacity: 0.5; animation: onyx-chime 2.4s ease-out; }
+.onyx-pulse-ring.chime::after { background: rgba(169, 156, 255, 0.7); animation: onyx-chime-ring 2.4s ease-out; }
 @keyframes onyx-beat {
-  0% { box-shadow: 0 0 0 0 rgba(140, 124, 255, 0.5); opacity: 0.9; }
-  100% { box-shadow: 0 0 0 9px rgba(140, 124, 255, 0); opacity: 0; }
+  0% { opacity: 0.9; }
+  100% { opacity: 0; }
+}
+@keyframes onyx-beat-ring {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(4); }
 }
 @keyframes onyx-chime {
-  0% { box-shadow: 0 0 0 0 rgba(169, 156, 255, 0.7); opacity: 1; transform: translateX(-50%) scale(1.6); }
-  100% { box-shadow: 0 0 0 40px rgba(169, 156, 255, 0); opacity: 0; transform: translateX(-50%) scale(1); }
+  0% { opacity: 1; transform: translateX(-50%) scale(1.6); }
+  100% { opacity: 0; transform: translateX(-50%) scale(1); }
+}
+@keyframes onyx-chime-ring {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(14); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .onyx-pulse-ring.beat, .onyx-pulse-ring.chime,
+  .onyx-pulse-ring.beat::after, .onyx-pulse-ring.chime::after { animation: none; }
 }
 
 .onyx-wordmark {
@@ -4576,12 +4599,27 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-yy-wrap.fresh .onyx-yy-dirs .d-right { animation-delay: 1.6s; }
 .onyx-yy-wrap.fresh .onyx-yy-dirs .d-down { animation-delay: 3.2s; }
 .onyx-yy-wrap.fresh .onyx-yy-dirs .d-left { animation-delay: 4.8s; }
+/* The glow is a fixed text-shadow on a copy of the label that only fades (no per-frame repaint). */
+.onyx-yy-wrap.fresh .onyx-yy-dirs span::after {
+  content: attr(data-label); position: absolute; inset: 0; pointer-events: none;
+  color: transparent; opacity: 0;
+  text-shadow: 0 0 14px rgba(176, 156, 255, 0.95), 0 0 4px rgba(255, 255, 255, 0.6);
+}
+.onyx-yy-wrap.fresh:not(.holding):not(.spinning) .onyx-yy-dirs span::after {
+  animation: onyx-dir-glow 6.4s ease-in-out infinite;
+  animation-delay: inherit;
+}
 @keyframes onyx-dir-shimmer {
-  0%, 26%, 100% { opacity: 0.75; text-shadow: var(--word-outline); }
-  10% { opacity: 1; text-shadow: 0 0 14px rgba(176, 156, 255, 0.95), 0 0 4px rgba(255, 255, 255, 0.6), var(--word-outline); }
+  0%, 26%, 100% { opacity: 0.75; }
+  10% { opacity: 1; }
+}
+@keyframes onyx-dir-glow {
+  0%, 26%, 100% { opacity: 0; }
+  10% { opacity: 1; }
 }
 @media (prefers-reduced-motion: reduce) {
-  .onyx-yy-wrap.fresh .onyx-yy-dirs span { animation: none !important; }
+  .onyx-yy-wrap.fresh .onyx-yy-dirs span,
+  .onyx-yy-wrap.fresh .onyx-yy-dirs span::after { animation: none !important; }
 }
 
 /* ── Chamber header: back · name · mini compass · stone ───────────────────── */

@@ -63,7 +63,7 @@ export function OnyxOrrerySplash({ onEnter }: { onEnter: () => void }) {
       onClick={finish}
     >
       <div className="onyx-device onyx-splash-only">
-        <div className="onyx-film">
+        <div className="onyx-film onyx-film-graded">
           <video
             ref={videoRef}
             autoPlay
@@ -75,12 +75,10 @@ export function OnyxOrrerySplash({ onEnter }: { onEnter: () => void }) {
             onPlaying={() => setVideoReady(true)}
             onEnded={finish}
           >
-            <source src="/orrery-intro.mp4" type="video/mp4" />
+            <source src="/orrery-intro-g.mp4" type="video/mp4" />
           </video>
         </div>
 
-        <div className="onyx-grade" aria-hidden />
-        <div className="onyx-tint" aria-hidden />
         <div className="onyx-dimmer" aria-hidden />
 
         <div

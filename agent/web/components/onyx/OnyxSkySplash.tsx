@@ -55,15 +55,13 @@ export function OnyxSkySplash({ onEnter }: { onEnter: () => void }) {
         <div className="onyx-film onyx-sky-splash-film">
           <img
             className={ready ? "onyx-film-ready" : undefined}
-            src="/aether-sky-splash.jpg"
+            src="/aether-sky-splash-g.jpg"
             alt=""
             draggable={false}
             onLoad={() => setReady(true)}
           />
         </div>
 
-        <div className="onyx-grade" aria-hidden />
-        <div className="onyx-tint" aria-hidden />
         <div className="onyx-dimmer" aria-hidden />
 
         <div
