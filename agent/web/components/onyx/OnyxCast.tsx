@@ -7,7 +7,6 @@ import {
   castRuneSpread,
   castTarotSpread,
   CAST_FRAMING,
-  CAST_RITUAL_VIDEO,
   ICHING_MODES,
   ORISHA_MODES,
   RUNE_SPREADS,
@@ -26,8 +25,11 @@ import { ChamberHeader } from "./ChamberHeader";
 import { CoinTossStage, RuneBagStage, TarotDeckStage } from "./CastGestureStages";
 import { CastHowToRead } from "./CastReadingGuide";
 import { howToRead, whatItMeans } from "../../lib/lore/readingGuide";
+import { castFilm, warmCastFilm, warmedCastFilm } from "../../lib/castFilm";
 
 const RITUAL_FADE_MS = 480;
+/** Longest the black veil waits for a film that is still downloading before it plays anyway. */
+const FILM_WAIT_MS = 2500;
 
 type Picker = "tarot" | "orisha" | "iching" | "rune" | null;
 type Gesture =
@@ -58,10 +60,14 @@ export function OnyxCast({
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const [ritual, setRitual] = useState<{
     system: string;
-    src: string;
+    /** null while the warmed copy is still on its way. */
+    src: string | null;
+    fallback: string;
+    poster: string;
     pending: CastResult;
   } | null>(null);
   const [ritualVeil, setRitualVeil] = useState(false);
+  const ritualToken = useRef(0);
   const videoRef = useRef<HTMLVideoElement>(null);
   const finished = useRef(false);
   const pendingRef = useRef<CastResult | null>(null);
@@ -86,32 +92,31 @@ export function OnyxCast({
   }
 
   function runRitual(pending: CastResult) {
-    const src =
-      CAST_RITUAL_VIDEO[pending.system] ??
-      CAST_RITUAL_VIDEO[
-        pending.system.startsWith("orisha")
-          ? "orisha-cast"
-          : pending.system.startsWith("iching")
-            ? "iching-hexagram"
-            : pending.system.startsWith("tarot")
-              ? "tarot"
-              : pending.system
-      ];
+    const film = castFilm(pending.system);
     finished.current = false;
     pendingRef.current = pending;
     setResult(null);
     setPicker(null);
     setGesture(null);
-    if (!src) {
+    if (!film) {
       setResult(pending);
       pendingRef.current = null;
       return;
     }
-    setRitual({ system: pending.system, src, pending });
-    setRitualVeil(false);
+    const ready = warmedCastFilm(pending.system) ?? null;
+    const token = ++ritualToken.current;
+    setRitual({ system: pending.system, src: ready, fallback: film.video, poster: film.poster, pending });
+    setRitualVeil(true);
+    if (ready) return;
+    const giveUp = new Promise<null>(res => window.setTimeout(() => res(null), FILM_WAIT_MS));
+    void Promise.race([warmCastFilm(pending.system), giveUp]).then(url => {
+      if (ritualToken.current !== token) return;
+      setRitual(r => (r && r.src == null ? { ...r, src: url ?? r.fallback } : r));
+    });
   }
 
   function openTradition(system: string) {
+    void warmCastFilm(system);
     setResult(null);
     setGesture(null);
     if (system === "tarot" || system === "tarot-major") setPicker("tarot");
@@ -138,18 +143,39 @@ export function OnyxCast({
     setGesture({ kind: "deck", spreadId, committing: false });
   }
 
+  // The films are silent. Hold the black veil until the film can play through, then reveal it.
   useEffect(() => {
-    if (!ritual) return;
+    if (!ritual?.src) return;
     const v = videoRef.current;
     if (!v) return;
-    v.currentTime = 0;
-    v.muted = false;
-    void v.play().catch(() => {
-      v.muted = true;
-      void v.play().catch(() => revealCast());
-    });
+    let cancelled = false;
+    v.muted = true;
+    const start = () => {
+      if (cancelled || finished.current) return;
+      v.removeEventListener("canplaythrough", start);
+      window.clearTimeout(wait);
+      try {
+        v.currentTime = 0;
+      } catch {
+        /* ignore */
+      }
+      void v.play().then(
+        () => {
+          if (!cancelled) setRitualVeil(false);
+        },
+        () => revealCast(),
+      );
+    };
+    const wait = window.setTimeout(start, FILM_WAIT_MS);
+    if (v.readyState >= 4) start();
+    else v.addEventListener("canplaythrough", start);
     const safety = window.setTimeout(() => revealCast(), 28000);
-    return () => window.clearTimeout(safety);
+    return () => {
+      cancelled = true;
+      v.removeEventListener("canplaythrough", start);
+      window.clearTimeout(wait);
+      window.clearTimeout(safety);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ritual?.src]);
 
@@ -183,17 +209,22 @@ export function OnyxCast({
             ‹ Psyche
           </button>
           <div className="onyx-cast-film">
-            <video
-              ref={videoRef}
-              key={ritual.src}
-              playsInline
-              preload="auto"
-              onEnded={revealCast}
-            >
-              <source src={ritual.src} type="video/mp4" />
-            </video>
+            {ritual.src ? (
+              <video
+                ref={videoRef}
+                key={ritual.src}
+                src={ritual.src}
+                poster={ritual.poster}
+                muted
+                playsInline
+                preload="auto"
+                onEnded={revealCast}
+                onError={() =>
+                  setRitual(r => (r && r.src !== r.fallback ? { ...r, src: r.fallback } : r))
+                }
+              />
+            ) : null}
           </div>
-          <div className="onyx-cast-ritual-grade" aria-hidden />
           <p className="onyx-cast-ritual-label">{label}</p>
           <p className="onyx-cast-ritual-hint">tap to reveal</p>
           <div className={`onyx-splash-veil${ritualVeil ? " on" : ""}`} aria-hidden />
