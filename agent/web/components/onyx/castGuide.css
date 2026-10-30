@@ -1,5 +1,19 @@
 /* Cast result: how to read a draw and what it may mean (T362). */
 
+/* The chamber header floats over the top ~60px; a scrolled-to result clears it. */
+.onyx-cast-result {
+  scroll-margin-top: calc(max(18px, env(safe-area-inset-top, 0px)) + 54px);
+}
+
+/* Card name above its orientation, so long or short names never run into "Reversed". */
+.onyx-cast-card .onyx-cast-card-band {
+  flex-direction: column;
+  gap: 4px;
+}
+.onyx-cast-card .onyx-cast-card-orient {
+  margin: 0;
+}
+
 .onyx-cast-howto {
   width: 100%;
   max-width: 34rem;

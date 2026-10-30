@@ -65,6 +65,12 @@ export function OnyxCast({
   const videoRef = useRef<HTMLVideoElement>(null);
   const finished = useRef(false);
   const pendingRef = useRef<CastResult | null>(null);
+  const resultRef = useRef<HTMLDivElement>(null);
+
+  // A new reading starts at its top, below the chamber header.
+  useEffect(() => {
+    if (result) resultRef.current?.scrollIntoView({ block: "start" });
+  }, [result]);
 
   function revealCast() {
     if (finished.current || !pendingRef.current) return;
@@ -414,7 +420,7 @@ export function OnyxCast({
           )}
 
           {result && (
-            <div className="onyx-cast-result">
+            <div className="onyx-cast-result" ref={resultRef}>
               <p className="onyx-eyebrow">
                 {result.framing.label}
                 {result.spreadLabel ? ` · ${result.spreadLabel}` : ""}
