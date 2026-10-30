@@ -1039,8 +1039,8 @@
     const r = resolve(d);
     const e = r.effect;
     const det = r.detection;
-    return `<div class="sec timebody">
-      <div class="lbl"><span class="num">4</span>Time in Body</div>
+    return `<section class="ady-sec timebody">
+      <h3>Time in body</h3>
       <p class="tb-frame">${esc(FRAME_TIME)}</p>
       <div class="tb-block">
         <h4>Effect duration</h4>
@@ -1059,7 +1059,7 @@
         ${det.note ? `<p class="tb-note">${esc(det.note)}</p>` : ""}
       </div>
       <p class="tb-src">${esc(SOURCES)}</p>
-    </div>`;
+    </section>`;
   }
 
   function riskModsHtml(d) {
@@ -1069,21 +1069,20 @@
       const on = focus.has(f.id);
       return `<div class="rm-card${on ? " on" : ""}"><h4>${esc(f.title)}</h4><p>${esc(f.how)}</p></div>`;
     }).join("");
-    return `<div class="sec riskmods">
-      <div class="lbl"><span class="num">5</span>Why you may differ</div>
+    return `<section class="ady-sec riskmods">
+      <h3>Why you may differ</h3>
       <p class="tb-frame">${esc(FRAME_RISK)}</p>
       ${r.riskNote ? `<p class="rm-note">${esc(r.riskNote)}</p>` : ""}
       <div class="rm-grid">${chips}</div>
       <p class="tb-src">Highlighted cards are especially relevant for this substance — all can still apply.</p>
-    </div>`;
+    </section>`;
   }
 
   function disclaimerHtml() {
-    return `<div class="sec adyton-disclaimer"><p>${esc(DISCLAIMER)}</p></div>`;
+    return `<section class="ady-sec adyton-disclaimer"><p>${esc(DISCLAIMER)}</p></section>`;
   }
 
   global.adytonTimeBodyHtml = timeBodyHtml;
   global.adytonRiskModsHtml = riskModsHtml;
-  global.adytonDisclaimerHtml = disclaimerHtml;
-  global.ADYTON_HR_DISCLAIMER = DISCLAIMER;
+  global.adytonDisclaimerHtml = disclaimerHtml;  global.ADYTON_HR_DISCLAIMER = DISCLAIMER;
 })(typeof window !== "undefined" ? window : globalThis);

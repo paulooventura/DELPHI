@@ -51,7 +51,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Caches only: local storage and IndexedDB hold the user's on-device
         // birth data, casts, sky-alert place and backup key, and must survive updates.
         // Keep this string in sync with agent/web/lib/buildStamp.ts.
-        let shellBuild = "2026-10-30a"
+        let shellBuild = "2026-10-30b"
         let buildKey = "delphi.shellBuild"
         let previous = UserDefaults.standard.string(forKey: buildKey)
         if previous != shellBuild {

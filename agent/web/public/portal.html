@@ -1011,6 +1011,96 @@
   }
   ::placeholder { color:#fff; opacity:.85; text-shadow:var(--word-outline); }
 </style>
+<style id="adyton-legible">
+  /* Adyton: one readable page per substance. Body text 16px+ on phones; own dark grounds so day sky can't wash it out. */
+  .backdrop.ady-full{padding:0;background:#07070a;backdrop-filter:none;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .backdrop.ady-full.open{display:block;animation:none}
+  .backdrop.ady-full .modal{max-width:none;width:100%;min-height:100%;margin:0;border:0;border-radius:0;box-shadow:none;background:#07070a!important;clip-path:none;animation:none;overflow:visible}
+  .ady{max-width:720px;margin:0 auto;padding:0 20px 56px;text-align:left;font-size:17px;line-height:1.55}
+  .ady-bar{position:sticky;top:0;z-index:2;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;background:rgba(7,7,10,.97);border-bottom:1px solid rgba(169,156,255,.2)}
+  .ady-back{appearance:none;border:1px solid rgba(169,156,255,.5);background:#14131d;color:#fff;font:inherit;font-size:16px;font-weight:600;padding:10px 16px;border-radius:10px;min-height:44px;cursor:pointer}
+  .ady-back:hover{background:#1c1a2a}
+  .ady-back:focus-visible,.ady-row:focus-visible,.ady-call a:focus-visible{outline:2px solid #a99cff;outline-offset:2px}
+  .ady-back-end{display:block;width:100%;margin:28px 0 0}
+  .ady .band,.ady-row .band{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:13px;font-weight:700;letter-spacing:.06em;padding:5px 10px;border-radius:6px;flex:0 0 auto}
+  .ady-head{display:flex;align-items:center;gap:14px;padding:22px 0 14px}
+  .ady-head .emj{font-size:32px;line-height:1}
+  .ady-head .t{flex:1;min-width:0}
+  .ady-head h2{margin:0;font-family:var(--serif);font-size:34px;line-height:1.15;font-weight:700;letter-spacing:0}
+  .ady-latin{margin:6px 0 0!important;font-size:16px!important;font-style:italic}
+  .ady-formula{margin:2px 0 0!important;font-size:15px!important;font-family:ui-monospace,"SF Mono",Menlo,monospace}
+  .ady .molbox{width:56px;height:56px;flex:0 0 auto;border:1px solid rgba(169,156,255,.3);border-radius:10px;padding:6px;color:#a99cff;background:#050506}
+  .ady .molbox svg{width:100%;height:100%}
+  .ady h3{margin:0 0 10px;font-family:inherit;font-size:21px;line-height:1.25;font-weight:700;letter-spacing:0;text-transform:none}
+  .ady h4{margin:16px 0 6px;font-size:17px;line-height:1.3;font-weight:700}
+  .ady p{margin:0 0 10px;font-size:17px;line-height:1.55}
+  .ady p:last-child{margin-bottom:0}
+  .ady-sum{margin:4px 0 0;padding:18px;border-radius:14px;background:#12121a;border:1px solid rgba(169,156,255,.25);border-left:6px solid #a99cff}
+  .ady-sum.band-RED{border-left-color:#ff5b5b}.ady-sum.band-YELLOW{border-left-color:#f5c451}.ady-sum.band-GREEN{border-left-color:#4fd1a1}
+  .ady-sum .ady-what{font-size:18px}
+  .ady-sum h3{margin-top:4px}
+  .ady-sec{padding:24px 0;border-top:1px solid rgba(169,156,255,.16)}
+  .ady-sec.wrong{margin:16px 0 0;padding:20px 18px;border:2px solid rgba(255,91,91,.7);border-radius:14px;background:#1c0b0e}
+  .ady-sec.wrong h3{font-size:23px}
+  .ady-sec.wrong h4:first-of-type{margin-top:4px}
+  .ady-sec.mix{margin:16px 0 8px;padding:20px 18px;border:2px solid rgba(255,150,90,.6);border-radius:14px;background:#1c120b}
+  .ady-signs{margin:0;padding-left:22px}
+  .ady-signs li{margin:0 0 6px;font-size:17px;line-height:1.5}
+  .ady-call{display:flex;flex-wrap:wrap;gap:10px;margin:16px 0 0}
+  .ady-call a{flex:1 1 auto;display:flex;flex-direction:column;justify-content:center;min-height:52px;padding:8px 14px;border-radius:10px;background:#2e1015;border:1px solid rgba(255,91,91,.65);color:#fff;text-decoration:none}
+  .ady-call b{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:19px;letter-spacing:.02em}
+  .ady-call small{font-size:14px;line-height:1.3}
+  .ady-axis .track{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 6px;font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:15px}
+  .ady-axis .track .bar{width:40px;height:2px;background:linear-gradient(90deg,rgba(90,169,255,.6),rgba(169,156,255,.9) 50%,rgba(255,91,91,.7))}
+  .ady-axis .push{margin:0 0 12px;font-size:17px}
+  .ady .tb-frame{font-size:16px;line-height:1.55;margin:0 0 14px}
+  .ady .tb-block{margin:0 0 14px;padding:14px 16px;border:1px solid rgba(169,156,255,.2);border-radius:12px;background:#0e0e15}
+  .ady .tb-block h4{margin:0 0 8px}
+  .ady .tb-why{font-size:16px;margin:0 0 10px}
+  .ady .tb-row{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:8px 0;border-top:1px solid rgba(255,255,255,.08);font-size:17px}
+  .ady .tb-k{font-weight:700;font-size:16px}
+  .ady .tb-v{line-height:1.5}
+  .ady .tb-note,.ady .tb-src{font-size:16px;margin:10px 0 0}
+  .ady .rm-note{font-size:17px;padding:12px 14px;border-left:4px solid #a99cff;background:#12121a;border-radius:8px}
+  .ady .rm-grid{display:grid;grid-template-columns:1fr;gap:10px}
+  .ady .rm-card{padding:14px 16px;border:1px solid rgba(169,156,255,.18);border-radius:12px;background:#0e0e15}
+  .ady .rm-card.on{border-color:rgba(169,156,255,.75);background:#17152b}
+  .ady .rm-card h4{margin:0 0 6px}
+  .ady .rm-card p{font-size:16px}
+  .ady .dialstrip{display:flex;align-items:center;gap:14px;margin:14px 0 0;padding:0;background:none;border:0;justify-content:flex-start}
+  .ady .dial-labels{font-size:13px}
+  .ady-dialnote{font-size:15px!important;margin:0!important}
+  .ady .standing .legal{font-size:17px}
+  .ady .standing .ceiling{display:inline-block;font-size:16px;font-style:italic}
+  .ady .adyton-disclaimer{margin:8px 0 0;padding:16px 18px;border:1px solid rgba(255,91,91,.4);border-radius:12px;background:#140a0c}
+  .ady .adyton-disclaimer p{font-size:16px}
+  @media(min-width:720px){.ady{padding:0 28px 64px}.ady .rm-grid{grid-template-columns:1fr 1fr}.ady-head h2{font-size:40px}}
+
+  /* the list */
+  #screen-studies .wrap:has(.studies-deck.is-hr) .studies-sticky{position:relative;top:auto}
+  #m-grid{display:grid;grid-template-columns:1fr;gap:8px;max-width:960px;margin:16px auto 0}
+  @media(min-width:720px){#m-grid{grid-template-columns:1fr 1fr}}
+  @media(min-width:1100px){#m-grid{grid-template-columns:1fr 1fr 1fr}}
+  .ady-row{display:grid;grid-template-columns:32px 1fr auto;align-items:center;gap:12px;width:100%;min-height:56px;padding:10px 14px;border:1px solid rgba(169,156,255,.22);border-radius:12px;background:#0c0c12;color:#fff;font:inherit;text-align:left;cursor:pointer}
+  .screen .ady-row{background:linear-gradient(180deg,hsla(270,28%,17%,.95),hsla(268,24%,7%,.97))!important}
+  .screen .ady-row:hover{filter:brightness(1.18)}
+  .ady-row .em-only{font-size:22px;line-height:1;text-align:center}
+  .ady-rname{font-size:17px;font-weight:600;line-height:1.3}
+  #m-search{font-size:16px;padding:12px 14px;width:min(560px,100%)}
+  #m-search::placeholder{font-size:15px}
+  #ledge-materia .axis-kicker{font-size:15px}
+  #ledge-materia .laxis span:not(.bar){font-size:13px}
+  #m-cats-btn,#m-cats-done{font-size:14px;letter-spacing:.1em}
+  #m-cat-box .cat-cols{grid-template-columns:1fr 1fr;gap:8px;max-height:50vh}
+  #m-cat-box .cat-cols .pill{font-size:15px;padding:10px 12px;min-height:44px}
+  .ady-floor{max-width:640px;margin:14px auto 0;padding:14px 16px;border:1px solid rgba(255,91,91,.45);border-radius:12px;background:#140a0c;text-align:left}
+  .ady-floor h3{margin:0 0 8px;font-size:17px;font-weight:700}
+  .ady-floor p{margin:8px 0 0;font-size:16px;line-height:1.5}
+  .ady-floor a{cursor:pointer;text-decoration:underline}
+  .ady-floor .ady-call-sm{margin:0}
+  .ady-call-sm a{flex:0 1 auto;min-height:44px;text-decoration:none}
+  .ady-call-sm b{font-size:17px}
+</style>
 <script>
 (function(){
   function sky(){
@@ -1151,11 +1241,11 @@
           <button type="button" class="domains-done" id="m-cats-done">Done</button>
         </div>
         <div class="ldetail"><div class="ldinner">
-          <div class="lnote floor"><h3>The floor</h3><p><span class="tel">911 · 988 · 1-800-222-1222</span><br>Test the supply, carry naloxone, never use alone.<br><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
           <div class="lnote method"><h3>Method</h3><p>No “safe number.” A direction the body is pushed, and a point past which it cannot self-correct. Consumption doses are absent by design — on an adulterated supply a printed threshold reads as protection and works as permission. <strong>Time in Body</strong> shows effect ranges and detection windows so you can choose whether to partake (including when a job test is at stake) — never to beat a test. <strong>Why you may differ</strong> names risk modulators, not a personal safe dose. Not medical advice. Emergency → local emergency number.</p></div>
         </div></div>
       </div>
-      <div class="searchwrap"><input class="search" id="m-search" placeholder="What substance are you looking to dive into?" aria-label="Search substances"></div>
+      <div class="searchwrap"><input class="search" id="m-search" type="search" placeholder="What substance are you looking to dive into?" aria-label="Search substances"></div>
+      <div class="ady-floor"><h3>The floor</h3><p class="ady-call ady-call-sm"><a href="tel:911"><b>911</b></a><a href="tel:988"><b>988</b></a><a href="tel:18002221222"><b>1-800-222-1222</b></a></p><p>Test the supply, carry naloxone, never use alone.</p><p><a onclick="outbound('https://dancesafe.org/','DanceSafe')">DanceSafe</a> · <a onclick="outbound('https://tennesseeharmreduction.com/','TN Harm Reduction')">TN Harm Reduction</a></p></div>
     </div>
   </div>
 
@@ -1231,7 +1321,7 @@
 
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
-<script src="/adyton-hr-panels.js?v=2026-09-13c"></script>
+<script src="/adyton-hr-panels.js?v=2026-10-30a"></script>
 <script src="/agon-enroll.js?v=2026-10-29f" defer></script>
 <script src="/pm-telemetry.js?v=2026-10-29h" defer></script>
 
@@ -1271,7 +1361,7 @@ function maybePlayStudiesIntro(){
   clearTimeout(_studiesIntroTimer);intro.classList.remove('leaving');intro.classList.add('show');intro.setAttribute('aria-hidden','false');
   try{video.currentTime=0;const playing=video.play();if(playing&&playing.catch)playing.catch(()=>{});}catch(e){}
 }
-function clearOverlays(){window.pmModalGuard=null;const g=document.getElementById('gate');if(g)g.classList.remove('open');const mh=document.getElementById('modalHost');if(mh)mh.innerHTML='';const bd=document.getElementById('backdrop');if(bd)bd.classList.remove('open');document.body.style.overflow='';}
+function clearOverlays(){window.pmModalGuard=null;const g=document.getElementById('gate');if(g)g.classList.remove('open');const mh=document.getElementById('modalHost');if(mh)mh.innerHTML='';const bd=document.getElementById('backdrop');if(bd)bd.classList.remove('open','ady-full');document.body.style.overflow='';}
 /* history: every screen, Agon path and popup is one entry, so phone Back steps out one level */
 let _pmPending=0,_pmQueuedModal=false;
 function pmState(){const s=history.state;return s&&s.pm===1?s:null;}
@@ -1361,8 +1451,8 @@ document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(document.getElem
 /* ===== shared helpers (used by Tonal + Studies) ===== */
 function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");}
 const backdrop=document.getElementById("backdrop");
-function modal(html){window.pmModalGuard=null;document.getElementById("modalHost").innerHTML=`<div class="modal" onclick="event.stopPropagation()">${html}</div>`;backdrop.classList.add("open");document.body.style.overflow="hidden";const s=pmState();if(_pmPending>0)_pmQueuedModal=true;else if(!(s&&s.modal))pmPush({modal:1});}
-function hideModal(){window.pmModalGuard=null;backdrop.classList.remove("open");document.body.style.overflow="";}
+function modal(html){window.pmModalGuard=null;backdrop.classList.remove("ady-full");document.getElementById("modalHost").innerHTML=`<div class="modal" onclick="event.stopPropagation()">${html}</div>`;backdrop.classList.add("open");document.body.style.overflow="hidden";const s=pmState();if(_pmPending>0)_pmQueuedModal=true;else if(!(s&&s.modal))pmPush({modal:1});}
+function hideModal(){window.pmModalGuard=null;backdrop.classList.remove("open","ady-full");document.body.style.overflow="";}
 /* pmModalGuard (set by forms with typed data) returns false to keep the popup open. */
 window.closeModal=()=>{if(window.pmModalGuard&&!window.pmModalGuard())return;hideModal();const s=pmState();if(s&&s.modal){_pmPending++;history.back();}};
 backdrop.addEventListener("click",()=>window.closeModal());
@@ -2294,7 +2384,6 @@ syncDomainsBtn();
 const mState={bands:new Set(),lins:new Set(),q:""};
 [...new Set([...materia,...medica].map(d=>d.lineage))].sort().forEach(l=>{const em=(materia.find(x=>x.lineage===l)||medica.find(x=>x.lineage===l)||{}).emoji||"•";const b=document.createElement("button");b.className="pill";b.dataset.lin=l;b.setAttribute("aria-pressed","false");b.innerHTML=`<span class="em">${em}</span>${esc(l)}`;document.getElementById("m-lins").appendChild(b);});
 function axisTrack(d){const l=esc((d.axis||"").split("←")[0].trim()),r=esc((d.axis||"").split("→").pop().trim());return `<div class="track"><span class="p">${l}</span><span class="bar"></span><span class="z">node</span><span class="bar"></span><span class="r">${r}</span></div><div class="push">Pushes toward: ${esc(d.pushes_toward)}</div>`;}
-function signs(rec){return esc(rec).split(/[;·]/).filter(s=>s.trim()).map(s=>`<span>${s.trim()}</span>`).join("");}
 function dial(c){c=Math.max(0,Math.min(100,c||0));return `<div class="dial"><div class="marker" style="bottom:calc(${c}% - 2px)"></div></div><div class="dial-labels"><div class="top">molecule</div><div class="v">${c}<span style="color:var(--fogd)">/100</span></div><div class="bot">plant</div></div>`;}
 const substances=(function(){
   const by=new Map();
@@ -2335,7 +2424,7 @@ const substances=(function(){
   return [...by.values()].sort((a,b)=>a.name.localeCompare(b.name));
 })();
 document.getElementById("n-materia").textContent=String(substances.length);
-function mMini(d,i){return `<div class="mcard" onclick='openSubstance(${i})'><span class="em-only">${d.emoji||"•"}</span><h3>${esc(d.name)}</h3><span class="band ${d.band}">${d.band}</span></div>`;}
+function mMini(d,i){return `<button type="button" class="ady-row" onclick='openSubstance(${i})'><span class="em-only" aria-hidden="true">${d.emoji||"•"}</span><span class="ady-rname">${esc(d.name)}</span><span class="band ${d.band}">${d.band}</span></button>`;}
 window.openSubstance=i=>{
   const d=substances[i];if(!d)return;
   const isW=(d.ceiling||"").startsWith(WP);
@@ -2351,20 +2440,32 @@ window.openSubstance=i=>{
   const over=D(d.overshoot||d.caution);
   const rec=d.recognize||d.caution||"Won't wake; wrong color; stopped breathing; seizure; panic that will not turn.";
   const resp=D(d.respond)||"Call 911. Stay. Recovery position if they breathe. Naloxone if it could be an opioid. Do not leave them to 'sleep it off.'";
-  modal(`<div class="mhead" onclick="closeModal()"><span class="emj">${d.emoji||"•"}</span><div class="t"><h3>${esc(d.name)}</h3><div class="latin">${esc(d.latin||"")}${d.lineage?" · "+esc(d.lineage):""}</div><div class="formula">${esc(d.formula||"")}</div></div><div class="molbox">${mol}</div><span class="band ${d.band}">${d.band}</span><span class="closehint">✕</span></div>
-  <div class="mbody"><div class="dialstrip">${dial(d.complexity||(d.band==="RED"?82:d.band==="YELLOW"?54:28))}<div style="font-size:11px;color:var(--fog);text-align:left">Simple → complex<br><span style="color:var(--fogd)">raw plant → isolated molecule</span></div></div>
-  <div class="sec roots"><div class="lbl"><span class="num">1</span>Roots — the arc</div><p class="arc">${esc(roots)}</p><p class="celeb"><b>Celebrated</b><br>${esc(celeb)}</p></div>
-  <div class="sec axis"><div class="lbl"><span class="num">2</span>The axis</div>${axis}</div>
-  <div class="sec body-brain"><div class="lbl"><span class="num">3</span>In your body / brain</div><p>${esc(body)}</p></div>
+  const has=s=>s&&s!=="—";
+  const signList=esc(rec).split(/[;·]/).map(s=>s.trim()).filter(Boolean).map(s=>`<li>${s}</li>`).join("");
+  modal(`<article class="ady" aria-labelledby="ady-name">
+  <div class="ady-bar"><button type="button" class="ady-back" onclick="closeModal()">‹ All substances</button><span class="band ${d.band}">${d.band}</span></div>
+  <header class="ady-head"><span class="emj" aria-hidden="true">${d.emoji||"•"}</span><div class="t"><h2 id="ady-name">${esc(d.name)}</h2><p class="ady-latin">${esc(d.latin||"")}${d.lineage?" · "+esc(d.lineage):""}</p>${d.formula?`<p class="ady-formula">${esc(d.formula)}</p>`:""}</div><div class="molbox" aria-hidden="true">${mol}</div></header>
+  <section class="ady-sum band-${d.band}">
+    ${d.snapshot?`<p class="ady-what">${esc(d.snapshot)}</p>`:""}
+    ${has(know)?`<h3>Know before</h3><p>${esc(know)}</p>`:""}
+  </section>
+  <section class="ady-sec wrong"><h3>If it goes wrong</h3>
+    <h4>Recognize</h4><ul class="ady-signs">${signList}</ul>
+    <h4>Respond</h4><p class="respond">${esc(resp)}</p>
+    <div class="ady-call" aria-label="US emergency numbers"><a href="tel:911"><b>911</b><small>Emergency</small></a><a href="tel:988"><b>988</b><small>Crisis line</small></a><a href="tel:18002221222"><b>1-800-222-1222</b><small>Poison Control</small></a></div>
+  </section>
+  ${has(mix)&&mix!==know?`<section class="ady-sec mix"><h3>Deadly mix</h3><p>${esc(mix)}</p></section>`:""}
+  <section class="ady-sec test"><h3>Test it</h3><p>${esc(test)}</p></section>
+  <section class="ady-sec overshoot"><h3>The overshoot</h3><div class="ady-axis">${axis}</div>${has(over)&&over!==know?`<p>${esc(over)}</p>`:""}</section>
+  ${has(body)?`<section class="ady-sec body-brain"><h3>In your body and brain</h3><p>${esc(body)}</p></section>`:""}
   ${typeof adytonTimeBodyHtml==="function"?adytonTimeBodyHtml(d):""}
   ${typeof adytonRiskModsHtml==="function"?adytonRiskModsHtml(d):""}
-  <div class="sec know"><div class="lbl"><span class="num">6</span>Know before</div><p>${esc(know)}</p><p class="interact"><strong>Deadly mix:</strong> ${esc(mix)}</p></div>
-  <div class="sec standing"><div class="lbl"><span class="num">7</span>Standing</div><span class="legal">${esc(D(d.legal))}</span>${ceil}</div>
-  <div class="sec test"><div class="lbl"><span class="num">8</span>Test it</div><p>${esc(test)}</p></div>
-  <div class="sec overshoot"><div class="lbl"><span class="num">9</span>The overshoot</div><p>${esc(over)}</p></div>
-  <div class="sec wrong"><div class="lbl"><span class="num">10</span>If it goes wrong</div><div class="rz"><span class="k">Recognize</span><div class="signs">${signs(rec)}</div></div><div class="rz"><span class="k">Respond</span><div class="respond">${esc(resp)}</div></div></div>
-  ${typeof adytonDisclaimerHtml==="function"?adytonDisclaimerHtml():`<div class="sec adyton-disclaimer"><p>Not medical advice. Emergency → call your local emergency number.</p></div>`}
-  </div>`);
+  <section class="ady-sec roots"><h3>Roots: the arc</h3>${has(roots)?`<p>${esc(roots)}</p>`:""}${has(celeb)?`<h4>Celebrated</h4><p>${esc(celeb)}</p>`:""}<div class="dialstrip">${dial(d.complexity||(d.band==="RED"?82:d.band==="YELLOW"?54:28))}<p class="ady-dialnote">Simple → complex<br>raw plant → isolated molecule</p></div></section>
+  <section class="ady-sec standing"><h3>Standing</h3><p class="legal">${esc(D(d.legal))}</p>${ceil}</section>
+  ${typeof adytonDisclaimerHtml==="function"?adytonDisclaimerHtml():`<section class="ady-sec adyton-disclaimer"><p>Not medical advice. Emergency → call your local emergency number.</p></section>`}
+  <button type="button" class="ady-back ady-back-end" onclick="closeModal()">‹ Back to all substances</button>
+  </article>`);
+  backdrop.classList.add("ady-full");backdrop.scrollTop=0;
 };
 function mRender(){const g=document.getElementById("m-grid");const match=d=>{if(mState.bands.size&&!mState.bands.has(d.band))return false;if(mState.lins.size&&!mState.lins.has(d.lineage))return false;if(mState.q&&!(d.name+" "+(d.latin||"")+" "+(d.lineage||"")+" "+(d.snapshot||"")+" "+(d.measured||"")+" "+(d.caution||"")).toLowerCase().includes(mState.q))return false;return true;};const items=substances.filter(match);const html=items.map((d,i)=>mMini(d,substances.indexOf(d))).join("");g.innerHTML=html||empty();const mc=document.getElementById("m-count");if(mc)mc.textContent=`${items.length} of ${substances.length} shown`;syncCatsBtn();}
 function syncCatsBtn(){
