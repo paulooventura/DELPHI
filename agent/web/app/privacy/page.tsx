@@ -95,7 +95,7 @@ export default function PrivacyPage() {
           only the fields marked public, after review.
         </li>
       </ul>
-      <p>Providers: Vercel (hosting), Supabase (database and sign-in) and Google Sheets (beta usage and enrollment log).</p>
+      <p>Providers: Vercel (hosting), Supabase (database and sign-in) and Google Sheets (usage and enrollment log).</p>
 
       <h2 style={h2}>Delete it</h2>
       <ul>
