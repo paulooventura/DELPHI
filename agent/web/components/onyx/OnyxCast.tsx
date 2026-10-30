@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import {
   castIChingMode,
   castOrishaMode,
@@ -24,6 +24,8 @@ import { CastCowrie } from "./CastArt";
 import { CastGems, type CastGemChoice } from "./CastGems";
 import { ChamberHeader } from "./ChamberHeader";
 import { CoinTossStage, RuneBagStage, TarotDeckStage } from "./CastGestureStages";
+import { CastHowToRead } from "./CastReadingGuide";
+import { howToRead, whatItMeans } from "../../lib/lore/readingGuide";
 
 const RITUAL_FADE_MS = 480;
 
@@ -50,6 +52,8 @@ export function OnyxCast({
   onResetHeld?: () => void;
 }) {
   const [result, setResult] = useState<CastResult | null>(null);
+  const meaning = useMemo(() => (result ? whatItMeans(result) : null), [result]);
+  const guide = useMemo(() => (result ? howToRead(result) : null), [result]);
   const [picker, setPicker] = useState<Picker>(null);
   const [gesture, setGesture] = useState<Gesture | null>(null);
   const [ritual, setRitual] = useState<{
@@ -422,6 +426,7 @@ export function OnyxCast({
                 </p>
               )}
               <p className="onyx-cast-frame">{result.framing.frame}</p>
+              {guide && <CastHowToRead guide={guide} />}
 
               {result.cowrieUp != null && (
                 <div className="onyx-cowrie-row" aria-label={`${result.cowrieUp} of 16 cowries mouth-up`}>
@@ -466,10 +471,20 @@ export function OnyxCast({
                         frame={position ?? result.framing.frame}
                         reversed={reversed}
                       />
+                      {meaning?.perDraw[i] && (
+                        <p className="onyx-cast-meaning">{meaning.perDraw[i].meaning}</p>
+                      )}
                     </div>
                   );
                 })}
               </div>
+
+              {meaning && (
+                <>
+                  <p className="onyx-cast-together">{meaning.together}</p>
+                  <p className="onyx-cast-reflect">{meaning.reflect}</p>
+                </>
+              )}
 
               <p className="onyx-layer-meta">{result.framing.note}</p>
 

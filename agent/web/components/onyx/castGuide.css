@@ -1,0 +1,78 @@
+/* Cast result: how to read a draw and what it may mean (T362). */
+
+.onyx-cast-howto {
+  width: 100%;
+  max-width: 34rem;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  border: 1px solid rgba(150, 128, 86, 0.32);
+  border-radius: 10px;
+  background: rgba(6, 3, 16, 0.45);
+  color: var(--onyx-ink);
+}
+.onyx-cast-howto summary {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  cursor: pointer;
+  list-style: none;
+  min-height: 44px;
+  justify-content: center;
+  touch-action: manipulation;
+}
+.onyx-cast-howto summary::-webkit-details-marker {
+  display: none;
+}
+.onyx-cast-howto-label {
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--onyx-ink-quiet);
+}
+.onyx-cast-howto-label::after {
+  content: " ▸";
+}
+.onyx-cast-howto[open] .onyx-cast-howto-label::after {
+  content: " ▾";
+}
+.onyx-cast-howto-title {
+  font-family: var(--font-voice);
+  font-size: 15px;
+}
+.onyx-cast-howto ol {
+  margin: 8px 0 2px;
+  padding-left: 1.2em;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.onyx-cast-howto li + li {
+  margin-top: 6px;
+}
+
+.onyx-cast-meaning {
+  margin: 10px 2px 0;
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--onyx-ink);
+  text-align: left;
+}
+
+.onyx-cast-together {
+  max-width: 34rem;
+  margin: 6px 0 8px;
+  font-family: var(--font-voice);
+  font-size: 15px;
+  line-height: 1.45;
+  color: var(--onyx-ink);
+  text-align: center;
+}
+.onyx-cast-reflect {
+  max-width: 30rem;
+  margin: 0 0 12px;
+  font-family: var(--font-voice);
+  font-style: italic;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--onyx-ink-quiet);
+  text-align: center;
+}
