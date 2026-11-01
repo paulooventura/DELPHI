@@ -27,6 +27,7 @@ import {
 import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElevation } from "../../lib/daynight";
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
+import { watchUser } from "../../lib/userWatch";
 
 export type MapSat = { name: string; row: GpRow };
 
@@ -150,6 +151,9 @@ export default function EarthMap({
   const buildCardRef = useRef<(sel: Sel | null) => Card | null>(() => null);
   const [card, setCard] = useState<Card | null>(null);
   const [hasUser, setHasUser] = useState(false);
+  /** On after "Near you": the map keeps the reader centred until they pan by hand. */
+  const followRef = useRef(false);
+  const [following, setFollowing] = useState(false);
   useEffect(() => {
     onCloseRef.current = onClose;
   }, [onClose]);
@@ -184,29 +188,21 @@ export default function EarthMap({
     drawRef.current();
   }, [recs]);
 
-  /* Distance from the reader only if they already granted location; never asks, never sends. */
-  useEffect(() => {
-    let alive = true;
-    const perms = (navigator as Navigator & { permissions?: Permissions }).permissions;
-    perms
-      ?.query({ name: "geolocation" as PermissionName })
-      .then(p => {
-        if (!alive || p.state !== "granted") return;
-        navigator.geolocation.getCurrentPosition(
-          pos => {
-            if (!alive) return;
-            userRef.current = { lat: pos.coords.latitude, lon: pos.coords.longitude };
-            setHasUser(true);
-          },
-          () => {},
-          { maximumAge: 10 * 60_000, timeout: 8_000 },
-        );
-      })
-      .catch(() => {});
-    return () => {
-      alive = false;
-    };
-  }, []);
+  /* The reader's dot moves live, only if they already granted location; never asks, never sends. */
+  useEffect(
+    () =>
+      watchUser(fix => {
+        userRef.current = { lat: fix.lat, lon: fix.lon };
+        setHasUser(true);
+        const map = mapRef.current;
+        if (followRef.current && map && !map.isMoving()) {
+          if (reduceMotion) map.jumpTo({ center: [fix.lon, fix.lat] });
+          else map.easeTo({ center: [fix.lon, fix.lat], duration: 900 });
+        }
+        drawRef.current();
+      }),
+    [reduceMotion],
+  );
 
   useEffect(() => {
     const box = boxRef.current;
@@ -791,6 +787,10 @@ export default function EarthMap({
       fallBackToOfflineBase();
     });
     map.on("moveend", onMoveEnd);
+    map.on("dragstart", () => {
+      followRef.current = false;
+      setFollowing(false);
+    });
     map.on("zoom", onZoom);
     map.on("click", onClick);
     document.addEventListener("visibilitychange", onVisibility);
@@ -813,8 +813,11 @@ export default function EarthMap({
     const u = userRef.current;
     const map = mapRef.current;
     if (!u || !map) return;
-    if (reduceMotion) map.jumpTo({ center: [u.lon, u.lat], zoom: 7 });
-    else map.flyTo({ center: [u.lon, u.lat], zoom: 7, duration: 2200 });
+    followRef.current = true;
+    setFollowing(true);
+    const zoom = Math.max(map.getZoom(), 7);
+    if (reduceMotion) map.jumpTo({ center: [u.lon, u.lat], zoom });
+    else map.flyTo({ center: [u.lon, u.lat], zoom, duration: 2200 });
   };
 
   const toggleLayer = (id: LayerId) => {
@@ -964,8 +967,8 @@ export default function EarthMap({
             Layers
           </button>
           {hasUser ? (
-            <button type="button" className="onyx-orr-chip" onClick={flyToUser}>
-              Near you
+            <button type="button" className={`onyx-orr-chip${following ? " on" : ""}`} aria-pressed={following} onClick={flyToUser}>
+              {following ? "Following you" : "Near you"}
             </button>
           ) : null}
           <span className="onyx-orr-date" aria-live="polite">
