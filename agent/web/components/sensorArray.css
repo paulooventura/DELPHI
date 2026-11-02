@@ -685,3 +685,22 @@
     transition: none;
   }
 }
+
+/* Senses: one card level. Inner blocks sit flat inside the card, split by a keyline (T397). */
+.onyx-overlay .cp-card .cp-oracle-eye,
+.onyx-overlay .cp-card .cp-speed-dial {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid rgba(232, 214, 176, 0.14);
+  border-radius: 0;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+/* The sense detail sheet uses the shared dialog panel. */
+.onyx-overlay .cp-sense-sheet {
+  border: 1px solid rgba(232, 214, 176, 0.28);
+  border-radius: 14px;
+  background: #0d0b10;
+  font-family: var(--font-text);
+}

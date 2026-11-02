@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { OnyxAudioStone } from "./OnyxAudioStone";
+import { PmDialog } from "./PmDialog";
 
 export type ChamberDoor = "home" | "sky" | "rings" | "you" | "tonal" | "studies" | "tools";
 
@@ -28,7 +29,7 @@ const DOORS: { door: ChamberDoor; name: string; note: string; arm: CompassLit }[
   { door: "tonal", name: "Agon", note: "Show Thyself · events and crews", arm: "down" },
   { door: "studies", name: "Mouseion", note: "Studies and scales", arm: "left" },
   { door: "you", name: "Psyche", note: "Your chord and casts", arm: "centre" },
-  { door: "tools", name: "Treasury ✦", note: "Atlas, Senses, About and more", arm: null },
+  { door: "tools", name: "Treasury", note: "Atlas, Senses, About and more", arm: null },
 ];
 
 function MiniCompass({ lit }: { lit: CompassLit }) {
@@ -63,17 +64,6 @@ export function ChamberHeader({
   const [sheetOpen, setSheetOpen] = useState(false);
   const holdTimer = useRef<number | null>(null);
   const heldHome = useRef(false);
-
-  useEffect(() => {
-    if (!sheetOpen) return;
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
-      e.stopPropagation();
-      setSheetOpen(false);
-    };
-    window.addEventListener("keydown", onKey, true);
-    return () => window.removeEventListener("keydown", onKey, true);
-  }, [sheetOpen]);
 
   useEffect(() => () => {
     if (holdTimer.current) window.clearTimeout(holdTimer.current);
@@ -127,16 +117,11 @@ export function ChamberHeader({
         </div>
       </header>
       {sheetOpen && (
-        <div className="onyx-compass-sheet-wrap" onClick={() => setSheetOpen(false)}>
-          <div
-            className="onyx-compass-sheet"
-            role="dialog"
-            aria-label="Jump to a chamber"
-            onClick={e => e.stopPropagation()}
-          >
+        <PmDialog title="Jump to" size="s" onClose={() => setSheetOpen(false)}>
+          <div className="pm-list">
             <button
               type="button"
-              className="onyx-compass-row is-home"
+              className="pm-row is-home"
               onClick={() => {
                 setSheetOpen(false);
                 nav.onHome();
@@ -149,7 +134,7 @@ export function ChamberHeader({
               <button
                 key={d.door}
                 type="button"
-                className={`onyx-compass-row${d.arm && d.arm === nav.lit ? " is-here" : ""}`}
+                className={`pm-row${d.arm && d.arm === nav.lit ? " is-here" : ""}`}
                 onClick={() => {
                   setSheetOpen(false);
                   nav.onJump(d.door);
@@ -160,7 +145,7 @@ export function ChamberHeader({
               </button>
             ))}
           </div>
-        </div>
+        </PmDialog>
       )}
     </>
   );

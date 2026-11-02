@@ -540,7 +540,7 @@ html.chorus-embed body {
 
 .cp-st-compass-note {
   margin: 0.45rem 0 0;
-  font-size: 0.58rem;
+  font-size: var(--type-caption);
   color: var(--ink-dim);
 }
 

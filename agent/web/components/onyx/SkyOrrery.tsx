@@ -2512,7 +2512,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               type="search"
               list="onyx-orr-names"
               value={query}
-              placeholder={globe ? "Find ISS, Hubble, Starlink…" : "Find Titan, Halley, Voyager 1…"}
+              placeholder={globe ? "Find ISS, Hubble…" : "Find Titan, Halley…"}
               aria-label="Find an object and fly to it"
               autoComplete="off"
               enterKeyHint="go"

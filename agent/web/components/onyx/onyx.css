@@ -4846,9 +4846,9 @@ html[data-sky="twilight"] .onyx-overlay-close {
   display: block; width: 100%; text-align: left; cursor: pointer;
   padding: 12px 14px; border-radius: 12px;
   border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.06);
-  color: var(--onyx-ink-bright); font-family: inherit; font-size: 14px;
+  color: var(--onyx-ink-bright); font-family: inherit; font-size: var(--type-small);
 }
-.onyx-compass-row span { display: block; font-size: 11px; color: var(--onyx-ink-quiet); margin-top: 3px; opacity: 0.8; }
+.onyx-compass-row span { display: block; font-size: var(--type-caption); color: var(--onyx-ink-quiet); margin-top: 3px; opacity: 0.8; }
 .onyx-compass-row.is-home { border-color: var(--onyx-edge-bright); }
 .onyx-compass-row.is-here { background: rgba(140, 124, 255, 0.2); }
 .onyx-treasury-head {
@@ -5077,3 +5077,97 @@ html[data-sky="twilight"] .onyx-overlay-close {
   .onyx-orr, .onyx-orr.onyx-orr-rise, .onyx-orr-map { animation: none; }
   .onyx-sky-pull-cue svg { animation: none; }
 }
+
+/* ── Pneuma UI system: one dialog, one row, one button family (T397) ──────── */
+.pm-dialog-wrap {
+  position: fixed; inset: 0; z-index: 90;
+  display: flex; align-items: center; justify-content: center;
+  padding: var(--space-4);
+  background: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  animation: onyx-sheet-fade 220ms ease-out;
+}
+.pm-dialog {
+  width: 100%; max-height: calc(100dvh - var(--space-6));
+  display: flex; flex-direction: column;
+  border: 1px solid rgba(232, 214, 176, 0.28);
+  border-radius: 14px;
+  background: #0d0b10;
+  color: #f3ede2;
+  font-family: var(--font-text); font-size: var(--type-body); line-height: 1.5;
+  text-shadow: none;
+  box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
+  animation: onyx-sheet-rise 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+.pm-dialog-s { max-width: 320px; }
+.pm-dialog-m { max-width: 420px; }
+.pm-dialog-l { max-width: 560px; }
+.pm-dialog-head {
+  display: grid; grid-template-columns: 36px 1fr 36px; align-items: center; gap: var(--space-2);
+  padding: var(--space-3) var(--space-3);
+  border-bottom: 1px solid rgba(232, 214, 176, 0.18);
+}
+.pm-dialog-title {
+  margin: 0; text-align: center;
+  font-family: var(--font-text); font-weight: 600; font-size: var(--type-caption);
+  letter-spacing: 0.28em; text-transform: uppercase; color: #f7e9c8;
+}
+.pm-dialog-close {
+  width: 36px; height: 36px; display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid transparent; border-radius: 50%; background: none; color: #d8cfbf; cursor: pointer;
+}
+.pm-dialog-close:hover, .pm-dialog-close:focus-visible { border-color: rgba(232, 214, 176, 0.4); color: #fbf3e2; outline: none; }
+.pm-dialog-body { padding: var(--space-4); overflow-y: auto; overscroll-behavior: contain; }
+.pm-dialog-foot {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-3);
+  padding: var(--space-3) var(--space-4) var(--space-4);
+  border-top: 1px solid rgba(232, 214, 176, 0.12);
+}
+.pm-dialog-lede { margin: 0 0 var(--space-4); text-align: center; font-size: var(--type-small); color: #cbbd9f; }
+@media (min-width: 720px) {
+  .pm-dialog-body { padding: var(--space-5); }
+}
+
+.pm-list { display: grid; gap: var(--space-2); }
+.pm-row {
+  display: block; width: 100%; min-height: 56px; text-align: center; cursor: pointer;
+  padding: var(--space-3) var(--space-4); border-radius: 10px;
+  border: 1px solid rgba(140, 124, 255, 0.22); background: rgba(120, 108, 200, 0.08);
+  color: #fbf3e2; font-family: var(--font-text); font-size: var(--type-body); font-weight: 500;
+  transition: background var(--onyx-lift), border-color var(--onyx-lift);
+}
+.pm-row span { display: block; margin-top: 2px; font-size: var(--type-caption); font-weight: 400; color: #cbbd9f; }
+.pm-row:hover, .pm-row:focus-visible { background: rgba(140, 124, 255, 0.16); border-color: rgba(232, 214, 176, 0.45); outline: none; }
+.pm-row.is-home { border-color: rgba(232, 214, 176, 0.35); }
+.pm-row.is-here { background: rgba(140, 124, 255, 0.2); }
+
+/* Buttons: primary = gold keyline, secondary = violet stone (.onyx-tool-btn / .onyx-ghost-btn), chip = small stone. */
+.onyx-root .onyx-primary-btn,
+.pm-btn-primary {
+  min-height: 44px; padding: var(--space-2) var(--space-5);
+  display: inline-flex; align-items: center; justify-content: center; text-align: center;
+  border: 1.5px solid #e9d7a8; border-radius: 999px; clip-path: none;
+  background: #3a2d16; color: #fbf3e2; filter: none; box-shadow: none; text-shadow: none;
+  font-family: var(--font-text); font-size: var(--type-small); font-weight: 600; letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.onyx-root .onyx-primary-btn::before,
+.onyx-root .onyx-primary-btn::after { display: none; }
+.onyx-root .onyx-primary-btn:is(:hover, :focus-visible),
+.pm-btn-primary:is(:hover, :focus-visible) { background: #4a3a1c; outline: 2px solid rgba(251, 243, 226, 0.6); outline-offset: 2px; }
+
+/* Stones: label centred inside a symmetric bevel. */
+.onyx-root .onyx-tool-btn {
+  text-align: center;
+  padding: var(--space-5) var(--space-6);
+  font-size: var(--type-body);
+}
+.onyx-root .onyx-tool-btn span { margin-top: var(--space-1); font-size: var(--type-caption); }
+.onyx-root .onyx-tool-btn::after { inset: var(--steps); }
+
+/* Orrery: the five zoom levels share one row, evenly, so none is orphaned. */
+.onyx-orr-row[aria-label="Zoom level"] {
+  display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; max-width: 420px; gap: var(--space-1);
+}
+.onyx-orr-row[aria-label="Zoom level"] .onyx-orr-chip { padding: 7px 2px; letter-spacing: 0.02em; text-align: center; }

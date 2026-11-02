@@ -18,6 +18,39 @@ export type SensesSpeedDialProps = {
 
 const MAX_G = 2.5;
 
+/** Line icons in the house stroke, in place of colour emoji. */
+function TierIcon({ id }: { id: SpeedTierId }) {
+  const p = { fill: "none", stroke: "currentColor", strokeWidth: 1.5, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
+  return (
+    <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden>
+      {id === "walk" && (
+        <g {...p}>
+          <circle cx="13" cy="4" r="1.8" />
+          <path d="M13 7 L11 13 L13 17 L12 22 M11 13 L8 21 M12 9 L16 12 M12 9 L8 11" />
+        </g>
+      )}
+      {id === "run" && (
+        <g {...p}>
+          <circle cx="15" cy="4" r="1.8" />
+          <path d="M14 7 L11 12 L15 15 L13 21 M11 12 L6 20 M13 8 L18 11 M13 8 L8 9" />
+        </g>
+      )}
+      {id === "drive" && (
+        <g {...p}>
+          <path d="M3 15 L5 9 Q6 7 8 7 H16 Q18 7 19 9 L21 15 V18 H3 Z M3 13 H21" />
+          <circle cx="7" cy="18" r="1.8" />
+          <circle cx="17" cy="18" r="1.8" />
+        </g>
+      )}
+      {id === "fly" && (
+        <g {...p}>
+          <path d="M12 2 Q13.5 3 13.5 6 V10 L21 14 V16 L13.5 13.5 V18 L16 20 V21.5 L12 20.5 L8 21.5 V20 L10.5 18 V13.5 L3 16 V14 L10.5 10 V6 Q10.5 3 12 2 Z" />
+        </g>
+      )}
+    </svg>
+  );
+}
+
 function clamp01(v: number): number {
   return Math.max(0, Math.min(1, v));
 }
@@ -91,7 +124,7 @@ export function SensesSpeedDial({
               onClick={() => setManualTierId(prev => (prev === t.id ? null : t.id))}
               title={`${t.label} scale · 0–${t.maxKmh} km/h`}
             >
-              <span className="cp-speed-tier-icon" aria-hidden>{t.icon}</span>
+              <span className="cp-speed-tier-icon" aria-hidden><TierIcon id={t.id} /></span>
               <span className="cp-speed-tier-label">{t.label}</span>
             </button>
           );
@@ -179,7 +212,7 @@ export function SensesSpeedDial({
         <span className="cp-speed-dial-value">{display}</span>
         <span className="cp-speed-dial-unit">{usingGps ? "km/h" : "activity"}</span>
         <span className="cp-speed-dial-sub">
-          {activeTier.icon} {activeTier.label} · 0–{activeTier.maxKmh} km/h
+          {activeTier.label} · 0–{activeTier.maxKmh} km/h
           {cadenceSpm != null && cadenceSpm > 0 ? ` · ${Math.round(cadenceSpm)} spm` : ""}
           {headingDeg != null ? ` · ${Math.round(headingDeg)}°` : ""}
           {live ? " · live" : ""}
