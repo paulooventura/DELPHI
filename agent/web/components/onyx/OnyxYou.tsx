@@ -264,9 +264,9 @@ export function OnyxYou({
           <p className="onyx-layer-lead">Your natal chord — private, on this device</p>
 
           <div className="onyx-about-block onyx-you-blurb">
-            Birth date, hour, and place are computed here and stored in this browser. They&apos;re never sent
-            in the clear; an optional account keeps an encrypted copy only your recovery key can open. Pick a
-            city so the chord uses that sky; add your hour for rising / decan math.
+            Your birth date, hour and place stay on this device, and the chord is worked out right here. If you
+            make an account, it keeps a locked copy that only your recovery key can open. Pick the city you were
+            born in so the chord uses that sky, and add your birth hour if you know it.
           </div>
 
           <OnyxAccountCard />
@@ -317,7 +317,7 @@ export function OnyxYou({
                 I know my birth hour
               </span>
               <span className="onyx-form-hint">
-                Optional — shapes rising / decan math. Off uses noon.
+                Optional. It sharpens your rising sign; without it we use noon.
               </span>
             </label>
             {knowsHour && (
@@ -454,10 +454,11 @@ export function OnyxYou({
                   register (without naming the color on the street).
                 </li>
                 <li>
-                  <b>Birth hour</b> — optional; shapes rising / decan math when you know it.
+                  <b>Birth hour</b> — optional; it sharpens your rising sign when you know it.
                 </li>
                 <li>
-                  <b>On-device only</b> — localStorage; birth never leaves this browser.
+                  <b>Stays with you</b> — saved on this device. Only an account you choose to make keeps a
+                  copy, locked with your own key.
                 </li>
               </ul>
             </>

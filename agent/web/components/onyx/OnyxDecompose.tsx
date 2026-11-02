@@ -19,8 +19,8 @@ export function OnyxDecompose({
         <ChamberHeader title="Why this chord" />
         <div className="onyx-overlay">
           <p className="onyx-layer-lead">
-            The chord of this moment is the sum. Here is each voice that built it:
-            provenance intact, nothing invented after the fact.
+            The chord of this moment is the sum. Here is each voice that built it, with where
+            it comes from, and nothing added after the fact.
           </p>
           {provenanceLine && (
             <p className="onyx-provenance" style={{ alignSelf: "flex-start", marginTop: 0 }}>

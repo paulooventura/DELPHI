@@ -17,13 +17,13 @@ export function OnyxAbout() {
               Calendar readings are computed from real astronomical positions to the arcminute.
               Tarot (majors, upright/reversed spreads), Orisha (mérìndílógún cowrie count — not a
               babalawo Ifá reading), I Ching (three-coin hexagrams with changing lines), and Elder
-              Futhark rune casts are genuine cryptographic-random draws. Nothing here predicts the
+              Futhark rune casts are drawn by true chance, like a fair shuffle. Nothing here predicts the
               future — it is offered as a mirror for reflection.
             </p>
             <p style={{ marginTop: 12 }}>
-              The chord of the moment names the standing wave across the whole chorus — the single
-              emergent character — not Leo, Horse, or any other source. Treasury → Why this chord
-              opens the provenance.
+              The chord of the moment is what all the voices make together — one shared character —
+              not Leo, Horse, or any single source. Treasury → Why this chord shows where each voice
+              comes from.
             </p>
           </div>
 

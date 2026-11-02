@@ -239,8 +239,8 @@ export function OnyxCast({
         <ChamberHeader title="Cast" onBack={onBack} />
         <div className="onyx-overlay">
           <p className="onyx-layer-lead">
-            Choose a tradition rooted in its own method — crypto-random, never the sky clock. Off by
-            default.
+            Choose a tradition. Each one draws in its own way, by true chance, not from the sky.
+            Nothing is cast until you ask.
           </p>
 
           {held.length > 0 && !result && !picker && !gesture && (

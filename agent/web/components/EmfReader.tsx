@@ -25,11 +25,11 @@ export function EmfReader({
 
   const methodHint =
     method === "magnetometer-api-unavailable"
-      ? "This browser has no magnetometer API — try Chrome on Android."
+      ? "This phone or browser can't feel magnetic fields. Chrome on an Android phone usually can."
       : method === "magnetometer-denied"
-        ? "Permission denied — allow motion / magnetic sensors for live EMF."
+        ? "Sensor access is off. Allow motion sensors in your settings to see the live field."
         : method === "magnetometer-timeout"
-          ? "Sensor timed out — wake sensors again with the phone still."
+          ? "The sensor didn't answer. Hold the phone still and wake the senses again."
           : method?.replace(/-/g, " ") ?? null;
 
   return (
