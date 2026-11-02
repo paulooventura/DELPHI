@@ -77,6 +77,7 @@ import { createOrreryWhoosh } from "../../lib/orreryWhoosh";
 import type { SatWorkerIn, SatWorkerOut } from "./satWorker";
 import type { MapSat } from "./EarthMap";
 import { API_BASE } from "../../lib/apiBase";
+import { PmPanel } from "./PmDialog";
 
 /** MapLibre and the map layers load only when the world map first opens. */
 const EarthMap = dynamic(() => import("./EarthMap"), { ssr: false });
@@ -2398,8 +2399,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       ) : (
       <>
       <header className="onyx-orr-head">
-        <button type="button" className="onyx-orr-back" onClick={onClose} aria-label="Back to the sky">
-          ‹
+        <button type="button" className="onyx-chamber-back" onClick={onClose} aria-label="Back to the sky">
+          ‹ Aether
         </button>
         <p className="onyx-orr-title">
           Orrery
@@ -2427,16 +2428,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       </header>
 
       {card && !measure.on && !galaxy ? (
-        <section className="onyx-orr-card" aria-label={`Measurements: ${card.title}`}>
-          <header>
-            <div>
-              <h2>{card.title}</h2>
-              <p>{card.sub}</p>
-            </div>
-            <button type="button" className="onyx-orr-card-x" onClick={closeCard} aria-label="Close measurements">
-              ×
-            </button>
-          </header>
+        <PmPanel className="onyx-orr-card" size="s" title={card.title} sub={card.sub} onClose={closeCard} closeLabel="Close measurements">
           <dl>
             {card.rows.map(([k, v]) => (
               <div key={k}>
@@ -2445,22 +2437,19 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               </div>
             ))}
           </dl>
-        </section>
+        </PmPanel>
       ) : null}
 
       {measure.on ? (
-        <section className="onyx-orr-card onyx-orr-measure" aria-label="Measure between two objects" aria-live="polite">
-          <header>
-            <div>
-              <h2>Measure</h2>
-              <p>
-                {!measure.a ? "Tap or find object A" : !measure.b ? "Now tap or find object B" : "Tap again to start over"}
-              </p>
-            </div>
-            <button type="button" className="onyx-orr-card-x" onClick={toggleMeasure} aria-label="Leave Measure">
-              ×
-            </button>
-          </header>
+        <PmPanel
+          className="onyx-orr-card onyx-orr-measure"
+          size="s"
+          live
+          title="Measure"
+          sub={!measure.a ? "Tap or find object A" : !measure.b ? "Now tap or find object B" : "Tap again to start over"}
+          onClose={toggleMeasure}
+          closeLabel="Leave Measure"
+        >
           {measureOut ? (
             <dl>
               <div>
@@ -2483,7 +2472,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
               </div>
             </dl>
           ) : null}
-        </section>
+        </PmPanel>
       ) : null}
 
       <div className="onyx-orr-panel">

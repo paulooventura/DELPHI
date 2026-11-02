@@ -26,6 +26,7 @@ import { CoinTossStage, RuneBagStage, TarotDeckStage } from "./CastGestureStages
 import { CastHowToRead } from "./CastReadingGuide";
 import { howToRead, whatItMeans } from "../../lib/lore/readingGuide";
 import { castFilm, warmCastFilm, warmedCastFilm } from "../../lib/castFilm";
+import { PmPanel } from "./PmDialog";
 
 const RITUAL_FADE_MS = 480;
 /** Longest the black veil waits for a film that is still downloading before it plays anyway. */
@@ -451,11 +452,15 @@ export function OnyxCast({
           )}
 
           {result && (
-            <div className="onyx-cast-result" ref={resultRef}>
-              <p className="onyx-eyebrow">
-                {result.framing.label}
-                {result.spreadLabel ? ` · ${result.spreadLabel}` : ""}
-              </p>
+            <div className="onyx-cast-result-anchor" ref={resultRef}>
+            <PmPanel
+              size="l"
+              className="onyx-cast-panel"
+              title={`${result.framing.label}${result.spreadLabel ? ` · ${result.spreadLabel}` : ""}`}
+              onClose={() => setResult(null)}
+              closeLabel="Let this cast go"
+            >
+            <div className="onyx-cast-result">
               {result.question && (
                 <p className="onyx-cast-question">
                   <span>You asked</span>
@@ -564,6 +569,8 @@ export function OnyxCast({
               <p className="onyx-cast-gem-hint">
                 Green holds it in the moment · yellow draws again · red lets it go
               </p>
+            </div>
+            </PmPanel>
             </div>
           )}
         </div>

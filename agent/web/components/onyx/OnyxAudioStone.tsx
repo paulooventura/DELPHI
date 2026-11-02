@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { pulseHaptic } from "../../lib/haptics";
 
 const REST = 3;
-const QUIET = 37;
+const QUIET = 41;
 const TAP_SLOP = 8;
 
 /** Top-right hex stone: tap or slide to mute cycle sonics + pulse. */
@@ -84,7 +84,8 @@ export function OnyxAudioStone({
       className={`onyx-stone-track${quiet ? " quiet" : ""}`}
       role="switch"
       aria-checked={!quiet}
-      aria-label="Slide the stone to quiet sound and pulse"
+      aria-label={quiet ? "Sound and pulse: off. Slide or tap to turn on" : "Sound and pulse: on. Slide or tap to quiet"}
+      title={quiet ? "Sound and pulse are off" : "Sound and pulse are on"}
       tabIndex={0}
       onPointerDown={e => {
         e.stopPropagation();
@@ -113,8 +114,17 @@ export function OnyxAudioStone({
         }
       }}
     >
-      <span className="onyx-groove-on" />
-      <span className="onyx-groove-off" />
+      <span className="onyx-stone-sign" aria-hidden>
+        <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
+          <path d="M1.5 5 H4 L7.5 2 V12 L4 9 H1.5 Z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round" />
+          {quiet ? (
+            <path d="M10.5 4.5 L15 9.5 M15 4.5 L10.5 9.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" />
+          ) : (
+            <path d="M10 7 H12.5 L14 3.5 L16 10.5 L17.5 7 H20.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round" />
+          )}
+        </svg>
+      </span>
+      <span className="onyx-stone-word" aria-hidden>Sound</span>
       <span
         className="onyx-stone"
         style={{ left: stoneX, transition: dragging.current ? "none" : undefined }}

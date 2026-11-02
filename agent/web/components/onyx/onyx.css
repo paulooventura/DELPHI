@@ -5171,3 +5171,49 @@ html[data-sky="twilight"] .onyx-overlay-close {
   display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); width: 100%; max-width: 420px; gap: var(--space-1);
 }
 .onyx-orr-row[aria-label="Zoom level"] .onyx-orr-chip { padding: 7px 2px; letter-spacing: 0.02em; text-align: center; }
+
+/* Sound + pulse switch: a speaker and pulse sign in the free side of the track (T401). */
+.onyx-stone-track { width: 62px; }
+.onyx-stone-sign {
+  position: absolute; top: 50%; right: 6px; transform: translateY(-50%);
+  display: inline-flex; color: var(--onyx-ink-soft); opacity: 0.85; pointer-events: none;
+  transition: opacity var(--onyx-lift);
+}
+.onyx-stone-track.quiet .onyx-stone-sign { right: auto; left: 6px; opacity: 0.55; }
+.onyx-stone-word { display: none; }
+@media (min-width: 720px) {
+  .onyx-stone-word {
+    display: block; position: absolute; top: calc(100% + 3px); left: 0; right: 0;
+    text-align: center; font-size: var(--type-caption); letter-spacing: 0.08em; color: var(--onyx-ink-soft);
+    pointer-events: none;
+  }
+}
+
+/* Shared panel without a backdrop (Orrery cards, a cast reading). */
+.pm-dialog-head-text { min-width: 0; }
+.pm-dialog-sub { margin: 2px 0 0; text-align: center; font-size: var(--type-caption); letter-spacing: 0.04em; color: #cbbd9f; }
+.pm-panel { animation: none; box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
+.pm-panel.pm-dialog-s .pm-dialog-head { grid-template-columns: 28px 1fr 28px; padding: var(--space-2); }
+.pm-panel.pm-dialog-s .pm-dialog-close { width: 28px; height: 28px; }
+.pm-panel.onyx-orr-card {
+  left: 0; right: 0; margin: 0 auto; width: min(300px, calc(100% - 24px));
+  padding: 0; border: 1px solid rgba(232, 214, 176, 0.28); background: rgba(13, 11, 16, 0.94);
+}
+.pm-panel.onyx-orr-measure { border-color: rgba(125, 255, 200, 0.4); }
+.pm-panel.onyx-orr-card .pm-dialog-body { padding: var(--space-2) var(--space-3) var(--space-3); overflow-y: auto; font-size: var(--type-caption); }
+.onyx-cast-result-anchor { margin-top: var(--space-5); scroll-margin-top: 72px; }
+.pm-panel.onyx-cast-panel { width: 100%; margin: 0 auto; }
+.pm-panel.onyx-cast-panel .onyx-cast-result { margin-top: 0; padding-top: 0; }
+
+/* Orrery header: the same back stone, centred title and right cluster as every chamber. */
+.onyx-orr-head { grid-template-columns: 1fr auto 1fr; gap: var(--space-2); padding-left: 18px; }
+.onyx-orr-head .onyx-chamber-back {
+  justify-self: start; width: max-content; height: 32px; padding: 0 12px;
+  display: inline-flex; align-items: center;
+  font-family: inherit; font-size: var(--type-caption); letter-spacing: 0.08em; cursor: pointer;
+}
+.onyx-orr-head .onyx-orr-title {
+  max-width: 46vw; text-align: center; font-family: var(--font-ui); font-weight: 600;
+  letter-spacing: 0.32em; color: var(--onyx-ink-soft); text-shadow: var(--word-outline);
+}
+.onyx-orr-head .onyx-orr-scale { justify-self: end; }

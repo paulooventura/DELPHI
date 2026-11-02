@@ -102,6 +102,7 @@ export function OnyxOrrery({
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
+  const headRef = useRef<HTMLDivElement>(null);
   const visibleRef = useRef(true);
   const hapticsRef = useRef(hapticsEnabled);
   hapticsRef.current = hapticsEnabled;
@@ -133,6 +134,22 @@ export function OnyxOrrery({
     dragged: boolean;
     mode: "none" | "pan" | "scrub";
   } | null>(null);
+
+  /** The lane stack starts below the controls and natal triad, so nothing sits on top of it. */
+  useEffect(() => {
+    const head = headRef.current;
+    const wrap = wrapRef.current;
+    if (!head || !wrap) return;
+    const fit = () => {
+      const device = wrap.parentElement;
+      const cap = device ? device.clientHeight * 0.48 : 360;
+      wrap.style.marginTop = `${Math.round(Math.min(cap, head.offsetTop + head.offsetHeight + 6))}px`;
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(head);
+    return () => ro.disconnect();
+  }, []);
 
   useEffect(() => {
     frozenRef.current = frozen;
@@ -199,6 +216,7 @@ export function OnyxOrrery({
     resize();
     const ro = new ResizeObserver(resize);
     ro.observe(wrap);
+    const labelFamily = getComputedStyle(canvas).fontFamily || "sans-serif";
 
     const draw = (ts: number) => {
       if (!visibleRef.current) {
@@ -298,14 +316,11 @@ export function OnyxOrrery({
           const cell = lane.cells[lane.index] ?? lane.cells[underLine] ?? lane.cells[0];
           drawGemCell(ctx, gx + 2, y0 + gemPadY, cellW - 4, gemH, lane.speedT, true, false);
           if (labelOk) {
-            ctx.fillStyle = "rgba(255,255,255,0.94)";
-            ctx.font = `600 ${Math.min(10, Math.max(7, laneH - 3))}px ui-sans-serif, system-ui, sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            const label = short(cell?.label || cell?.glyph || lane.activeLabel || lane.name, cellW > 70 ? 12 : 8);
-            ctx.fillText(label, nowX, y0 + laneH / 2 + 1);
+            ctx.font = `600 ${Math.min(12, Math.max(8, laneH - 5))}px ${labelFamily}`;
+            drawNowLabel(ctx, cell?.label || cell?.glyph || lane.activeLabel || lane.name, nowX, y0 + gemPadY, gemH, cellW - 4, w, lane.speedT);
           }
         } else {
+          let nowLabel: { text: string; cx: number } | null = null;
           for (let k = first; k <= last; k++) {
             const ci = mod(k, n);
             const x = startX + k * cellW;
@@ -320,14 +335,11 @@ export function OnyxOrrery({
 
             drawGemCell(ctx, x + 2, y0 + gemPadY, cellW - 4, gemH, lane.speedT, atNow, false);
 
-            if (atNow && labelOk) {
-              ctx.fillStyle = "rgba(255,255,255,0.94)";
-              ctx.font = `600 ${Math.min(10, Math.max(7, laneH - 3))}px ui-sans-serif, system-ui, sans-serif`;
-              ctx.textAlign = "center";
-              ctx.textBaseline = "middle";
-              const label = short(cell.label || cell.glyph || lane.name, cellW > 70 ? 12 : 8);
-              ctx.fillText(label, x + cellW / 2, y0 + laneH / 2 + 1);
-            }
+            if (atNow && labelOk) nowLabel = { text: cell.label || cell.glyph || lane.name, cx: x + cellW / 2 };
+          }
+          if (nowLabel) {
+            ctx.font = `600 ${Math.min(12, Math.max(8, laneH - 5))}px ${labelFamily}`;
+            drawNowLabel(ctx, nowLabel.text, nowLabel.cx, y0 + gemPadY, gemH, cellW - 4, w, lane.speedT);
           }
         }
 
@@ -489,7 +501,7 @@ export function OnyxOrrery({
       >
         <OnyxHeliodromeFilm />
         <ChamberHeader title="Heliodrome" onBack={onBack} />
-        <div className="onyx-orrery-header">
+        <div className="onyx-orrery-header" ref={headRef}>
           <div className="onyx-orrery-mast">
             <div className="onyx-orrery-title" aria-hidden />
             <div className="onyx-orrery-controls">
@@ -726,11 +738,6 @@ function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
-function short(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return `${s.slice(0, max - 1)}…`;
-}
-
 function gemCutPath(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -749,6 +756,35 @@ function gemCutPath(
   ctx.lineTo(x, y + h - cut);
   ctx.lineTo(x, y + cut);
   ctx.closePath();
+}
+
+/** The live cell's name, never clipped: when it is wider than its cell, a plate grows around it (up to the canvas edge). */
+function drawNowLabel(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  cx: number,
+  y: number,
+  h: number,
+  cellW: number,
+  canvasW: number,
+  speedT: number,
+) {
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  const maxW = canvasW - 24;
+  let label = text;
+  while (label.length > 4 && ctx.measureText(label).width + 16 > maxW) label = `${label.slice(0, -2)}…`;
+  const need = ctx.measureText(label).width + 16;
+  if (need > cellW) {
+    const pw = Math.min(need, maxW);
+    const px = Math.max(12, Math.min(canvasW - 12 - pw, cx - pw / 2));
+    drawGemCell(ctx, px, y, pw, h, speedT, true, false);
+    ctx.fillStyle = "rgba(255,255,255,0.96)";
+    ctx.fillText(label, px + pw / 2, y + h / 2 + 1);
+    return;
+  }
+  ctx.fillStyle = "rgba(255,255,255,0.94)";
+  ctx.fillText(label, cx, y + h / 2 + 1);
 }
 
 function drawGemCell(

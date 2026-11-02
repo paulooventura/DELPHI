@@ -221,7 +221,7 @@ export function NatalTriadPanel({
         </ul>
       ) : (
         <p className="onyx-natal-triad-empty">
-          Save birth date, time, and place to read Sun · Moon · Rising.
+          {compact ? "Add your birth to read Sun · Moon · Rising." : "Save birth date, time, and place to read Sun · Moon · Rising."}
         </p>
       )}
 
