@@ -1,0 +1,3 @@
+Bodoni Moda, Manrope and Geist Mono (latin subsets, self-hosted for /portal, /studies, /tonal)
+are licensed under the SIL Open Font License 1.1: https://openfontlicense.org
+Bodoni Moda (c) Owen Earl / indestructible type*. Manrope (c) Mikhail Sharanda. Geist Mono (c) Vercel.

@@ -78,6 +78,28 @@
   --breathe:          1400ms cubic-bezier(0.40, 0, 0.20, 1); /* ambient       */
   --lift:             280ms cubic-bezier(0.20, 0, 0.10, 1);  /* a tap response */
 
+  /* ---- Type — two families, one scale ---------------------------------- */
+  /* Bodoni Moda for display, Manrope for text, Geist Mono only where numbers
+     must align. Nothing below --type-caption except compass ticks (SVG units). */
+  --font-display:     var(--font-fashion), "Bodoni Moda", serif;
+  --font-text:        var(--font-clean), "Manrope", sans-serif;
+  --font-num:         var(--font-geist-mono), "Geist Mono", monospace;
+  --type-caption:     12px;   /* spaced-caps labels, captions               */
+  --type-small:       14px;   /* secondary body                             */
+  --type-body:        16px;
+  --type-title:       20px;
+  --type-heading:     26px;
+  --type-display:     34px;
+
+  /* ---- Spacing ----------------------------------------------------------- */
+  --space-1:          4px;
+  --space-2:          8px;
+  --space-3:          12px;
+  --space-4:          16px;   /* panel padding on phone                     */
+  --space-5:          24px;   /* panel padding on desktop                   */
+  --space-6:          32px;
+  --space-7:          48px;
+
   /* ---- Geometry — machined tolerance ------------------------------------ */
   --cut:              22px;   /* panel corner — a cut edge, consistent        */
   --cut-tight:        14px;   /* inner elements                               */

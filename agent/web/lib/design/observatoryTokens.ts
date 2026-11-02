@@ -75,8 +75,8 @@ export const OBS = {
     lift: "280ms cubic-bezier(0.20, 0, 0.10, 1)",
   },
   typography: {
-    micro: 'var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif)',
-    display: 'var(--font-cinzel, Cinzel, Georgia, "Times New Roman", serif)',
+    micro: "var(--font-display)",
+    display: "var(--font-display)",
   },
 } as const;
 

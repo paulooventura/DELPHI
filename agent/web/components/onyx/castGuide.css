@@ -45,7 +45,7 @@
   display: none;
 }
 .onyx-cast-howto-label {
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -58,12 +58,12 @@
 }
 .onyx-cast-howto-title {
   font-family: var(--font-voice);
-  font-size: 15px;
+  font-size: var(--type-body);
 }
 .onyx-cast-howto ol {
   margin: 8px 0 2px;
   padding-left: 1.2em;
-  font-size: 14px;
+  font-size: var(--type-small);
   line-height: 1.45;
 }
 .onyx-cast-howto li + li {
@@ -73,7 +73,7 @@
 .onyx-cast-meaning {
   margin: 10px 0 0;
   padding: 0 8px 16px;
-  font-size: 13px;
+  font-size: var(--type-small);
   line-height: 1.45;
   letter-spacing: normal;
   text-transform: none;
@@ -84,14 +84,14 @@
   max-width: 30rem;
   margin-left: auto;
   margin-right: auto;
-  font-size: 14px;
+  font-size: var(--type-small);
 }
 
 .onyx-cast-together {
   max-width: 34rem;
   margin: 6px 0 8px;
   font-family: var(--font-voice);
-  font-size: 15px;
+  font-size: var(--type-body);
   line-height: 1.45;
   color: var(--onyx-ink);
   text-align: center;
@@ -101,7 +101,7 @@
   margin: 0 0 12px;
   font-family: var(--font-voice);
   font-style: italic;
-  font-size: 14px;
+  font-size: var(--type-small);
   line-height: 1.45;
   color: var(--onyx-ink-quiet);
   text-align: center;

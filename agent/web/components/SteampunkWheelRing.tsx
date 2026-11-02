@@ -114,7 +114,7 @@ function DialTicks({
           dominantBaseline="middle"
           fontSize={Math.max(5.5, r * 0.1)}
           fill="#c9b070"
-          fontFamily="Georgia, 'Times New Roman', serif"
+          style={{ fontFamily: "var(--font-display)" }}
           fontWeight={700}
         >
           {label}

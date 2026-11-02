@@ -306,7 +306,7 @@ function TarotMajorArt({
           textAnchor="middle"
           fill={gold}
           fontSize={7}
-          fontFamily="Georgia, 'Times New Roman', serif"
+          style={{ fontFamily: "var(--font-display)" }}
           letterSpacing="0.14em"
         >
           {numeral}
@@ -350,7 +350,7 @@ function SuitGlyph({
       textAnchor="middle"
       fill={gold}
       fontSize={8}
-      fontFamily="Georgia, 'Times New Roman', serif"
+      style={{ fontFamily: "var(--font-display)" }}
       letterSpacing="0.1em"
     >
       {rank.toUpperCase()}

@@ -24,8 +24,8 @@
   --onyx-lift: 280ms cubic-bezier(0.2, 0, 0.1, 1);
   --onyx-settle: 660ms cubic-bezier(0.16, 1, 0.3, 1);
   --onyx-deep-settle: 980ms cubic-bezier(0.22, 1, 0.28, 1);
-  --font-voice: var(--font-fashion), Didot, "Bodoni MT", Georgia, serif;
-  --font-ui: var(--font-clean), "Avenir Next", "Helvetica Neue", system-ui, sans-serif;
+  --font-voice: var(--font-display);
+  --font-ui: var(--font-text);
 
   position: fixed;
   inset: 0;
@@ -247,7 +247,7 @@ html.chorus-embed .onyx-root {
   width: max-content;
   max-width: 90%;
   text-align: center;
-  font-size: clamp(12px, 3.4vw, 15px);
+  font-size: clamp(var(--type-caption), 3.4vw, var(--type-body));
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: #f8f2ff;
@@ -292,7 +292,7 @@ html.chorus-embed .onyx-root {
   left: 0;
   right: 0;
   text-align: center;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--onyx-ink-faint);
@@ -390,8 +390,8 @@ html.chorus-embed .onyx-root {
   z-index: 45;
   margin: 0;
   text-align: center;
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  font-size: 13px;
+  font-family: var(--font-text);
+  font-size: var(--type-small);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(255, 248, 240, 0.78);
@@ -407,7 +407,7 @@ html.chorus-embed .onyx-root {
 }
 
 .onyx-splash-skip {
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.28em;
   color: rgba(255, 248, 240, 0.42);
 }
@@ -431,8 +431,8 @@ html.chorus-embed .onyx-root {
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.42);
   color: rgba(255, 248, 240, 0.92);
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  font-size: 14px;
+  font-family: var(--font-text);
+  font-size: var(--type-small);
   letter-spacing: 0.28em;
   text-transform: uppercase;
   text-shadow: 0 1px 12px rgba(0, 0, 0, 0.6);
@@ -467,8 +467,8 @@ html.chorus-embed .onyx-root {
   border-radius: 14px;
   background: #0d0b10;
   color: #f3ede2;
-  font-family: var(--font-body, system-ui, sans-serif);
-  font-size: 16px;
+  font-family: var(--font-text);
+  font-size: var(--type-body);
   line-height: 1.5;
   text-align: left;
   box-shadow: 0 18px 48px rgba(0, 0, 0, 0.55);
@@ -490,28 +490,28 @@ html.chorus-embed .onyx-root {
   border-bottom: 1px solid rgba(232, 214, 176, 0.18);
 }
 .onyx-pilgrim-intro-title {
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  font-size: 18px;
+  font-family: var(--font-text);
+  font-size: var(--type-title);
   color: #f7e9c8;
   margin-bottom: 4px !important;
 }
 .onyx-pilgrim-count {
-  font-size: 13px;
+  font-size: var(--type-small);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #cbbd9f;
 }
 .onyx-pilgrim-title {
   margin: 4px 0 10px;
-  font-family: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
-  font-size: 22px;
+  font-family: var(--font-text);
+  font-size: var(--type-title);
   font-weight: 500;
   line-height: 1.25;
   color: #fbf3e2;
 }
 .onyx-pilgrim-label {
   margin-top: 10px !important;
-  font-size: 13px;
+  font-size: var(--type-small);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #d9c38f;
@@ -532,7 +532,7 @@ html.chorus-embed .onyx-root {
   border-radius: 999px;
   background: #4a3a1c;
   font: inherit;
-  font-size: 16px;
+  font-size: var(--type-body);
   font-weight: 600;
   letter-spacing: 0.04em;
   cursor: pointer;
@@ -544,7 +544,7 @@ html.chorus-embed .onyx-root {
   background: transparent;
   color: #d8cfbf;
   font: inherit;
-  font-size: 15px;
+  font-size: var(--type-body);
   text-decoration: underline;
   text-underline-offset: 3px;
   cursor: pointer;
@@ -603,7 +603,7 @@ html.chorus-embed .onyx-root {
 .onyx-splash-wordmark {
   margin: 0;
   font-family: var(--font-voice); font-optical-sizing: auto;
-  font-size: clamp(26px, 7.2vw, 34px); font-weight: 400; letter-spacing: 0.14em;
+  font-size: clamp(var(--type-heading), 7.2vw, var(--type-display)); font-weight: 400; letter-spacing: 0.14em;
   color: var(--onyx-ink-bright); padding-left: 0.14em;
   line-height: 1.05;
 }
@@ -611,7 +611,7 @@ html.chorus-embed .onyx-root {
   margin: 0;
   font-family: var(--font-voice); font-optical-sizing: auto;
   font-style: italic;
-  font-size: 15px; font-weight: 400; letter-spacing: 0.14em;
+  font-size: var(--type-body); font-weight: 400; letter-spacing: 0.14em;
   color: var(--onyx-ink-soft); padding-left: 0.14em;
   line-height: 1.2;
   opacity: 0.88;
@@ -886,13 +886,13 @@ html.chorus-embed .onyx-root {
   position: absolute; top: 18px; left: 18px; z-index: 40;
   width: 34px; height: 34px; padding: 0; border-radius: 50%;
   border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.06);
-  color: var(--onyx-ink-quiet); font-size: 15px; line-height: 1; cursor: pointer;
+  color: var(--onyx-ink-quiet); font-size: var(--type-body); line-height: 1; cursor: pointer;
   transition: color var(--onyx-lift), border-color var(--onyx-lift);
 }
 .onyx-treasury-door:hover,
 .onyx-treasury-door:focus-visible { color: var(--onyx-ink); border-color: var(--onyx-edge-bright); outline: none; }
 .onyx-treasury-lede {
-  font-size: 12px; color: var(--onyx-ink-quiet); margin: -12px 0 18px; letter-spacing: 0.02em;
+  font-size: var(--type-caption); color: var(--onyx-ink-quiet); margin: -12px 0 18px; letter-spacing: 0.02em;
 }
 .onyx-phase-moon:focus-visible {
   outline: 1px solid var(--onyx-edge-bright);
@@ -936,13 +936,13 @@ html.chorus-embed .onyx-root {
 
 .onyx-wordmark {
   position: absolute; top: 56px; left: 0; right: 0; text-align: center; z-index: 8;
-  font-size: 10px; letter-spacing: 0.22em; color: var(--onyx-ink-quiet); font-weight: 300;
+  font-size: var(--type-caption); letter-spacing: 0.22em; color: var(--onyx-ink-quiet); font-weight: 300;
   transition: opacity var(--onyx-settle);
 }
 .onyx-device[data-depth="2"] .onyx-wordmark { opacity: 0.35; }
 .onyx-clock {
   position: absolute; top: 78px; left: 0; right: 0; text-align: center; z-index: 8;
-  font-size: 11px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
+  font-size: var(--type-caption); letter-spacing: 0.14em; color: var(--onyx-ink-faint);
   font-variant-numeric: tabular-nums; transition: opacity var(--onyx-settle);
 }
 .onyx-device[data-depth="1"] .onyx-clock,
@@ -1021,11 +1021,11 @@ html.chorus-embed .onyx-root {
 }
 .onyx-yy-street-meta button { pointer-events: auto; }
 .onyx-eyebrow {
-  font-size: 10px; letter-spacing: 0.28em; color: var(--onyx-ink-quiet);
+  font-size: var(--type-caption); letter-spacing: 0.28em; color: var(--onyx-ink-quiet);
   font-weight: 300; margin-bottom: 20px;
 }
 .onyx-p0 .big {
-  font-family: var(--font-voice); font-size: 26px; font-weight: 300;
+  font-family: var(--font-voice); font-size: var(--type-heading); font-weight: 300;
   color: var(--onyx-ink); line-height: 1.5;
 }
 .onyx-yy-phrase-btn {
@@ -1051,10 +1051,10 @@ html.chorus-embed .onyx-root {
 .onyx-yy-phrase .big {
   margin: 0 auto;
   width: 100%;
-  font-family: var(--font-fashion), Didot, "Bodoni MT", "Bodoni Moda", Georgia, serif;
+  font-family: var(--font-display);
   font-weight: 400;
   font-style: italic;
-  font-size: clamp(20px, 5.2vmin, 32px);
+  font-size: clamp(var(--type-title), 5.2vmin, var(--type-display));
   line-height: 1.28;
   letter-spacing: 0.012em;
   text-align: center;
@@ -1071,18 +1071,18 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-yy-math {
   margin-top: 12px !important;
-  font-family: ui-monospace, "SF Mono", Menlo, monospace;
-  font-size: 10px !important;
+  font-family: var(--font-num);
+  font-size: var(--type-caption) !important;
   letter-spacing: 0.12em;
   color: var(--onyx-ink-quiet) !important;
   text-transform: uppercase;
 }
 .onyx-p0 .big em { font-style: italic; color: var(--onyx-ink-bright); font-weight: 400; }
-.onyx-p0 .sub { font-size: 12px; color: var(--onyx-ink-soft); margin-top: 18px; letter-spacing: 0.03em; }
+.onyx-p0 .sub { font-size: var(--type-caption); color: var(--onyx-ink-soft); margin-top: 18px; letter-spacing: 0.03em; }
 .onyx-provenance {
   margin: 12px 0 0;
   max-width: 22rem;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   line-height: 1.45;
   color: var(--onyx-ink-quiet);
@@ -1091,18 +1091,18 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   padding: 110px 30px 40px; justify-content: flex-start; gap: 20px; overflow-y: auto;
 }
 .onyx-p2 .now {
-  font-family: var(--font-voice); font-size: 22px; font-weight: 400; line-height: 1.42;
+  font-family: var(--font-voice); font-size: var(--type-title); font-weight: 400; line-height: 1.42;
   color: var(--onyx-ink-bright); text-align: left; width: 100%;
 }
 .onyx-land-ack {
-  font-size: 12px; letter-spacing: 0.02em; line-height: 1.45;
+  font-size: var(--type-caption); letter-spacing: 0.02em; line-height: 1.45;
   color: var(--onyx-ink-soft); margin: 0 0 12px; text-align: left;
 }
 .onyx-land-ack a {
   color: var(--onyx-core); text-decoration: none; border-bottom: 0.5px solid var(--onyx-edge);
 }
 .onyx-land-cal {
-  font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+  font-size: var(--type-caption); letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--onyx-ink-quiet); margin: 0 0 10px; text-align: left;
 }
 .onyx-cast-glyph {
@@ -1110,7 +1110,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   display: flex; align-items: center; justify-content: center;
   border: 0.5px solid var(--onyx-edge); border-radius: 2px;
   background: linear-gradient(160deg, rgba(140,124,255,0.08), transparent 70%);
-  color: var(--onyx-ink-bright); font-size: 28px; font-weight: 300;
+  color: var(--onyx-ink-bright); font-size: var(--type-heading); font-weight: 300;
   letter-spacing: 0.04em;
 }
 .onyx-seam { width: 100%; height: 0.5px; background: var(--onyx-edge-faint); border: none; }
@@ -1118,16 +1118,16 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-row {
   display: flex; justify-content: space-between; align-items: center; width: 100%;
   padding: 16px 0; background: none; border: none; border-bottom: 0.5px solid var(--onyx-edge-faint);
-  color: var(--onyx-ink); font-family: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  color: var(--onyx-ink); font-family: inherit; font-size: var(--type-small); text-align: left; cursor: pointer;
   transition: padding-left var(--onyx-lift), color var(--onyx-lift);
 }
 .onyx-row:active { padding-left: 7px; color: var(--onyx-ink-bright); }
-.onyx-row-r { font-size: 11px; color: var(--onyx-ink-quiet); }
+.onyx-row-r { font-size: var(--type-caption); color: var(--onyx-ink-quiet); }
 .onyx-rx { max-height: 0; overflow: hidden; transition: max-height var(--onyx-settle); width: 100%; }
 .onyx-rx.open { max-height: 280px; }
 .onyx-rx-in { padding: 2px 0 16px; display: flex; flex-direction: column; gap: 10px; }
-.onyx-cl { display: flex; justify-content: space-between; font-size: 13px; align-items: center; gap: 10px; }
-.onyx-cl .sys { color: var(--onyx-ink-quiet); font-size: 11px; flex-shrink: 0; }
+.onyx-cl { display: flex; justify-content: space-between; font-size: var(--type-small); align-items: center; gap: 10px; }
+.onyx-cl .sys { color: var(--onyx-ink-quiet); font-size: var(--type-caption); flex-shrink: 0; }
 .onyx-mk {
   display: inline-block; width: 20px; height: 0; vertical-align: middle; margin-right: 9px;
 }
@@ -1135,7 +1135,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-mk-conv { border-top: 1px dashed var(--onyx-deep); }
 .onyx-mk-interp { border-top: 1px dotted var(--onyx-edge); }
 .onyx-prov {
-  width: 100%; font-size: 10px; color: var(--onyx-ink-quiet); line-height: 1.6; margin-top: 6px;
+  width: 100%; font-size: var(--type-caption); color: var(--onyx-ink-quiet); line-height: 1.6; margin-top: 6px;
 }
 .onyx-prov b { color: var(--onyx-light); font-weight: 400; }
 
@@ -1146,15 +1146,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 @keyframes onyx-turn { to { transform: rotate(360deg); } }
 .onyx-p3 .te {
-  font-size: 10px; letter-spacing: 0.3em; color: var(--onyx-ink-quiet);
+  font-size: var(--type-caption); letter-spacing: 0.3em; color: var(--onyx-ink-quiet);
   margin-bottom: 22px; font-weight: 300;
 }
 .onyx-p3 .tone {
-  font-family: var(--font-voice); font-size: 29px; font-weight: 400; font-style: italic;
+  font-family: var(--font-voice); font-size: var(--type-heading); font-weight: 400; font-style: italic;
   color: var(--onyx-ink-bright); line-height: 1.4;
 }
 .onyx-p3 .ret {
-  font-size: 13px; color: var(--onyx-ink-soft); margin-top: 26px;
+  font-size: var(--type-small); color: var(--onyx-ink-soft); margin-top: 26px;
   line-height: 1.95; letter-spacing: 0.02em;
 }
 .onyx-p3 .ret b { color: var(--onyx-core); font-weight: 400; }
@@ -1429,7 +1429,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   pointer-events: auto;
 }
 .onyx-yy-dirs {
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   z-index: 4;
@@ -1499,15 +1499,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-phrase-why-line {
   margin: 0 8px 10px;
-  font-family: var(--font-fashion, ui-serif, serif);
+  font-family: var(--font-display);
   font-style: italic;
-  font-size: 18px;
+  font-size: var(--type-title);
   line-height: 1.35;
   color: var(--onyx-ink-bright);
 }
 .onyx-phrase-why-meta {
   margin: 0 8px 12px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -1517,13 +1517,13 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   display: flex;
   justify-content: space-between;
   gap: 12px;
-  font-size: 13px;
+  font-size: var(--type-small);
   color: var(--onyx-ink-soft);
 }
 .onyx-phrase-why-row span {
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-quiet);
 }
 .onyx-phrase-why-voices {
@@ -1539,7 +1539,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   gap: 2px;
   padding: 8px 0;
   border-top: 0.5px solid rgba(255,255,255,0.08);
-  font-size: 13px;
+  font-size: var(--type-small);
   color: var(--onyx-ink-soft);
 }
 .onyx-phrase-why-voices b {
@@ -1548,7 +1548,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-share-kicker {
   margin: 0 8px 10px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -1570,7 +1570,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   background: transparent;
   color: var(--onyx-ink-bright);
   font-family: inherit;
-  font-size: 16px;
+  font-size: var(--type-body);
   text-align: left;
   cursor: pointer;
 }
@@ -1600,7 +1600,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-distill-lede {
   margin: 0 8px 14px;
-  font-size: 13px;
+  font-size: var(--type-small);
   line-height: 1.45;
   color: var(--onyx-ink-soft);
 }
@@ -1637,11 +1637,11 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   background: rgba(138, 123, 255, 0.12);
 }
 .onyx-distill-pick-name {
-  font-size: 16px;
+  font-size: var(--type-body);
   color: var(--onyx-ink-bright);
 }
 .onyx-distill-pick-feel {
-  font-size: 12px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-quiet);
   letter-spacing: 0.02em;
 }
@@ -1656,7 +1656,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-distill-note {
   margin: 14px 8px 0;
-  font-size: 12px;
+  font-size: var(--type-caption);
   line-height: 1.4;
   color: var(--onyx-ink-quiet);
 }
@@ -1760,8 +1760,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-account-body .onyx-primary-btn,
 .onyx-account-body .onyx-ghost-btn { align-self: flex-start; }
 .onyx-account-key {
-  font-family: var(--font-geist-mono, ui-monospace, monospace);
-  font-size: 15px;
+  font-family: var(--font-num);
+  font-size: var(--type-body);
   letter-spacing: 0.08em;
   line-height: 1.7;
   color: var(--onyx-ink);
@@ -1773,11 +1773,11 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-account-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .onyx-account-check { margin: 4px 0; }
-.onyx-account-msg { font-size: 12px; color: var(--onyx-ink-soft); margin: 0; }
+.onyx-account-msg { font-size: var(--type-caption); color: var(--onyx-ink-soft); margin: 0; }
 .onyx-account-danger { margin-top: 8px; display: flex; flex-direction: column; gap: 10px; opacity: 0.85; }
 .onyx-device[data-depth="2"] .onyx-compass-wrap { opacity: 0; pointer-events: none; }
 .onyx-chint {
-  font-size: 10px; letter-spacing: 0.08em; color: var(--onyx-ink-faint);
+  font-size: var(--type-caption); letter-spacing: 0.08em; color: var(--onyx-ink-faint);
   transition: opacity var(--onyx-lift); min-height: 1em;
 }
 .onyx-compass {
@@ -1824,8 +1824,8 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   position: absolute;
   inset: 0;
   pointer-events: none;
-  font-size: 9px;
-  letter-spacing: 0.16em;
+  font-size: var(--type-caption);
+  letter-spacing: 0.1em;
   color: var(--onyx-ink-faint);
   text-transform: lowercase;
 }
@@ -1862,7 +1862,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-compass-dirs .d-right.on { transform: translateY(-50%) translateX(2px); }
 .onyx-descend {
   position: absolute; bottom: 18px; left: 0; right: 0; z-index: 8; text-align: center;
-  font-size: 10px; letter-spacing: 0.14em; color: var(--onyx-ink-faint);
+  font-size: var(--type-caption); letter-spacing: 0.14em; color: var(--onyx-ink-faint);
   transition: opacity var(--onyx-settle); min-height: 1em;
 }
 .onyx-device[data-depth="2"] .onyx-descend { opacity: 0; }
@@ -1913,7 +1913,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   background: rgba(8, 7, 12, 0.55);
   color: var(--onyx-ink-soft);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.1em;
   cursor: pointer;
   backdrop-filter: blur(8px);
@@ -1952,14 +1952,14 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-aulos-title {
   margin: 0 8px 4px;
-  font-family: var(--font-fashion, ui-serif, Georgia, serif);
-  font-size: 22px;
+  font-family: var(--font-display);
+  font-size: var(--type-title);
   letter-spacing: 0.04em;
   color: var(--onyx-ink-bright);
 }
 .onyx-aulos-status {
   margin: 0 8px 12px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -1977,15 +1977,15 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-aulos-sec-label {
   margin: 0 0 6px;
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: rgba(200, 170, 90, 0.7);
 }
 .onyx-aulos-line {
   margin: 0;
-  font-family: var(--font-fashion, ui-serif, Georgia, serif);
-  font-size: 15px;
+  font-family: var(--font-display);
+  font-size: var(--type-body);
   line-height: 1.45;
   color: var(--onyx-ink-soft);
 }
@@ -2066,7 +2066,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-sky-device .cp-sky-object-panel-lock {
   min-height: 72px;
-  font-size: 1.15rem;
+  font-size: var(--type-title);
   letter-spacing: 0.18em;
 }
 .onyx-sky-device .onyx-reticle {
@@ -2104,7 +2104,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-sky-lock-hold-copy {
   margin: 14px 0 0;
-  font-size: 13px;
+  font-size: var(--type-small);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(232, 255, 244, 0.88);
@@ -2118,7 +2118,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   padding: 10px 22px;
   color: var(--onyx-ink-soft);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2186,10 +2186,10 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-obj.lit .label { opacity: 1; }
 .onyx-obj .label .nm {
-  font-family: var(--font-voice); font-size: 16px; font-weight: 500;
+  font-family: var(--font-voice); font-size: var(--type-body); font-weight: 500;
   color: var(--onyx-ink-bright); letter-spacing: 0.01em;
 }
-.onyx-obj .label .dt { font-size: 10px; color: var(--onyx-ink-soft); margin-top: 3px; letter-spacing: 0.03em; }
+.onyx-obj .label .dt { font-size: var(--type-caption); color: var(--onyx-ink-soft); margin-top: 3px; letter-spacing: 0.03em; }
 
 .onyx-reticle {
   position: absolute; left: 50%; top: 42%; transform: translate(-50%, -50%);
@@ -2214,7 +2214,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 }
 .onyx-sky-coords {
   position: absolute; top: 58px; left: 18px; right: 18px; z-index: 8;
-  display: flex; justify-content: space-between; gap: 10px; font-size: 9px;
+  display: flex; justify-content: space-between; gap: 10px; font-size: var(--type-caption);
   letter-spacing: 0.1em; color: var(--onyx-ink-faint);
 }
 .onyx-sky-coords > span:first-child {
@@ -2224,7 +2224,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-sky-coords-warn { color: #e8c48a; }
 .onyx-sky-meta {
   position: absolute; top: 76px; left: 18px; right: 18px; z-index: 8;
-  font-size: 9px; letter-spacing: 0.1em; color: var(--onyx-ink-faint);
+  font-size: var(--type-caption); letter-spacing: 0.1em; color: var(--onyx-ink-faint);
   text-align: left; opacity: 0.9;
 }
 /* Wordmark, coordinates and heading stack below the chamber header (safe area included), never on it. */
@@ -2250,7 +2250,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-sky-align-btn {
   background: rgba(6, 6, 10, 0.45); border: 0.5px solid var(--onyx-edge);
   border-radius: 16px; padding: 7px 12px; color: var(--onyx-ink-soft);
-  font-family: inherit; font-size: 10px; letter-spacing: 0.08em; cursor: pointer;
+  font-family: inherit; font-size: var(--type-caption); letter-spacing: 0.08em; cursor: pointer;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: border-color var(--onyx-lift), color var(--onyx-lift), opacity var(--onyx-lift);
 }
@@ -2274,7 +2274,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   will-change: transform;
 }
 .onyx-tick {
-  width: 44px; text-align: center; flex-shrink: 0; font-size: 11px;
+  width: 44px; text-align: center; flex-shrink: 0; font-size: var(--type-caption);
   letter-spacing: 0.1em; color: var(--onyx-ink-soft);
 }
 .onyx-tick.card { color: var(--onyx-core); font-weight: 500; }
@@ -2289,7 +2289,7 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
 .onyx-filt {
   background: none; border: 0.5px solid var(--onyx-edge); border-radius: 20px;
   padding: 7px 14px; color: var(--onyx-ink-soft); font-family: inherit;
-  font-size: 11px; letter-spacing: 0.04em; cursor: pointer; transition: all var(--onyx-lift);
+  font-size: var(--type-caption); letter-spacing: 0.04em; cursor: pointer; transition: all var(--onyx-lift);
 }
 .onyx-filt.on {
   border-color: var(--onyx-edge-bright); color: var(--onyx-ink-bright);
@@ -2302,51 +2302,51 @@ html[data-sky="twilight"] .onyx-yy-phrase .big {
   transition: transform var(--onyx-settle); display: flex; flex-direction: column; gap: 6px;
 }
 .onyx-sheet.up { transform: translateY(0); }
-.onyx-sheet .stag { font-size: 10px; letter-spacing: 0.24em; color: var(--onyx-ink-quiet); margin-bottom: 8px; }
+.onyx-sheet .stag { font-size: var(--type-caption); letter-spacing: 0.24em; color: var(--onyx-ink-quiet); margin-bottom: 8px; }
 .onyx-sheet .sname {
-  font-family: var(--font-voice); font-size: 28px; font-weight: 500;
+  font-family: var(--font-voice); font-size: var(--type-heading); font-weight: 500;
   color: var(--onyx-ink-bright); margin-bottom: 12px;
 }
 .onyx-sheet .srow {
-  display: flex; justify-content: space-between; font-size: 13px;
+  display: flex; justify-content: space-between; font-size: var(--type-small);
   padding: 10px 0; border-bottom: 0.5px solid var(--onyx-edge-faint);
 }
 .onyx-sheet .sk { color: var(--onyx-ink-quiet); }
 .onyx-sheet .sv { color: var(--onyx-ink); }
-.onyx-sheet .prov { font-size: 10px; color: var(--onyx-ink-quiet); line-height: 1.6; margin-top: 12px; }
+.onyx-sheet .prov { font-size: var(--type-caption); color: var(--onyx-ink-quiet); line-height: 1.6; margin-top: 12px; }
 .onyx-sheet .prov b { color: var(--onyx-light); font-weight: 400; }
 .onyx-sheet .close {
   position: absolute; top: 22px; right: 24px; background: none; border: none;
-  color: var(--onyx-ink-soft); font-size: 19px; cursor: pointer;
+  color: var(--onyx-ink-soft); font-size: var(--type-title); cursor: pointer;
 }
 .onyx-sheet .more {
   margin-top: 16px; align-self: flex-start; background: none;
   border: 0.5px solid var(--onyx-edge-bright); border-radius: 20px;
   padding: 9px 18px; color: var(--onyx-ink-bright); font-family: inherit;
-  font-size: 12px; letter-spacing: 0.04em; cursor: pointer; transition: all var(--onyx-lift);
+  font-size: var(--type-caption); letter-spacing: 0.04em; cursor: pointer; transition: all var(--onyx-lift);
 }
 .onyx-sheet .more:active { background: rgba(120, 108, 200, 0.12); }
 .onyx-sky-hint {
   position: absolute; bottom: 24px; left: 12px; right: 12px; z-index: 8; text-align: center;
-  font-size: 10px; letter-spacing: 0.1em; color: var(--onyx-ink-faint);
+  font-size: var(--type-caption); letter-spacing: 0.1em; color: var(--onyx-ink-faint);
   animation: onyx-ret 6s ease-in-out infinite;
 }
 .onyx-sky-sensor {
   position: absolute; bottom: max(8px, env(safe-area-inset-bottom, 0px)); left: 12px; z-index: 9;
-  margin: 0; font-family: ui-monospace, monospace; font-size: 9px; letter-spacing: 0.04em;
+  margin: 0; font-family: var(--font-num); font-size: var(--type-caption); letter-spacing: 0.04em;
   color: var(--onyx-ink-faint); opacity: 0.85; pointer-events: none;
 }
 .onyx-sky-motion {
   position: absolute; bottom: max(6px, env(safe-area-inset-bottom, 0px)); left: 12px; right: 12px; z-index: 9;
   margin: 0; padding: 2px 0; background: none; border: 0; text-align: center;
-  font: inherit; font-size: 9.5px; letter-spacing: 0.08em; color: var(--onyx-ink-faint); opacity: 0.85;
+  font: inherit; font-size: var(--type-caption); letter-spacing: 0.08em; color: var(--onyx-ink-faint); opacity: 0.85;
 }
 button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline; text-decoration-color: var(--onyx-edge); text-underline-offset: 3px; cursor: pointer; }
 .onyx-sky-back {
   position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); left: 18px; z-index: 10;
   background: rgba(6, 6, 10, 0.35); border: 0.5px solid var(--onyx-edge); border-radius: 16px;
   padding: 6px 12px; color: var(--onyx-ink-soft); font-family: inherit;
-  font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+  font-size: var(--type-caption); letter-spacing: 0.08em; cursor: pointer;
   backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
   transition: border-color var(--onyx-lift), color var(--onyx-lift), background var(--onyx-lift);
 }
@@ -2376,7 +2376,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   position: absolute; top: 18px; left: 18px; right: auto; z-index: 21;
   background: none; border: 0.5px solid var(--onyx-edge-bright); border-radius: 16px;
   padding: 6px 12px; color: var(--onyx-ink-bright); font-family: inherit;
-  font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+  font-size: var(--type-caption); letter-spacing: 0.08em; cursor: pointer;
 }
 .onyx-tools-grid {
   display: grid; gap: 10px; margin-top: 12px;
@@ -2384,27 +2384,27 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-tool-btn {
   background: rgba(120, 108, 200, 0.06); border: 0.5px solid var(--onyx-edge);
   border-radius: 14px; padding: 16px 18px; color: var(--onyx-ink-bright);
-  font-family: inherit; font-size: 14px; text-align: left; cursor: pointer;
+  font-family: inherit; font-size: var(--type-small); text-align: left; cursor: pointer;
 }
-.onyx-tool-btn span { display: block; font-size: 11px; color: var(--onyx-ink-quiet); margin-top: 4px; }
+.onyx-tool-btn span { display: block; font-size: var(--type-caption); color: var(--onyx-ink-quiet); margin-top: 4px; }
 
 /* ── YOU / CAST / ABOUT / DECOMPOSE ─────────────────────────────────────── */
 .onyx-layer-lead {
   font-family: var(--font-voice);
-  font-size: 18px;
+  font-size: var(--type-title);
   line-height: 1.35;
   color: var(--onyx-ink-bright);
   margin: 8px 0 18px;
 }
 .onyx-layer-phrase {
   font-family: var(--font-voice);
-  font-size: 22px;
+  font-size: var(--type-title);
   line-height: 1.3;
   color: var(--onyx-ink-bright);
   margin: 6px 0 10px;
 }
 .onyx-layer-meta {
-  font-size: 12px;
+  font-size: var(--type-caption);
   line-height: 1.45;
   color: var(--onyx-ink-soft);
   margin: 6px 0;
@@ -2422,7 +2422,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -2434,7 +2434,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   text-transform: none;
   color: var(--onyx-ink);
@@ -2446,7 +2446,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   padding: 0;
 }
 .onyx-form-hint {
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   text-transform: none;
   color: var(--onyx-ink-quiet);
@@ -2461,7 +2461,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   padding: 10px 12px;
   color: var(--onyx-ink-bright);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--type-small);
   width: 100%;
   min-width: 0; /* inputs default min-width was clipping Day off the device frame */
   box-sizing: border-box;
@@ -2472,7 +2472,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   border-color: var(--onyx-edge-bright);
   background: rgba(120, 108, 200, 0.1);
 }
-.onyx-form-err { color: #e8a0a0; font-size: 12px; margin: 0 0 8px; }
+.onyx-form-err { color: #e8a0a0; font-size: var(--type-caption); margin: 0 0 8px; }
 .onyx-form-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 8px; }
 
 /* YOU — place typeahead + denser sections */
@@ -2487,7 +2487,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -2505,7 +2505,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   border: 0;
   color: var(--onyx-light);
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.1em;
   text-transform: uppercase;
   cursor: pointer;
@@ -2513,7 +2513,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-place-locked {
   margin: 8px 0 0;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   color: var(--onyx-ink-quiet);
 }
@@ -2529,7 +2529,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-place-idle {
   padding: 12px 14px;
-  font-size: 12px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-quiet);
 }
 .onyx-place-hit {
@@ -2551,12 +2551,12 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-place-hit-name {
   display: block;
-  font-size: 14px;
+  font-size: var(--type-small);
 }
 .onyx-place-hit-meta {
   display: block;
   margin-top: 3px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-quiet);
   letter-spacing: 0.04em;
 }
@@ -2570,14 +2570,14 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-you-chip-label {
   flex: 0 0 100%;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--onyx-ink-faint);
   margin-bottom: 2px;
 }
 .onyx-you-chip {
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   color: var(--onyx-ink-bright);
   background: rgba(140, 124, 255, 0.14);
@@ -2602,7 +2602,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-declare-lead {
   margin: 0 8px 14px;
-  font-size: 13px;
+  font-size: var(--type-small);
   line-height: 1.45;
   color: var(--onyx-ink-soft);
 }
@@ -2612,15 +2612,15 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-declare-phrase {
   margin: 0 8px 10px;
-  font-family: var(--font-fashion, ui-serif, Georgia, serif);
+  font-family: var(--font-display);
   font-style: italic;
-  font-size: 20px;
+  font-size: var(--type-title);
   line-height: 1.35;
   color: var(--onyx-ink-bright);
 }
 .onyx-declare-meta {
   margin: 0 8px 6px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   color: var(--onyx-ink-quiet);
 }
@@ -2637,8 +2637,8 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   padding: 6px 12px;
   border: 0.5px solid rgba(200, 170, 90, 0.35);
   border-radius: 14px;
-  font-family: var(--font-fashion, ui-serif, Georgia, serif);
-  font-size: 14px;
+  font-family: var(--font-display);
+  font-size: var(--type-small);
   letter-spacing: 0.04em;
   color: rgba(230, 210, 150, 0.95);
   background: rgba(40, 32, 18, 0.35);
@@ -2651,7 +2651,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-declare-band-why {
   margin: 0 8px 10px;
-  font-size: 12px;
+  font-size: var(--type-caption);
   line-height: 1.4;
   color: var(--onyx-ink-quiet);
 }
@@ -2685,13 +2685,13 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   margin-bottom: 8px;
 }
 .onyx-declare-band-label {
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.18em;
   text-transform: uppercase;
   color: var(--onyx-ink);
 }
 .onyx-declare-band-feel {
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   color: var(--onyx-ink-quiet);
 }
@@ -2702,7 +2702,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-declare-empty {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-faint);
 }
 .onyx-declare-voice-list {
@@ -2716,7 +2716,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   padding: 8px 14px;
   color: var(--onyx-ink-bright);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   cursor: pointer;
 }
@@ -2727,7 +2727,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   padding: 8px 14px;
   color: var(--onyx-ink-soft);
   font-family: inherit;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   cursor: pointer;
 }
@@ -2739,7 +2739,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   margin: 4px 0 8px;
   color: var(--onyx-light);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.1em;
   cursor: pointer;
 }
@@ -2759,7 +2759,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-cast-frame {
   font-family: var(--font-voice);
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--onyx-ink);
   margin: 4px 0 14px;
   text-align: center;
@@ -2774,7 +2774,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   max-width: 28ch;
   text-align: center;
   font-family: var(--font-voice);
-  font-size: 15px;
+  font-size: var(--type-body);
   line-height: 1.35;
   color: var(--onyx-ink);
 }
@@ -2782,7 +2782,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: block;
   margin-bottom: 4px;
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -2796,7 +2796,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-rune-question-label {
   margin: 14px 0 6px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -2811,7 +2811,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: rgba(6, 3, 16, 0.55);
   color: var(--onyx-ink);
   font-family: var(--font-voice);
-  font-size: 15px;
+  font-size: var(--type-body);
   line-height: 1.4;
   touch-action: manipulation;
 }
@@ -2828,7 +2828,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   border-radius: 8px;
   border: 1px solid transparent;
   font-family: var(--font-voice);
-  font-size: 14px;
+  font-size: var(--type-small);
   line-height: 1.45;
   color: var(--onyx-ink);
 }
@@ -2877,14 +2877,14 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   box-shadow: 0 0 28px rgba(120, 90, 40, 0.22);
 }
 .onyx-gesture-cta {
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--onyx-ink);
   text-align: center;
 }
 .onyx-gesture-sub {
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-quiet);
   text-align: center;
 }
@@ -2949,7 +2949,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
     linear-gradient(145deg, #5a5040 0%, #221c14 55%, #0e0b08 100%);
 }
 .onyx-coin-face {
-  font-size: 18px;
+  font-size: var(--type-title);
   color: rgba(245, 230, 190, 0.85);
   line-height: 1;
   display: grid;
@@ -3063,7 +3063,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-cast-position {
   margin: 0 0 8px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -3077,7 +3077,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-cast-drawing {
   margin: 28px 0 8px;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -3150,7 +3150,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-cast-card-orient {
   margin: 4px 0 0;
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -3158,8 +3158,8 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-cast-card-title {
   margin: 0;
   text-align: center;
-  font-family: Georgia, "Times New Roman", serif;
-  font-size: 0.78rem;
+  font-family: var(--font-display);
+  font-size: var(--type-caption);
   letter-spacing: 0.14em;
   color: #e9d6a8;
   line-height: 1.25;
@@ -3167,7 +3167,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-cast-card-qualities {
   margin: 10px 0 0;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   color: var(--onyx-light);
   line-height: 1.4;
@@ -3175,7 +3175,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-cast-card-observed {
   margin: 8px 0 0;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--type-small);
   line-height: 1.45;
   color: var(--onyx-ink);
   font-family: var(--font-voice);
@@ -3202,7 +3202,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: transparent;
   color: var(--onyx-ink-soft);
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   cursor: pointer;
@@ -3220,7 +3220,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-cast-gem-hint {
   margin: 12px 0 0;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
   line-height: 1.4;
   color: var(--onyx-ink-quiet);
   max-width: 22rem;
@@ -3229,7 +3229,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 /* Active reading layer — names exactly what is folded in */
 .onyx-layer-label {
   margin: 0 0 8px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   color: var(--onyx-ink-quiet);
   max-width: 22rem;
@@ -3253,7 +3253,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: transparent;
   color: var(--onyx-ink-quiet);
   font-family: inherit;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   padding: 6px 10px;
@@ -3281,7 +3281,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-held-eyebrow {
   margin: 0;
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
@@ -3291,7 +3291,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: rgba(181, 74, 74, 0.1);
   color: #d48a8a;
   font-family: inherit;
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   padding: 5px 10px;
@@ -3316,7 +3316,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: rgba(61, 155, 106, 0.1);
   color: var(--onyx-ink);
   font-family: inherit;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   padding: 6px 10px;
   border-radius: 999px;
@@ -3332,7 +3332,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: rgba(61, 155, 106, 0.08);
   color: var(--onyx-ink-quiet);
   font-family: inherit;
-  font-size: 14px;
+  font-size: var(--type-small);
   line-height: 1;
   padding: 4px 9px;
   border-radius: 0 999px 999px 0;
@@ -3353,7 +3353,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   margin: 8px 0 0;
   padding: 0 0 0 1.1em;
   color: var(--onyx-ink-soft);
-  font-size: 12px;
+  font-size: var(--type-caption);
   line-height: 1.45;
 }
 .onyx-cast-held-list b {
@@ -3382,14 +3382,14 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-cast-ritual-label {
   position: absolute; top: 56px; left: 0; right: 0; z-index: 6;
   text-align: center;
-  font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase;
+  font-size: var(--type-caption); letter-spacing: 0.28em; text-transform: uppercase;
   color: var(--onyx-ink-soft);
   pointer-events: none;
 }
 .onyx-cast-ritual-hint {
   position: absolute; bottom: 52px; left: 0; right: 0; z-index: 6;
   text-align: center;
-  font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase;
+  font-size: var(--type-caption); letter-spacing: 0.16em; text-transform: uppercase;
   color: var(--onyx-ink-faint);
   pointer-events: none;
   animation: onyx-cast-hint 2.8s ease-in-out infinite;
@@ -3399,7 +3399,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   50% { opacity: 0.85; }
 }
 .onyx-about-block {
-  font-size: 13px;
+  font-size: var(--type-small);
   line-height: 1.5;
   color: var(--onyx-ink);
   margin-bottom: 18px;
@@ -3407,7 +3407,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-about-list {
   margin: 0 0 18px;
   padding-left: 18px;
-  font-size: 13px;
+  font-size: var(--type-small);
   line-height: 1.5;
   color: var(--onyx-ink);
 }
@@ -3418,7 +3418,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   border-bottom: 0.5px solid var(--onyx-edge-faint);
 }
 .onyx-decomp-name {
-  font-size: 15px;
+  font-size: var(--type-body);
   color: var(--onyx-ink-bright);
   margin: 0 0 4px;
   display: flex;
@@ -3426,14 +3426,14 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   gap: 8px;
 }
 .onyx-decomp-name span {
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   color: var(--onyx-ink-quiet);
   text-transform: uppercase;
 }
 .onyx-decomp-source,
 .onyx-decomp-claim {
-  font-size: 11px;
+  font-size: var(--type-caption);
   line-height: 1.4;
   color: var(--onyx-ink-quiet);
   margin: 4px 0 0;
@@ -3491,7 +3491,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   align-items: center;
   justify-content: center;
   text-align: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.42em;
   color: var(--onyx-ink-soft);
   font-weight: 300;
@@ -3541,7 +3541,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-natal-triad-kicker {
   margin: 0;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: var(--onyx-ink-faint);
@@ -3552,7 +3552,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: transparent;
   color: var(--onyx-ink-quiet);
   font: inherit;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   cursor: pointer;
   padding: 0;
@@ -3571,7 +3571,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   align-items: baseline;
   gap: 8px;
-  font-size: 13px;
+  font-size: var(--type-small);
   letter-spacing: 0.04em;
   color: var(--onyx-ink-soft);
 }
@@ -3580,11 +3580,11 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   flex: 0 0 auto;
   text-align: center;
   color: rgba(200, 170, 255, 0.85);
-  font-size: 14px;
+  font-size: var(--type-small);
 }
 .onyx-natal-triad-empty {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--type-caption);
   line-height: 1.4;
   color: var(--onyx-ink-faint);
 }
@@ -3598,7 +3598,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   flex-direction: column;
   gap: 3px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--onyx-ink-faint);
@@ -3609,7 +3609,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   background: rgba(0, 0, 0, 0.35);
   color: var(--onyx-ink-soft);
   font: inherit;
-  font-size: 14px;
+  font-size: var(--type-small);
   letter-spacing: 0.02em;
   text-transform: none;
   padding: 7px 9px;
@@ -3635,7 +3635,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   color: var(--onyx-ink-soft);
   text-align: left;
   font: inherit;
-  font-size: 12px;
+  font-size: var(--type-caption);
   padding: 8px 10px;
   cursor: pointer;
 }
@@ -3644,7 +3644,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-natal-triad-error {
   margin: 0;
-  font-size: 11px;
+  font-size: var(--type-caption);
   color: #e8a0a0;
 }
 .onyx-you-scroll .onyx-natal-triad {
@@ -3655,7 +3655,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-orrery-axis-kicker {
   margin: 0 0 4px;
   text-align: center;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   color: var(--onyx-ink-soft);
 }
@@ -3663,8 +3663,8 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 10px;
-  font-family: ui-monospace, monospace;
+  font-size: var(--type-caption);
+  font-family: var(--font-num);
   letter-spacing: 0.05em;
 }
 .onyx-orrery-laxis .p,
@@ -3684,7 +3684,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   border-radius: 10px;
   padding: 4px 9px;
   font-family: inherit;
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.06em;
   color: var(--onyx-ink-soft);
   cursor: pointer;
@@ -3706,7 +3706,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   z-index: 8;
   margin: 0;
   text-align: center;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   color: var(--onyx-ink-soft);
   pointer-events: none;
@@ -3743,7 +3743,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-orrery-picker-groups .onyx-orrery-filter-btn {
   padding: 4px 4px;
-  font-size: 8px;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
@@ -3768,7 +3768,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 12px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-soft);
   cursor: pointer;
 }
@@ -3780,7 +3780,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   z-index: 8;
   text-align: center;
   margin: 0;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   color: var(--onyx-ink-faint);
   pointer-events: none;
@@ -3866,15 +3866,15 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-orrery-teach-kicker {
   margin: 0;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.28em;
   text-transform: uppercase;
   color: rgba(196, 184, 255, 0.72);
 }
 .onyx-orrery-teach-title {
   margin: 0;
-  font-family: var(--onyx-display, Georgia, "Times New Roman", serif);
-  font-size: clamp(22px, 5.8vw, 34px);
+  font-family: var(--font-display);
+  font-size: clamp(var(--type-title), 5.8vw, var(--type-display));
   font-weight: 500;
   line-height: 1.15;
   letter-spacing: 0.01em;
@@ -3883,13 +3883,13 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-orrery-teach-now {
   margin: 0;
-  font-size: clamp(20px, 5.2vw, 32px);
+  font-size: clamp(var(--type-title), 5.2vw, var(--type-display));
   line-height: 1.2;
   color: rgba(255, 248, 232, 0.96);
 }
 .onyx-orrery-teach-period {
   margin: 0 0 4px;
-  font-size: 12px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: rgba(180, 168, 220, 0.75);
@@ -3928,12 +3928,12 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   text-align: center;
 }
 .onyx-orrery-teach .onyx-layer-lead {
-  font-size: clamp(20px, 5.4vw, 34px);
+  font-size: clamp(var(--type-title), 5.4vw, var(--type-display));
   line-height: 1.18;
 }
 .onyx-orrery-teach .onyx-decomp-source {
   max-width: 42ch;
-  font-size: clamp(13px, 3.2vw, 16px);
+  font-size: clamp(var(--type-small), 3.2vw, var(--type-body));
   line-height: 1.5;
   color: var(--onyx-ink);
 }
@@ -3945,7 +3945,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-orrery-lore-label {
   margin: 0;
-  font-size: 9px;
+  font-size: var(--type-caption);
   line-height: 1;
   letter-spacing: 0.24em;
   text-transform: uppercase;
@@ -3958,7 +3958,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-orrery-teach-glyph {
   margin: 0;
   min-height: 1em;
-  font-size: clamp(24px, 7vw, 48px);
+  font-size: clamp(var(--type-heading), 7vw, 48px);
   line-height: 1;
   color: var(--onyx-ink-bright);
   filter: drop-shadow(0 0 18px rgba(169, 156, 255, 0.35));
@@ -4003,7 +4003,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-lanes-slowsky-title {
   margin: 0 0 8px;
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: #6a8ad0;
@@ -4019,7 +4019,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  font-size: 11px;
+  font-size: var(--type-caption);
   line-height: 1.35;
   color: var(--onyx-ink-soft);
 }
@@ -4027,7 +4027,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   color: #5a72a8;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  font-size: 9px;
+  font-size: var(--type-caption);
   flex: 0 0 auto;
 }
 .onyx-lanes-slowsky-list li span:last-child {
@@ -4082,13 +4082,13 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   pointer-events: none;
 }
 .onyx-lane-name {
-  font-size: 9px;
+  font-size: var(--type-caption);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--onyx-ink-quiet);
 }
 .onyx-lane-now-val {
-  font-size: 10px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink-soft);
   max-width: 55%;
   overflow: hidden;
@@ -4154,7 +4154,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   align-items: center;
   justify-content: center;
   padding: 0 4px;
-  font-size: 10px;
+  font-size: var(--type-caption);
   letter-spacing: 0.02em;
   color: color-mix(in srgb, var(--lane-color) 35%, #f2f0fb 65%);
   border-right: 0.5px solid color-mix(in srgb, var(--lane-color) 40%, transparent);
@@ -4164,7 +4164,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-lane--celebrated .onyx-lane-cell {
   font-family: var(--font-voice);
-  font-size: 11px;
+  font-size: var(--type-caption);
   font-weight: 400;
 }
 .onyx-lane--measured .onyx-lane-cell {
@@ -4202,7 +4202,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-lane-explain-name {
   margin: 0 0 8px;
   font-family: var(--font-voice);
-  font-size: 16px;
+  font-size: var(--type-body);
   color: var(--onyx-ink-bright);
 }
 .onyx-lane-explain-row {
@@ -4210,14 +4210,14 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   justify-content: space-between;
   gap: 12px;
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--type-caption);
   color: var(--onyx-ink);
 }
 .onyx-lane-explain-row span:first-child {
   color: var(--onyx-ink-quiet);
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: var(--type-caption);
 }
 .onyx-lane-explain-row span:last-child {
   text-align: right;
@@ -4239,7 +4239,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
   border: 1px solid rgba(169, 156, 255, 0.28);
   background: rgba(12, 10, 24, 0.7);
   color: rgba(226, 232, 240, 0.82);
-  font-size: 0.68rem;
+  font-size: var(--type-caption);
   letter-spacing: 0.04em;
   cursor: pointer;
 }
@@ -4258,7 +4258,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 }
 .onyx-time-body {
   padding: 0.15rem 0.7rem 0.75rem 2.6rem;
-  font-size: 0.78rem;
+  font-size: var(--type-caption);
   line-height: 1.45;
   color: rgba(226, 232, 240, 0.82);
 }
@@ -4266,7 +4266,7 @@ button.onyx-sky-motion { color: var(--onyx-ink-soft); text-decoration: underline
 .onyx-time-meta,
 .onyx-time-src {
   color: rgba(148, 163, 184, 0.88);
-  font-size: 0.68rem;
+  font-size: var(--type-caption);
 }
 .onyx-time-units {
   margin: 0.45rem 0 0;
@@ -4539,7 +4539,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 11px;
+  font-size: var(--type-caption);
   letter-spacing: 0.08em;
 }
 .onyx-access-cta,
@@ -4707,7 +4707,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   position: absolute; left: 24px; right: 24px; z-index: 45; margin: 0;
   bottom: max(26px, calc(env(safe-area-inset-bottom, 0px) + 4px));
   text-align: center;
-  font-family: var(--font-voice); font-style: italic; font-size: 13px; line-height: 1.4;
+  font-family: var(--font-voice); font-style: italic; font-size: var(--type-small); line-height: 1.4;
   letter-spacing: 0.04em; color: rgba(255, 248, 240, 0.72);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.8);
   opacity: 0; transition: opacity 900ms ease 400ms; pointer-events: none;
@@ -4717,7 +4717,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   position: absolute; left: 0; right: 0; z-index: 4; margin: 0; padding: 0 28px;
   top: max(34px, calc(env(safe-area-inset-top, 0px) + 22px));
   list-style: none; display: grid; gap: 6px; text-align: center; pointer-events: none;
-  font-size: 12px; line-height: 1.45; letter-spacing: 0.03em; color: rgba(245, 240, 255, 0.82);
+  font-size: var(--type-caption); line-height: 1.45; letter-spacing: 0.03em; color: rgba(245, 240, 255, 0.82);
   text-shadow: 0 1px 10px rgba(0, 0, 0, 0.9);
   animation: onyx-sheet-fade 1.2s ease-out;
 }
@@ -4727,7 +4727,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   bottom: max(40px, calc(env(safe-area-inset-bottom, 0px) + 28px));
   padding: 12px 22px; border: 1px solid rgba(245, 240, 255, 0.28); border-radius: 999px;
   background: rgba(3, 3, 8, 0.45); color: rgba(245, 240, 255, 0.86);
-  font: inherit; font-size: 13px; letter-spacing: 0.1em; cursor: pointer;
+  font: inherit; font-size: var(--type-small); letter-spacing: 0.1em; cursor: pointer;
   opacity: 0; transition: opacity 900ms ease; pointer-events: none;
 }
 .onyx-access-later.on { opacity: 1; pointer-events: auto; }
@@ -4742,13 +4742,13 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-inscription-greek {
   margin: 0; line-height: 1.2;
   font-family: var(--font-voice); font-weight: 500;
-  font-size: clamp(22px, 6.4vmin, 34px); letter-spacing: 0.24em; padding-left: 0.24em;
+  font-size: clamp(var(--type-title), 6.4vmin, var(--type-display)); letter-spacing: 0.24em; padding-left: 0.24em;
   color: #e9e1cc;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.18), 0 -1px 0 rgba(0, 0, 0, 0.85), 0 0 18px rgba(0, 0, 0, 0.65);
 }
 .onyx-inscription-en {
   margin: 8px 0 0;
-  font-family: var(--font-voice); font-style: italic; font-size: 14px; letter-spacing: 0.14em;
+  font-family: var(--font-voice); font-style: italic; font-size: var(--type-small); letter-spacing: 0.14em;
   color: var(--onyx-ink-soft); text-shadow: var(--word-outline);
   animation: onyx-sheet-fade 2.4s ease-out;
 }
@@ -4797,11 +4797,11 @@ html[data-sky="twilight"] .onyx-overlay-close {
   justify-self: start;
   width: max-content; height: 32px; padding: 0 12px;
   display: inline-flex; align-items: center;
-  font-family: inherit; font-size: 11px; letter-spacing: 0.08em; cursor: pointer;
+  font-family: inherit; font-size: var(--type-caption); letter-spacing: 0.08em; cursor: pointer;
 }
 .onyx-chamber-name {
   margin: 0; max-width: 46vw;
-  font-family: var(--font-ui); font-weight: 600; font-size: 11px; letter-spacing: 0.32em;
+  font-family: var(--font-ui); font-weight: 600; font-size: var(--type-caption); letter-spacing: 0.32em;
   text-transform: uppercase; color: var(--onyx-ink-soft); text-shadow: var(--word-outline);
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-align: center;
   pointer-events: none;
@@ -4870,7 +4870,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-pronaos-skip {
   position: absolute; top: max(18px, env(safe-area-inset-top, 0px)); right: 18px;
   background: none; border: 0.5px solid var(--onyx-edge); border-radius: 16px;
-  padding: 6px 14px; color: var(--onyx-ink-soft); font-family: inherit; font-size: 11px;
+  padding: 6px 14px; color: var(--onyx-ink-soft); font-family: inherit; font-size: var(--type-caption);
   letter-spacing: 0.1em; cursor: pointer;
 }
 .onyx-pronaos-beat {
@@ -4878,22 +4878,22 @@ html[data-sky="twilight"] .onyx-overlay-close {
   max-width: 340px; animation: onyx-sheet-rise 520ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 .onyx-pronaos-inscription {
-  margin: 0; font-family: var(--font-voice); font-size: 30px; letter-spacing: 0.22em;
+  margin: 0; font-family: var(--font-voice); font-size: var(--type-display); letter-spacing: 0.22em;
   color: #efe6cf; text-shadow: 0 0 18px rgba(233, 214, 168, 0.35), var(--word-outline);
 }
 .onyx-pronaos-line {
-  margin: 0; font-family: var(--font-voice); font-size: 22px; line-height: 1.35;
+  margin: 0; font-family: var(--font-voice); font-size: var(--type-title); line-height: 1.35;
   color: var(--onyx-ink-bright); text-shadow: var(--word-outline);
 }
-.onyx-pronaos-sub { margin: 0; font-size: 13px; line-height: 1.5; color: var(--onyx-ink-soft); opacity: 0.86; }
-.onyx-pronaos-hint { margin: 0; font-size: 11px; color: var(--onyx-ink-quiet); opacity: 0.7; }
+.onyx-pronaos-sub { margin: 0; font-size: var(--type-small); line-height: 1.5; color: var(--onyx-ink-soft); opacity: 0.86; }
+.onyx-pronaos-hint { margin: 0; font-size: var(--type-caption); color: var(--onyx-ink-quiet); opacity: 0.7; }
 .onyx-pronaos-step {
   position: absolute; bottom: max(26px, env(safe-area-inset-bottom, 0px)); margin: 0;
-  font-size: 10px; letter-spacing: 0.24em; color: var(--onyx-ink-quiet); opacity: 0.6;
+  font-size: var(--type-caption); letter-spacing: 0.24em; color: var(--onyx-ink-quiet); opacity: 0.6;
 }
 .onyx-pronaos-cross { position: relative; width: 230px; height: 190px; }
 .onyx-pronaos-arm {
-  position: absolute; font-size: 11px; letter-spacing: 0.24em; text-transform: uppercase;
+  position: absolute; font-size: var(--type-caption); letter-spacing: 0.24em; text-transform: uppercase;
   color: var(--onyx-ink-quiet); opacity: 0.35; transition: opacity 420ms ease, text-shadow 420ms ease;
 }
 .onyx-pronaos-arm.is-lit { opacity: 1; text-shadow: 0 0 14px rgba(160, 140, 255, 0.9), var(--word-outline); }
@@ -4951,17 +4951,17 @@ html[data-sky="twilight"] .onyx-overlay-close {
   padding: 10px 12px 8px; border-radius: 14px;
   background: rgba(6, 6, 14, 0.84); border: 0.5px solid var(--onyx-edge);
   backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
-  font-size: 10.5px; font-variant-numeric: tabular-nums; color: var(--onyx-ink-soft);
+  font-size: var(--type-caption); font-variant-numeric: tabular-nums; color: var(--onyx-ink-soft);
 }
 .onyx-orr-card > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
 .onyx-orr-card h2 {
-  margin: 0; font-size: 13px; font-weight: 500; letter-spacing: 0.03em; color: var(--onyx-ink-bright);
+  margin: 0; font-size: var(--type-small); font-weight: 500; letter-spacing: 0.03em; color: var(--onyx-ink-bright);
 }
-.onyx-orr-card header p { margin: 2px 0 6px; font-size: 9.5px; letter-spacing: 0.08em; opacity: 0.75; }
+.onyx-orr-card header p { margin: 2px 0 6px; font-size: var(--type-caption); letter-spacing: 0.08em; opacity: 0.75; }
 .onyx-orr-card-x {
   width: 24px; height: 24px; padding: 0; border-radius: 50%; flex: none;
   border: 0.5px solid var(--onyx-edge); background: transparent; color: var(--onyx-ink-soft);
-  font: inherit; font-size: 14px; line-height: 1; cursor: pointer;
+  font: inherit; font-size: var(--type-small); line-height: 1; cursor: pointer;
 }
 .onyx-orr-card dl { margin: 0; display: grid; gap: 3px; }
 .onyx-orr-card dl > div { display: grid; grid-template-columns: 42% 1fr; gap: 6px; }
@@ -4975,12 +4975,12 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orr-find input {
   width: 100%; min-width: 0; padding: 7px 11px; border-radius: 16px;
   border: 0.5px solid var(--onyx-edge); background: rgba(6, 6, 10, 0.6);
-  color: var(--onyx-ink-bright); font: inherit; font-size: 16px; letter-spacing: 0.02em;
+  color: var(--onyx-ink-bright); font: inherit; font-size: var(--type-body); letter-spacing: 0.02em;
   transform: scale(0.72); transform-origin: left center; width: 139%; margin-right: -39%;
 }
 .onyx-orr-find input::placeholder { color: var(--onyx-ink-faint); }
 .onyx-orr-credit {
-  margin: 0; font-size: 11px; line-height: 1.4; letter-spacing: 0.02em; color: var(--onyx-ink-faint); opacity: 0.78;
+  margin: 0; font-size: var(--type-caption); line-height: 1.4; letter-spacing: 0.02em; color: var(--onyx-ink-faint); opacity: 0.78;
   text-align: center; pointer-events: auto;
 }
 .onyx-orr-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
@@ -4995,11 +4995,11 @@ html[data-sky="twilight"] .onyx-overlay-close {
 .onyx-orr-back {
   width: 34px; height: 34px; padding: 0; border-radius: 50%;
   border: 0.5px solid var(--onyx-edge); background: rgba(120, 108, 200, 0.06);
-  color: var(--onyx-ink-bright); font-size: 20px; line-height: 1; cursor: pointer;
+  color: var(--onyx-ink-bright); font-size: var(--type-title); line-height: 1; cursor: pointer;
   font-family: inherit;
 }
 .onyx-orr-title {
-  margin: 0; font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+  margin: 0; font-size: var(--type-caption); letter-spacing: 0.22em; text-transform: uppercase;
   color: var(--onyx-ink-bright); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .onyx-orr-sub { letter-spacing: 0.08em; text-transform: none; opacity: 0.7; }
@@ -5015,13 +5015,13 @@ html[data-sky="twilight"] .onyx-overlay-close {
 }
 .onyx-orr-time { align-items: center; }
 .onyx-orr-date {
-  min-width: 150px; text-align: center; font-size: 11px; letter-spacing: 0.06em;
+  min-width: 150px; text-align: center; font-size: var(--type-caption); letter-spacing: 0.06em;
   font-variant-numeric: tabular-nums; color: var(--onyx-ink-bright);
 }
 .onyx-orr-chip {
   background: rgba(6, 6, 10, 0.5); border: 0.5px solid var(--onyx-edge);
   border-radius: 16px; padding: 7px 11px; color: var(--onyx-ink-soft);
-  font-family: inherit; font-size: 10px; letter-spacing: 0.06em; cursor: pointer;
+  font-family: inherit; font-size: var(--type-caption); letter-spacing: 0.06em; cursor: pointer;
   transition: border-color var(--onyx-lift), background var(--onyx-lift);
 }
 .onyx-orr-chip.on {
@@ -5033,7 +5033,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   width: min(100%, 460px); accent-color: var(--onyx-core); touch-action: pan-x;
 }
 .onyx-orr-hint {
-  margin: 0; font-size: 9px; letter-spacing: 0.1em; color: var(--onyx-ink-faint); opacity: 0.6;
+  margin: 0; font-size: var(--type-caption); letter-spacing: 0.1em; color: var(--onyx-ink-faint); opacity: 0.6;
 }
 .onyx-orr-map {
   position: absolute; inset: 0; z-index: 4; background: #030308;
@@ -5060,7 +5060,7 @@ html[data-sky="twilight"] .onyx-overlay-close {
   transform: translate(-50%, -50%);
   display: flex; flex-direction: column; align-items: center; gap: 6px;
   pointer-events: none;
-  font-size: 9px; letter-spacing: 0.14em; color: var(--onyx-ink-soft);
+  font-size: var(--type-caption); letter-spacing: 0.14em; color: var(--onyx-ink-soft);
   animation: onyx-pull-cue 1600ms ease-out forwards;
 }
 .onyx-sky-pull-cue svg { animation: onyx-pull-chevron 800ms ease-in-out infinite alternate; }

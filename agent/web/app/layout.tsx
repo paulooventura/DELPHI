@@ -100,7 +100,7 @@ export default function RootLayout({
         <meta httpEquiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
         <meta httpEquiv="Pragma" content="no-cache" />
       </head>
-      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-clean), system-ui, sans-serif" }}>
+      <body className="min-h-full flex flex-col" style={{ fontFamily: "var(--font-text)" }}>
         {children}
         <NativeShellBoot />
         <Script src={`/pm-telemetry.js?v=${DELPHI_BUILD}`} strategy="afterInteractive" />

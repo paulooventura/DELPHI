@@ -17,7 +17,7 @@
   --cps-glass: rgba(255, 255, 255, 0.04);
   --cps-border: rgba(255, 255, 255, 0.1);
   --cps-ok: #e8e8ec;
-  --cps-mono: var(--font-geist-mono, "JetBrains Mono", Consolas, monospace);
+  --cps-mono: var(--font-num);
 
   display: flex;
   flex-direction: column;
@@ -40,7 +40,7 @@
   border: 1px solid var(--cps-border);
   border-radius: 999px;
   padding: 0.32rem 0.85rem;
-  font-size: 0.68rem;
+  font-size: var(--type-caption);
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
@@ -76,7 +76,7 @@
   gap: 0.65rem;
   margin: 0;
   padding: 0 0.15rem;
-  font-size: 0.62rem;
+  font-size: var(--type-caption);
   font-weight: 650;
   letter-spacing: 0.22em;
   text-transform: uppercase;
@@ -149,7 +149,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.6rem;
+  font-size: var(--type-caption);
   font-weight: 550;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -157,7 +157,7 @@
 }
 
 .cp-sensor-glyph {
-  font-size: 0.9rem;
+  font-size: var(--type-small);
   line-height: 1;
   filter: saturate(0.85);
 }
@@ -172,7 +172,7 @@
 
 .cp-sensor-value {
   font-family: var(--cps-mono);
-  font-size: 1.55rem;
+  font-size: var(--type-heading);
   font-weight: 550;
   line-height: 1;
   color: var(--cps-ink);
@@ -181,14 +181,14 @@
 }
 
 .cp-sensor-unit {
-  font-size: 0.66rem;
+  font-size: var(--type-caption);
   color: var(--cps-dim);
   letter-spacing: 0.04em;
 }
 
 .cp-sensor-sub {
   font-family: var(--cps-mono);
-  font-size: 0.62rem;
+  font-size: var(--type-caption);
   line-height: 1.35;
   color: var(--cps-dim);
   font-variant-numeric: tabular-nums;
@@ -215,7 +215,7 @@
   display: inline-flex;
   align-items: center;
   gap: 0.26rem;
-  font-size: 0.52rem;
+  font-size: var(--type-caption);
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
@@ -305,7 +305,7 @@
 }
 .cp-sensor-missing-label {
   display: block;
-  font-size: 0.55rem;
+  font-size: var(--type-caption);
   font-weight: 650;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -325,7 +325,7 @@
   border-radius: 999px;
   border: 1px solid rgba(255, 255, 255, 0.1);
   background: rgba(0, 0, 0, 0.25);
-  font-size: 0.68rem;
+  font-size: var(--type-caption);
   color: var(--cps-dim);
   cursor: pointer;
   user-select: none;
@@ -354,7 +354,7 @@
 .cp-sensor-tap-hint {
   margin: -0.35rem 0 0.15rem;
   text-align: center;
-  font-size: 0.58rem;
+  font-size: var(--type-caption);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: rgba(226, 232, 240, 0.35);
@@ -407,20 +407,20 @@
   margin-bottom: 1rem;
 }
 .cp-sense-sheet-glyph {
-  font-size: 1.8rem;
+  font-size: var(--type-heading);
   line-height: 1;
   filter: drop-shadow(0 0 10px rgba(201, 162, 39, 0.35));
 }
 .cp-sense-sheet-head h2 {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: var(--type-title);
   font-weight: 600;
   letter-spacing: 0.04em;
   color: #f4f4f5;
 }
 .cp-sense-sheet-live {
   margin: 0.25rem 0 0;
-  font-size: 0.78rem;
+  font-size: var(--type-caption);
   color: rgba(226, 232, 240, 0.65);
   line-height: 1.35;
 }
@@ -436,7 +436,7 @@
   border: 1px solid rgba(255, 255, 255, 0.12);
   background: rgba(255, 255, 255, 0.04);
   color: rgba(226, 232, 240, 0.75);
-  font-size: 0.95rem;
+  font-size: var(--type-body);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -447,7 +447,7 @@
 }
 .cp-sense-sheet-body section h3 {
   margin: 0 0 0.3rem;
-  font-size: 0.58rem;
+  font-size: var(--type-caption);
   font-weight: 650;
   letter-spacing: 0.18em;
   text-transform: uppercase;
@@ -455,14 +455,14 @@
 }
 .cp-sense-sheet-body section p {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: var(--type-small);
   line-height: 1.5;
   color: rgba(232, 237, 245, 0.88);
 }
 .cp-cycle-sheet-canon {
   display: inline-block;
   margin-left: 0.4rem;
-  font-size: 0.55rem;
+  font-size: var(--type-caption);
   font-weight: 700;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -481,7 +481,7 @@
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
-  font-size: 0.82rem;
+  font-size: var(--type-small);
   padding: 0.35rem 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
@@ -538,7 +538,7 @@
 }
 .cp-oracle-eye-busy { opacity: 0.75; cursor: wait; }
 .cp-oracle-eye-icon {
-  font-size: 2.1rem;
+  font-size: var(--type-display);
   line-height: 1;
   filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.25));
   transition: filter 0.3s, transform 0.3s;
@@ -548,7 +548,7 @@
   transform: scale(1.04);
 }
 .cp-oracle-eye-text {
-  font-size: 0.74rem;
+  font-size: var(--type-caption);
   font-weight: 600;
   letter-spacing: 0.2em;
   text-transform: uppercase;
@@ -556,7 +556,7 @@
 }
 .cp-oracle-eye-open .cp-oracle-eye-text { color: #fff; }
 .cp-oracle-eye-hint {
-  font-size: 0.58rem;
+  font-size: var(--type-caption);
   letter-spacing: 0.12em;
   color: var(--cps-dim);
   text-transform: uppercase;
@@ -590,7 +590,7 @@
 }
 .cp-speed-dial-value {
   font-family: var(--cps-mono);
-  font-size: 2.15rem;
+  font-size: var(--type-display);
   font-weight: 550;
   color: #fff;
   font-variant-numeric: tabular-nums;
@@ -598,13 +598,13 @@
   line-height: 1;
 }
 .cp-speed-dial-unit {
-  font-size: 0.6rem;
+  font-size: var(--type-caption);
   letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--cps-dim);
 }
 .cp-speed-dial-sub {
-  font-size: 0.58rem;
+  font-size: var(--type-caption);
   color: var(--cps-dim);
   letter-spacing: 0.06em;
   margin-top: 0.2rem;
@@ -644,16 +644,16 @@
   border-color: rgba(255, 255, 255, 0.4);
   background: rgba(255, 255, 255, 0.1);
 }
-.cp-speed-tier-icon { font-size: 1rem; line-height: 1; }
+.cp-speed-tier-icon { font-size: var(--type-body); line-height: 1; }
 .cp-speed-tier-label {
-  font-size: 0.5rem;
+  font-size: var(--type-caption);
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--cps-dim);
 }
 .cp-speed-tier-btn-active .cp-speed-tier-label { color: #fff; }
 .cp-speed-tier-auto {
-  font-size: 0.5rem;
+  font-size: var(--type-caption);
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: rgba(255, 255, 255, 0.55);
@@ -674,7 +674,7 @@
     gap: 0.75rem;
   }
   .cp-sensor-value {
-    font-size: 1.7rem;
+    font-size: var(--type-heading);
   }
 }
 
