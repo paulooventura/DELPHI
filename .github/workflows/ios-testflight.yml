@@ -73,10 +73,17 @@ jobs:
           cache: npm
           cache-dependency-path: agent/web/package-lock.json
 
-      - name: Install and sync the Capacitor shell
+      # T412: ship the bundled app (www-ios, T341) so it opens offline and is more than a website wrapper
+      # (Guideline 4.2). www-ios is gitignored, so without this export the shell falls back to the live URL.
+      # Supabase URL + anon key are public values: repo variables, empty until T310 (sign-in then stays off).
+      - name: Install, export the bundled app and sync the Capacitor shell
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           npm ci
-          npx cap sync ios
+          npm run build:ios
+          test -f www-ios/index.html || { echo "::error::www-ios missing: the bundled export failed"; exit 1; }
 
       - name: Install the App Store Connect API key
         env:
