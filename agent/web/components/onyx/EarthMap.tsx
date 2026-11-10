@@ -28,12 +28,43 @@ import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElev
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 import { watchUser } from "../../lib/userWatch";
-import { clockDate, clockLabel, clockMs, isClockLive, subscribeClock } from "../../lib/cosmic/pneumaClock";
+import { AGES_MAX_MA, clockDate, clockLabel, clockMs, clockState, isClockLive, setAges, subscribeClock } from "../../lib/cosmic/pneumaClock";
 import { usePneumaClock } from "../../hooks/usePneumaClock";
 import { PneumaWhen } from "./PneumaWhen";
 
 /** Satellite orbit elements are good for a few days around today only. */
 const SATS_KNOWN_MS = 72 * 3_600_000;
+
+/** Ancient coastlines (Müller et al. 2019, baked by scripts/build-paleo-coastlines.mjs) every 10 Myr. */
+const PALEO_STEP_MA = 10;
+const PALEO_URL = (ma: number) => `/earth/paleo/muller2019/${ma}.json`;
+const PALEO_LAYERS = ["paleo-ocean", "paleo-land-a", "paleo-edge-a", "paleo-land-b", "paleo-edge-b"];
+/** The open ocean of deep time: drawn over today's map, under the old continents. */
+const PALEO_OCEAN: GeoJSON.Feature[] = [-180, 0].map(x0 => ({
+  type: "Feature",
+  properties: {},
+  geometry: { type: "Polygon", coordinates: [[[x0, -85], [x0 + 180, -85], [x0 + 180, 85], [x0, 85], [x0, -85]]] },
+}));
+
+/** "200 million years ago · Jurassic · Pangea breaking apart" */
+function ageLabel(ma: number): string {
+  const m = Math.round(ma);
+  if (m === 0) return "Today's coastlines, as the model draws them";
+  const period = m <= 2.6 ? "Quaternary" : m <= 23 ? "Neogene" : m <= 66 ? "Paleogene" : m <= 145 ? "Cretaceous" : m <= 201 ? "Jurassic" : "Triassic";
+  const note =
+    m >= 200
+      ? "Pangea, one supercontinent"
+      : m >= 160
+        ? "Pangea breaking apart"
+        : m >= 100
+          ? "Laurasia and Gondwana drift apart"
+          : m >= 64 && m <= 68
+            ? "the asteroid ends the dinosaurs"
+            : m >= 40 && m <= 50
+              ? "India meets Asia"
+              : "";
+  return `${m} million years ago · ${period}${note ? ` · ${note}` : ""}`;
+}
 
 export type MapSat = { name: string; row: GpRow };
 
@@ -172,6 +203,26 @@ export default function EarthMap({
   const selRef = useRef(sel);
   const [status, setStatus] = useState({ aircraft: 0, note: "", wrecks: 0, ready: false });
   const clock = usePneumaClock();
+  // Play runs deep time forward: from Pangea toward today at 10 million years a second.
+  const [agesPlaying, setAgesPlaying] = useState(false);
+  useEffect(() => {
+    if (!agesPlaying) return;
+    let raf = 0;
+    let last = performance.now();
+    const step = (ts: number) => {
+      const dt = Math.min(0.1, (ts - last) / 1000);
+      last = ts;
+      const ma = clockState().agesMa;
+      if (ma == null || ma <= 0) {
+        setAgesPlaying(false);
+        return;
+      }
+      setAges(Math.max(0, ma - (reduceMotion ? 25 : 10) * dt));
+      raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [agesPlaying, reduceMotion]);
   const heldNote =
     clock.mode === "held"
       ? `day and night at ${clockLabel(clock)} · aircraft are live only${Math.abs(clock.atMs - clock.setAtMs) > SATS_KNOWN_MS ? " · satellites show only near today" : ""}`
@@ -256,9 +307,15 @@ export default function EarthMap({
     };
 
     /* ── layers ── */
+    let baseLabels: Array<{ id: string; vis: string }> = [];
     const addLayers = () => {
       map.setProjection({ type: "globe" });
       const firstSymbol = map.getStyle().layers.find(l => l.type === "symbol")?.id;
+      // Today's place names, borders and roads, hidden in deep time (they were not there yet).
+      baseLabels = map
+        .getStyle()
+        .layers.filter(l => l.type === "symbol" || l.type === "line")
+        .map(l => ({ id: l.id, vis: (map.getLayoutProperty(l.id, "visibility") as string | undefined) ?? "visible" }));
       map.addSource("seafloor", {
         type: "raster",
         tiles: [`${API_BASE || location.origin}/api/seafloor/{z}/{x}/{y}`],
@@ -457,7 +514,23 @@ export default function EarthMap({
         source: "you",
         paint: { "circle-radius": 4, "circle-color": "#ffffff", "circle-stroke-color": "#7a6cf0", "circle-stroke-width": 2 },
       });
+      /* ── deep time: an open ocean over today's map, then the continents as they were (two frames, crossfaded) ── */
+      map.addSource("paleo-ocean", { type: "geojson", data: fc(PALEO_OCEAN) });
+      map.addLayer({ id: "paleo-ocean", type: "fill", source: "paleo-ocean", layout: { visibility: "none" }, paint: { "fill-color": "#08203a", "fill-opacity": 1 } }, "night");
+      for (const k of ["a", "b"]) {
+        map.addSource(`paleo-${k}`, { type: "geojson", data: empty });
+        map.addLayer(
+          { id: `paleo-land-${k}`, type: "fill", source: `paleo-${k}`, layout: { visibility: "none" }, paint: { "fill-color": "#5d6b45", "fill-opacity": 0 } },
+          "night",
+        );
+        map.addLayer(
+          { id: `paleo-edge-${k}`, type: "line", source: `paleo-${k}`, layout: { visibility: "none" }, paint: { "line-color": "#d8bb7a", "line-width": 0.8, "line-opacity": 0 } },
+          "night",
+        );
+      }
+
       applyVisibility();
+      applyAges();
       setStatus(s => ({ ...s, ready: true }));
       root.dataset.ready = "1";
     };
@@ -465,16 +538,72 @@ export default function EarthMap({
     const applyVisibility = () => {
       if (!map.getLayer("planes")) return;
       const L = layersRef.current;
+      // In deep time only the day/night bands stay: planes, satellites, wrecks and today's seafloor are of today.
+      const today = clockState().agesMa == null;
       const vis = (on: boolean) => (on ? "visible" : "none");
       for (const id of ["night", "night-edge", "sun-glow", "sun"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
-      for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft));
-      for (const id of ["sat-footprints", "sat-footprint-edge", "sat-tracks", "sat-points", "sat-names"]) map.setLayoutProperty(id, "visibility", vis(L.satellites));
-      map.setLayoutProperty("seafloor", "visibility", vis(L.seafloor));
+      for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft && today));
+      for (const id of ["sat-footprints", "sat-footprint-edge", "sat-tracks", "sat-points", "sat-names"]) map.setLayoutProperty(id, "visibility", vis(L.satellites && today));
+      map.setLayoutProperty("seafloor", "visibility", vis(L.seafloor && today));
       map.setPaintProperty("water", "fill-opacity", L.seafloor ? 0.55 : 1);
-      for (const id of ["wrecks", "wreck-names"]) map.setLayoutProperty(id, "visibility", vis(L.wrecks));
+      for (const id of ["wrecks", "wreck-names"]) map.setLayoutProperty(id, "visibility", vis(L.wrecks && today));
+      for (const b of baseLabels) if (map.getLayer(b.id)) map.setLayoutProperty(b.id, "visibility", today ? b.vis : "none");
       if (L.wrecks && !wrecksRef.current) loadWrecks();
     };
     applyVisRef.current = applyVisibility;
+
+    /* ── deep time: load the two nearest frames and crossfade between them ── */
+    const paleoCache = new Map<number, Promise<GeoJSON.FeatureCollection>>();
+    const paleoFrame = (ma: number) => {
+      let p = paleoCache.get(ma);
+      if (!p) {
+        p = fetch(PALEO_URL(ma)).then(r => (r.ok ? (r.json() as Promise<GeoJSON.FeatureCollection>) : Promise.reject(new Error(String(r.status)))));
+        p.catch(() => paleoCache.delete(ma));
+        paleoCache.set(ma, p);
+      }
+      return p;
+    };
+    let paleoShown = "";
+    let paleoSeq = 0;
+    const applyAges = () => {
+      if (!map.getLayer("paleo-ocean")) return;
+      const ma = clockState().agesMa;
+      for (const id of PALEO_LAYERS) map.setLayoutProperty(id, "visibility", ma == null ? "none" : "visible");
+      if (ma == null) {
+        delete root.dataset.ages;
+        return;
+      }
+      const f0 = Math.min(AGES_MAX_MA, Math.floor(ma / PALEO_STEP_MA) * PALEO_STEP_MA);
+      const f1 = Math.min(AGES_MAX_MA, f0 + PALEO_STEP_MA);
+      const t = f1 === f0 ? 0 : (ma - f0) / (f1 - f0);
+      const key = `${f0},${f1}`;
+      const fade = () => {
+        map.setPaintProperty("paleo-land-a", "fill-opacity", 0.95 * (1 - t));
+        map.setPaintProperty("paleo-edge-a", "line-opacity", 0.85 * (1 - t));
+        map.setPaintProperty("paleo-land-b", "fill-opacity", 0.95 * t);
+        map.setPaintProperty("paleo-edge-b", "line-opacity", 0.85 * t);
+      };
+      if (key === paleoShown) {
+        fade();
+        return;
+      }
+      const seq = ++paleoSeq;
+      Promise.all([paleoFrame(f0), paleoFrame(f1)])
+        .then(([a, b]) => {
+          if (!alive || seq !== paleoSeq) return;
+          (map.getSource("paleo-a") as GeoJSONSource | undefined)?.setData(a);
+          (map.getSource("paleo-b") as GeoJSONSource | undefined)?.setData(b);
+          paleoShown = key;
+          root.dataset.ages = key;
+          fade();
+          // keep the next older frame warm, so playing forward through time does not stall
+          if (f1 + PALEO_STEP_MA <= AGES_MAX_MA) void paleoFrame(f1 + PALEO_STEP_MA).catch(() => {});
+          if (f0 - PALEO_STEP_MA >= 0) void paleoFrame(f0 - PALEO_STEP_MA).catch(() => {});
+        })
+        .catch(() => {
+          if (seq === paleoSeq) root.dataset.ages = "error";
+        });
+    };
 
     /* ── day and night: the subsolar point and the twilight bands, once a minute ── */
     let nightTimer = 0;
@@ -817,8 +946,20 @@ export default function EarthMap({
     map.on("click", onClick);
     document.addEventListener("visibilitychange", onVisibility);
     // A date picked or time frozen anywhere: redraw the day side, the satellites and the planes.
+    let agesWere: number | null = clockState().agesMa;
     const offClock = subscribeClock(() => {
       if (!loaded) return;
+      const ages = clockState().agesMa;
+      if ((ages == null) !== (agesWere == null)) {
+        applyVisibility();
+        // stepping into deep time: pull back to see whole continents
+        if (ages != null && map.getZoom() > 2) {
+          if (reduceMotion) map.jumpTo({ zoom: 1.6 });
+          else map.easeTo({ zoom: 1.6, duration: 900 });
+        }
+      }
+      agesWere = ages;
+      applyAges();
       updateNight();
       draw();
     });
@@ -996,6 +1137,19 @@ export default function EarthMap({
             Layers
           </button>
           <PneumaWhen by="earth" />
+          <button
+            type="button"
+            className={`onyx-orr-chip${clock.agesMa != null ? " on" : ""}`}
+            aria-pressed={clock.agesMa != null}
+            data-testid="ages-toggle"
+            title="Deep time: the continents as they were, back to Pangea (250 million years ago)"
+            onClick={() => {
+              setAgesPlaying(false);
+              setAges(clock.agesMa == null ? AGES_MAX_MA : null);
+            }}
+          >
+            Ages
+          </button>
           {hasUser ? (
             <button type="button" className={`onyx-orr-chip${following ? " on" : ""}`} aria-pressed={following} onClick={flyToUser}>
               {following ? "Following you" : "Near you"}
@@ -1008,9 +1162,41 @@ export default function EarthMap({
                 ? "offline · built-in world map; detail, aircraft and seafloor need a connection"
                 : typeof navigator !== "undefined" && navigator.onLine === false
                   ? "offline · places you've viewed are kept; aircraft and seafloor need a connection"
-                  : heldNote || status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
+                  : clock.agesMa != null
+                    ? ageLabel(clock.agesMa)
+                    : heldNote || status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
           </span>
         </div>
+        {clock.agesMa != null ? (
+          <div className="onyx-orr-row onyx-orr-time" role="group" aria-label="Deep time">
+            <button
+              type="button"
+              className="onyx-orr-chip"
+              data-testid="ages-play"
+              onClick={() => {
+                if (!agesPlaying && (clock.agesMa ?? 0) <= 0) setAges(AGES_MAX_MA);
+                setAgesPlaying(p => !p);
+              }}
+            >
+              {agesPlaying ? "Pause" : "Play"}
+            </button>
+            <input
+              className="onyx-orr-scrub"
+              type="range"
+              min={0}
+              max={AGES_MAX_MA}
+              step={1}
+              value={AGES_MAX_MA - Math.round(clock.agesMa)}
+              aria-label="Deep time: Pangea on the left, today on the right"
+              aria-valuetext={ageLabel(clock.agesMa)}
+              data-testid="ages-scrub"
+              onChange={e => {
+                setAgesPlaying(false);
+                setAges(AGES_MAX_MA - Number(e.target.value));
+              }}
+            />
+          </div>
+        ) : null}
         {layersOpen ? (
           <div className="onyx-orr-row onyx-orr-layers" role="group" aria-label="Map layers">
             {LAYERS.map(l => (
@@ -1035,7 +1221,8 @@ export default function EarthMap({
           Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map:{offlineBase ? " Natural Earth ·" : ""} OpenFreeMap © OpenMapTiles ©{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:
           GEBCO · Wrecks: NOAA{status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""}, not for navigation · Orbits:
-          CelesTrak · <a href="/credits">Credits</a>
+          CelesTrak{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""} ·{" "}
+          <a href="/credits">Credits</a>
         </p>
       </div>
     </div>

@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  AGES_MAX_MA,
+  setAges,
   CLOCK_MAX_MS,
   clockLabel,
   clockMs,
@@ -80,6 +82,21 @@ describe("pneumaClock", () => {
     expect(clockLabel(clockState(), false)).toBe("1 Jan 44 BCE");
     holdAt(new Date(1969, 6, 20, 20, 17).getTime());
     expect(clockLabel()).toBe("20 Jul 1969 · 20:17");
+  });
+
+  it("keeps deep time on its own axis, clamped to the continents we have", () => {
+    holdAt(1000, "orrery");
+    setAges(200);
+    expect(clockState().agesMa).toBe(200);
+    expect(clockMs()).toBe(1000);
+    setAges(9999);
+    expect(clockState().agesMa).toBe(AGES_MAX_MA);
+    setAges(-5);
+    expect(clockState().agesMa).toBe(0);
+    goLive();
+    expect(clockState().agesMa).toBe(0);
+    setAges(null);
+    expect(clockState().agesMa).toBeNull();
   });
 
   it("round-trips the date picker's value, including early years", () => {

@@ -84,6 +84,13 @@ export default function CreditsPage() {
           Compilation Group (2026), doi:10.5285/4f68d5c7-45eb-f999-e063-7086abc036fa.
         </li>
         <li>
+          Ancient coastlines (Ages, 0-250 million years): Müller, R.D. et al. (2019), &ldquo;A global plate model
+          including lithospheric deformation along major rifts and orogens since the Triassic&rdquo;, Tectonics 38,
+          reconstructed with the <Out href="https://gws.gplates.org/">GPlates Web Service</Out> (EarthByte, University
+          of Sydney). Licensed <Out href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Out>; simplified for the
+          app.
+        </li>
+        <li>
           Wrecks: <Out href="https://encdirect.noaa.gov/">NOAA</Out> Electronic Navigational Charts (ENC Direct), US
           waters. <b>Not for navigation.</b>
         </li>

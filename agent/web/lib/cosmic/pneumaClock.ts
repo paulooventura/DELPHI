@@ -26,6 +26,12 @@ export interface ClockState {
   by: string;
   /** The real time (ms since 1970) when it was last set, so views can ask "how far from today". */
   setAtMs: number;
+  /**
+   * Deep time, in millions of years before present (null = off). The Earth view draws the
+   * continents as they were then (Pangea at ~250). Separate from the calendar instant: a Date
+   * cannot reach that far, and the sky's math does not hold there.
+   */
+  agesMa: number | null;
   /** Bumps on every change, for subscribers. */
   version: number;
 }
@@ -34,12 +40,23 @@ export interface ClockState {
 export const CLOCK_MIN_MS = -8.64e15;
 export const CLOCK_MAX_MS = 8.64e15;
 
-let state: ClockState = { mode: "live", atMs: 0, by: "", setAtMs: 0, version: 0 };
+let state: ClockState = { mode: "live", atMs: 0, by: "", setAtMs: 0, agesMa: null, version: 0 };
 const listeners = new Set<() => void>();
 
-function publish(next: Omit<ClockState, "version" | "setAtMs">) {
+function publish(next: Omit<ClockState, "version" | "setAtMs" | "agesMa">) {
   if (next.mode === state.mode && next.atMs === state.atMs && next.by === state.by) return;
-  state = { ...next, setAtMs: Date.now(), version: state.version + 1 };
+  state = { ...state, ...next, setAtMs: Date.now(), version: state.version + 1 };
+  for (const fn of listeners) fn();
+}
+
+/** The oldest age the Earth view has continents for (Müller et al. 2019). */
+export const AGES_MAX_MA = 250;
+
+/** Go to deep time (millions of years ago), or null to come back to the calendar. */
+export function setAges(ma: number | null) {
+  const v = ma == null || !Number.isFinite(ma) ? null : Math.min(AGES_MAX_MA, Math.max(0, ma));
+  if (v === state.agesMa) return;
+  state = { ...state, agesMa: v, version: state.version + 1 };
   for (const fn of listeners) fn();
 }
 
@@ -92,7 +109,7 @@ export function subscribeClock(fn: () => void): () => void {
 
 /** For tests: back to live with no history. */
 export function resetClockForTests() {
-  state = { mode: "live", atMs: 0, by: "", setAtMs: 0, version: 0 };
+  state = { mode: "live", atMs: 0, by: "", setAtMs: 0, agesMa: null, version: 0 };
   listeners.clear();
 }
 
