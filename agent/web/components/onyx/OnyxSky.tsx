@@ -24,6 +24,9 @@ import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
 import { ChamberHeader } from "./ChamberHeader";
 import { cardinalFromHeading } from "./onyxCopy";
 import { SkyOrrery } from "./SkyOrrery";
+import { PneumaWhen } from "./PneumaWhen";
+import { usePneumaClock } from "../../hooks/usePneumaClock";
+import { clockLabel } from "../../lib/cosmic/pneumaClock";
 
 const LOCK_HOLD_MS = 3000;
 const LOCK_SAMPLE_MS = 400;
@@ -212,7 +215,10 @@ export function OnyxSky({
   }, [lockHold, liveAttitudeRef]);
 
   const look = cardinalFromHeading(lookAz);
-  const time = now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  // The temple's clock: held anywhere (Heliodrome, Orrery, Earth view), the sky shows that moment.
+  const clock = usePneumaClock();
+  const skyNow = useMemo(() => (clock.mode === "held" ? new Date(clock.atMs) : now), [clock, now]);
+  const time = clock.mode === "held" ? clockLabel(clock) : now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   const pitchLabel = Number.isFinite(lookAlt) ? Math.round(lookAlt) : 0;
   const az = ((lookAz % 360) + 360) % 360;
   const locLine = formatLatLon(lat, lon);
@@ -418,7 +424,7 @@ export function OnyxSky({
             headingDeg={headingDeg}
             pitchDeg={pitchDeg}
             liveAttitudeRef={liveAttitudeRef}
-            observationTime={now}
+            observationTime={skyNow}
             liveHeading={liveHeading}
             livePitch={livePitch}
             arPoseReady={arPoseReady}
@@ -529,6 +535,7 @@ export function OnyxSky({
               >
                 Orrery
               </button>
+              <PneumaWhen by="aether" chipClass="onyx-sky-align-btn" />
               <button
                 type="button"
                 className="onyx-sky-align-btn"

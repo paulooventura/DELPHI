@@ -16,6 +16,9 @@ import {
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
 import { createPinchGestureController } from "../../lib/cosmic/pinchGesture";
+import { clockDate, freezeNow, goLive, holdAt } from "../../lib/cosmic/pneumaClock";
+import { usePneumaClock } from "../../hooks/usePneumaClock";
+import { PneumaWhen } from "./PneumaWhen";
 import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
 import type { BirthRecord } from "../../lib/lore/birthStore";
 import { OnyxHeliodromeFilm } from "./OnyxHeliodromeFilm";
@@ -108,7 +111,9 @@ export function OnyxOrrery({
   hapticsRef.current = hapticsEnabled;
   const [expanded, setExpanded] = useState<OrreryLaneState | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [frozen, setFrozen] = useState(false);
+  // Frozen = the temple's clock is held (here, in the Orrery or on the Earth view: one moment).
+  const clock = usePneumaClock();
+  const frozen = clock.mode === "held";
   const [hidden, setHidden] = useState<Set<OrreryLaneId>>(new Set());
   const [selectedLane, setSelectedLane] = useState<OrreryLaneId | null>(null);
   const frozenRef = useRef(false);
@@ -154,10 +159,7 @@ export function OnyxOrrery({
   useEffect(() => {
     frozenRef.current = frozen;
     setClockTimeFrozen(frozen);
-    if (!frozen) {
-      viewDateRef.current = new Date();
-      scrubAccRef.current = 0;
-    }
+    if (!frozen) scrubAccRef.current = 0;
     return () => setClockTimeFrozen(false);
   }, [frozen]);
 
@@ -231,7 +233,7 @@ export function OnyxOrrery({
 
       const w = wrap.clientWidth;
       const h = wrap.clientHeight;
-      if (!frozenRef.current) viewDateRef.current = new Date();
+      viewDateRef.current = clockDate();
       const { lanes: allLanes } = computeOrreryState(viewDateRef.current, lat, lon);
       const hide = hiddenRef.current;
       const lanes = allLanes.filter(l => l.id !== "wuku-tzolkin" && !hide.has(l.id));
@@ -406,7 +408,8 @@ export function OnyxOrrery({
   };
 
   const stepScrub = (laneId: OrreryLaneId, dir: number) => {
-    viewDateRef.current = stepOrreryDate(viewDateRef.current, laneId, dir);
+    viewDateRef.current = stepOrreryDate(clockDate(), laneId, dir);
+    holdAt(viewDateRef.current.getTime(), "heliodrome");
     const audio = getClockAudio();
     if (audio) playScrubTick(audio);
     if (hapticsRef.current && !hapticsMuted()) void pulseHaptic("tick");
@@ -509,20 +512,23 @@ export function OnyxOrrery({
                 type="button"
                 className={`onyx-orrery-filter-btn${frozen ? " is-on" : ""}`}
                 onClick={() => {
-                  setFrozen(f => !f);
+                  if (frozen) goLive("heliodrome");
+                  else freezeNow("heliodrome");
                   setExpanded(null);
                 }}
-                title="Freeze the running clock. Tap a box for details. Hold and drag to move time."
+                title="Freeze the running clock (the Orrery and the Earth view hold too). Tap a box for details. Hold and drag to move time."
               >
                 {frozen ? "Time frozen" : "Freeze time"}
               </button>
+              <PneumaWhen by="heliodrome" chipClass="onyx-orrery-filter-btn" />
+
               {natalDate && (
                 <button
                   type="button"
                   className="onyx-orrery-filter-btn"
                   onClick={() => {
                     viewDateRef.current = new Date(natalDate.getTime());
-                    setFrozen(true);
+                    holdAt(natalDate.getTime(), "heliodrome");
                     setExpanded(null);
                   }}
                   title="Freeze at the birthday saved in Psyche — date, hour, and minute."

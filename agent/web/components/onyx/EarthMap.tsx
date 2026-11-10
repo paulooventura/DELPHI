@@ -28,6 +28,12 @@ import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElev
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 import { watchUser } from "../../lib/userWatch";
+import { clockDate, clockLabel, clockMs, isClockLive, subscribeClock } from "../../lib/cosmic/pneumaClock";
+import { usePneumaClock } from "../../hooks/usePneumaClock";
+import { PneumaWhen } from "./PneumaWhen";
+
+/** Satellite orbit elements are good for a few days around today only. */
+const SATS_KNOWN_MS = 72 * 3_600_000;
 
 export type MapSat = { name: string; row: GpRow };
 
@@ -165,6 +171,11 @@ export default function EarthMap({
   const [sel, setSel] = useState<Sel | null>(null);
   const selRef = useRef(sel);
   const [status, setStatus] = useState({ aircraft: 0, note: "", wrecks: 0, ready: false });
+  const clock = usePneumaClock();
+  const heldNote =
+    clock.mode === "held"
+      ? `day and night at ${clockLabel(clock)} · aircraft are live only${Math.abs(clock.atMs - clock.setAtMs) > SATS_KNOWN_MS ? " · satellites show only near today" : ""}`
+      : "";
   const [offlineBase, setOfflineBase] = useState(false);
   useEffect(() => {
     selRef.current = sel;
@@ -470,7 +481,7 @@ export default function EarthMap({
     const updateNight = () => {
       window.clearTimeout(nightTimer);
       if (!alive) return;
-      const { sub, features } = nightBands(new Date());
+      const { sub, features } = nightBands(clockDate());
       subRef.current = sub;
       const edge = (features[0]!.geometry as GeoJSON.Polygon).coordinates[0]!.filter(p => Math.abs(p[1]!) < 90);
       (map.getSource("night") as GeoJSONSource | undefined)?.setData(
@@ -516,6 +527,11 @@ export default function EarthMap({
       window.clearTimeout(pollTimer);
       pollTimer = 0;
       if (!alive || document.hidden) return;
+      if (!isClockLive()) {
+        // Aircraft are live only: no asking for them while time is held.
+        pollTimer = window.setTimeout(poll, POLL_MS);
+        return;
+      }
       const z = map.getZoom();
       let cells: ReturnType<typeof cellsForView> = null;
       if (layersRef.current.aircraft && z >= AIRCRAFT_MIN_ZOOM) {
@@ -572,10 +588,15 @@ export default function EarthMap({
 
     /* ── per-second redraw: dead-reckoned planes, trails, satellites ── */
     let trackAt = 0;
+    let trackSim = 0;
     let lastTracks: GeoJSON.Feature[] = [];
     const draw = () => {
       if (!alive || !map.getSource("planes")) return;
       const now = Date.now();
+      // The temple's clock: aircraft only while live; satellites only within a few days of today.
+      const live = isClockLive();
+      const simNow = clockMs();
+      const satsKnown = Math.abs(simNow - now) <= SATS_KNOWN_MS;
       const s = selRef.current;
       const b = map.getBounds();
       const planes: GeoJSON.Feature[] = [];
@@ -584,7 +605,7 @@ export default function EarthMap({
       let maxTrail = 0;
       const mid = { x: box.clientWidth / 2, y: box.clientHeight / 2 };
       let nearest: { d: number; x: number; y: number } | null = null;
-      for (const [hex, p] of planesRef.current) {
+      for (const [hex, p] of live ? planesRef.current : new Map<string, never>()) {
         const r = p.row;
         const [lat, lon] = deadReckon(r[4], r[5], r[8], r[12] & 2 ? 0 : r[7], Math.min(90, (now - p.at) / 1000));
         const isSel = s?.kind === "plane" && s.hex === hex;
@@ -628,11 +649,11 @@ export default function EarthMap({
       root.dataset.trailMax = String(maxTrail);
       if (s?.kind === "plane") root.dataset.selTrail = String((planesRef.current.get(s.hex)?.trail.length ?? 0) + 1);
 
-      const t = new Date(now);
+      const t = new Date(simNow);
       const points: GeoJSON.Feature[] = [];
-      const recomputeTracks = now - trackAt > 20_000;
+      const recomputeTracks = now - trackAt > 20_000 || Math.abs(simNow - trackSim) > 60_000;
       const tracks: GeoJSON.Feature[] = [];
-      for (const sat of satRecs.current) {
+      for (const sat of satsKnown ? satRecs.current : []) {
         if (!sat.rec) continue;
         const pv = satPos(sat.rec, t);
         if (!pv) continue;
@@ -660,7 +681,7 @@ export default function EarthMap({
           ] as const) {
             const pts: Array<[number, number]> = [];
             for (let k = 0; k <= 90; k++) {
-              const tt = new Date(now + periodMs * (from + ((to - from) * k) / 90));
+              const tt = new Date(simNow + periodMs * (from + ((to - from) * k) / 90));
               const q = satPos(sat.rec, tt);
               if (!q) continue;
               const gg = temeToGeodetic(q.p, tt);
@@ -678,6 +699,7 @@ export default function EarthMap({
       (map.getSource("sat-points") as GeoJSONSource).setData(fc(points));
       if (recomputeTracks) {
         trackAt = now;
+        trackSim = simNow;
         lastTracks = tracks.filter(f => f.properties?.kind === "track");
       }
       (map.getSource("sat-tracks") as GeoJSONSource).setData(fc([...tracks.filter(f => f.properties?.kind === "footprint"), ...lastTracks]));
@@ -794,9 +816,16 @@ export default function EarthMap({
     map.on("zoom", onZoom);
     map.on("click", onClick);
     document.addEventListener("visibilitychange", onVisibility);
+    // A date picked or time frozen anywhere: redraw the day side, the satellites and the planes.
+    const offClock = subscribeClock(() => {
+      if (!loaded) return;
+      updateNight();
+      draw();
+    });
 
     return () => {
       alive = false;
+      offClock();
       window.clearTimeout(pollTimer);
       window.clearTimeout(drawTimer);
       window.clearTimeout(moveTimer);
@@ -873,7 +902,7 @@ export default function EarthMap({
     if (sel.kind === "sat") {
       const sat = satRecs.current.find(s => s.row[0] === sel.norad);
       if (!sat?.rec) return null;
-      const t = new Date(now);
+      const t = new Date(clockMs());
       const pv = propagate(sat.rec, t);
       const p = pv?.position;
       const v = pv?.velocity;
@@ -966,6 +995,7 @@ export default function EarthMap({
           <button type="button" className={`onyx-orr-chip${layersOpen ? " on" : ""}`} aria-expanded={layersOpen} onClick={() => setLayersOpen(o => !o)}>
             Layers
           </button>
+          <PneumaWhen by="earth" />
           {hasUser ? (
             <button type="button" className={`onyx-orr-chip${following ? " on" : ""}`} aria-pressed={following} onClick={flyToUser}>
               {following ? "Following you" : "Near you"}
@@ -978,7 +1008,7 @@ export default function EarthMap({
                 ? "offline · built-in world map; detail, aircraft and seafloor need a connection"
                 : typeof navigator !== "undefined" && navigator.onLine === false
                   ? "offline · places you've viewed are kept; aircraft and seafloor need a connection"
-                  : status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
+                  : heldNote || status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
           </span>
         </div>
         {layersOpen ? (

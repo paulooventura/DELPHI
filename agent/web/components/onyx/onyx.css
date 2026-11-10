@@ -5217,3 +5217,12 @@ html[data-sky="twilight"] .onyx-overlay-close {
   letter-spacing: 0.32em; color: var(--onyx-ink-soft); text-shadow: var(--word-outline);
 }
 .onyx-orr-head .onyx-orr-scale { justify-self: end; }
+
+/* PneumaWhen: the one time control (Heliodrome, Orrery, Earth view) */
+.onyx-when { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.onyx-when-pick { display: inline-flex; align-items: center; gap: 6px; }
+.onyx-when-input {
+  background: rgba(6, 6, 10, 0.7); border: 0.5px solid var(--onyx-edge-bright); border-radius: 12px;
+  padding: 6px 9px; color: var(--onyx-ink-bright); font-family: inherit; font-size: var(--type-caption);
+  color-scheme: dark; max-width: 100%;
+}

@@ -70,6 +70,8 @@ import {
   type Mat3,
 } from "../../lib/orbits";
 import { ORRERY_SPEEDS, advanceCosmicClock, type OrrerySpeedId } from "../../lib/timeEngine";
+import { clockMs, goLive, holdAt, isClockLive } from "../../lib/cosmic/pneumaClock";
+import { PneumaWhen } from "./PneumaWhen";
 import { createOrreryGl, type OrreryGl } from "./orreryGl";
 import { pulseHaptic } from "../../lib/haptics";
 import { OrreryShellTools } from "./OrreryShellTools";
@@ -589,7 +591,9 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   const [earthSpeedId, setEarthSpeedId] = useState<EarthSpeedId>(reduceMotion ? "live" : "min");
   const [orbitInfo, setOrbitInfo] = useState<{ fetchedAt: string; source: string } | null>(null);
   const [satNamed, setSatNamed] = useState<Array<{ name: string; i: number }>>([]);
-  const [playing, setPlaying] = useState(true);
+  // Arriving while the temple's clock is held (a date picked, the Heliodrome frozen): open
+  // paused at that moment, so the planets show it.
+  const [playing, setPlaying] = useState(() => isClockLive());
   const [following, setFollowing] = useState<string | null>(null);
   const [readout, setReadout] = useState({ date: "", offset: 0, deep: "", deepMyr: 0 });
   const [index, setIndex] = useState(() => new OrreryIndex());
@@ -605,7 +609,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   const mapOpenRef = useRef(false);
   const openMapRef = useRef<() => void>(() => {});
 
-  const simMsRef = useRef(0);
+  const simMsRef = useRef(isClockLive() ? 0 : clockMs());
   const deepYearsRef = useRef(0);
   const levelRef = useRef(level);
   const modeRef = useRef(mode);
@@ -802,9 +806,18 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   };
 
   // The solar clock's slowest speed is a day per second, so "Now" has to stop it to stay at now.
+  // Leaving after the person took hold of time: the temple stays at the moment they left.
+  useEffect(
+    () => () => {
+      if (!isClockLive() && simMsRef.current) holdAt(simMsRef.current, "orrery");
+    },
+    [],
+  );
+
   const resetNow = () => {
     simMsRef.current = Date.now();
     deepYearsRef.current = 0;
+    goLive("orrery");
     if (camRef.current.scene === "earth") {
       earthSpeedRef.current = "live";
       setEarthSpeedId("live");
@@ -2147,21 +2160,24 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       const deep = DEEP_SPEEDS.find(s => s.id === deepSpeedRef.current) ?? DEEP_SPEEDS[0];
       const earthSpeed = EARTH_SPEEDS.find(s => s.id === earthSpeedRef.current) ?? EARTH_SPEEDS[0];
       if (playingRef.current) {
+        // Near today the sliders' windows still hold playback in; a date picked far outside them
+        // (the When control) plays on from there instead of snapping back to today.
         if (cam.scene === "earth") {
           const span = EARTH_SCRUB_H * 3_600_000;
-          simMsRef.current = clamp(simMsRef.current + earthSpeed.secPerSec * 1000 * dt, Date.now() - span, Date.now() + span);
+          const next = simMsRef.current + earthSpeed.secPerSec * 1000 * dt;
+          simMsRef.current = Math.abs(simMsRef.current - Date.now()) > span ? next : clamp(next, Date.now() - span, Date.now() + span);
         } else if (cam.scene === "solar") {
-          simMsRef.current = clamp(
-            advanceCosmicClock(simMsRef.current, speed.daysPerSec, dt),
-            Date.now() - SCRUB_YEARS * YEAR_MS,
-            Date.now() + SCRUB_YEARS * YEAR_MS,
-          );
+          const span = SCRUB_YEARS * YEAR_MS;
+          const next = advanceCosmicClock(simMsRef.current, speed.daysPerSec, dt);
+          simMsRef.current = Math.abs(simMsRef.current - Date.now()) > span ? next : clamp(next, Date.now() - span, Date.now() + span);
         } else {
           deepYearsRef.current = Math.min(DEEP_SCRUB_MYR * 1e6, deepYearsRef.current + deep.yearsPerSec * dt);
         }
       }
       const date = new Date(simMsRef.current);
       const jd = dateToJd(date);
+      /** Satellite orbit elements are good for a few days around today only. */
+      const satsKnown = Math.abs(simMsRef.current - Date.now()) <= EARTH_SCRUB_H * 3_600_000;
       const f = orreryFrame(date);
       const bodies = indexRef.current.bodies;
       const W = buildWorld(f, bodies, jd);
@@ -2187,9 +2203,10 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       const m = modeRef.current;
       const inEarth = cam.scene === "earth";
       if (inEarth && enteredScene !== "earth") {
-        // Orbit elements are only good near their epoch: the globe always opens close to now,
-        // turned so the day side and the terminator both show.
-        if (Math.abs(simMsRef.current - Date.now()) > EARTH_SCRUB_H * 3_600_000) simMsRef.current = Date.now();
+        // Orbit elements are only good near their epoch: the globe opens close to now, unless the
+        // temple's clock is held at a chosen moment (then it opens there and the satellites hide).
+        // Turned so the day side and the terminator both show.
+        if (isClockLive() && Math.abs(simMsRef.current - Date.now()) > EARTH_SCRUB_H * 3_600_000) simMsRef.current = Date.now();
         const e = W.helio.get("earth");
         if (e) {
           const az = Math.atan2(-e.y, -e.x) + 0.9;
@@ -2208,7 +2225,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         earthView.sun = { x: -e.x / r, y: -e.y / r, z: -e.z / r };
         earthView.sunAu = r;
         const st = satStateRef.current;
-        if (worker && satRef.current && !tickPending) {
+        if (satsKnown && worker && satRef.current && !tickPending) {
           const lead = earthSpeed.secPerSec * 1000 * (playingRef.current ? 0.3 : 0);
           const limit = earthSpeed.secPerSec * 1000 * 0.6 + 1500;
           if (!st || Math.abs(simMsRef.current - st.t) > limit) {
@@ -2218,7 +2235,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           }
         }
         const sel = selectedRef.current;
-        if (worker && sel?.type === "sat" && !pathPending && (satPath?.i !== sel.i || Math.abs(simMsRef.current - satPath.t) > 6 * 3_600_000)) {
+        if (satsKnown && worker && sel?.type === "sat" && !pathPending && (satPath?.i !== sel.i || Math.abs(simMsRef.current - satPath.t) > 6 * 3_600_000)) {
           pathPending = true;
           const req: SatWorkerIn = { type: "path", i: sel.i, t: simMsRef.current, n: 160 };
           worker.postMessage(req);
@@ -2299,8 +2316,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
                 spin: earthView.spin,
                 sun: earthView.sun,
                 dt: satStateRef.current ? (simMsRef.current - satStateRef.current.t) / 1000 : 0,
-                satellites: L.satellites ? 1 : 0,
-                debris: L.debris ? 1 : 0,
+                satellites: L.satellites && satsKnown ? 1 : 0,
+                debris: L.debris && satsKnown ? 1 : 0,
               }
             : undefined,
         );
@@ -2372,7 +2389,9 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
   const offsetLabel = globe
     ? Math.abs(offsetHours) < 0.02
       ? "now"
-      : `${offsetHours > 0 ? "+" : "−"}${Math.abs(offsetHours).toFixed(Math.abs(offsetHours) < 10 ? 1 : 0)} h`
+      : Math.abs(offsetHours) > EARTH_SCRUB_H
+        ? "satellites show only near today"
+        : `${offsetHours > 0 ? "+" : "−"}${Math.abs(offsetHours).toFixed(Math.abs(offsetHours) < 10 ? 1 : 0)} h`
     : Math.abs(readout.offset) < 0.01
       ? "now"
       : `${readout.offset > 0 ? "+" : "−"}${Math.abs(readout.offset).toFixed(Math.abs(readout.offset) < 10 ? 2 : 1)} yr`;
@@ -2538,7 +2557,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           <button
             type="button"
             className="onyx-orr-chip"
-            onClick={() => setPlaying(p => !p)}
+            onClick={() => {
+              // Pausing holds the whole temple at this moment (Heliodrome and Earth view too).
+              if (playing && !galaxy) holdAt(simMsRef.current, "orrery");
+              setPlaying(p => !p);
+            }}
             aria-label={playing ? "Pause" : "Play"}
           >
             {playing ? "Pause" : "Play"}
@@ -2549,6 +2572,18 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
           <button type="button" className="onyx-orr-chip ghost" onClick={resetNow}>
             Now
           </button>
+          {!galaxy ? (
+            <PneumaWhen
+              by="orrery"
+              showNow={false}
+              onPicked={ms => {
+                simMsRef.current = ms;
+                playingRef.current = false;
+                setPlaying(false);
+              }}
+              onLive={resetNow}
+            />
+          ) : null}
           {followName ? (
             <button type="button" className="onyx-orr-chip ghost" onClick={releaseFocus}>
               Unfollow
@@ -2579,6 +2614,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
             aria-label="Scrub time, hours from now"
             onChange={e => {
               simMsRef.current = Date.now() + Number(e.target.value) * 3_600_000;
+              holdAt(simMsRef.current, "orrery");
             }}
           />
         ) : (
@@ -2592,6 +2628,7 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
             aria-label="Scrub time, years from today"
             onChange={e => {
               simMsRef.current = Date.now() + Number(e.target.value) * YEAR_MS;
+              holdAt(simMsRef.current, "orrery");
             }}
           />
         )}
