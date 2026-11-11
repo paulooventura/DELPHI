@@ -32,6 +32,11 @@ export interface ClockState {
    * cannot reach that far, and the sky's math does not hold there.
    */
   agesMa: number | null;
+  /**
+   * Ice-age time, in thousands of years before present (null = off). The Earth view lowers or
+   * raises the sea to that age's level. Off whenever agesMa is on, and the other way round.
+   */
+  iceKa: number | null;
   /** Bumps on every change, for subscribers. */
   version: number;
 }
@@ -40,10 +45,10 @@ export interface ClockState {
 export const CLOCK_MIN_MS = -8.64e15;
 export const CLOCK_MAX_MS = 8.64e15;
 
-let state: ClockState = { mode: "live", atMs: 0, by: "", setAtMs: 0, agesMa: null, version: 0 };
+let state: ClockState = { mode: "live", atMs: 0, by: "", setAtMs: 0, agesMa: null, iceKa: null, version: 0 };
 const listeners = new Set<() => void>();
 
-function publish(next: Omit<ClockState, "version" | "setAtMs" | "agesMa">) {
+function publish(next: Omit<ClockState, "version" | "setAtMs" | "agesMa" | "iceKa">) {
   if (next.mode === state.mode && next.atMs === state.atMs && next.by === state.by) return;
   state = { ...state, ...next, setAtMs: Date.now(), version: state.version + 1 };
   for (const fn of listeners) fn();
@@ -56,7 +61,18 @@ export const AGES_MAX_MA = 250;
 export function setAges(ma: number | null) {
   const v = ma == null || !Number.isFinite(ma) ? null : Math.min(AGES_MAX_MA, Math.max(0, ma));
   if (v === state.agesMa) return;
-  state = { ...state, agesMa: v, version: state.version + 1 };
+  state = { ...state, agesMa: v, iceKa: v == null ? state.iceKa : null, version: state.version + 1 };
+  for (const fn of listeners) fn();
+}
+
+/** The oldest ice-age moment the sea-level curve covers, in thousands of years. */
+export const ICE_MAX_KA = 140;
+
+/** Go to ice-age time (thousands of years ago), or null to come back. Turns deep time off. */
+export function setIce(ka: number | null) {
+  const v = ka == null || !Number.isFinite(ka) ? null : Math.min(ICE_MAX_KA, Math.max(0, ka));
+  if (v === state.iceKa) return;
+  state = { ...state, iceKa: v, agesMa: v == null ? state.agesMa : null, version: state.version + 1 };
   for (const fn of listeners) fn();
 }
 
@@ -109,7 +125,7 @@ export function subscribeClock(fn: () => void): () => void {
 
 /** For tests: back to live with no history. */
 export function resetClockForTests() {
-  state = { mode: "live", atMs: 0, by: "", setAtMs: 0, agesMa: null, version: 0 };
+  state = { mode: "live", atMs: 0, by: "", setAtMs: 0, agesMa: null, iceKa: null, version: 0 };
   listeners.clear();
 }
 

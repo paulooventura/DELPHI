@@ -28,7 +28,13 @@ import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElev
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 import { watchUser } from "../../lib/userWatch";
-import { AGES_MAX_MA, clockDate, clockLabel, clockMs, clockState, isClockLive, setAges, subscribeClock } from "../../lib/cosmic/pneumaClock";
+import { AGES_MAX_MA, ICE_MAX_KA, clockDate, clockLabel, clockMs, clockState, isClockLive, setAges, setIce, subscribeClock } from "../../lib/cosmic/pneumaClock";
+import { iceAgeLabel, seaLevelAt, seaLevelRamp } from "../../lib/cosmic/seaLevel";
+
+/** Heights above and below the sea (Terrain Tiles on AWS, open data; seafloor from GEBCO and others). */
+const TERRAIN_URL = "https://s3.amazonaws.com/elevation-tiles-prod/terrarium/{z}/{x}/{y}.png";
+/** Where the Ice ages slider opens: the Last Glacial Maximum. */
+const ICE_START_KA = 21;
 import { usePneumaClock } from "../../hooks/usePneumaClock";
 import { PneumaWhen } from "./PneumaWhen";
 
@@ -212,12 +218,13 @@ export default function EarthMap({
     const step = (ts: number) => {
       const dt = Math.min(0.1, (ts - last) / 1000);
       last = ts;
-      const ma = clockState().agesMa;
-      if (ma == null || ma <= 0) {
+      const { agesMa: ma, iceKa: ka } = clockState();
+      if (ma != null && ma > 0) setAges(Math.max(0, ma - (reduceMotion ? 25 : 10) * dt));
+      else if (ka != null && ka > 0) setIce(Math.max(0, ka - (reduceMotion ? 12 : 5) * dt));
+      else {
         setAgesPlaying(false);
         return;
       }
-      setAges(Math.max(0, ma - (reduceMotion ? 25 : 10) * dt));
       raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -529,8 +536,27 @@ export default function EarthMap({
         );
       }
 
+      /* ── ice ages: land a lower sea uncovered (sand), land a higher sea drowned (water) ── */
+      // A map without the ice-age layer still opens (the Ice ages chip then shows nothing).
+      try {
+        map.addSource("dem", { type: "raster-dem", tiles: [TERRAIN_URL], tileSize: 256, maxzoom: 10, encoding: "terrarium", attribution: "Terrain Tiles on AWS" });
+        map.addLayer(
+          {
+            id: "sealevel",
+            type: "color-relief",
+            source: "dem",
+            layout: { visibility: "none" },
+            paint: { "color-relief-color": seaLevelRamp(0), "color-relief-opacity": 1 },
+          } as unknown as maplibregl.LayerSpecification,
+          "night",
+        );
+      } catch (err) {
+        console.warn("sea-level layer unavailable", err);
+      }
+
       applyVisibility();
       applyAges();
+      applyIce();
       setStatus(s => ({ ...s, ready: true }));
       root.dataset.ready = "1";
     };
@@ -539,7 +565,9 @@ export default function EarthMap({
       if (!map.getLayer("planes")) return;
       const L = layersRef.current;
       // In deep time only the day/night bands stay: planes, satellites, wrecks and today's seafloor are of today.
-      const today = clockState().agesMa == null;
+      // In ice-age time today's place names stay (they say where the old land bridges were).
+      const deep = clockState().agesMa != null;
+      const today = !deep && clockState().iceKa == null;
       const vis = (on: boolean) => (on ? "visible" : "none");
       for (const id of ["night", "night-edge", "sun-glow", "sun"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
       for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft && today));
@@ -547,7 +575,7 @@ export default function EarthMap({
       map.setLayoutProperty("seafloor", "visibility", vis(L.seafloor && today));
       map.setPaintProperty("water", "fill-opacity", L.seafloor ? 0.55 : 1);
       for (const id of ["wrecks", "wreck-names"]) map.setLayoutProperty(id, "visibility", vis(L.wrecks && today));
-      for (const b of baseLabels) if (map.getLayer(b.id)) map.setLayoutProperty(b.id, "visibility", today ? b.vis : "none");
+      for (const b of baseLabels) if (map.getLayer(b.id)) map.setLayoutProperty(b.id, "visibility", deep ? "none" : b.vis);
       if (L.wrecks && !wrecksRef.current) loadWrecks();
     };
     applyVisRef.current = applyVisibility;
@@ -563,6 +591,20 @@ export default function EarthMap({
       }
       return p;
     };
+    /* ── ice ages: recolour the heights for that age's sea level ── */
+    const applyIce = () => {
+      if (!map.getLayer("sealevel")) return;
+      const ka = clockState().iceKa;
+      map.setLayoutProperty("sealevel", "visibility", ka == null ? "none" : "visible");
+      if (ka == null) {
+        delete root.dataset.sea;
+        return;
+      }
+      const m = seaLevelAt(ka);
+      map.setPaintProperty("sealevel", "color-relief-color", seaLevelRamp(m));
+      root.dataset.sea = String(Math.round(m));
+    };
+
     let paleoShown = "";
     let paleoSeq = 0;
     const applyAges = () => {
@@ -926,7 +968,12 @@ export default function EarthMap({
     map.on("load", () => {
       if (!alive) return;
       loaded = true;
-      addLayers();
+      try {
+        addLayers();
+      } catch (err) {
+        // MapLibre swallows errors thrown in its load handler: say so, or the map hangs on "opening".
+        console.error("earth map layers failed", err);
+      }
       if (!reduceMotion) map.easeTo({ zoom: 2.6, duration: 1100 });
       else map.jumpTo({ zoom: 2.6 });
       poll();
@@ -946,20 +993,22 @@ export default function EarthMap({
     map.on("click", onClick);
     document.addEventListener("visibilitychange", onVisibility);
     // A date picked or time frozen anywhere: redraw the day side, the satellites and the planes.
-    let agesWere: number | null = clockState().agesMa;
+    const eraOf = () => (clockState().agesMa != null ? "deep" : clockState().iceKa != null ? "ice" : "now");
+    let eraWas = eraOf();
     const offClock = subscribeClock(() => {
       if (!loaded) return;
-      const ages = clockState().agesMa;
-      if ((ages == null) !== (agesWere == null)) {
+      const era = eraOf();
+      if (era !== eraWas) {
         applyVisibility();
-        // stepping into deep time: pull back to see whole continents
-        if (ages != null && map.getZoom() > 2) {
+        // stepping into deep or ice-age time: pull back to see whole continents and shelves
+        if (era !== "now" && map.getZoom() > 2) {
           if (reduceMotion) map.jumpTo({ zoom: 1.6 });
           else map.easeTo({ zoom: 1.6, duration: 900 });
         }
       }
-      agesWere = ages;
+      eraWas = era;
       applyAges();
+      applyIce();
       updateNight();
       draw();
     });
@@ -1150,6 +1199,19 @@ export default function EarthMap({
           >
             Ages
           </button>
+          <button
+            type="button"
+            className={`onyx-orr-chip${clock.iceKa != null ? " on" : ""}`}
+            aria-pressed={clock.iceKa != null}
+            data-testid="ice-toggle"
+            title="Ice ages: the sea as it was over the last 140,000 years (land bridges at the last ice age)"
+            onClick={() => {
+              setAgesPlaying(false);
+              setIce(clock.iceKa == null ? ICE_START_KA : null);
+            }}
+          >
+            Ice ages
+          </button>
           {hasUser ? (
             <button type="button" className={`onyx-orr-chip${following ? " on" : ""}`} aria-pressed={following} onClick={flyToUser}>
               {following ? "Following you" : "Near you"}
@@ -1164,7 +1226,9 @@ export default function EarthMap({
                   ? "offline · places you've viewed are kept; aircraft and seafloor need a connection"
                   : clock.agesMa != null
                     ? ageLabel(clock.agesMa)
-                    : heldNote || status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
+                    : clock.iceKa != null
+                      ? iceAgeLabel(clock.iceKa)
+                      : heldNote || status.note || (layers.aircraft ? `${fmtInt(status.aircraft)} aircraft in view` : "aircraft hidden")}
           </span>
         </div>
         {clock.agesMa != null ? (
@@ -1197,6 +1261,36 @@ export default function EarthMap({
             />
           </div>
         ) : null}
+        {clock.iceKa != null ? (
+          <div className="onyx-orr-row onyx-orr-time" role="group" aria-label="Ice ages">
+            <button
+              type="button"
+              className="onyx-orr-chip"
+              data-testid="ice-play"
+              onClick={() => {
+                if (!agesPlaying && (clock.iceKa ?? 0) <= 0) setIce(ICE_MAX_KA);
+                setAgesPlaying(p => !p);
+              }}
+            >
+              {agesPlaying ? "Pause" : "Play"}
+            </button>
+            <input
+              className="onyx-orr-scrub"
+              type="range"
+              min={0}
+              max={ICE_MAX_KA}
+              step={0.5}
+              value={ICE_MAX_KA - clock.iceKa}
+              aria-label="Ice ages: 140,000 years ago on the left, today on the right"
+              aria-valuetext={iceAgeLabel(clock.iceKa)}
+              data-testid="ice-scrub"
+              onChange={e => {
+                setAgesPlaying(false);
+                setIce(ICE_MAX_KA - Number(e.target.value));
+              }}
+            />
+          </div>
+        ) : null}
         {layersOpen ? (
           <div className="onyx-orr-row onyx-orr-layers" role="group" aria-label="Map layers">
             {LAYERS.map(l => (
@@ -1221,7 +1315,8 @@ export default function EarthMap({
           Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map:{offlineBase ? " Natural Earth ·" : ""} OpenFreeMap © OpenMapTiles ©{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:
           GEBCO · Wrecks: NOAA{status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""}, not for navigation · Orbits:
-          CelesTrak{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""} ·{" "}
+          CelesTrak{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""}
+          {clock.iceKa != null ? " · Heights: Terrain Tiles on AWS (GEBCO, SRTM, ETOPO1 and others) · Sea level: approximate, after Lambeck et al. 2014 and Spratt & Lisiecki 2016" : ""} ·{" "}
           <a href="/credits">Credits</a>
         </p>
       </div>

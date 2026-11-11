@@ -91,6 +91,12 @@ export default function CreditsPage() {
           app.
         </li>
         <li>
+          Ice ages: heights above and below the sea from{" "}
+          <Out href="https://registry.opendata.aws/terrain-tiles/">Terrain Tiles on AWS</Out> (Mapzen and partners;
+          sources include GEBCO, SRTM, ETOPO1, USGS and others). Global sea level is approximate, after Lambeck et
+          al. (2014), PNAS 111, and Spratt &amp; Lisiecki (2016), Climate of the Past 12.
+        </li>
+        <li>
           Wrecks: <Out href="https://encdirect.noaa.gov/">NOAA</Out> Electronic Navigational Charts (ENC Direct), US
           waters. <b>Not for navigation.</b>
         </li>
