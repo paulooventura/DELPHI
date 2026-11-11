@@ -27,6 +27,7 @@ import { SkyOrrery } from "./SkyOrrery";
 import { PneumaWhen } from "./PneumaWhen";
 import { usePneumaClock } from "../../hooks/usePneumaClock";
 import { clockLabel } from "../../lib/cosmic/pneumaClock";
+import { isDeepSky } from "../../lib/cosmic/starDrift";
 
 const LOCK_HOLD_MS = 3000;
 const LOCK_SAMPLE_MS = 400;
@@ -219,6 +220,9 @@ export function OnyxSky({
   const clock = usePneumaClock();
   const skyNow = useMemo(() => (clock.mode === "held" ? new Date(clock.atMs) : now), [clock, now]);
   const time = clock.mode === "held" ? clockLabel(clock) : now.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  // Far from today the sky is a reconstruction: say how it was made, and what is only approximate.
+  const deepNote =
+    clock.mode === "held" && isDeepSky(skyNow) ? "stars moved by precession and their own drift · planets approximate" : "";
   const pitchLabel = Number.isFinite(lookAlt) ? Math.round(lookAlt) : 0;
   const az = ((lookAz % 360) + 360) % 360;
   const locLine = formatLatLon(lat, lon);
@@ -487,8 +491,13 @@ export function OnyxSky({
               {locLine}
               <span className="onyx-sky-coords-meta"> · {locStatus}</span>
             </span>
-            <span>{time}</span>
+            <span className="onyx-sky-time">{time}</span>
           </div>
+          {deepNote ? (
+            <div className="onyx-sky-meta onyx-sky-deep-note" data-testid="deep-sky-note">
+              {deepNote}
+            </div>
+          ) : null}
           <div className="onyx-sky-meta" aria-live="polite">
             looking {look} · {Math.round(az)}° · pitch {pitchLabel}° · {declLabel}
             {offsetLabel ? ` · ${offsetLabel}` : ""}

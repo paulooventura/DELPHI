@@ -12,6 +12,7 @@ import {
   clockLabel,
   clockMs,
   fromLocalInputValue,
+  fromYearInput,
   goLive,
   holdAt,
   toLocalInputValue,
@@ -38,6 +39,9 @@ export function PneumaWhen({
   const clock = usePneumaClock();
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState("");
+  // The date picker stops at year 1; the Year box reaches thousands of years back ("12000 BCE").
+  const [yearDraft, setYearDraft] = useState("");
+  const [yearBad, setYearBad] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -46,11 +50,17 @@ export function PneumaWhen({
     return () => window.clearTimeout(t);
   }, [open]);
 
-  const apply = (v: string) => {
-    const ms = fromLocalInputValue(v);
-    if (!Number.isFinite(ms)) return;
+  /** Returns false when the Year box cannot be read (the box then says so). */
+  const apply = (v: string): boolean => {
+    const typed = yearDraft.trim();
+    const ms = typed ? fromYearInput(typed, fromLocalInputValue(v)) : fromLocalInputValue(v);
+    if (!Number.isFinite(ms)) {
+      if (typed) setYearBad(true);
+      return false;
+    }
     holdAt(ms, by);
     onPicked?.(ms);
+    return true;
   };
 
   const live = clock.mode === "live";
@@ -63,7 +73,11 @@ export function PneumaWhen({
         aria-label={live ? "Time is live. Choose a date" : `Time held at ${clockLabel(clock)}. Choose a date`}
         title="Choose a date and hour. Time holds there in every chamber."
         onClick={() => {
-          if (!open) setDraft(toLocalInputValue(clockMs()));
+          if (!open) {
+            setDraft(toLocalInputValue(clockMs()));
+            setYearDraft("");
+            setYearBad(false);
+          }
           setOpen(!open);
         }}
       >
@@ -95,8 +109,25 @@ export function PneumaWhen({
             onChange={e => setDraft(e.target.value)}
             onKeyDown={e => {
               if (e.key === "Enter") {
-                apply(draft);
-                setOpen(false);
+                if (apply(draft)) setOpen(false);
+              } else if (e.key === "Escape") setOpen(false);
+            }}
+          />
+          <input
+            type="text"
+            inputMode="text"
+            className="onyx-when-input onyx-when-year"
+            aria-label="Or a year, for example 12000 BCE"
+            aria-invalid={yearBad || undefined}
+            placeholder="or year: 12000 BCE"
+            value={yearDraft}
+            onChange={e => {
+              setYearDraft(e.target.value);
+              setYearBad(false);
+            }}
+            onKeyDown={e => {
+              if (e.key === "Enter") {
+                if (apply(draft)) setOpen(false);
               } else if (e.key === "Escape") setOpen(false);
             }}
           />
@@ -104,8 +135,7 @@ export function PneumaWhen({
             type="button"
             className={chipClass}
             onClick={() => {
-              apply(draft);
-              setOpen(false);
+              if (apply(draft)) setOpen(false);
             }}
           >
             Hold here

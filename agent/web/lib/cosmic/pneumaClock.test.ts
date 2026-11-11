@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  fromYearInput,
   AGES_MAX_MA,
   setAges,
   CLOCK_MAX_MS,
@@ -97,6 +98,19 @@ describe("pneumaClock", () => {
     expect(clockState().agesMa).toBe(0);
     setAges(null);
     expect(clockState().agesMa).toBeNull();
+  });
+
+  it("reads the Year box, BCE included, keeping month, day and hour", () => {
+    const base = new Date(2026, 6, 20, 21, 30).getTime();
+    const bce = new Date(fromYearInput("12000 BCE", base));
+    expect(bce.getFullYear()).toBe(-11999);
+    expect([bce.getMonth(), bce.getDate(), bce.getHours(), bce.getMinutes()]).toEqual([6, 20, 21, 30]);
+    expect(new Date(fromYearInput("-12,000")).getFullYear()).toBe(-11999);
+    expect(new Date(fromYearInput("800 CE")).getFullYear()).toBe(800);
+    expect(new Date(fromYearInput("44 BC")).getFullYear()).toBe(-43);
+    expect(fromYearInput("0")).toBeNaN();
+    expect(fromYearInput("soon")).toBeNaN();
+    expect(fromYearInput("900000 BCE")).toBeNaN();
   });
 
   it("round-trips the date picker's value, including early years", () => {

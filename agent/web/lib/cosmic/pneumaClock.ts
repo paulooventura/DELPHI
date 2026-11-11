@@ -165,3 +165,25 @@ export function fromLocalInputValue(v: string): number {
   d.setHours(Number(m[4]), Number(m[5]), 0, 0);
   return d.getTime();
 }
+
+/** How far back (or ahead) the Year box goes: within Date's range, with room to spare. */
+export const YEAR_LIMIT = 250_000;
+
+/**
+ * The Year box: "12000 BCE", "12000 BC", "-12000" (also BCE), "800", "800 CE". Keeps the month,
+ * day and hour of `baseMs` (or 1 Jan, 00:00). Returns NaN when it cannot read the year.
+ * Astronomical numbering underneath: 1 BCE is year 0.
+ */
+export function fromYearInput(v: string, baseMs?: number): number {
+  const m = /^\s*(-)?\s*([\d,. ]{1,9})\s*(bce|bc|b\.c\.e?\.?|ce|ad|a\.d\.)?\s*$/i.exec(v);
+  if (!m) return NaN;
+  const n = Number(m[2]!.replace(/[,. ]/g, ""));
+  if (!Number.isFinite(n) || n < 1) return NaN;
+  const bce = !!m[1] || /^b/i.test(m[3] ?? "");
+  const year = bce ? 1 - n : n;
+  if (Math.abs(year) > YEAR_LIMIT) return NaN;
+  const base = baseMs != null && Number.isFinite(baseMs) ? new Date(baseMs) : null;
+  const d = new Date(2000, base ? base.getMonth() : 0, base ? base.getDate() : 1, base ? base.getHours() : 0, base ? base.getMinutes() : 0, 0, 0);
+  d.setFullYear(year);
+  return d.getTime();
+}

@@ -45,6 +45,7 @@ import {
 import { CONSTELLATION_FIGURES } from "../lib/constellationLines";
 import { DEEP_SKY_OBJECTS } from "../lib/deepSkyCatalog";
 import { BRIGHT_STARS } from "../lib/brightStars";
+import { driftFigurePoint, driftRaDec, yearsFromJ2000 } from "../lib/cosmic/starDrift";
 import { milkyWayCloud } from "../lib/milkyWay";
 import { raDecToAltAz } from "../lib/skyPositions";
 import { OBS, spectrumAccent } from "../lib/design/observatoryTokens";
@@ -1252,6 +1253,17 @@ export function CelestialSkyView({
       const nightWayfinding = sky.isDay ? 0.18 : 1;
       // Recompute ephemeris every frame — wall clock + GPS fix, not stale React memo.
       const skyTime = observationTimeRef.current;
+      // Held far from today, the bright stars drift on their own (proper motion) before the
+      // precession in raDecToAltAz turns the whole sky; near today this is a no-op.
+      const driftYears = yearsFromJ2000(skyTime);
+      const starAt = (st: { id: string; ra: number; dec: number }): [number, number] => {
+        const q = driftRaDec(st.id, st.ra, st.dec, driftYears);
+        return [q.ra, q.dec];
+      };
+      const figAt = (ra: number, dec: number): [number, number] => {
+        const q = driftFigurePoint(ra, dec, driftYears);
+        return [q.ra, q.dec];
+      };
       const liveBodies = computeCelestialBodies(skyTime, lat, lon, observerAltM);
       const liveMinorBodies = computeMinorBodies(skyTime, lat, lon, observerAltM);
 
@@ -1433,7 +1445,7 @@ export function CelestialSkyView({
       const labelCands: Array<{ id: string; brightness: number }> = [];
       for (const star of BRIGHT_STARS) {
         const pt = projectRaDecToScreen(
-          star.ra, star.dec, skyTime, lat, lon, observerAltM, project.toXY,
+          ...starAt(star), skyTime, lat, lon, observerAltM, project.toXY,
         );
         if (!pt || pt.alt < 0 || !project.inView(pt.x, pt.y, w, h)) continue;
         labelCands.push({ id: `star:${star.id}`, brightness: -star.mag });
@@ -1486,7 +1498,7 @@ export function CelestialSkyView({
         for (let bi = 0; bi < BRIGHT_STARS.length; bi++) {
           const star = BRIGHT_STARS[bi]!;
           const pt = projectRaDecToScreen(
-            star.ra, star.dec, skyTime, lat, lon, observerAltM, project.toXY,
+            ...starAt(star), skyTime, lat, lon, observerAltM, project.toXY,
           );
           if (!pt || !project.inView(pt.x, pt.y, w, h)) continue;
           const below = pt.alt < 0;
@@ -1539,15 +1551,15 @@ export function CelestialSkyView({
           let visibleLines = 0;
           let labelPt: { x: number; y: number; alt: number } | null = null;
           for (const [a, b] of fig.lines) {
-            const p0 = projectRaDecToScreen(a[0], a[1], skyTime, lat, lon, observerAltM, project.toXY);
-            const p1 = projectRaDecToScreen(b[0], b[1], skyTime, lat, lon, observerAltM, project.toXY);
+            const p0 = projectRaDecToScreen(...figAt(a[0], a[1]), skyTime, lat, lon, observerAltM, project.toXY);
+            const p1 = projectRaDecToScreen(...figAt(b[0], b[1]), skyTime, lat, lon, observerAltM, project.toXY);
             if (!p0 || !p1) continue;
             segments.push([[p0.x, p0.y], [p1.x, p1.y]]);
             visibleLines++;
           }
           if (visibleLines < 1) continue;
           const lp = projectRaDecToScreen(
-            fig.label.ra, fig.label.dec, skyTime, lat, lon, observerAltM, project.toXY,
+            ...figAt(fig.label.ra, fig.label.dec), skyTime, lat, lon, observerAltM, project.toXY,
           );
           if (lp) labelPt = lp;
           const presence = labelPt

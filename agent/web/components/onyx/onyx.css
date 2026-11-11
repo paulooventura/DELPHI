@@ -5225,4 +5225,10 @@ html[data-sky="twilight"] .onyx-overlay-close {
   background: rgba(6, 6, 10, 0.7); border: 0.5px solid var(--onyx-edge-bright); border-radius: 12px;
   padding: 6px 9px; color: var(--onyx-ink-bright); font-family: inherit; font-size: var(--type-caption);
   color-scheme: dark; max-width: 100%;
-}
+}.onyx-when-year { width: 9.5em; }
+.onyx-when-year[aria-invalid="true"] { border-color: #d07a6a; }
+/* Aether held at a date: the longer time label wraps below the place instead of running over it. */
+.onyx-sky-readout .onyx-sky-coords { flex-wrap: wrap; row-gap: 2px; }
+.onyx-sky-readout .onyx-sky-coords > span:first-child { min-width: 11em; }
+.onyx-sky-time { white-space: nowrap; }
+.onyx-sky-deep-note { color: #e8c48a; opacity: 0.85; }
