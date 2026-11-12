@@ -1,30 +1,47 @@
 /* Agon enrollment + public directory.
  * Depends on portal globals: esc, modal, closeModal, toast, outbound.
- * Roles/certs come from window.AGON_ROLES / window.AGON_CERTS (set in ensureTonal).
+ * Departments/roles come from window.AGON_ROLES (set in ensureTonal); certifications, venue gear,
+ * backer visions and the availability grid come from /agon-catalog.json (also read by the server).
  * Never ask for SSN, W-9, tax IDs, or bank details here. */
 (function () {
   "use strict";
 
   var KINDS = [
-    { id: "venue", ico: "🏛️", label: "Venue", lede: "Offer your room to the scene — capacity, what's already installed, and when you're open." },
-    { id: "investor", ico: "💎", label: "Backer", lede: "Sponsor something you want to see happen — as yourself, an alias, a philanthropist, or anonymously. No money talk here; we start with the endeavor." },
-    { id: "promoter", ico: "🎫", label: "Promoter", lede: "Bring an endeavor into the pool — the night you want to build and the crew it needs." },
-    { id: "role", ico: "🧩", label: "Crew / role", lede: "Put your name down for a role on the crew — paid, or volunteer / work-exchange." }
+    { id: "venue", ico: "🏛️", label: "Venue", lede: "Offer your room to the scene: capacity, the gear and services you already have, and when you're open." },
+    { id: "promoter", ico: "🎫", label: "Promoter", lede: "Your company, and how to reach you. The nights themselves come later, together." },
+    { id: "investor", ico: "💎", label: "Backer", lede: "Back something you want to see happen, as yourself, an alias, a philanthropist, or anonymously. No money talk here; we start with the vision." },
+    { id: "role", ico: "🧩", label: "Crew", lede: "Put your name down for the crew. Pick every department and role you can work; paid, or volunteer / work-exchange." }
   ];
   var PRESENCE = [
     { id: "person", ico: "🙂", label: "Myself", name: "Your name" },
     { id: "alias", ico: "🎭", label: "An alias", name: "Alias" },
     { id: "philanthropist", ico: "🌱", label: "Philanthropist", name: "Name or foundation" },
-    { id: "anonymous", ico: "🕶️", label: "Anonymous", name: "" }
+    { id: "anonymous", ico: "🕶️", label: "Anonymous", name: "A name we can call you (it can be invented)" }
   ];
   var VENUE_TYPES = ["Bar / lounge", "Club", "Warehouse / loft", "Concert hall", "Outdoor site", "Gallery / studio", "Other"];
-  var TIERS = ["Bar ≤150", "Club night", "Concert", "Festival 5k+"];
   var FIELD_LABELS = {
-    display_name: "Name", contact_email: "Email", city: "City", link: "Link",
-    consent: "Consent", capacity: "Capacity", sponsor: "What you'd sponsor", role: "Role", kind: "Type"
+    display_name: "Name", contact_email: "Email", phone: "Phone", city: "City", link: "Link",
+    consent: "Consent", capacity: "Capacity", role: "Role", kind: "Type", cert_other: "the other certification's name"
   };
+  var PRIVACY_LINE = "Stored securely by Pneuma's platform. Used to review your enrollment and to connect you for work. Never shown publicly or sold.";
+  /* Under Vercel's 4.5 MB request cap; big photos are shrunk on the phone first. */
+  var MAX_FILE = 4 * 1024 * 1024;
+  var MAX_TOTAL = Math.floor(4.3 * 1024 * 1024);
 
   var st = null;
+  var CAT = null;
+  var catLoad = null;
+  function loadCatalog() {
+    if (CAT) return Promise.resolve(CAT);
+    if (!catLoad) {
+      catLoad = fetch("/agon-catalog.json", { cache: "force-cache" })
+        .then(function (r) { if (!r.ok) throw new Error("catalog " + r.status); return r.json(); })
+        .then(function (j) { CAT = j; return j; })
+        .catch(function (e) { catLoad = null; throw e; });
+    }
+    return catLoad;
+  }
+  loadCatalog().catch(function () { /* retried when the form opens */ });
 
   function plain(s) {
     return String(s == null ? "" : s).replace(/&amp;/g, "&");
@@ -38,6 +55,19 @@
   function presenceOf(id) {
     return PRESENCE.filter(function (p) { return p.id === id; })[0] || PRESENCE[0];
   }
+  function arr(name) {
+    if (!Array.isArray(st.v[name])) st.v[name] = st.v[name] ? [st.v[name]] : [];
+    return st.v[name];
+  }
+  function has(name, val) { return arr(name).indexOf(val) >= 0; }
+  function allCerts() {
+    return (CAT ? CAT.certs : []).reduce(function (a, g) { return a.concat(g.items); }, []);
+  }
+  function certLabel(id) {
+    var c = allCerts().filter(function (x) { return x.id === id; })[0];
+    return c ? c.label : id;
+  }
+  function kb(n) { return n > 1048576 ? (n / 1048576).toFixed(1) + " MB" : Math.max(1, Math.round(n / 1024)) + " KB"; }
 
   function field(name, label, opts) {
     opts = opts || {};
@@ -54,63 +84,111 @@
     } else if (opts.area) {
       input = '<textarea class="wzin enarea" data-f="' + name + '" maxlength="' + (opts.max || 800) + '" placeholder="' + attr(opts.ph || "") + '">' + esc(v) + "</textarea>";
     } else {
-      input = '<input class="wzin" data-f="' + name + '" type="' + (opts.type || "text") + '" maxlength="' + (opts.max || 120) + '" value="' + attr(v) + '" placeholder="' + attr(opts.ph || "") + '"' + (opts.auto ? ' autocomplete="' + opts.auto + '"' : "") + ">";
+      input = '<input class="wzin" data-f="' + name + '" type="' + (opts.type || "text") + '" maxlength="' + (opts.max || 120) + '" value="' + attr(v) + '" placeholder="' + attr(opts.ph || "") + '"' + (opts.auto ? ' autocomplete="' + opts.auto + '"' : "") + (opts.mode ? ' inputmode="' + opts.mode + '"' : "") + ">";
     }
-    return '<label class="wzf"><span>' + esc(label) + req + "</span>" + input + "</label>";
+    return '<label class="wzf"><span>' + esc(label) + req + "</span>" + input + (opts.hint ? '<em class="enhint">' + esc(opts.hint) + "</em>" : "") + "</label>";
+  }
+
+  /** Multi-select chips. `redraw` re-renders the form when the choice changes what's shown below. */
+  function chips(name, items, redraw) {
+    return '<div class="enchips">' + items.map(function (it) {
+      var on = has(name, it.id);
+      return '<button type="button" class="enchip' + (on ? " on" : "") + '" aria-pressed="' + on + '" data-multi="' + name + '" data-val="' + attr(it.id) + '"' + (redraw ? ' data-redraw="1"' : "") + ">" + esc(it.label) + "</button>";
+    }).join("") + "</div>";
+  }
+  function groupedChips(name, groups, redraw) {
+    return groups.map(function (g) {
+      return '<div class="engroup"><p class="engrouphead">' + esc(g.group) + "</p>" + chips(name, g.items, redraw) + "</div>";
+    }).join("");
+  }
+  function section(title, inner, note) {
+    return '<div class="ensec"><p class="ensechead">' + esc(title) + "</p>" + (note ? '<p class="ennote">' + esc(note) + "</p>" : "") + inner + "</div>";
+  }
+
+  function availabilityGrid() {
+    var a = CAT.availability;
+    var head = "<tr><th></th>" + a.slots.map(function (s) { return '<th scope="col">' + esc(s.label) + "<small>" + esc(s.hint) + "</small></th>"; }).join("") + "</tr>";
+    var rows = a.days.map(function (d) {
+      return '<tr><th scope="row">' + esc(d.label) + "</th>" + a.slots.map(function (s) {
+        var key = d.id + "-" + s.id;
+        var on = has("slots", key);
+        return '<td><button type="button" class="enslot' + (on ? " on" : "") + '" aria-pressed="' + on + '" aria-label="' + attr(d.label + " " + s.label) + '" data-multi="slots" data-val="' + key + '">' + (on ? "✓" : "") + "</button></td>";
+      }).join("") + "</tr>";
+    }).join("");
+    return '<table class="engrid"><thead>' + head + "</thead><tbody>" + rows + "</tbody></table>" +
+      '<div class="enrow2">' +
+      field("notice", "Notice you need", { options: a.notice.map(function (n) { return { v: n.id, l: n.label }; }) }) +
+      field("radius", "How far you'll travel", { options: a.radius.map(function (n) { return { v: n.id, l: n.label }; }) }) +
+      "</div>" +
+      field("blackout", "Dates you can't (optional)", { ph: "Dec 20 – Jan 2, every 1st Sunday…", max: 240 });
+  }
+
+  function certRows() {
+    var picked = arr("certs");
+    if (!picked.length) return "";
+    return '<div class="encertfiles">' + picked.map(function (id) {
+      var f = st.files[id];
+      var status = f ? '<span class="enfileok">✓ ' + esc(f.name) + " · " + kb(f.size) + "</span>" : '<span class="enfilemiss">Upload required</span>';
+      var other = id === "other" ? field("cert_other", "Which certification?", { req: true, ph: "Name of the certification", max: 120 }) : "";
+      return '<div class="encertrow">' + other +
+        '<div class="encertline"><span class="encertname">' + esc(id === "other" ? (st.v.cert_other || "Other") : certLabel(id)) + "</span>" + status +
+        '<label class="evbtn enfilebtn">' + (f ? "Change" : "Add file") + '<input type="file" accept=".pdf,image/*" data-certfile="' + attr(id) + '"></label></div></div>';
+    }).join("") + '<p class="enhint">A photo or PDF of each certificate, up to 4 MB each. Big photos are shrunk on your phone before sending.</p></div>';
   }
 
   function roleFields() {
-    var roles = window.AGON_ROLES;
-    var certs = window.AGON_CERTS || {};
-    var depts = roles && roles.depts ? roles.depts : [];
-    var dept = depts.filter(function (d) { return d.id === st.v.dept; })[0];
-    var html = "";
-    html += field("dept", "Department", { options: depts.map(function (d) { return { v: d.id, l: d.ico + " " + plain(d.name) }; }) });
-    var roleOpts = (dept ? dept.roles : []).map(function (r) { return plain(r.n); });
-    if (dept) html += field("role", "Role", { req: true, options: roleOpts });
-    else html += field("role", "Role", { req: true, ph: "Pick a department, or type the role you want" });
-    html += '<label class="enck"><input type="checkbox" data-f="volunteer"' + (st.v.volunteer ? " checked" : "") + '> <span>Volunteer / work-exchange — trade a shift for your way in</span></label>';
-    var certKeys = Object.keys(certs);
-    if (certKeys.length) {
-      var have = st.v.certs || [];
-      html += '<div class="wzf"><span>Certifications you hold</span><div class="encerts">' +
-        certKeys.map(function (k) {
-          return '<label class="encert"><input type="checkbox" data-cert="' + attr(k) + '"' + (have.indexOf(k) >= 0 ? " checked" : "") + "> " + esc(certs[k]) + "</label>";
-        }).join("") + "</div></div>";
-    }
-    html += field("availability", "Availability", { ph: "Weekends, Thursdays, festival season…", max: 240 });
-    html += field("experience", "Experience", { area: true, ph: "Past shows, rooms, rigs — whatever shows you're ready." });
-    return html;
+    var depts = (window.AGON_ROLES && window.AGON_ROLES.depts) || [];
+    var deptItems = depts.map(function (d) { return { id: d.id, label: d.ico + " " + plain(d.name) }; });
+    var picked = depts.filter(function (d) { return has("depts", d.id); });
+    var roleBlock = picked.length
+      ? picked.map(function (d) {
+          return '<div class="engroup"><p class="engrouphead">' + esc(d.ico + " " + plain(d.name)) + "</p>" +
+            chips("roles", d.roles.map(function (r) { return { id: plain(r.n), label: plain(r.n) }; })) + "</div>";
+        }).join("")
+      : '<p class="ennote">Pick one or more departments above and their roles show here.</p>';
+    return section("What you do",
+        '<div class="wzf"><span>Departments <b class="enreq">*</b></span>' + chips("depts", deptItems, true) + "</div>" +
+        '<div class="wzf"><span>Roles <b class="enreq">*</b></span>' + roleBlock + "</div>" +
+        '<label class="enck"><input type="checkbox" data-f="volunteer"' + (st.v.volunteer ? " checked" : "") + "> <span>Volunteer / work-exchange: trade a shift for your way in</span></label>",
+        "Choose as many as you can work. Security who also DJs, a bartender who runs lights: pick them all.") +
+      section("Certifications", groupedChips("certs", CAT.certs, true) + certRows(), "Tap each one you hold. Every certification needs its file.") +
+      section("Availability", availabilityGrid(), "Tap the times you can usually work.");
   }
 
   function kindFields() {
     if (st.kind === "venue") {
-      return field("venue_type", "Type of room", { options: VENUE_TYPES }) +
-        field("capacity", "Capacity", { req: true, ph: "~300", max: 20 }) +
-        field("infrastructure", "What's installed", { ph: "PA, lights, bar, green room, power…", max: 240 }) +
-        field("open_dates", "Dates you're open", { ph: "Weeknights, Sundays, Q1…", max: 240 });
+      return section("The room",
+          '<div class="enrow2">' + field("venue_type", "Type of room", { options: VENUE_TYPES }) +
+          field("capacity", "Capacity", { req: true, ph: "~300", max: 20, mode: "numeric" }) + "</div>" +
+          field("open_dates", "Dates you're open", { ph: "Weeknights, Sundays, Q1…", max: 240 })) +
+        section("Gear & services you have", groupedChips("gear", CAT.gear) +
+          field("gear_other", "Anything else", { ph: "Fire pit, rooftop, sauna…", max: 240 }), "Tick everything the room already has, so promoters and backers can plan around it.");
     }
     if (st.kind === "investor") {
-      return field("sponsor", "What you'd like to sponsor", { ph: "A warehouse night, a festival, a crew, youth music, a cause…", max: 240 }) +
-        '<div class="pmguard">🛡️ This is an introduction, not an offer. Nothing is sold, signed, or paid here — we talk about the endeavor first. Not financial advice.</div>';
+      return section("What's your vision?", chips("vision", CAT.vision) +
+          field("vision_text", "In a line (optional)", { ph: "A warehouse night for local DJs, a youth music program…", max: 240 })) +
+        '<div class="pmguard">🛡️ This is an introduction, not an offer. Nothing is sold, signed, or paid here. We talk about the vision first. Not financial advice.</div>';
     }
-    if (st.kind === "promoter") {
-      return field("event_name", "Endeavor name", { ph: "Coupled // Warehouse" }) +
-        field("event_date", "Date", { ph: "Sat, Mar 14 — or 'Every Thursday'" }) +
-        field("event_venue", "Venue / location", { ph: "The Annex, Nashville" }) +
-        field("tier", "Scale", { options: TIERS }) +
-        field("style", "Style / intention", { ph: "Deep house, high-warmth, care-first" }) +
-        field("cap", "Expected capacity", { ph: "~450", max: 20 });
-    }
+    if (st.kind === "promoter") return "";
     return roleFields();
   }
 
+  function nameLabel(pres) {
+    if (st.kind === "venue") return "Venue name";
+    if (st.kind === "promoter") return "Company name";
+    if (st.kind === "investor") return pres.name;
+    return "Your name";
+  }
+
   function render() {
+    var host = document.querySelector("#modalHost .enbody");
+    var keepScroll = host && st.keepScroll ? host.scrollTop : 0;
+    st.keepScroll = false;
     var k = kindOf(st.kind);
     var tabs = KINDS.map(function (x) {
       return '<button type="button" class="enkind' + (x.id === st.kind ? " on" : "") + '" data-kind="' + x.id + '"><span>' + x.ico + "</span>" + esc(x.label) + "</button>";
     }).join("");
-    var err = st.error ? '<div class="enerr">' + esc(st.error) + "</div>" : "";
+    var err = st.error ? '<div class="enerr" role="alert">' + esc(st.error) + "</div>" : "";
     var backer = st.kind === "investor";
     var pres = presenceOf(st.v.presence);
     var anon = backer && pres.id === "anonymous";
@@ -119,34 +197,38 @@
         PRESENCE.map(function (x) {
           return '<button type="button" class="enkind' + (x.id === pres.id ? " on" : "") + '" data-presence="' + x.id + '"><span>' + x.ico + "</span>" + esc(x.label) + "</button>";
         }).join("") + "</div></div>" +
-        (anon ? '<p class="ennote">You\'ll show as “Anonymous backer”. Only Paulo sees your email.</p>' : "")
+        (anon ? '<p class="ennote">You\'ll show as “Anonymous backer”. We still need a name to call you and a way to reach you, for when a night gets planned.</p>' : "")
       : "";
-    var nameLabel = st.kind === "venue" ? "Venue name" : backer ? pres.name : "Name (as it should appear)";
     var consentText = anon
-      ? "I agree to be contacted about Agon. If approved, I appear only as “Anonymous backer” with what I'd sponsor and my note. Email and phone stay private."
+      ? "I agree to be contacted about Agon. If approved, I appear only as “Anonymous backer” with my vision and note. My name, email and phone stay private."
       : "I agree to be contacted about Agon. If approved, my name, city, headline, about, and link can appear in the public directory. Email and phone stay private.";
     modal(
       '<form class="wzwrap enform" novalidate>' +
-        '<p class="pmkick">✦ Enroll in Agon</p>' +
-        '<div class="enkinds">' + tabs + "</div>" +
-        '<p class="wzsub">' + esc(k.lede) + "</p>" +
-        presence +
-        (anon ? "" : field("display_name", nameLabel, { req: true, auto: st.kind === "venue" || pres.id === "philanthropist" ? "organization" : pres.id === "alias" ? "off" : "name" })) +
-        (anon ? "" : field("city", "City", { req: true, ph: "Nashville, TN", auto: "address-level2" })) +
-        kindFields() +
-        field("about", anon ? "A note (optional)" : "About", { area: true, ph: anon ? "Why this matters to you — no names needed." : "A few lines on who you are and what you bring." }) +
-        (anon ? "" : field("link", "Link", { ph: "Website, Instagram @handle, SoundCloud…", max: 240, auto: "url" })) +
-        '<p class="enprivate">Private — only Paulo sees these</p>' +
-        field("contact_email", "Email", { req: true, type: "email", auto: "email", max: 254 }) +
-        (backer && pres.id !== "person" ? field("private_name", "Your real name (optional)", { auto: "name" }) : "") +
-        field("phone", "Phone (optional)", { type: "tel", auto: "tel", max: 40 }) +
-        '<label class="enhp" aria-hidden="true">Website <input tabindex="-1" autocomplete="off" data-f="website"></label>' +
-        '<label class="enck"><input type="checkbox" data-f="consent"' + (st.v.consent ? " checked" : "") + "> <span>" + esc(consentText) + "</span></label>" +
-        '<p class="enfoot">Never send SSN, W-9, or bank details here — payment platforms handle that when a booking is real.</p>' +
-        err +
-        '<div class="wznav"><button type="button" class="evbtn" data-act="cancel">Cancel</button><button type="submit" class="evbtn primary"' + (st.busy ? " disabled" : "") + ">" + (st.busy ? "Sending…" : "✦ Submit for review") + "</button></div>" +
+        '<div class="enhead"><p class="pmkick">✦ Enroll in Agon</p><div class="enkinds">' + tabs + "</div></div>" +
+        '<div class="enbody">' +
+          '<p class="wzsub">' + esc(k.lede) + "</p>" +
+          presence +
+          field("display_name", nameLabel(pres), { req: true, auto: st.kind === "venue" || st.kind === "promoter" || pres.id === "philanthropist" ? "organization" : pres.id === "person" ? "name" : "off" }) +
+          '<div class="enrow2">' + field("city", anon ? "City (optional)" : "City", { req: !anon, ph: "Nashville, TN", auto: "address-level2" }) +
+          (anon ? "" : field("link", "Link (optional)", { ph: "Website, Instagram @handle…", max: 240, auto: "url" })) + "</div>" +
+          kindFields() +
+          field("about", anon ? "A note (optional)" : "About", { area: true, ph: anon ? "Why this matters to you. No names needed." : st.kind === "role" ? "Who you are, past shows, rooms and rigs: whatever shows you're ready." : "A few lines on who you are and what you bring." }) +
+          section("Contact",
+            '<div class="enrow2">' + field("contact_email", "Email", { req: true, type: "email", auto: "email", max: 254 }) +
+            field("phone", "Phone", { req: true, type: "tel", auto: "tel", max: 40 }) + "</div>" +
+            (backer && pres.id !== "person" && !anon ? field("private_name", "Your real name (optional)", { auto: "name" }) : ""),
+            PRIVACY_LINE) +
+          '<label class="enhp" aria-hidden="true">Website <input tabindex="-1" autocomplete="off" data-f="website"></label>' +
+          '<label class="enck"><input type="checkbox" data-f="consent"' + (st.v.consent ? " checked" : "") + "> <span>" + esc(consentText) + "</span></label>" +
+          '<p class="enfoot">Never send SSN, W-9, or bank details here. Payment platforms handle that when a booking is real.</p>' +
+        "</div>" +
+        '<div class="enfootbar">' + err +
+          '<div class="wznav"><button type="button" class="evbtn" data-act="cancel">Cancel</button><button type="submit" class="evbtn primary"' + (st.busy ? " disabled" : "") + ">" + (st.busy ? (st.busyText || "Sending…") : "✦ Submit for review") + "</button></div>" +
+        "</div>" +
       "</form>"
     );
+    var body = document.querySelector("#modalHost .enbody");
+    if (body && keepScroll) body.scrollTop = keepScroll;
     bind();
   }
 
@@ -155,15 +237,10 @@
       var f = el.getAttribute("data-f");
       st.v[f] = el.type === "checkbox" ? el.checked : el.value;
     });
-    var certs = [];
-    form.querySelectorAll("[data-cert]").forEach(function (el) {
-      if (el.checked) certs.push(el.getAttribute("data-cert"));
-    });
-    st.v.certs = certs;
   }
 
   var DRAFT_KEY = "pm-enroll-draft";
-  var NOT_TYPED = { certs: 1, consent: 1, presence: 1, volunteer: 1, website: 1 };
+  var NOT_TYPED = { consent: 1, presence: 1, volunteer: 1, website: 1 };
 
   function saveDraft() {
     if (!st) return;
@@ -181,8 +258,35 @@
   }
   function typedSomething() {
     if (!st) return false;
-    if (st.v.certs && st.v.certs.length) return true;
-    return Object.keys(st.v).some(function (k) { return !NOT_TYPED[k] && String(st.v[k] == null ? "" : st.v[k]).trim(); });
+    if (Object.keys(st.files).length) return true;
+    return Object.keys(st.v).some(function (k) {
+      if (NOT_TYPED[k]) return false;
+      var v = st.v[k];
+      return Array.isArray(v) ? v.length > 0 : String(v == null ? "" : v).trim();
+    });
+  }
+
+  /** Phone photos are often 3–8 MB: shrink to 2000 px JPEG before sending. PDFs go as they are. */
+  function prepFile(file) {
+    if (!/^image\//.test(file.type) || file.size < 1.5 * 1048576) return Promise.resolve(file);
+    return new Promise(function (resolve) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+      img.onload = function () {
+        var scale = Math.min(1, 2000 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * scale);
+        c.height = Math.round(img.naturalHeight * scale);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(url);
+        c.toBlob(function (b) {
+          if (!b || b.size >= file.size) return resolve(file);
+          resolve(new File([b], file.name.replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }));
+        }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); resolve(file); };
+      img.src = url;
+    });
   }
 
   function bind() {
@@ -206,6 +310,8 @@
         st.kind = b.getAttribute("data-kind");
         st.error = "";
         render();
+        var body = document.querySelector("#modalHost .enbody");
+        if (body) body.scrollTop = 0;
       };
     });
     form.querySelectorAll("[data-presence]").forEach(function (b) {
@@ -213,11 +319,51 @@
         collect(form);
         st.v.presence = b.getAttribute("data-presence");
         st.error = "";
+        st.keepScroll = true;
         render();
       };
     });
-    var dept = form.querySelector('[data-f="dept"]');
-    if (dept) dept.onchange = function () { collect(form); st.v.role = ""; render(); };
+    form.querySelectorAll("[data-multi]").forEach(function (b) {
+      b.onclick = function () {
+        collect(form);
+        var name = b.getAttribute("data-multi");
+        var val = b.getAttribute("data-val");
+        var list = arr(name);
+        var i = list.indexOf(val);
+        if (i >= 0) list.splice(i, 1); else list.push(val);
+        if (name === "certs" && i >= 0) delete st.files[val];
+        if (name === "depts" && i >= 0) {
+          // Unpicking a department drops its roles too.
+          var d = ((window.AGON_ROLES && window.AGON_ROLES.depts) || []).filter(function (x) { return x.id === val; })[0];
+          if (d) st.v.roles = arr("roles").filter(function (r) { return !d.roles.some(function (x) { return plain(x.n) === r; }); });
+        }
+        saveDraft();
+        if (b.getAttribute("data-redraw")) { st.keepScroll = true; render(); return; }
+        var on = i < 0;
+        b.classList.toggle("on", on);
+        b.setAttribute("aria-pressed", String(on));
+        if (b.classList.contains("enslot")) b.textContent = on ? "✓" : "";
+      };
+    });
+    form.querySelectorAll("[data-certfile]").forEach(function (inp) {
+      inp.onchange = function () {
+        var id = inp.getAttribute("data-certfile");
+        var f = inp.files && inp.files[0];
+        if (!f) return;
+        collect(form);
+        prepFile(f).then(function (ready) {
+          if (!st) return;
+          if (ready.size > MAX_FILE) {
+            st.error = "That file is " + kb(ready.size) + ". Each certificate can be up to 4 MB: try a photo or a smaller PDF.";
+          } else {
+            st.files[id] = ready;
+            st.error = "";
+          }
+          st.keepScroll = true;
+          render();
+        });
+      };
+    });
     form.querySelector('[data-act="cancel"]').onclick = function () { closeModal(); };
     form.onsubmit = function (ev) {
       ev.preventDefault();
@@ -226,50 +372,79 @@
     };
   }
 
+  function showError(msg) {
+    st.error = msg;
+    st.keepScroll = true;
+    render();
+  }
+
   function submit() {
     if (st.busy) return;
     var v = st.v;
     var missing = [];
     var anon = st.kind === "investor" && v.presence === "anonymous";
-    if (!anon && !String(v.display_name || "").trim()) missing.push("name");
+    var digits = String(v.phone || "").replace(/[\s().\-]/g, "").replace(/^\+/, "");
+    if (!String(v.display_name || "").trim()) missing.push("name");
     if (!anon && !String(v.city || "").trim()) missing.push("city");
     if (!/^\S+@\S+\.\S+$/.test(String(v.contact_email || "").trim())) missing.push("a valid email");
+    if (!/^\d{7,15}$/.test(digits)) missing.push("a phone number");
     if (!v.consent) missing.push("the consent box");
     if (st.kind === "venue" && !String(v.capacity || "").trim()) missing.push("capacity");
-    if (st.kind === "role" && !String(v.role || "").trim()) missing.push("a role");
-    if (missing.length) {
-      st.error = "Still needed: " + missing.join(", ") + ".";
-      render();
-      return;
-    }
+    if (st.kind === "role" && !arr("roles").length) missing.push("at least one role");
+    var certs = st.kind === "role" ? arr("certs") : [];
+    if (certs.indexOf("other") >= 0 && !String(v.cert_other || "").trim()) missing.push("the other certification's name");
+    var noFile = certs.filter(function (c) { return !st.files[c]; });
+    if (noFile.length) missing.push("a file for " + noFile.map(certLabel).join(", "));
+    if (missing.length) return showError("Still needed: " + missing.join(", ") + ".");
+    var total = certs.reduce(function (n, c) { return n + st.files[c].size; }, 0);
+    if (total > MAX_TOTAL) return showError("The certificate files add up to " + kb(total) + "; the limit is about 4 MB in all. Swap a PDF for a photo, or send the biggest one later.");
 
     var payload = { kind: st.kind, started_at: st.startedAt, source: st.source };
     Object.keys(v).forEach(function (k) { payload[k] = v[k]; });
+    if (st.kind !== "role") { delete payload.certs; delete payload.slots; delete payload.depts; delete payload.roles; }
     if (st.kind === "investor") {
       payload.presence = presenceOf(v.presence).id;
-      if (anon) { payload.display_name = ""; payload.city = ""; payload.link = ""; }
+      if (anon) { payload.link = ""; }
     }
-    if (st.kind === "role" && v.dept) {
-      var d = (window.AGON_ROLES && window.AGON_ROLES.depts || []).filter(function (x) { return x.id === v.dept; })[0];
-      if (d) payload.dept = plain(d.name);
+    if (st.kind === "role") {
+      var depts = (window.AGON_ROLES && window.AGON_ROLES.depts) || [];
+      payload.depts = arr("depts").map(function (id) {
+        var d = depts.filter(function (x) { return x.id === id; })[0];
+        return d ? plain(d.name) : id;
+      });
+    }
+
+    var init = { method: "POST" };
+    if (certs.length) {
+      var fd = new FormData();
+      fd.append("payload", JSON.stringify(payload));
+      certs.forEach(function (c) { fd.append("cert:" + c, st.files[c], st.files[c].name); });
+      init.body = fd;
+      st.busyText = "Sending files…";
+    } else {
+      init.headers = { "Content-Type": "application/json" };
+      init.body = JSON.stringify(payload);
+      st.busyText = "Sending…";
     }
 
     st.busy = true;
     st.error = "";
+    st.keepScroll = true;
     render();
-    fetch((window.PM_API_BASE || "") + "/api/agon/enroll", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    })
+    fetch((window.PM_API_BASE || "") + "/api/agon/enroll", init)
       .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, body: j }; }); })
       .then(function (res) {
         st.busy = false;
-        if (res.status === 200 && res.body.ok) return done();
-        if (res.status === 503) st.error = "Enrollment isn't connected yet — the sheet goes live shortly. Your answers are still here; try again soon.";
+        var b = res.body || {};
+        if (res.status === 200 && b.ok) return done(b.approved);
+        if (res.status === 503 && b.error === "uploads-off") st.error = "Certificate uploads open once the platform's storage is connected, very soon. Your answers are still here; try again shortly.";
+        else if (res.status === 503) st.error = "Enrollment isn't connected yet. It goes live shortly. Your answers are still here; try again soon.";
+        else if (res.status === 413) st.error = "The files are too big to send together. Try smaller photos.";
         else if (res.status === 429) st.error = "Too many sends from this connection. Give it a few minutes.";
-        else if (res.body && res.body.fields) st.error = "Check: " + res.body.fields.map(function (f) { return FIELD_LABELS[f] || f; }).join(", ") + ".";
-        else st.error = "Couldn't reach the sheet. Try again in a moment.";
+        else if (b.error === "files") st.error = b.tooBig ? "The files are too big together (about 4 MB in all)." : "Check the file for: " + (b.missing || []).concat((b.problems || []).map(function (p) { return p.cert; })).map(certLabel).join(", ") + " (PDF or photo, up to 4 MB).";
+        else if (b.fields) st.error = "Check: " + b.fields.map(function (f) { return FIELD_LABELS[f] || f; }).join(", ") + ".";
+        else st.error = "Couldn't send it. Try again in a moment.";
+        st.keepScroll = true;
         render();
       })
       .catch(function () {
@@ -277,17 +452,20 @@
         st.error = navigator.onLine === false
           ? "Sending needs a connection. Your answers are kept here until you're back online."
           : "Network hiccup. Try again in a moment.";
+        st.keepScroll = true;
         render();
       });
   }
 
-  function done() {
+  function done(approved) {
     var k = kindOf(st.kind);
     modal(
       '<div class="pmwrap" style="text-align:center">' +
         '<div style="font-size:30px;margin:6px 0 10px">' + k.ico + "</div>" +
-        '<h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">You\'re on the list</h3>' +
-        '<p class="pmintro">Paulo reviews every enrollment by hand. Once approved, you\'ll appear in the Agon directory and hear back at the email you gave.</p>' +
+        '<h3 style="margin:0 0 8px;font-family:var(--serif);font-size:20px">' + (approved ? "You're in the directory" : "You're on the list") + "</h3>" +
+        '<p class="pmintro">' + (approved
+          ? "Every check passed, so you're listed in the Agon directory now. We'll be in touch at the email you gave."
+          : "Your enrollment gets a quick automatic check, then a final review. Once approved, you'll appear in the Agon directory and hear back at the email you gave.") + "</p>" +
         '<button class="pmclose" onclick="closeModal()">Close</button>' +
       "</div>"
     );
@@ -298,12 +476,21 @@
     if (window.agonDirectoryRefresh) window.agonDirectoryRefresh();
   }
 
+  function open() {
+    loadCatalog().then(function () { if (st) render(); }, function () {
+      if (!st) return;
+      modal('<div class="pmwrap" style="text-align:center"><p class="pmintro">The enrollment form needs a connection to open.</p><button class="pmclose" onclick="agonEnroll()">Try again</button> <button class="pmclose" onclick="closeModal()">Close</button></div>');
+    });
+    if (!CAT) modal('<div class="pmwrap" style="text-align:center"><p class="pmintro">Opening the form…</p></div>');
+  }
+
   /** agonEnroll(kind, prefill) — prefill keys match form fields; `source` tags the entry. */
   window.agonEnroll = function (kind, prefill) {
     prefill = prefill || {};
     st = {
       kind: kindOf(kind).id,
       v: {},
+      files: {},
       startedAt: Date.now(),
       source: String(prefill.source || "agon").slice(0, 60),
       busy: false,
@@ -314,9 +501,12 @@
       Object.keys(draft.v).forEach(function (k) { st.v[k] = draft.v[k]; });
       if (!kind && draft.kind) st.kind = kindOf(draft.kind).id;
     }
-    Object.keys(prefill).forEach(function (k) { if (k !== "source") st.v[k] = prefill[k]; });
+    // Role cards pass one department and role; the form keeps lists.
+    if (prefill.dept) { st.v.depts = arr("depts").concat(arr("depts").indexOf(prefill.dept) < 0 ? [prefill.dept] : []); }
+    if (prefill.role) { st.v.roles = arr("roles").concat(arr("roles").indexOf(prefill.role) < 0 ? [prefill.role] : []); }
+    Object.keys(prefill).forEach(function (k) { if (k !== "source" && k !== "dept" && k !== "role") st.v[k] = prefill[k]; });
     if (window.pmTrack) window.pmTrack.event("enroll_open", st.kind + " · " + st.source);
-    render();
+    open();
   };
 
   /* ---------- public directory (approved only) ---------- */
@@ -408,28 +598,57 @@
   };
   window.agonDirectoryRefresh = function () { if (dir.host) dirLoad(); };
 
+
   var css = document.createElement("style");
   css.textContent = [
-    ".enform{padding:22px 22px 18px}",
+    /* The form is a sheet: header and buttons stay put, the middle scrolls with a visible bar (crew forms are long). */
+    ".modal:has(.enform){display:flex;flex-direction:column;max-height:calc(100dvh - 48px)}",
+    ".backdrop:has(.enform){padding:24px 12px;align-items:center}",
+    ".enform{display:flex;flex-direction:column;min-height:0;max-height:calc(100dvh - 48px);padding:0;background:rgba(10,8,20,.9)}",
+    ".enhead{padding:18px 20px 4px;flex:none}",
+    ".enbody{flex:1 1 auto;min-height:0;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;padding:4px 20px 12px;scrollbar-width:thin;scrollbar-color:rgba(200,185,255,.55) transparent}",
+    ".enbody::-webkit-scrollbar{width:8px}.enbody::-webkit-scrollbar-thumb{background:rgba(200,185,255,.5);border-radius:8px}.enbody::-webkit-scrollbar-track{background:transparent}",
+    ".enfootbar{flex:none;padding:10px 20px 16px;border-top:1px solid var(--lsoft);background:linear-gradient(180deg,rgba(10,8,20,.6),rgba(10,8,20,.95))}",
+    ".enfootbar .wznav{margin-top:0}",
     ".modal .wzin{background:rgba(8,6,18,.78);border:1px solid rgba(200,185,255,.22);color:#f6f2ff}",
     ".modal .wzin::placeholder{color:rgba(220,210,255,.38)}",
     ".modal select.wzin option{background:#120e1f;color:#f6f2ff}",
-    ".enkinds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 12px}",
+    ".enkinds{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:6px 0 8px}",
     ".enkind{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;font:inherit;font-size:12px;font-weight:700;cursor:pointer;opacity:.62}",
     ".enkind span{font-size:18px}.enkind.on{opacity:1;filter:brightness(1.25)}",
     ".enarea{min-height:78px;resize:vertical}",
     ".enpres{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}",
-    ".ennote{font-size:12px;color:#cbbcff;margin:-2px 0 10px}",
+    ".ennote{font-size:12px;color:#cbbcff;margin:-2px 0 10px;line-height:1.45}",
+    ".enhint{display:block;font-style:normal;font-size:12px;color:var(--fogd);margin-top:5px}",
     "select.wzin{appearance:auto}",
     ".enreq{color:var(--amber);font-weight:700}",
+    ".enrow2{display:grid;grid-template-columns:1fr 1fr;gap:0 12px}",
+    ".ensec{margin:16px 0 6px;border-top:1px solid var(--lsoft);padding-top:12px}",
+    ".ensechead{font-family:var(--font-num);font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:#b9a6ff;margin:0 0 8px}",
+    ".engroup{margin:0 0 10px}",
+    ".engrouphead{font-size:12px;color:var(--fog);margin:0 0 6px;font-weight:700}",
+    ".enchips{display:flex;flex-wrap:wrap;gap:6px}",
+    ".enchip{font:inherit;font-size:12px;padding:7px 11px;border-radius:999px;border:1px solid rgba(200,185,255,.25);background:rgba(8,6,18,.6);color:var(--fog);cursor:pointer;line-height:1.2;min-height:32px}",
+    ".enchip.on{border-color:var(--amber);color:#fff4dc;background:rgba(214,170,90,.16);box-shadow:inset 0 0 0 1px rgba(214,170,90,.35)}",
+    ".engrid{width:100%;border-collapse:separate;border-spacing:4px;margin:2px 0 10px;table-layout:fixed}",
+    ".engrid th{font-size:12px;font-weight:700;color:var(--fog);text-align:center;padding:0}",
+    ".engrid th small{display:block;font-weight:400;color:var(--fogd);font-size:12px}",
+    ".engrid tbody th{text-align:left;width:3.2em}",
+    ".enslot{width:100%;min-height:34px;border-radius:8px;border:1px solid rgba(200,185,255,.22);background:rgba(8,6,18,.6);color:#fff4dc;font:inherit;font-size:14px;cursor:pointer}",
+    ".enslot.on{background:rgba(214,170,90,.22);border-color:var(--amber)}",
+    ".encertfiles{margin:4px 0 6px;display:grid;gap:8px}",
+    ".encertrow{border:1px solid rgba(200,185,255,.18);border-radius:10px;padding:8px 10px;background:rgba(8,6,18,.45)}",
+    ".encertline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
+    ".encertname{font-size:12px;font-weight:700;color:var(--paper);flex:1 1 140px}",
+    ".enfileok{font-size:12px;color:#bfe8c8;flex:1 1 120px;overflow-wrap:anywhere}",
+    ".enfilemiss{font-size:12px;color:var(--amber);flex:1 1 120px}",
+    ".enfilebtn{position:relative;overflow:hidden;cursor:pointer}",
+    ".enfilebtn input{position:absolute;inset:0;opacity:0;cursor:pointer}",
     ".enck{display:flex;gap:10px;align-items:flex-start;margin:10px 0;font-size:12.5px;color:var(--fog);line-height:1.45;cursor:pointer}",
     ".enck input{margin-top:3px;accent-color:#8B6CFF}",
-    ".encerts{display:flex;flex-wrap:wrap;gap:6px 14px}",
-    ".encert{font-size:12px;color:var(--fog);display:flex;gap:6px;align-items:center;cursor:pointer}.encert input{accent-color:#8B6CFF}",
-    ".enprivate{font-family:ui-monospace,monospace;font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#b9a6ff;margin:16px 0 8px;border-top:1px solid var(--lsoft);padding-top:12px}",
     ".enhp{position:absolute!important;left:-9999px!important;width:1px;height:1px;overflow:hidden}",
-    ".enfoot{font-size:11px;color:var(--fogd);margin:6px 0 10px}",
-    ".enerr{border:1px solid rgba(255,120,120,.4);background:rgba(255,90,90,.08);color:#ffb3b3;border-radius:10px;padding:10px 12px;font-size:12.5px;margin:8px 0}",
+    ".enfoot{font-size:12px;color:var(--fogd);margin:6px 0 4px}",
+    ".enerr{border:1px solid rgba(255,120,120,.4);background:rgba(255,90,90,.08);color:#ffb3b3;border-radius:10px;padding:10px 12px;font-size:12.5px;margin:0 0 10px}",
     ".enrollpanel{display:grid;gap:22px}",
     ".dirchips{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 14px}",
     ".dirchip{font:inherit;font-size:12px;font-weight:700;padding:7px 13px;cursor:pointer;opacity:.6}.dirchip.on{opacity:1;filter:brightness(1.25)}",
@@ -442,7 +661,7 @@
     ".dirabout{margin:0;color:var(--fog);font-size:12.5px;line-height:1.5}",
     ".dirlink{align-self:flex-start;margin-top:auto}",
     ".dirempty{color:var(--fog);font-size:13px}",
-    "@media (max-width:520px){.enkinds,.enpres{grid-template-columns:repeat(2,1fr)}}"
+    "@media (max-width:520px){.enpres{grid-template-columns:repeat(2,1fr)}.enkinds{gap:6px}.enkind{padding:7px 2px;gap:2px}.enkind span{font-size:15px}.enrow2{grid-template-columns:1fr}.backdrop:has(.enform){padding:10px 8px}.modal:has(.enform),.enform{max-height:calc(100dvh - 20px)}.enhead{padding:14px 14px 2px}.enbody{padding:4px 14px 10px}.enfootbar{padding:10px 14px 12px}}"
   ].join("\n");
   document.head.appendChild(css);
 })();

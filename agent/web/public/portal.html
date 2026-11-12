@@ -936,6 +936,9 @@
   /* ===== fork: choose your path ===== */
   .tfork{max-width:900px;margin:0 auto;padding:48px 20px 10px;text-align:center}
   .forkcards{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin:34px auto 18px;max-width:720px}
+  .agenrollfirst{max-width:860px;margin:26px auto 14px;grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}
+  @media(max-width:520px){.agenrollfirst{grid-template-columns:1fr 1fr;gap:10px;margin-top:18px}.agenrollfirst .evccard{padding:14px}.agenrollfirst .evccard p{font-size:12px;line-height:1.4}}
+  .agforkmore{margin:18px 0 6px;font-size: var(--type-small);color:var(--fog)}
   @media(max-width:680px){.forkcards{grid-template-columns:1fr}}
   .forkcard{
     --cut:14px;--lx:28%;--ly:20%;
@@ -1329,7 +1332,7 @@
 <div class="backdrop" id="backdrop"><div id="modalHost"></div></div>
 
 <script src="/adyton-hr-panels.js?v=2026-10-30a"></script>
-<script src="/agon-enroll.js?v=2026-10-29f" defer></script>
+<script src="/agon-enroll.js?v=2026-11-11a" defer></script>
 <script src="/pm-telemetry.js?v=2026-10-29h" defer></script>
 
 <!-- outbound gate -->
@@ -1401,7 +1404,7 @@ function pmHeadInit(){
   window.addEventListener('storage',e=>{if(e.key==='delphi-clock-sfx')pmStoneSync();});
   pmStoneSync();
 }
-function bootPortal(){pmHeadInit();try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);const s=pmState();if(s){if(s.screen==='studies'||s.screen==='tonal'){go(s.screen,s.screen==='studies'?'left':'down',true);if(s.screen==='tonal'&&s.path&&window.tonalPathRestore){window.tonalPathRestore(s.path);if(window.agonRestore)window.agonRestore(s);}}return;}const start=(name==='studies'||name==='tonal')?name:'portal';history.replaceState({pm:1,d:0,screen:start,path:null,modal:0},'');if(start!=='portal')go(start,start==='studies'?'left':'down',true);if(start==='tonal'&&window.tonalRememberedPath){const p=window.tonalRememberedPath();if(p)window.tonalPath(p);}}catch(e){}}
+function bootPortal(){pmHeadInit();try{const path=location.pathname.replace(/\/+$/,'')||'/';const q=new URLSearchParams(location.search).get('screen');const name=q||(path.endsWith('/studies')?'studies':path.endsWith('/tonal')?'tonal':null);const s=pmState();if(s){if(s.screen==='studies'||s.screen==='tonal'){go(s.screen,s.screen==='studies'?'left':'down',true);if(s.screen==='tonal'&&s.path&&window.tonalPathRestore){window.tonalPathRestore(s.path);if(window.agonRestore)window.agonRestore(s);}}return;}const start=(name==='studies'||name==='tonal')?name:'portal';history.replaceState({pm:1,d:0,screen:start,path:null,modal:0},'');if(start!=='portal')go(start,start==='studies'?'left':'down',true);}catch(e){}}
 
 /* ===== fluid navigation: scroll, drag/swipe, and hold-to-charge ===== */
 const _dirMap={up:['sky','up'],down:['tonal','down'],left:['studies','left'],right:['clock','right'],center:['me','center']};
@@ -1776,15 +1779,15 @@ troot.innerHTML=`
     <div class="tfork" id="tfork">
       <h1 class="ttitle">Agon</h1>
       <p class="ttagline">Show Thyself</p>
-      <p class="tsub">Choose Your Path</p>
-      <div class="forkcards">
-        <button class="forkcard guest" onclick="tonalPath('guest')">
-          <h3>enter as a guest</h3>
-        </button>
-        <button class="forkcard builder" onclick="tonalPath('builder')">
-          <h3>Enter as promoter · venue · backer</h3>
-        </button>
+      <p class="tsub">Now enrolling: venues, promoters, backers and crew</p>
+      <!-- Agon opens on Enroll (Paulo 2026-11-11): the scene is still gathering, so joining comes first. -->
+      <div class="evcgrid agenrollfirst">
+        <button class="evccard" onclick="agonEnroll('venue',{source:'agon-open'})"><span class="evcico">🏛️</span><h4>Venue</h4><p>Your room, its capacity, and the gear and services you have.</p></button>
+        <button class="evccard" onclick="agonEnroll('promoter',{source:'agon-open'})"><span class="evcico">🎫</span><h4>Promoter</h4><p>Your company and how to reach you.</p></button>
+        <button class="evccard" onclick="agonEnroll('investor',{source:'agon-open'})"><span class="evcico">💎</span><h4>Backer</h4><p>The vision you'd like to see happen, under any name you choose.</p></button>
+        <button class="evccard" onclick="agonEnroll('role',{source:'agon-open'})"><span class="evcico">🧩</span><h4>Crew</h4><p>Every department and role you can work, your certifications and your times.</p></button>
       </div>
+      <p class="agforkmore"><button class="aglink" onclick="tonalPath('guest')">Browse as a guest</button> · <button class="aglink" onclick="tonalPath('builder')">How Agon works</button></p>
     </div>
 
     <!-- GUEST VIEW -->
@@ -1940,12 +1943,12 @@ troot.innerHTML=`
       <div class="enrollpanel">
         <div class="evcreate">
           <p class="evseclabel">✦ Enroll in Agon</p>
-          <p class="evcintro">Venues, backers, promoters, and crew — put yourself on the map. Every enrollment is reviewed by hand before it appears below.</p>
+          <p class="evcintro">Venues, backers, promoters, and crew — put yourself on the map. Every enrollment gets a quick automatic check, then a review, before it appears below.</p>
           <div class="evcgrid">
-            <button class="evccard" onclick="agonEnroll('venue',{source:'enroll-tab'})"><span class="evcico">🏛️</span><h4>Venue</h4><p>Offer your room — capacity, what's installed, and the dates you're open.</p></button>
-            <button class="evccard" onclick="agonEnroll('investor',{source:'enroll-tab'})"><span class="evcico">💎</span><h4>Backer</h4><p>Sponsor what you want to see happen — as yourself, an alias, a philanthropist, or anonymously.</p></button>
-            <button class="evccard" onclick="agonEnroll('promoter',{source:'enroll-tab'})"><span class="evcico">🎫</span><h4>Promoter</h4><p>Bring a night into the pool — the vision, the scale, the crew it needs.</p></button>
-            <button class="evccard" onclick="agonEnroll('role',{source:'enroll-tab'})"><span class="evcico">🧩</span><h4>Crew / role</h4><p>Find your place on the crew — paid roles or volunteer work-exchange.</p></button>
+            <button class="evccard" onclick="agonEnroll('venue',{source:'enroll-tab'})"><span class="evcico">🏛️</span><h4>Venue</h4><p>Your room, its capacity, and the gear and services you have.</p></button>
+            <button class="evccard" onclick="agonEnroll('investor',{source:'enroll-tab'})"><span class="evcico">💎</span><h4>Backer</h4><p>The vision you'd like to see happen, under any name you choose.</p></button>
+            <button class="evccard" onclick="agonEnroll('promoter',{source:'enroll-tab'})"><span class="evcico">🎫</span><h4>Promoter</h4><p>Your company and how to reach you.</p></button>
+            <button class="evccard" onclick="agonEnroll('role',{source:'enroll-tab'})"><span class="evcico">🧩</span><h4>Crew</h4><p>Every department and role you can work, your certifications and your times.</p></button>
           </div>
         </div>
         <div class="evsection">

@@ -20,7 +20,40 @@ type Enrollment = {
   details: string;
   source: string;
   notes: string;
+  checks?: Partial<Record<CheckKey, string>> & { clean?: boolean };
+  files?: { cert: string; type: string; size: number; url: string | null }[];
 };
+
+type CheckKey = "email_domain" | "phone" | "duplicate" | "cert_files" | "link";
+const CHECK_NAME: Record<CheckKey, string> = {
+  email_domain: "Email domain",
+  phone: "Phone",
+  duplicate: "First time",
+  cert_files: "Certificate files",
+  link: "Link opens",
+};
+const CHECK_TONE: Record<string, string> = {
+  ok: "border-emerald-400/40 text-emerald-200",
+  warn: "border-amber-400/50 text-amber-200",
+  fail: "border-red-400/50 text-red-200",
+  unknown: "border-white/20 text-white/50",
+};
+
+/** The automatic checks, so approving is one look: green = passed, amber = look closer, red = failed. */
+function Checks({ c }: { c: NonNullable<Enrollment["checks"]> }) {
+  const keys = (Object.keys(CHECK_NAME) as CheckKey[]).filter((k) => c[k] && c[k] !== "n/a");
+  if (!keys.length) return null;
+  return (
+    <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
+      {c.clean && <span className="rounded-full border border-emerald-400/40 px-2.5 py-0.5 text-emerald-200">All checks passed</span>}
+      {keys.map((k) => (
+        <span key={k} className={`rounded-full border px-2.5 py-0.5 ${CHECK_TONE[c[k]!] || CHECK_TONE.unknown}`}>
+          {CHECK_NAME[k]}: {c[k] === "warn" && k === "duplicate" ? "enrolled before" : c[k]}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 const card = "rounded-2xl border border-white/10 bg-white/[0.03] p-5";
 const btn = "rounded-full border border-white/20 px-4 py-1.5 text-sm hover:bg-white/10 disabled:opacity-40";
@@ -194,6 +227,7 @@ function Enrollments() {
               <span className="text-xs text-white/40">{new Date(r.created_at).toLocaleString()}</span>
             </div>
             {r.headline && <p className="mt-1 text-sm text-white/70">{r.headline}</p>}
+            {r.checks && <Checks c={r.checks} />}
             <p className="mt-2 text-sm text-white/60">
               <a className="underline" href={`mailto:${r.contact_email}`}>
                 {r.contact_email}
@@ -211,6 +245,20 @@ function Enrollments() {
             </p>
             {r.about && <p className="mt-3 whitespace-pre-wrap text-sm text-white/75">{r.about}</p>}
             {r.details && <pre className="mt-3 whitespace-pre-wrap font-sans text-sm text-white/55">{r.details}</pre>}
+            {r.files && r.files.length > 0 && (
+              <p className="mt-3 flex flex-wrap gap-2 text-sm">
+                {r.files.map((f) =>
+                  f.url ? (
+                    <a key={f.cert} className={btn} href={f.url} target="_blank" rel="noreferrer noopener">
+                      {f.cert} ↗
+                    </a>
+                  ) : (
+                    <span key={f.cert} className="text-white/40">{f.cert} (link failed, reload)</span>
+                  ),
+                )}
+              </p>
+            )}
+            {r.notes && <p className="mt-2 text-xs text-white/40">{r.notes}</p>}
             <div className="mt-4 flex gap-2">
               {r.status !== "approved" && (
                 <button className={btn} disabled={busy === r.id} onClick={() => void setRow(r.id, "approved")}>

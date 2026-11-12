@@ -91,8 +91,10 @@ export default function PrivacyPage() {
           upload, with a key only your recovery key can open; we hold only the ciphertext and your email.
         </li>
         <li>
-          <b>Agon enrollment</b>, only if you submit it: the name, contact details and notes you enter. Your public card shows
-          only the fields marked public, after review.
+          <b>Agon enrollment</b>, only if you submit it: the name, contact details and answers you enter, and for crew the
+          certificate files you upload (kept in private storage, opened only to review the enrollment). A few automatic
+          checks run when you send it (the email&apos;s domain takes mail, the phone looks like a phone, the link opens). Your
+          public card shows only the fields marked public, after review.
         </li>
       </ul>
       <p>Providers: Vercel (hosting), Supabase (database and sign-in) and Google Sheets (usage and enrollment log).</p>

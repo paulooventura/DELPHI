@@ -24,9 +24,29 @@ export function db(): SupabaseClient {
   return admin;
 }
 
-export async function insertEnrollment(row: EnrollRow, source: string) {
-  const { error } = await db().from("agon_enrollments").insert({ ...row, source });
+export type EnrollExtras = {
+  id?: string;
+  status?: "pending" | "approved";
+  reviewed_at?: string | null;
+  notes?: string;
+  data?: Record<string, unknown>;
+  checks?: Record<string, unknown>;
+  files?: { cert: string; path: string; type: string; size: number }[];
+};
+
+export async function insertEnrollment(row: EnrollRow, source: string, extras: EnrollExtras = {}) {
+  const { error } = await db().from("agon_enrollments").insert({ ...row, source, ...extras });
   if (error) throw new Error(`db-enroll: ${error.code || error.message}`);
+}
+
+/** Earlier enrollments with the same email and kind (null if the lookup failed). */
+export async function countEnrollments(email: string, kind: string): Promise<number | null> {
+  const { count, error } = await db()
+    .from("agon_enrollments")
+    .select("id", { count: "exact", head: true })
+    .eq("contact_email", email)
+    .eq("kind", kind);
+  return error ? null : count ?? 0;
 }
 
 export async function fetchApprovedFromDb(): Promise<Record<string, unknown>[]> {

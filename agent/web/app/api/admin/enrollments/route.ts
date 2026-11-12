@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { adminFromRequest } from "../../../../lib/db/auth";
+import { CERT_BUCKET } from "../../../../lib/agon/files";
 import { db } from "../../../../lib/db/server";
 
 export const runtime = "nodejs";
@@ -15,7 +16,17 @@ export async function GET(req: Request) {
   if ((STATUSES as readonly string[]).includes(status)) q = q.eq("status", status);
   const { data, error } = await q;
   if (error) return NextResponse.json({ error: "read-failed" }, { status: 502 });
-  return NextResponse.json({ entries: data ?? [] }, { headers: NO_STORE });
+  const entries = (data ?? []) as { files?: { cert: string; path: string }[] }[];
+  // Certificate files open through signed links that expire in 10 minutes; the bucket itself stays private.
+  const paths = entries.flatMap((e) => (Array.isArray(e.files) ? e.files.map((f) => f.path) : []));
+  if (paths.length) {
+    const { data: signed } = await db().storage.from(CERT_BUCKET).createSignedUrls(paths, 600);
+    const url = new Map((signed ?? []).map((s) => [s.path, s.signedUrl]));
+    for (const e of entries) {
+      if (Array.isArray(e.files)) e.files = e.files.map((f) => ({ ...f, url: url.get(f.path) || null }));
+    }
+  }
+  return NextResponse.json({ entries }, { headers: NO_STORE });
 }
 
 /** PATCH /api/admin/enrollments  { id, status?, notes? } */

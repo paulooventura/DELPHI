@@ -14,6 +14,7 @@ const base = {
   display_name: "The Annex",
   contact_email: "Hello@Annex.example",
   city: "Nashville, TN",
+  phone: "(615) 555-0142",
   consent: true,
 };
 
@@ -67,13 +68,62 @@ describe("validateEnrollment", () => {
     expect(p.ok && p.row.headline).toBe("Philanthropist");
   });
 
-  it("flags volunteer roles and keeps certs", () => {
+  it("flags volunteer roles and keeps certs (legacy single role still works)", () => {
     const r = validateEnrollment(
-      { ...base, kind: "role", role: "FOH Engineer", dept: "Audio", volunteer: true, certs: ["RF", "ELEC"] },
+      { ...base, kind: "role", role: "FOH Engineer", dept: "Audio", volunteer: true, certs: ["rf", "electrician", "bogus"] },
       NOW,
     );
     expect(r.ok && r.row.headline).toBe("Volunteer · FOH Engineer");
-    expect(r.ok && r.row.details).toContain("Certifications: RF, ELEC");
+    expect(r.ok && r.row.details).toContain("Certifications: RF / frequency coordination, Licensed electrician");
+    expect(r.ok && r.certs).toEqual(["rf", "electrician"]);
+  });
+
+  it("crew pick many departments and roles, with an availability grid", () => {
+    const r = validateEnrollment(
+      {
+        ...base, kind: "role", depts: ["Front of House", "Talent"], roles: ["Security", "Headline DJ", "Bartender", "Barback"],
+        slots: ["fri-late", "sat-eve", "sat-late", "xyz-late"], notice: "2-days", radius: "1h", blackout: "Dec 24",
+        about: "Ten years of doors", experience: "Ran security at The Annex",
+      },
+      NOW,
+    );
+    expect(r.ok).toBe(true);
+    if (!r.ok) return;
+    expect(r.row.headline).toBe("Security, Headline DJ, Bartender +1");
+    expect(r.row.details).toContain("Available: Fri: late · Sat: evening, late");
+    expect(r.row.details).toContain("Notice needed: 1 to 2 days");
+    expect(r.row.about).toBe("Ten years of doors\n\nRan security at The Annex");
+    expect(r.data.slots).toEqual(["fri-late", "sat-eve", "sat-late"]);
+  });
+
+  it("an 'other' certification needs its name", () => {
+    const r = validateEnrollment({ ...base, kind: "role", roles: ["Medic"], certs: ["other"] }, NOW);
+    expect(r).toEqual({ ok: false, error: "invalid", fields: ["cert_other"] });
+  });
+
+  it("everyone gives a phone number", () => {
+    const r = validateEnrollment({ ...base, kind: "promoter", phone: "12" }, NOW);
+    expect(r).toEqual({ ok: false, error: "invalid", fields: ["phone"] });
+  });
+
+  it("venues tick gear from the catalog; promoters give only the company", () => {
+    const v = validateEnrollment({ ...base, kind: "venue", capacity: "300", gear: ["pa", "bar", "rocket"] }, NOW);
+    expect(v.ok && v.row.details).toContain("Has: PA system, Bar");
+    const p = validateEnrollment({ ...base, kind: "promoter", display_name: "Coupled Events LLC" }, NOW);
+    expect(p.ok && p.row.headline).toBe("Promoter");
+  });
+
+  it("backers pick a vision", () => {
+    const r = validateEnrollment({ ...base, kind: "investor", vision: ["festival", "retreat"], vision_text: "By the river" }, NOW);
+    expect(r.ok && r.row.headline).toBe("Backer · Festival, Retreat");
+    expect(r.ok && r.row.details).toContain("In their words: By the river");
+  });
+
+  it("anonymous backers must still give a name and a way to reach them", () => {
+    const r = validateEnrollment({ ...base, kind: "investor", presence: "anonymous", display_name: "", city: "" }, NOW);
+    expect(r.ok).toBe(false);
+    if (r.ok) return;
+    expect(r.fields).toEqual(["display_name"]);
   });
 
   it("rejects missing consent, bad email, and bad kind", () => {

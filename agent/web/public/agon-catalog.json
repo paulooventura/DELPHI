@@ -1,0 +1,139 @@
+{
+  "version": 1,
+  "certs": [
+    { "group": "Bar & food", "items": [
+      { "id": "tn-abc-server", "label": "TN ABC server permit" },
+      { "id": "tips", "label": "TIPS alcohol training" },
+      { "id": "servsafe-alcohol", "label": "ServSafe Alcohol" },
+      { "id": "servsafe-food", "label": "ServSafe Food Handler" },
+      { "id": "servsafe-manager", "label": "ServSafe Food Manager" },
+      { "id": "food-permit", "label": "Food vendor / health permit" }
+    ] },
+    { "group": "Security & safety", "items": [
+      { "id": "guard-unarmed", "label": "Unarmed guard card" },
+      { "id": "guard-armed", "label": "Armed guard card" },
+      { "id": "firearm", "label": "Handgun carry permit" },
+      { "id": "crowd-manager", "label": "Crowd Manager (NFPA 101)" },
+      { "id": "fire-watch", "label": "Fire watch" },
+      { "id": "osha10", "label": "OSHA 10" },
+      { "id": "osha30", "label": "OSHA 30" }
+    ] },
+    { "group": "Medical & care", "items": [
+      { "id": "cpr-aed", "label": "CPR / AED" },
+      { "id": "first-aid", "label": "First Aid" },
+      { "id": "emt", "label": "EMT / Paramedic" },
+      { "id": "nurse", "label": "Nurse (RN / LPN)" },
+      { "id": "stop-bleed", "label": "Stop the Bleed" },
+      { "id": "naloxone", "label": "Naloxone (Narcan) training" },
+      { "id": "mhfa", "label": "Mental Health First Aid" },
+      { "id": "harm-reduction", "label": "Harm-reduction training" }
+    ] },
+    { "group": "Technical", "items": [
+      { "id": "etcp-arena", "label": "ETCP Rigger, Arena" },
+      { "id": "etcp-theatre", "label": "ETCP Rigger, Theatre" },
+      { "id": "etcp-elec", "label": "ETCP Entertainment Electrician" },
+      { "id": "electrician", "label": "Licensed electrician" },
+      { "id": "rf", "label": "RF / frequency coordination" },
+      { "id": "laser", "label": "Laser safety officer / FDA variance" },
+      { "id": "pyro", "label": "Pyrotechnics licence" },
+      { "id": "sfx", "label": "Special effects / flame" },
+      { "id": "mewp", "label": "Aerial lift (MEWP)" },
+      { "id": "forklift", "label": "Forklift" },
+      { "id": "rope", "label": "Rope access (SPRAT / IRATA)" },
+      { "id": "faa107", "label": "FAA Part 107 (drone)" }
+    ] },
+    { "group": "Driving & other", "items": [
+      { "id": "cdl", "label": "CDL (commercial driver)" },
+      { "id": "other", "label": "Other (name it)" }
+    ] }
+  ],
+  "gear": [
+    { "group": "Sound", "items": [
+      { "id": "pa", "label": "PA system" },
+      { "id": "monitors", "label": "Stage monitors" },
+      { "id": "dj-booth", "label": "DJ booth" },
+      { "id": "players", "label": "CDJs / turntables" },
+      { "id": "dj-mixer", "label": "DJ mixer" },
+      { "id": "mics", "label": "Microphones" },
+      { "id": "backline", "label": "Backline (amps, drums)" },
+      { "id": "sound-tech", "label": "House sound engineer" }
+    ] },
+    { "group": "Light & video", "items": [
+      { "id": "lighting", "label": "Lighting rig" },
+      { "id": "haze", "label": "Haze / fog" },
+      { "id": "lasers", "label": "Lasers" },
+      { "id": "led-wall", "label": "LED wall" },
+      { "id": "projector", "label": "Projector + screen" },
+      { "id": "light-tech", "label": "House lighting operator" }
+    ] },
+    { "group": "Stage & space", "items": [
+      { "id": "stage", "label": "Stage" },
+      { "id": "risers", "label": "Risers" },
+      { "id": "dance-floor", "label": "Dance floor" },
+      { "id": "green-room", "label": "Green room" },
+      { "id": "outdoor", "label": "Outdoor area" },
+      { "id": "seating", "label": "Seating" },
+      { "id": "coat-check", "label": "Coat check" },
+      { "id": "ada", "label": "Step-free / ADA access" },
+      { "id": "restrooms", "label": "Restrooms for full capacity" }
+    ] },
+    { "group": "Power & load-in", "items": [
+      { "id": "power-3ph", "label": "3-phase power" },
+      { "id": "generator", "label": "Generator" },
+      { "id": "load-in", "label": "Load-in dock / street level" },
+      { "id": "parking", "label": "Parking" },
+      { "id": "wifi", "label": "Wi-Fi" }
+    ] },
+    { "group": "Bar & service", "items": [
+      { "id": "bar", "label": "Bar" },
+      { "id": "pos", "label": "POS / card readers" },
+      { "id": "liquor-licence", "label": "Liquor licence" },
+      { "id": "kitchen", "label": "Kitchen / food" },
+      { "id": "bar-staff", "label": "Bar staff" }
+    ] },
+    { "group": "Door & safety", "items": [
+      { "id": "security-staff", "label": "Security staff" },
+      { "id": "ticket-scan", "label": "Ticket scanning" },
+      { "id": "insurance", "label": "Event insurance" },
+      { "id": "first-aid-station", "label": "First aid station" },
+      { "id": "cctv", "label": "CCTV" }
+    ] }
+  ],
+  "vision": [
+    { "id": "party", "label": "Party" },
+    { "id": "club-night", "label": "Club night" },
+    { "id": "concert", "label": "Concert" },
+    { "id": "festival", "label": "Festival" },
+    { "id": "gathering", "label": "Gathering" },
+    { "id": "retreat", "label": "Retreat" },
+    { "id": "ceremony", "label": "Ceremony" },
+    { "id": "art-show", "label": "Art show" },
+    { "id": "workshop", "label": "Workshop / class" },
+    { "id": "community", "label": "Community cause" },
+    { "id": "other", "label": "Other" }
+  ],
+  "availability": {
+    "days": [
+      { "id": "mon", "label": "Mon" }, { "id": "tue", "label": "Tue" }, { "id": "wed", "label": "Wed" },
+      { "id": "thu", "label": "Thu" }, { "id": "fri", "label": "Fri" }, { "id": "sat", "label": "Sat" },
+      { "id": "sun", "label": "Sun" }
+    ],
+    "slots": [
+      { "id": "day", "label": "Day", "hint": "before 6 pm" },
+      { "id": "eve", "label": "Evening", "hint": "6 pm to midnight" },
+      { "id": "late", "label": "Late", "hint": "after midnight" }
+    ],
+    "notice": [
+      { "id": "same-day", "label": "Same day" },
+      { "id": "2-days", "label": "1 to 2 days" },
+      { "id": "week", "label": "About a week" },
+      { "id": "longer", "label": "More than a week" }
+    ],
+    "radius": [
+      { "id": "city", "label": "My city only" },
+      { "id": "1h", "label": "Up to 1 hour away" },
+      { "id": "3h", "label": "Up to 3 hours away" },
+      { "id": "anywhere", "label": "Anywhere (I travel)" }
+    ]
+  }
+}
