@@ -24,6 +24,7 @@ import { SKY_RIBBON_DIRS, skyRibbonTranslateX } from "../../lib/skyRibbon";
 import { ChamberHeader } from "./ChamberHeader";
 import { cardinalFromHeading } from "./onyxCopy";
 import { SkyOrrery } from "./SkyOrrery";
+import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
 import { PneumaWhen } from "./PneumaWhen";
 import { usePneumaClock } from "../../hooks/usePneumaClock";
 import { clockLabel } from "../../lib/cosmic/pneumaClock";
@@ -250,6 +251,8 @@ export function OnyxSky({
   // The orrery is a sub-view with its own history entry, so phone/browser Back closes it.
   const [orreryOpen, setOrreryOpen] = useState(false);
   const [orreryRise, setOrreryRise] = useState(false);
+  // The Orrery film plays when the Orrery opens (once per tab session); it used to play on the way into the Heliodrome.
+  const [orrerySplash, setOrrerySplash] = useState(false);
   const [pullArm, setPullArm] = useState(0);
   useEffect(() => {
     const sync = () => {
@@ -305,6 +308,11 @@ export function OnyxSky({
     setPullArm(0);
     setOrreryRise(rise);
     setOrreryOpen(true);
+    try {
+      if (sessionStorage.getItem("delphi-orrery-intro-seen") !== "1") setOrrerySplash(true);
+    } catch {
+      /* private mode: no film */
+    }
   }, []);
 
   // Centre tap arms a short window; a scroll / swipe UP inside it pulls back into the orrery.
@@ -645,6 +653,20 @@ export function OnyxSky({
         ) : null}
 
         {orreryOpen ? <SkyOrrery onClose={closeOrrery} rise={orreryRise} /> : null}
+        {orreryOpen && orrerySplash ? (
+          <div className="onyx-orr-splash-layer">
+            <OnyxOrrerySplash
+              onEnter={() => {
+                try {
+                  sessionStorage.setItem("delphi-orrery-intro-seen", "1");
+                } catch {
+                  /* private mode */
+                }
+                setOrrerySplash(false);
+              }}
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   );

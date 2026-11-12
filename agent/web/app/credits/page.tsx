@@ -100,6 +100,11 @@ export default function CreditsPage() {
           Wrecks: <Out href="https://encdirect.noaa.gov/">NOAA</Out> Electronic Navigational Charts (ENC Direct), US
           waters. <b>Not for navigation.</b>
         </li>
+        <li>
+          Earthquakes: <Out href="https://earthquake.usgs.gov/earthquakes/feed/">USGS</Out> real-time feed, magnitude 2.5
+          and up over the past day (public domain). Aurora: <Out href="https://www.swpc.noaa.gov/products/aurora-30-minute-forecast">NOAA
+          SWPC</Out> OVATION 30-minute forecast (public domain).
+        </li>
       </ul>
 
       <h2 style={h2}>Weather and places</h2>

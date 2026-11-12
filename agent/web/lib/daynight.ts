@@ -16,6 +16,12 @@ export function subsolarPoint(date: Date): { lat: number; lon: number; distAu: n
   return { lat: eq.dec, lon: wrap180((eq.ra - SiderealTime(date)) * 15), distAu: eq.dist };
 }
 
+/** Where the Moon is straight overhead right now (geocentric, apparent, of date). */
+export function sublunarPoint(date: Date): { lat: number; lon: number; distKm: number } {
+  const eq = Equator(Body.Moon, date, EARTH_CENTRE, true, true);
+  return { lat: eq.dec, lon: wrap180((eq.ra - SiderealTime(date)) * 15), distKm: eq.dist * 149_597_870.7 };
+}
+
 /** Plain words for the light at a place, from the Sun's elevation there. */
 export function lightAt(elevDeg: number): string {
   if (elevDeg > -0.833) return "daylight";

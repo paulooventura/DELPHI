@@ -586,7 +586,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
 
   const [level, setLevel] = useState<LevelId>("inner");
   const [mode, setMode] = useState<ScaleMode>("log");
-  const [speedId, setSpeedId] = useState<OrrerySpeedId>(reduceMotion ? "day" : "month");
+  // Opens live (1 s = 1 s) while the temple clock runs live; faster speeds are a tap away.
+  const [speedId, setSpeedId] = useState<OrrerySpeedId>(() => (isClockLive() ? "live" : reduceMotion ? "day" : "month"));
   const [deepSpeedId, setDeepSpeedId] = useState<DeepSpeedId>("tenmyr");
   const [earthSpeedId, setEarthSpeedId] = useState<EarthSpeedId>(reduceMotion ? "live" : "min");
   const [orbitInfo, setOrbitInfo] = useState<{ fetchedAt: string; source: string } | null>(null);
@@ -818,13 +819,16 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     simMsRef.current = Date.now();
     deepYearsRef.current = 0;
     goLive("orrery");
+    // Now runs live in every view: one second per second, so nothing jumps.
     if (camRef.current.scene === "earth") {
       earthSpeedRef.current = "live";
       setEarthSpeedId("live");
     } else {
-      playingRef.current = false;
-      setPlaying(false);
+      speedRef.current = "live";
+      setSpeedId("live");
     }
+    playingRef.current = true;
+    setPlaying(true);
   };
 
   const toggleLayer = (id: LayerId) => {
@@ -833,11 +837,26 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
     setLayers(next);
   };
 
+  /** Measure stops time while it is open (Paulo 11-11); closing it plays on if it was playing. */
+  const resumeAfterMeasureRef = useRef(false);
   const toggleMeasure = () => {
     const next = measureRef.current.on ? { on: false, a: null, b: null } : { on: true, a: null, b: null };
     measureRef.current = next;
     setMeasure(next);
-    if (!next.on) setMeasureOut(null);
+    if (next.on) {
+      resumeAfterMeasureRef.current = playingRef.current;
+      if (playingRef.current) {
+        playingRef.current = false;
+        setPlaying(false);
+      }
+    } else {
+      setMeasureOut(null);
+      if (resumeAfterMeasureRef.current) {
+        resumeAfterMeasureRef.current = false;
+        playingRef.current = true;
+        setPlaying(true);
+      }
+    }
   };
 
   const searchNames = useMemo(() => {
@@ -2185,6 +2204,11 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
       recordTrails(f, simMsRef.current);
 
       if (cam.fadeDir < 0) {
+        // Zoom toward what was chosen while the old scene fades: out to the galaxy, in to the Earth.
+        if (!reduceMotion) {
+          const outward = cam.nextScene === "galaxy" || (cam.scene === "earth" && cam.nextScene === "solar");
+          cam.dist *= Math.exp((outward ? 3.2 : -3.2) * dt);
+        }
         cam.fade -= dt / 0.35;
         if (cam.fade <= 0) {
           cam.fade = 0;
@@ -2254,7 +2278,8 @@ export function SkyOrrery({ onClose, rise = false }: { onClose: () => void; rise
         cam.target = focusPos;
       }
       const k = reduceMotion ? 1 : 1 - Math.exp(-dt * 4.5);
-      cam.dist = Math.exp(lerp(Math.log(cam.dist), Math.log(cam.goalDist), k));
+      // While a scene fades out the camera keeps its zoom toward the next one; the new scene settles in after.
+      if (cam.fadeDir >= 0) cam.dist = Math.exp(lerp(Math.log(cam.dist), Math.log(cam.goalDist), k));
       if (cam.goalPitch !== null) {
         cam.pitch = lerp(cam.pitch, cam.goalPitch, k);
         if (Math.abs(cam.pitch - cam.goalPitch) < 0.002) cam.goalPitch = null;

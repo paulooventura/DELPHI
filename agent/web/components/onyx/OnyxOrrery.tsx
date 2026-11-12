@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { hapticsMuted, pulseHaptic } from "../../lib/haptics";
 import {
   getClockAudio,
+  playCrystalTap,
   playScrubTick,
   setClockTimeFrozen,
 } from "../../lib/clockSfx";
@@ -20,10 +21,8 @@ import { clockDate, freezeNow, goLive, holdAt } from "../../lib/cosmic/pneumaClo
 import { usePneumaClock } from "../../hooks/usePneumaClock";
 import { PneumaWhen } from "./PneumaWhen";
 import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
-import type { BirthRecord } from "../../lib/lore/birthStore";
 import { OnyxHeliodromeFilm } from "./OnyxHeliodromeFilm";
 import { ChamberHeader } from "./ChamberHeader";
-import { NatalTriadPanel } from "./NatalTriadPanel";
 import {
   CENTER_ONLY_LANE_IDS,
   ORRERY_LANE_GROUPS,
@@ -85,8 +84,6 @@ export function OnyxOrrery({
   lon,
   onBack,
   natalDate = null,
-  birth = null,
-  onBirthChange,
   hapticsEnabled = true,
   onArmAudio,
 }: {
@@ -95,9 +92,6 @@ export function OnyxOrrery({
   onBack: () => void;
   /** Saved You-tab birth instant — freeze and jump the lanes there. */
   natalDate?: Date | null;
-  /** Psyche birth record — Natal Triad (Sun · Moon · Rising). */
-  birth?: BirthRecord | null;
-  onBirthChange?: (b: BirthRecord) => void;
   /** Master stone toggle — escapement ticks respect this. */
   hapticsEnabled?: boolean;
   /** Ensure Web Audio is running when Heliodrome mounts (post–Allow access). */
@@ -487,7 +481,17 @@ export function OnyxOrrery({
       setExpanded(null);
       return;
     }
-    setExpanded(prev => (prev?.id === lane.id ? null : lane));
+    if (expanded?.id === lane.id) {
+      setExpanded(null);
+      return;
+    }
+    // Crystal tap: each lane rings its own NOW-Chord degree (slow lanes low, fast lanes high).
+    const audio = getClockAudio();
+    if (audio) {
+      const order = lanesRef.current.findIndex(l => l.id === lane.id);
+      playCrystalTap(audio, Math.max(0, lanesRef.current.length - 1 - order));
+    }
+    setExpanded(lane);
   };
 
   const showGroup = (group: readonly OrreryLaneId[]) => {
@@ -555,11 +559,6 @@ export function OnyxOrrery({
                 <span className="r">Yang</span>
               </div>
             </div>
-            <NatalTriadPanel
-              compact
-              birth={birth}
-              onBirthChange={onBirthChange}
-            />
           </div>
         </div>
         <div className="onyx-orrery-wrap" ref={wrapRef}>

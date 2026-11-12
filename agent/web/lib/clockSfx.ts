@@ -5,6 +5,7 @@ import {
   fadeAllForLeave,
   restoreAfterLeave,
 } from "./audioBus";
+import { pitchHz } from "./heliodromeChordConfig";
 import { bellStrike, harmonic, hourBell, minuteBell, woodKnock } from "./clockVoices";
 
 let sharedCtx: AudioContext | null = null;
@@ -878,4 +879,46 @@ export function unmuteClockAudio(): void {
 
 export function isSchumannAtmosphereRunning(): boolean {
   return schumannBed != null;
+}
+
+/**
+ * Crystal tap on a Heliodrome jewel (Paulo 11-11): struck glass / small singing bowl, short and quiet,
+ * pitched on a NOW-Chord scale degree two octaves up so it never clashes with the bed. One voice at a time:
+ * a new tap fades the last one out first.
+ */
+let crystalVoice: { gain: GainNode; stopAt: number } | null = null;
+export function playCrystalTap(ctx: AudioContext, degree: number) {
+  if (audioSilenced || audioParked) return;
+  if (ctx.state !== "running") void ctx.resume();
+  const t = ctx.currentTime;
+  if (crystalVoice && crystalVoice.stopAt > t) {
+    crystalVoice.gain.gain.cancelScheduledValues(t);
+    crystalVoice.gain.gain.setTargetAtTime(0.0001, t, 0.02);
+  }
+  const f0 = pitchHz(14 + (((degree % 7) + 7) % 7));
+  const out = ctx.createGain();
+  out.gain.setValueAtTime(0.0001, t);
+  out.gain.exponentialRampToValueAtTime(0.05, t + 0.006);
+  out.gain.exponentialRampToValueAtTime(0.0001, t + 1.3);
+  out.connect(masterBus(ctx));
+  // Bowl-like partials: the fundamental, its octave and a soft twelfth (all chord tones), slight beating.
+  const partials: [number, number][] = [
+    [1, 1],
+    [1.003, 0.35],
+    [2, 0.28],
+    [3, 0.1],
+  ];
+  for (const [mult, g] of partials) {
+    const o = ctx.createOscillator();
+    const og = ctx.createGain();
+    o.type = "sine";
+    o.frequency.setValueAtTime(f0 * mult, t);
+    og.gain.setValueAtTime(g, t);
+    og.gain.exponentialRampToValueAtTime(0.0001, t + 1.3 / mult);
+    o.connect(og);
+    og.connect(out);
+    o.start(t);
+    o.stop(t + 1.35);
+  }
+  crystalVoice = { gain: out, stopAt: t + 1.3 };
 }

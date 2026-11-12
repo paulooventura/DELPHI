@@ -14,6 +14,8 @@ import {
   rowToOmm,
   temeToGeodetic,
   type GpRow,
+  medianEpochIso,
+  mergeFreshRows,
   type OrbitSet,
 } from "./orbits";
 
@@ -116,5 +118,25 @@ describe("Earth rotation and scale", () => {
     expect(geo).toBeGreaterThan(gps);
     expect(moon).toBeGreaterThan(geo + 0.5);
     expect(moon).toBeLessThan(4);
+  });
+});
+
+describe("rebuilding a set from fresh groups (T473)", () => {
+  const row = (id: number, epoch: string): GpRow => [id, `SAT ${id}`, "2020-001A", epoch, 15.5, 0.0001, 51.6, 0, 0, 0, 0, 0, 0];
+  const now = Date.parse("2026-11-12T12:00:00Z");
+
+  it("keeps one row per object (newest epoch) and drops elements older than the window", () => {
+    const a = [row(1, "2026-11-10T00:00:00"), row(2, "2026-10-01T00:00:00")];
+    const b = [row(1, "2026-11-11T06:00:00"), row(3, "2026-11-12T01:00:00")];
+    const out = mergeFreshRows([a, b], now, 14);
+    expect(out.map(r => r[0])).toEqual([1, 3]);
+    expect(out[0]![3]).toBe("2026-11-11T06:00:00");
+  });
+
+  it("stamps a set with its real age, the median epoch", () => {
+    expect(medianEpochIso([row(1, "2026-11-01T00:00:00"), row(2, "2026-11-05T00:00:00"), row(3, "2026-11-09T00:00:00")])).toBe(
+      "2026-11-05T00:00:00.000Z",
+    );
+    expect(medianEpochIso([])).toBeNull();
   });
 });

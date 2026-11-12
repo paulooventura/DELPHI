@@ -24,6 +24,7 @@
 /www-ios/
 # compiled satellite worker (scripts/build-sat-worker.mjs)
 /public/orrery/sat-worker.js
+/public/pm-portal.js
 
 # misc
 .DS_Store

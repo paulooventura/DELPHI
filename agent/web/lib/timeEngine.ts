@@ -631,6 +631,8 @@ const MS_PER_DAY = 86_400_000;
 
 /** Sky orrery playback rates, in simulated days per real second. */
 export const ORRERY_SPEEDS = [
+  // Live: one second per second, the sky as it is (Paulo 11-11).
+  { id: "live", label: "Live", daysPerSec: 1 / 86_400 },
   { id: "day", label: "1 day/s", daysPerSec: 1 },
   { id: "week", label: "1 wk/s", daysPerSec: 7 },
   { id: "month", label: "1 mo/s", daysPerSec: SYNODIC_MONTH },

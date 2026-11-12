@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { compactOmm, isOrbitGroup, type OrbitSet } from "../../../../lib/orbits";
+import { compactOmm, isOrbitGroup, medianEpochIso, mergeFreshRows, type OrbitSet } from "../../../../lib/orbits";
+import { ORBIT_APPROX_DAYS, ORBIT_HIDE_DAYS } from "../../../../lib/orbitAge";
+
+/** Fetching the mirror's groups to rebuild "active" can take a while on a cold start. */
+export const maxDuration = 60;
 
 /**
  * Earth-orbit elements for the orrery, cached so CelesTrak sees at most one request
@@ -21,19 +25,58 @@ async function fetchJson(url: string, timeoutMs: number): Promise<Array<Record<s
   return j as Array<Record<string, unknown>>;
 }
 
+const MIRROR = "https://raw.githubusercontent.com/satvisorcom/satvisor-data/master/celestrak/json";
+
+/**
+ * The mirror's groups that make up CelesTrak's "active" set. Its own active.json (and starlink.json) went stale in
+ * Oct 2026 while these kept updating, so when CelesTrak is down "active" is rebuilt from them (T473).
+ */
+const ACTIVE_PARTS = [
+  "last-30-days", "stations", "visual", "weather", "goes", "resource", "sarsat", "dmc", "tdrss", "argos",
+  "planet", "spire", "geo", "intelsat", "ses", "eutelsat", "iridium-NEXT", "starlink", "oneweb", "kuiper", "qianfan",
+  "hulianwang", "orbcomm", "globalstar", "amateur", "x-comm", "other-comm", "satnogs",
+  "gnss", "gps-ops", "glo-ops", "galileo", "beidou", "sbas", "nnss", "musson", "science", "geodetic", "engineering",
+  "education", "military", "radar", "cubesat",
+];
+
+/** Mirror data is stamped with its real age (median element epoch), never the day we happened to fetch it. */
+function mirrorSet(group: string, source: string, rows: OrbitSet["rows"]): OrbitSet {
+  return { group, source, fetchedAt: medianEpochIso(rows) ?? new Date().toISOString(), rows };
+}
+
+const fresh = (rows: OrbitSet["rows"]) => {
+  const at = medianEpochIso(rows);
+  return !!at && Date.now() - Date.parse(at) <= ORBIT_APPROX_DAYS * 86_400_000;
+};
+
 async function load(group: string): Promise<OrbitSet> {
-  const sources = [
-    ["CelesTrak", `https://celestrak.org/NORAD/elements/gp.php?GROUP=${group}&FORMAT=json`, 8_000],
-    ["CelesTrak via satvisor-data mirror", `https://raw.githubusercontent.com/satvisorcom/satvisor-data/master/celestrak/json/${group}.json`, 15_000],
-  ] as const;
   let lastErr: unknown = null;
-  for (const [source, url, timeoutMs] of sources) {
-    try {
-      const rows = compactOmm(await fetchJson(url, timeoutMs));
-      return { group, source, fetchedAt: new Date().toISOString(), rows };
-    } catch (err) {
-      lastErr = err;
-    }
+  try {
+    const rows = compactOmm(await fetchJson(`https://celestrak.org/NORAD/elements/gp.php?GROUP=${group}&FORMAT=json`, 8_000));
+    return { group, source: "CelesTrak", fetchedAt: new Date().toISOString(), rows };
+  } catch (err) {
+    lastErr = err;
+  }
+  let stale: OrbitSet | null = null;
+  try {
+    const rows = compactOmm(await fetchJson(`${MIRROR}/${group}.json`, 15_000));
+    const set = mirrorSet(group, "CelesTrak via satvisor-data mirror", rows);
+    if (fresh(rows)) return set;
+    stale = set;
+  } catch (err) {
+    lastErr = err;
+  }
+  if (group === "active") {
+    const parts = await Promise.allSettled(ACTIVE_PARTS.map(g => fetchJson(`${MIRROR}/${g}.json`, 15_000)));
+    const sets = parts.flatMap(p => (p.status === "fulfilled" ? [compactOmm(p.value)] : []));
+    if (stale) sets.push(stale.rows);
+    const rows = mergeFreshRows(sets, Date.now(), ORBIT_HIDE_DAYS);
+    if (rows.length) return mirrorSet(group, "CelesTrak groups via satvisor-data mirror", rows);
+  }
+  if (stale) {
+    // Old but not useless: keep only the objects still inside the 14-day window.
+    const rows = mergeFreshRows([stale.rows], Date.now(), ORBIT_HIDE_DAYS);
+    if (rows.length) return mirrorSet(group, stale.source, rows);
   }
   throw lastErr instanceof Error ? lastErr : new Error("orbit sources unavailable");
 }

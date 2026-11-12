@@ -51,7 +51,6 @@ import { OnyxCast } from "./OnyxCast";
 import { OnyxAbout } from "./OnyxAbout";
 import { OnyxDecompose } from "./OnyxDecompose";
 import { OnyxOrrery } from "./OnyxOrrery";
-import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
 import { OnyxStarfield } from "./OnyxStarfield";
 import { DeviceAccessGate } from "./DeviceAccessGate";
 import { TreasurySheet, type TreasuryPick } from "./TreasurySheet";
@@ -367,14 +366,6 @@ export function OnyxApp({
   const [activeLayerChoice, setActiveLayerChoice] = useState<LayerId | undefined>();
   /** Locked Layer-0 reading — taken on home open / return, never per-tick. */
   const [homeSnap, setHomeSnap] = useState<MomentSnapshot | null>(null);
-  /** Clock-entry film — once per tab session, first time we open the orrery. */
-  const [orreryIntro, setOrreryIntro] = useState(() => {
-    try {
-      return sessionStorage.getItem("delphi-orrery-intro-seen") !== "1";
-    } catch {
-      return true;
-    }
-  });
   /** Aether plate — once per tab session, first time we open the sky map. */
   const [skyIntro, setSkyIntro] = useState(() => {
     try {
@@ -800,29 +791,12 @@ export function OnyxApp({
   }
 
   if (mode === "rings") {
-    if (orreryIntro) {
-      return (
-        <OnyxOrrerySplash
-          onEnter={() => {
-            try {
-              sessionStorage.setItem("delphi-orrery-intro-seen", "1");
-            } catch {
-              /* private mode */
-            }
-            if (pulseEnabled) onArmAudio?.();
-            setOrreryIntro(false);
-          }}
-        />
-      );
-    }
     return chamber(
       <OnyxOrrery
         lat={lat}
         lon={lon}
         onBack={goBack}
         natalDate={birth ? birthToDate(birth) : null}
-        birth={birth}
-        onBirthChange={next => setBirth(next)}
         hapticsEnabled={pulseEnabled}
         onArmAudio={pulseEnabled ? onArmAudio : undefined}
       />

@@ -24,7 +24,8 @@ import {
   type AircraftCell,
   type FlightRoute,
 } from "../../lib/aircraft";
-import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sunElevation } from "../../lib/daynight";
+import { NIGHT_STEPS, fmtSolarTime, lightAt, nightBands, solarTimeHours, sublunarPoint, sunElevation } from "../../lib/daynight";
+import type { EarthFeed } from "../../lib/earthFeeds";
 import { ORBIT_CLASS_LABEL, RE_KM, measureSat, rowToOmm, temeToGeodetic, type GpRow } from "../../lib/orbits";
 import { json2satrec, propagate, type SatRec } from "../../lib/sgp4";
 import { watchUser } from "../../lib/userWatch";
@@ -74,17 +75,27 @@ function ageLabel(ma: number): string {
 
 export type MapSat = { name: string; row: GpRow };
 
-type LayerId = "daynight" | "aircraft" | "satellites" | "seafloor" | "wrecks";
+type LayerId = "daynight" | "aircraft" | "satellites" | "seafloor" | "wrecks" | "quakes" | "aurora";
 const LAYERS: Array<{ id: LayerId; label: string }> = [
   { id: "daynight", label: "Day & night" },
   { id: "aircraft", label: "Aircraft" },
   { id: "satellites", label: "Satellites" },
+  { id: "quakes", label: "Earthquakes" },
+  { id: "aurora", label: "Aurora" },
   { id: "seafloor", label: "Seafloor" },
   { id: "wrecks", label: "Wrecks" },
 ];
+/** Public live layers (app/api/earth/[feed]): refreshed while the map is open. */
+const FEED_EVERY_MS = 5 * 60_000;
 
 type Plane = { row: AcRow; at: number; seen: number; trail: Array<[number, number, number]> };
-type Sel = { kind: "plane"; hex: string } | { kind: "sat"; norad: number } | { kind: "wreck"; i: number } | { kind: "sun" };
+type Sel =
+  | { kind: "plane"; hex: string }
+  | { kind: "sat"; norad: number }
+  | { kind: "wreck"; i: number }
+  | { kind: "sun" }
+  | { kind: "moon" }
+  | { kind: "quake"; i: number };
 /** Each night step's fill; stacked over every step, deep night ≈ 0.62. */
 const NIGHT_STEP_OPACITY = 1 - Math.pow(0.38, 1 / NIGHT_STEPS.length);
 const NIGHT_EVERY_MS = 60_000;
@@ -202,7 +213,17 @@ export default function EarthMap({
   }, [onClose]);
 
   const subRef = useRef<{ lat: number; lon: number; distAu: number } | null>(null);
-  const [layers, setLayers] = useState<Record<LayerId, boolean>>({ daynight: true, aircraft: true, satellites: true, seafloor: true, wrecks: true });
+  const moonRef = useRef<{ lat: number; lon: number; distKm: number } | null>(null);
+  const quakesRef = useRef<EarthFeed | null>(null);
+  const [layers, setLayers] = useState<Record<LayerId, boolean>>({
+    daynight: true,
+    aircraft: true,
+    satellites: true,
+    seafloor: true,
+    wrecks: true,
+    quakes: false,
+    aurora: false,
+  });
   const layersRef = useRef(layers);
   const [layersOpen, setLayersOpen] = useState(false);
   const [sel, setSel] = useState<Sel | null>(null);
@@ -383,6 +404,49 @@ export default function EarthMap({
           type: "circle",
           source: "sun",
           paint: { "circle-radius": 5, "circle-color": "#ffe9b0", "circle-stroke-color": "#ffbf5a", "circle-stroke-width": 1.2 },
+        },
+        firstSymbol,
+      );
+      map.addSource("moon", { type: "geojson", data: empty });
+      map.addLayer(
+        {
+          id: "moon",
+          type: "circle",
+          source: "moon",
+          paint: { "circle-radius": 4.5, "circle-color": "#e9ecf5", "circle-stroke-color": "#9aa6c4", "circle-stroke-width": 1.2 },
+        },
+        firstSymbol,
+      );
+      map.addSource("aurora", { type: "geojson", data: empty });
+      map.addLayer(
+        {
+          id: "aurora",
+          type: "circle",
+          source: "aurora",
+          layout: { visibility: "none" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["zoom"], 0, 2.5, 3, 6, 6, 16],
+            "circle-color": ["interpolate", ["linear"], ["get", "v"], 5, "#2bd982", 40, "#7dffb0", 80, "#ff7ad9"],
+            "circle-opacity": ["interpolate", ["linear"], ["get", "v"], 5, 0.12, 50, 0.4, 100, 0.6],
+            "circle-blur": 0.8,
+          },
+        },
+        firstSymbol,
+      );
+      map.addSource("quakes", { type: "geojson", data: empty });
+      map.addLayer(
+        {
+          id: "quakes",
+          type: "circle",
+          source: "quakes",
+          layout: { visibility: "none" },
+          paint: {
+            "circle-radius": ["interpolate", ["linear"], ["get", "mag"], 2.5, 3, 5, 7, 7, 14],
+            "circle-color": ["interpolate", ["linear"], ["get", "age"], 0, "#ff5b3a", 12, "#ffb347", 24, "#ffe08a"],
+            "circle-opacity": 0.8,
+            "circle-stroke-color": "#2a0d05",
+            "circle-stroke-width": 0.8,
+          },
         },
         firstSymbol,
       );
@@ -569,7 +633,10 @@ export default function EarthMap({
       const deep = clockState().agesMa != null;
       const today = !deep && clockState().iceKa == null;
       const vis = (on: boolean) => (on ? "visible" : "none");
-      for (const id of ["night", "night-edge", "sun-glow", "sun"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
+      for (const id of ["night", "night-edge", "sun-glow", "sun", "moon"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
+      map.setLayoutProperty("quakes", "visibility", vis(L.quakes && today));
+      map.setLayoutProperty("aurora", "visibility", vis(L.aurora && today));
+      if ((L.quakes || L.aurora) && today) loadFeeds();
       for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft && today));
       for (const id of ["sat-footprints", "sat-footprint-edge", "sat-tracks", "sat-points", "sat-names"]) map.setLayoutProperty(id, "visibility", vis(L.satellites && today));
       map.setLayoutProperty("seafloor", "visibility", vis(L.seafloor && today));
@@ -662,7 +729,62 @@ export default function EarthMap({
         fc([{ type: "Feature", geometry: { type: "Point", coordinates: [sub.lon, sub.lat] }, properties: {} }]),
       );
       root.dataset.subsolar = `${sub.lat.toFixed(2)},${sub.lon.toFixed(2)}`;
+      const moon = sublunarPoint(clockDate());
+      moonRef.current = moon;
+      (map.getSource("moon") as GeoJSONSource | undefined)?.setData(
+        fc([{ type: "Feature", geometry: { type: "Point", coordinates: [moon.lon, moon.lat] }, properties: {} }]),
+      );
       nightTimer = window.setTimeout(updateNight, NIGHT_EVERY_MS);
+    };
+
+    /* ── public live layers: USGS earthquakes and the NOAA aurora forecast, through our server ── */
+    let feedTimer = 0;
+    let feedsAt = 0;
+    const loadFeeds = () => {
+      if (!alive || performance.now() - feedsAt < FEED_EVERY_MS - 1000) return;
+      feedsAt = performance.now();
+      window.clearTimeout(feedTimer);
+      const L = layersRef.current;
+      const get = (feed: "quakes" | "aurora") =>
+        fetch(apiUrl(`/api/earth/${feed}`)).then(r => (r.ok ? (r.json() as Promise<EarthFeed>) : Promise.reject(new Error(String(r.status)))));
+      if (L.quakes) {
+        void get("quakes")
+          .then(d => {
+            if (!alive) return;
+            quakesRef.current = d;
+            const now = Date.now();
+            (map.getSource("quakes") as GeoJSONSource | undefined)?.setData(
+              fc(
+                d.points.map((p, i) => ({
+                  type: "Feature" as const,
+                  geometry: { type: "Point" as const, coordinates: [p[0], p[1]] },
+                  properties: { i, mag: p[2], age: Math.max(0, (now - (p[4] ?? now)) / 3_600_000) },
+                })),
+              ),
+            );
+            root.dataset.quakes = String(d.points.length);
+          })
+          .catch(() => {
+            root.dataset.quakes = "error";
+          });
+      }
+      if (L.aurora) {
+        void get("aurora")
+          .then(d => {
+            if (!alive) return;
+            (map.getSource("aurora") as GeoJSONSource | undefined)?.setData(
+              fc(d.points.map(p => ({ type: "Feature" as const, geometry: { type: "Point" as const, coordinates: [p[0], p[1]] }, properties: { v: p[2] } }))),
+            );
+            root.dataset.aurora = String(d.points.length);
+          })
+          .catch(() => {
+            root.dataset.aurora = "error";
+          });
+      }
+      feedTimer = window.setTimeout(() => {
+        feedsAt = 0;
+        if (layersRef.current.quakes || layersRef.current.aurora) loadFeeds();
+      }, FEED_EVERY_MS);
     };
 
     const loadWrecks = () => {
@@ -918,13 +1040,13 @@ export default function EarthMap({
         [e.point.x - r, e.point.y - r],
         [e.point.x + r, e.point.y + r],
       ];
-      const ids = ["planes", "sat-points", "wrecks", "sun"].filter(id => map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
+      const ids = ["planes", "sat-points", "wrecks", "sun", "moon", "quakes"].filter(id => map.getLayer(id) && map.getLayoutProperty(id, "visibility") !== "none");
       const feats = map.queryRenderedFeatures(box, { layers: ids });
       let best: { f: MapGeoJSONFeature; d: number } | null = null;
       for (const f of feats) {
         if (f.geometry.type !== "Point") continue;
         const pt = map.project(f.geometry.coordinates as [number, number]);
-        const d = Math.hypot(pt.x - e.point.x, pt.y - e.point.y) - (f.layer.id === "wrecks" ? 0 : f.layer.id === "sun" ? 2 : 4);
+        const d = Math.hypot(pt.x - e.point.x, pt.y - e.point.y) - (f.layer.id === "wrecks" || f.layer.id === "quakes" ? 0 : f.layer.id === "sun" || f.layer.id === "moon" ? 2 : 4);
         if (!best || d < best.d) best = { f, d };
       }
       if (!best) return;
@@ -932,6 +1054,8 @@ export default function EarthMap({
       if (best.f.layer.id === "planes") setSel({ kind: "plane", hex: String(pr.hex) });
       else if (best.f.layer.id === "sat-points") setSel({ kind: "sat", norad: Number(pr.norad) });
       else if (best.f.layer.id === "sun") setSel({ kind: "sun" });
+      else if (best.f.layer.id === "moon") setSel({ kind: "moon" });
+      else if (best.f.layer.id === "quakes") setSel({ kind: "quake", i: Number(pr.i) });
       else setSel({ kind: "wreck", i: Number(pr.i) });
     };
 
@@ -1020,6 +1144,7 @@ export default function EarthMap({
       window.clearTimeout(drawTimer);
       window.clearTimeout(moveTimer);
       window.clearTimeout(nightTimer);
+      window.clearTimeout(feedTimer);
       document.removeEventListener("visibilitychange", onVisibility);
       map.remove();
       mapRef.current = null;
@@ -1131,6 +1256,29 @@ export default function EarthMap({
       rows.push(["Shading", "night, then civil, nautical and astronomical twilight, updated each minute"]);
       return { title: "Sun overhead here", sub: "Subsolar point", rows };
     }
+    if (sel.kind === "moon") {
+      const m = moonRef.current;
+      if (!m) return null;
+      const rows: CardRow[] = [
+        ["Over", `${Math.abs(m.lat).toFixed(2)}° ${m.lat >= 0 ? "N" : "S"}, ${Math.abs(m.lon).toFixed(2)}° ${m.lon >= 0 ? "E" : "W"}`],
+        ["Moon distance", fmtKm(m.distKm)],
+      ];
+      if (u) rows.push(["From you", fmtKm(haversineKm(u.lat, u.lon, m.lat, m.lon))]);
+      rows.push(["Note", "Where the Moon stands straight overhead; it moves west about 15° an hour"]);
+      return { title: "Moon overhead here", sub: "Sublunar point", rows };
+    }
+    if (sel.kind === "quake") {
+      const q = quakesRef.current?.points[sel.i];
+      if (!q) return null;
+      const hours = q[4] ? (Date.now() - q[4]) / 3_600_000 : null;
+      const rows: CardRow[] = [["Magnitude", `M ${q[2].toFixed(1)}`]];
+      if (hours != null) rows.push(["When", hours < 1 ? `${Math.max(1, Math.round(hours * 60))} min ago` : `${Math.round(hours)} h ago`]);
+      rows.push(["Position", `${q[1].toFixed(3)}°, ${q[0].toFixed(3)}°`]);
+      if (u) rows.push(["From you", fmtKm(haversineKm(u.lat, u.lon, q[1], q[0]))]);
+      rows.push(["Source", "USGS, magnitude 2.5 and up, past day"]);
+      return { title: q[3] || "Earthquake", sub: "Earthquake", rows };
+    }
+    if (sel.kind !== "wreck") return null;
     const w = wrecksRef.current?.rows[sel.i];
     if (!w) return null;
     const rows: Array<[string, string]> = [["Kind", wrecksRef.current!.cats[w[2]] ?? "wreck"]];
@@ -1310,12 +1458,12 @@ export default function EarthMap({
             </button>
           </div>
         ) : null}
-        <p className="onyx-orr-hint">drag to move · pinch out to the globe · tap a plane, satellite, wreck or the Sun</p>
+        <p className="onyx-orr-hint">drag to move · pinch out to the globe · tap a plane, satellite, wreck, quake, the Sun or the Moon</p>
         <p className="onyx-orr-credit">
           Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map:{offlineBase ? " Natural Earth ·" : ""} OpenFreeMap © OpenMapTiles ©{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:
           GEBCO · Wrecks: NOAA{status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""}, not for navigation · Orbits:
-          CelesTrak{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""}
+          CelesTrak{layers.quakes ? " · Earthquakes: USGS" : ""}{layers.aurora ? " · Aurora forecast: NOAA SWPC (OVATION)" : ""}{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""}
           {clock.iceKa != null ? " · Heights: Terrain Tiles on AWS (GEBCO, SRTM, ETOPO1 and others) · Sea level: approximate, after Lambeck et al. 2014 and Spratt & Lisiecki 2016" : ""} ·{" "}
           <a href="/credits">Credits</a>
         </p>

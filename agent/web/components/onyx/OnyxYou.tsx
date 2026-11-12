@@ -17,6 +17,8 @@ import { OnyxStarfield } from "./OnyxStarfield";
 import { ChamberHeader } from "./ChamberHeader";
 import { OnyxBirthDeclareSheet } from "./OnyxBirthDeclareSheet";
 import { NatalTriadPanel } from "./NatalTriadPanel";
+import { PsycheReveal } from "./PsycheReveal";
+import { laneLore } from "../../lib/lore/orreryLanes";
 import { OnyxAccountCard } from "./OnyxAccountCard";
 
 function overlap(a: Composition, b: Composition) {
@@ -512,14 +514,22 @@ export function OnyxYou({
                     The Heliodrome frozen at this birthday — hour, minute, and place included when you
                     saved them. Open Heliodrome and tap Birth to stand there.
                   </p>
-                  {personal.cycles.map(row => (
-                    <article key={row.id} className="onyx-decomp-card onyx-you-voice">
-                      <p className="onyx-decomp-name">
-                        {row.label}
-                        <span>{row.name}</span>
-                      </p>
-                    </article>
-                  ))}
+                  {personal.cycles.map((row, i) => {
+                    const lore = laneLore(row.id);
+                    return (
+                      <PsycheReveal
+                        key={row.id}
+                        title={row.label}
+                        sub={row.name}
+                        degree={i}
+                        rows={[
+                          { label: "Origin", text: lore.origin ?? "" },
+                          { label: "Used since", text: lore.usedSince ?? "" },
+                          { label: "Curious fact", text: lore.curious ?? "" },
+                        ]}
+                      />
+                    );
+                  })}
                 </>
               )}
 
@@ -528,16 +538,26 @@ export function OnyxYou({
                   <p className="onyx-eyebrow" style={{ marginTop: 20 }}>
                     CALENDARS · ZODIACS
                   </p>
-                  {natalBySystem.map(([system, entries]) => (
-                    <article key={system} className="onyx-decomp-card onyx-you-voice">
-                      <p className="onyx-decomp-name">
-                        {entries.map(e => e.name).join(" · ")}
-                        <span>{systemTitle(system)}</span>
-                      </p>
-                      {entries[0]?.source && (
-                        <p className="onyx-decomp-source">{entries[0].source}</p>
-                      )}
-                    </article>
+                  {natalBySystem.map(([system, entries], i) => (
+                    <PsycheReveal
+                      key={system}
+                      title={entries.map(e => `${e.glyph ? `${e.glyph} ` : ""}${e.name}`).join(" · ")}
+                      sub={systemTitle(system)}
+                      degree={i + 3}
+                      rows={entries.flatMap(e => [
+                        { label: entries.length > 1 ? `${e.name} · what it reads` : "What it reads", text: e.observed },
+                        { label: entries.length > 1 ? `${e.name} · qualities` : "Qualities", text: e.qualities.join(", ") },
+                      ]).concat([
+                        {
+                          label: "How sure",
+                          text:
+                            entries[0]?.tier === "measured"
+                              ? "Measured: computed from the sky or the calendar at your birth."
+                              : "Celebrated: a tradition's reading of that moment, not a measurement.",
+                        },
+                        { label: "Source", text: entries[0]?.source ?? "" },
+                      ])}
+                    />
                   ))}
                 </>
               )}

@@ -221,3 +221,33 @@ export function extrapolate(p: Vec3, v: Vec3, dt: number): Vec3 {
   const k = (-MU_EARTH_KM3_S2 / (r * r * r)) * 0.5 * dt * dt;
   return { x: p.x + v.x * dt + p.x * k, y: p.y + v.y * dt + p.y * k, z: p.z + v.z * dt + p.z * k };
 }
+
+/** Row epoch as epoch ms (CelesTrak writes it without a zone; it is UTC). */
+export function rowEpochMs(row: GpRow): number {
+  const e = String(row[3]);
+  return Date.parse(e.endsWith("Z") ? e : `${e}Z`);
+}
+
+/** The median element epoch of a set: how old the data really is, whatever day it was fetched. */
+export function medianEpochIso(rows: GpRow[]): string | null {
+  const t = rows.map(rowEpochMs).filter(Number.isFinite).sort((a, b) => a - b);
+  if (!t.length) return null;
+  return new Date(t[Math.floor(t.length / 2)]!).toISOString();
+}
+
+/**
+ * Merge several sets into one, one row per NORAD number (the newest epoch wins), and leave out objects whose
+ * elements are older than `maxAgeDays`: SGP4 that far from epoch puts a low orbit thousands of km off.
+ */
+export function mergeFreshRows(sets: GpRow[][], nowMs: number, maxAgeDays: number): GpRow[] {
+  const best = new Map<number, GpRow>();
+  for (const rows of sets) {
+    for (const r of rows) {
+      const t = rowEpochMs(r);
+      if (!Number.isFinite(t) || nowMs - t > maxAgeDays * 86_400_000) continue;
+      const prev = best.get(r[0]);
+      if (!prev || rowEpochMs(prev) < t) best.set(r[0], r);
+    }
+  }
+  return [...best.values()].sort((a, b) => a[0] - b[0]);
+}

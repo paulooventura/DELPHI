@@ -305,8 +305,8 @@ const LANE_LORE: Partial<Record<OrreryLaneId, LaneLore>> = {
   },
   day: {
     origin: "The physical day comes from Earth's rotation; the civil day turns that changing solar motion into a shared social count.",
-    usedSince: "Day-counting predates writing. The twenty-four-part day traces through ancient Egyptian hour systems and later Hellenistic astronomy.",
-    curious: "Apparent solar days are not perfectly equal. Mechanical clocks keep a mean solar day, smoothing seasonal variation caused by Earth's orbit and tilt.",
+    usedSince: "The 24 hours come from Egypt: 12 night hours marked by the rising of decan stars, then 12 day hours (with twilight between). The 60 minutes and 60 seconds come from the Sumerians and Babylonians, who counted in base 60.",
+    curious: "Why 12 and 60? One theory, not proven: the thumb counts the 12 joints of the other four fingers on one hand, and the five fingers of the other hand count the dozens. 5 × 12 = 60.",
   },
   shi: {
     origin: "Traditional Chinese time divided the day into twelve shí, each named for an Earthly Branch and later paired with its zodiac animal.",
@@ -1391,4 +1391,9 @@ export function laneColor(speedT: number, alpha = 1): string {
   const g = Math.round(a[1] + (b[1] - a[1]) * f);
   const bl = Math.round(a[2] + (b[2] - a[2]) * f);
   return `rgba(${r},${g},${bl},${alpha})`;
+}
+
+/** The teaching copy for one lane (origin, used since, curious fact), for tap-to-reveal outside the Heliodrome. */
+export function laneLore(id: OrreryLaneId): { origin?: string; usedSince?: string; curious?: string } {
+  return LANE_LORE[id] ?? {};
 }

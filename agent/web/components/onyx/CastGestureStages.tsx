@@ -321,7 +321,7 @@ export function RuneBagStage({
 
       <button
         type="button"
-        className="onyx-ghost-btn"
+        className="onyx-ghost-btn onyx-cast-draw-btn"
         style={{ marginTop: 12 }}
         disabled={committing || (asked && energy < 25)}
         onClick={() => {
@@ -338,7 +338,7 @@ export function RuneBagStage({
 
       <button
         type="button"
-        className="onyx-ghost-btn"
+        className="onyx-ghost-btn onyx-cast-draw-btn"
         style={{ marginTop: 8 }}
         onClick={onBack}
         disabled={committing}
@@ -510,7 +510,7 @@ export function CoinTossStage({
 
       <button
         type="button"
-        className="onyx-ghost-btn"
+        className="onyx-ghost-btn onyx-cast-draw-btn"
         style={{ marginTop: 12 }}
         disabled={committing || energy < 20}
         onClick={() => {
@@ -523,7 +523,7 @@ export function CoinTossStage({
 
       <button
         type="button"
-        className="onyx-ghost-btn"
+        className="onyx-ghost-btn onyx-cast-draw-btn"
         style={{ marginTop: 8 }}
         onClick={onBack}
         disabled={committing}
@@ -664,7 +664,7 @@ export function TarotDeckStage({
 
       <button
         type="button"
-        className="onyx-ghost-btn"
+        className="onyx-ghost-btn onyx-cast-draw-btn"
         style={{ marginTop: 12 }}
         disabled={committing || energy < 25}
         onClick={() => {
@@ -677,7 +677,7 @@ export function TarotDeckStage({
 
       <button
         type="button"
-        className="onyx-ghost-btn"
+        className="onyx-ghost-btn onyx-cast-draw-btn"
         style={{ marginTop: 8 }}
         onClick={onBack}
         disabled={committing}
