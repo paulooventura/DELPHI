@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "29 October 2026";
+const UPDATED = "12 November 2026";
 
 const h2 = { fontSize: "1.05rem", margin: "2rem 0 0.5rem", color: "#e8e4f4", fontWeight: 500 } as const;
 
@@ -64,6 +64,10 @@ export default function PrivacyPage() {
           forecast service. We don&apos;t store them.
         </li>
         <li>City names you type into place search go from your device to Open-Meteo&apos;s geocoding service.</li>
+        <li>
+          If you turn on the world map&apos;s Clouds, Rain, Snow or Night lights layers, your device loads those map pieces
+          straight from NASA&apos;s GIBS service, which sees only which pieces of the map were asked for.
+        </li>
         <li>
           Open-Meteo answers under its own{" "}
           <a href="https://open-meteo.com/en/terms">terms</a>.

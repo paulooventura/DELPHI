@@ -75,16 +75,44 @@ function ageLabel(ma: number): string {
 
 export type MapSat = { name: string; row: GpRow };
 
-type LayerId = "daynight" | "aircraft" | "satellites" | "seafloor" | "wrecks" | "quakes" | "aurora";
+type LayerId =
+  | "daynight"
+  | "aircraft"
+  | "satellites"
+  | "seafloor"
+  | "wrecks"
+  | "quakes"
+  | "aurora"
+  | "clouds"
+  | "rain"
+  | "snow"
+  | "lights";
 const LAYERS: Array<{ id: LayerId; label: string }> = [
   { id: "daynight", label: "Day & night" },
   { id: "aircraft", label: "Aircraft" },
   { id: "satellites", label: "Satellites" },
   { id: "quakes", label: "Earthquakes" },
   { id: "aurora", label: "Aurora" },
+  { id: "clouds", label: "Clouds" },
+  { id: "rain", label: "Rain" },
+  { id: "snow", label: "Snow" },
+  { id: "lights", label: "Night lights" },
   { id: "seafloor", label: "Seafloor" },
   { id: "wrecks", label: "Wrecks" },
 ];
+/**
+ * NASA GIBS imagery (NASA open data, free for any use with credit; tiles come straight from NASA).
+ * Daily layers use yesterday (UTC): today's swaths are still filling in.
+ */
+const GIBS = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best";
+const gibsDay = () => new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+const GIBS_LAYERS: Array<{ id: "clouds" | "rain" | "snow" | "lights"; tiles: () => string; maxzoom: number; opacity: number }> = [
+  { id: "clouds", tiles: () => `${GIBS}/VIIRS_NOAA20_CorrectedReflectance_TrueColor/default/${gibsDay()}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg`, maxzoom: 9, opacity: 0.85 },
+  { id: "snow", tiles: () => `${GIBS}/MODIS_Terra_NDSI_Snow_Cover/default/${gibsDay()}/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png`, maxzoom: 8, opacity: 0.8 },
+  { id: "rain", tiles: () => `${GIBS}/IMERG_Precipitation_Rate/default/${gibsDay()}/GoogleMapsCompatible_Level6/{z}/{y}/{x}.png`, maxzoom: 6, opacity: 0.75 },
+  { id: "lights", tiles: () => `${GIBS}/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png`, maxzoom: 8, opacity: 0.9 },
+];
+
 /** Public live layers (app/api/earth/[feed]): refreshed while the map is open. */
 const FEED_EVERY_MS = 5 * 60_000;
 
@@ -223,6 +251,10 @@ export default function EarthMap({
     wrecks: true,
     quakes: false,
     aurora: false,
+    clouds: false,
+    rain: false,
+    snow: false,
+    lights: false,
   });
   const layersRef = useRef(layers);
   const [layersOpen, setLayersOpen] = useState(false);
@@ -407,6 +439,13 @@ export default function EarthMap({
         },
         firstSymbol,
       );
+      for (const g of GIBS_LAYERS) {
+        map.addSource(`gibs-${g.id}`, { type: "raster", tiles: [g.tiles()], tileSize: 256, maxzoom: g.maxzoom, attribution: "NASA GIBS" });
+        map.addLayer(
+          { id: `gibs-${g.id}`, type: "raster", source: `gibs-${g.id}`, layout: { visibility: "none" }, paint: { "raster-opacity": g.opacity } },
+          "night",
+        );
+      }
       map.addSource("moon", { type: "geojson", data: empty });
       map.addLayer(
         {
@@ -636,6 +675,7 @@ export default function EarthMap({
       for (const id of ["night", "night-edge", "sun-glow", "sun", "moon"]) map.setLayoutProperty(id, "visibility", vis(L.daynight));
       map.setLayoutProperty("quakes", "visibility", vis(L.quakes && today));
       map.setLayoutProperty("aurora", "visibility", vis(L.aurora && today));
+      for (const g of GIBS_LAYERS) map.setLayoutProperty(`gibs-${g.id}`, "visibility", vis(L[g.id] && today));
       if ((L.quakes || L.aurora) && today) loadFeeds();
       for (const id of ["planes", "plane-labels", "trails"]) map.setLayoutProperty(id, "visibility", vis(L.aircraft && today));
       for (const id of ["sat-footprints", "sat-footprint-edge", "sat-tracks", "sat-points", "sat-names"]) map.setLayoutProperty(id, "visibility", vis(L.satellites && today));
@@ -1463,7 +1503,7 @@ export default function EarthMap({
           Aircraft: adsb.lol (<a href={ODBL} target="_blank" rel="noopener noreferrer">ODbL</a>) · Map:{offlineBase ? " Natural Earth ·" : ""} OpenFreeMap © OpenMapTiles ©{" "}
           <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> · Seafloor:
           GEBCO · Wrecks: NOAA{status.wrecks ? ` (${fmtInt(status.wrecks)}, US charts)` : ""}, not for navigation · Orbits:
-          CelesTrak{layers.quakes ? " · Earthquakes: USGS" : ""}{layers.aurora ? " · Aurora forecast: NOAA SWPC (OVATION)" : ""}{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""}
+          CelesTrak{layers.quakes ? " · Earthquakes: USGS" : ""}{layers.aurora ? " · Aurora forecast: NOAA SWPC (OVATION)" : ""}{layers.clouds || layers.rain || layers.snow || layers.lights ? " · Imagery: NASA GIBS (VIIRS, MODIS, GPM IMERG, Black Marble 2016), yesterday's where daily" : ""}{clock.agesMa != null ? " · Ancient coastlines: Müller et al. 2019 via GPlates (EarthByte), CC BY 4.0" : ""}
           {clock.iceKa != null ? " · Heights: Terrain Tiles on AWS (GEBCO, SRTM, ETOPO1 and others) · Sea level: approximate, after Lambeck et al. 2014 and Spratt & Lisiecki 2016" : ""} ·{" "}
           <a href="/credits">Credits</a>
         </p>

@@ -23,6 +23,7 @@ import { PneumaWhen } from "./PneumaWhen";
 import { setHeliodromeHiddenLanes } from "../../lib/heliodromeLaneVoice";
 import { OnyxHeliodromeFilm } from "./OnyxHeliodromeFilm";
 import { ChamberHeader } from "./ChamberHeader";
+import { MayaNumeral } from "./MayaNumeral";
 import {
   CENTER_ONLY_LANE_IDS,
   ORRERY_LANE_GROUPS,
@@ -682,6 +683,14 @@ export function OnyxOrrery({
                       {expanded.cells[expanded.index]!.glyph}
                     </p>
                   )}
+                  {mayaTone(expanded) ? (
+                    <figure className="onyx-orrery-teach-art">
+                      <MayaNumeral n={mayaTone(expanded)!} size={72} />
+                      <figcaption>
+                        Tone {mayaTone(expanded)} in Maya bar-and-dot numerals: a dot is one, a bar is five.
+                      </figcaption>
+                    </figure>
+                  ) : null}
                   <p className="onyx-orrery-teach-now">{expanded.activeLabel}</p>
                   <p className="onyx-orrery-teach-period">
                     Full cycle · {expanded.cycle}
@@ -737,6 +746,17 @@ export function OnyxOrrery({
       </div>
     </div>
   );
+}
+
+/** The 1–13 tone a Maya or Dreamspell lane is on, for its bar-and-dot numeral (null for other lanes). */
+function mayaTone(lane: OrreryLaneState): number | null {
+  if (lane.id === "tzolkin") {
+    const t = parseInt(lane.activeLabel, 10);
+    return t >= 1 && t <= 13 ? t : null;
+  }
+  if (lane.id === "dreamspell-tone") return (lane.index % 13) + 1;
+  if (lane.id === "dreamspell-kin") return (lane.index % 13) + 1;
+  return null;
 }
 
 function mod(n: number, m: number): number {

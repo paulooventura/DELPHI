@@ -378,3 +378,8 @@ exports/DELPHI-UE-Export.zip
 agent/web/.tmp-ui/
 # bundled iOS build scratch (agent/web/scripts/build-ios.mjs)
 /agent/.ios-build/
+
+# Agent input material (may hold private lore; the repo is public). Kept on disk, never committed.
+_claude-input-files*/
+_lore-engine-import*/
+*.bak
