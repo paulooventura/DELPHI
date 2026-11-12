@@ -53,15 +53,15 @@ export default function PrivacyPage() {
         </li>
       </ul>
 
-      <h2 style={h2}>Sent to Open-Meteo, for weather and place names</h2>
+      <h2 style={h2}>Sent to weather, place and map services</h2>
       <ul>
         <li>
           Your device&apos;s coordinates go from your phone to Open-Meteo&apos;s geocoding service to name the place
           you&apos;re in.
         </li>
         <li>
-          For the weather and cycles on the home screen, our server passes your coordinates to Open-Meteo&apos;s
-          forecast service. We don&apos;t store them.
+          For the weather, our server passes your coordinates, rounded to about 1 km, to MET Norway&apos;s forecast
+          service (the Norwegian Meteorological Institute). We don&apos;t store them.
         </li>
         <li>City names you type into place search go from your device to Open-Meteo&apos;s geocoding service.</li>
         <li>

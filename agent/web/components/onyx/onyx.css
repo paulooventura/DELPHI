@@ -5322,3 +5322,10 @@ html[data-sky="twilight"] .onyx-overlay-close {
   max-width: 260px;
   text-align: center;
 }
+
+/* MET Norway's credit wherever its weather shows (T336) */
+.onyx-sky-credit {
+  font-size: 9px;
+  opacity: 0.55;
+  letter-spacing: 0.06em;
+}

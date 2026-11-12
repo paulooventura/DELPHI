@@ -110,7 +110,11 @@ export default function CreditsPage() {
       <h2 style={h2}>Weather and places</h2>
       <ul>
         <li>
-          Weather and place search: <Out href="https://open-meteo.com/">Open-Meteo</Out> (
+          Weather: <Out href="https://api.met.no/">MET Norway</Out> (Norwegian Meteorological Institute), Locationforecast,
+          under <Out href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Out> and NLOD.
+        </li>
+        <li>
+          Place search: <Out href="https://open-meteo.com/">Open-Meteo</Out> (
           <Out href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Out>).
         </li>
       </ul>

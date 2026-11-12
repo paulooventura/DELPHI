@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import {
+  CARD_LIMIT_CENTS,
   cancellation,
+  fundingMethodAllowed,
+  markAttendance,
   crewAutoPayDue,
   DEFAULT_RULES,
   nextStatus,
@@ -131,5 +134,58 @@ describe("cancellation and splitting", () => {
     const s = splitCents(100, { a: 1, b: 1, c: 1 });
     expect(Object.values(s).reduce((x, y) => x + y, 0)).toBe(100);
     expect(Math.max(...Object.values(s)) - Math.min(...Object.values(s))).toBeLessThanOrEqual(1);
+  });
+});
+
+describe("Paulo's rules (2026-11-12)", () => {
+  const rich: Funding[] = [
+    { by: "owner", cents: 150_000, cleared: true },
+    { by: "ana", cents: 50_000, cleared: true, backer: true },
+  ];
+
+  it("Pneuma takes 5% of profit only, after crew, costs and the backers' money back", () => {
+    const r = payOrder({ bookings, fundings: rich, ticketCents: 100_000, shares: { ana: 1 } }, noFees);
+    if (!r.ok) throw new Error("expected ok");
+    // pot 300,000 - crew 50,000 - venue 100,000 - recoup 50,000 = profit 100,000
+    expect(r.lines.find(l => l.payee === "pneuma")!.cents).toBe(5_000);
+    expect(r.lines.reduce((s, l) => s + l.cents, 0)).toBe(r.potCents);
+  });
+
+  it("a night that breaks even or loses pays Pneuma nothing", () => {
+    const r = payOrder({ bookings, fundings: rich, ticketCents: 0, shares: { ana: 1 } }, noFees);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.lines.some(l => l.payee === "pneuma")).toBe(false);
+  });
+
+  it("crew who drop out aren't paid and leave the staff budget", () => {
+    const out = bookings.map(b => (b.id === "b2" ? { ...b, withdrawn: true } : b));
+    expect(staffBudget(out, noFees).payCents).toBe(30_000);
+    const r = payOrder({ bookings: out, fundings: rich, ticketCents: 0, shares: {} }, noFees);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.lines.some(l => l.payee === "door")).toBe(false);
+  });
+
+  it("only the steward records attendance, and a no-show isn't paid", () => {
+    expect(markAttendance(bookings[1]!, "owner", "pm-1", false)).toEqual({ error: "Only the night's steward records who showed up." });
+    const marked = markAttendance(bookings[1]!, "pm-1", "pm-1", false) as Booking;
+    expect(marked.attended).toBe(false);
+    const r = payOrder({ bookings: [bookings[0]!, marked, bookings[2]!], fundings: rich, ticketCents: 0, shares: {} }, noFees);
+    if (!r.ok) throw new Error("expected ok");
+    expect(r.lines.some(l => l.payee === "door")).toBe(false);
+  });
+
+  it("cancelled: pre-event work is paid as delivered; night crew get nothing 72+ hours out", () => {
+    const withPromo: Booking[] = [...bookings, { id: "p1", kind: "crew", payee: "promo", agreedCents: 40_000, preEvent: true, deliveredCents: 25_000, accepted: true }];
+    const early = cancellation({ bookings: withPromo, fundings: rich, hoursBeforeNight: 100 });
+    expect(early.crew).toEqual([{ step: 1, label: "Pre-event work", payee: "promo", cents: 25_000 }]);
+    const late = cancellation({ bookings: withPromo, fundings: rich, hoursBeforeNight: 10 });
+    expect(late.crew.map(l => l.payee)).toEqual(["promo", "sound", "door"]);
+  });
+
+  it("over $1,000 funding goes by bank transfer", () => {
+    expect(CARD_LIMIT_CENTS).toBe(100_000);
+    expect(fundingMethodAllowed(100_000, "card")).toBe(true);
+    expect(fundingMethodAllowed(100_001, "card")).toBe(false);
+    expect(fundingMethodAllowed(500_000, "bank")).toBe(true);
   });
 });

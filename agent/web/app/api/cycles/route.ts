@@ -1,111 +1,32 @@
 import { NextResponse } from "next/server";
-import { getCycleSnapshot, weatherCodeToEmoji, type WeatherInfo } from "../../../lib/cycleSystems";
+import { getCycleSnapshot, type WeatherInfo } from "../../../lib/cycleSystems";
 
-function hourFromIso(iso: string): number {
-  const m = iso.match(/T(\d{2}):/);
-  return m ? Number.parseInt(m[1]!, 10) : 0;
-}
+import tzLookup from "tz-lookup";
+import { metToWeather } from "../../../lib/metNorway";
 
-function dateFromIso(iso: string): string {
-  return iso.slice(0, 10);
-}
+/** MET Norway asks every app to identify itself (https://api.met.no/doc/TermsOfService). */
+const MET_UA = "PneumaMundi/1.0 (+https://delphi.pauloventura.org)";
 
-async function fetchWeather(
-  lat = 36.1627,
-  lon = -86.7816,
-  timezone = "auto",
-  localDate?: string,
-): Promise<WeatherInfo | undefined> {
+/**
+ * Weather for the home screen from MET Norway (T336). Coordinates are rounded to 2 decimals (about 1 km) before they
+ * leave our server: MET's cache wants at most 4, and we never need more.
+ */
+async function fetchWeather(lat = 36.1627, lon = -86.7816, timezone = "auto", localDate?: string): Promise<WeatherInfo | undefined> {
   try {
-    const params = new URLSearchParams({
-      latitude: String(lat),
-      longitude: String(lon),
-      current: "temperature_2m,weather_code,wind_speed_10m,is_day,cloud_cover,precipitation,surface_pressure",
-      hourly: "weather_code,temperature_2m,precipitation_probability,cloud_cover,is_day,surface_pressure",
-      forecast_days: "2",
-      timezone,
-    });
-    const url = `https://api.open-meteo.com/v1/forecast?${params}`;
-    const res = await fetch(url, { signal: AbortSignal.timeout(8000), next: { revalidate: 300 } });
+    const la = Math.round(lat * 100) / 100;
+    const lo = Math.round(lon * 100) / 100;
+    let tz = timezone;
+    if (!tz || tz === "auto") {
+      try {
+        tz = tzLookup(la, lo);
+      } catch {
+        tz = "UTC";
+      }
+    }
+    const url = `https://api.met.no/weatherapi/locationforecast/2.0/complete?lat=${la}&lon=${lo}`;
+    const res = await fetch(url, { headers: { "user-agent": MET_UA }, signal: AbortSignal.timeout(8000), next: { revalidate: 900 } });
     if (!res.ok) return undefined;
-    const json = await res.json();
-    const cur = json?.current;
-    if (!cur) return undefined;
-
-    const code: number = cur.weather_code ?? 0;
-    const curIsDay = cur.is_day === 1 || cur.is_day === true;
-    const { emoji, condition } = weatherCodeToEmoji(code, curIsDay);
-
-    const hourlyCodes: number[] = json?.hourly?.weather_code ?? [];
-    const hourlyTemps: number[] = json?.hourly?.temperature_2m ?? [];
-    const hourlyPrecip: number[] = json?.hourly?.precipitation_probability ?? [];
-    const hourlyCloud: number[] = json?.hourly?.cloud_cover ?? [];
-    const hourlyIsDay: number[] = json?.hourly?.is_day ?? [];
-    const hourlyTimes: string[] = json?.hourly?.time ?? [];
-
-    const targetDate = localDate ?? dateFromIso(hourlyTimes[0] ?? "");
-    const hourly: WeatherInfo["hourly"] = Array.from({ length: 24 }, (_, hour) => ({
-      hour,
-      emoji: "·",
-      condition: "",
-      tempC: null,
-      precipProb: null,
-      cloudCover: null,
-      isDay: hour >= 6 && hour < 20,
-    }));
-
-    for (let idx = 0; idx < hourlyTimes.length; idx++) {
-      const time = hourlyTimes[idx]!;
-      if (dateFromIso(time) !== targetDate) continue;
-      const hour = hourFromIso(time);
-      if (hour < 0 || hour > 23) continue;
-
-      const hCode = hourlyCodes[idx] ?? code;
-      const isDay = hourlyIsDay[idx] === 1;
-      const hMeta = weatherCodeToEmoji(hCode, isDay);
-      hourly[hour] = {
-        hour,
-        emoji: hMeta.emoji,
-        condition: hMeta.condition,
-        weatherCode: hCode,
-        tempC: typeof hourlyTemps[idx] === "number" ? hourlyTemps[idx]! : null,
-        precipProb: typeof hourlyPrecip[idx] === "number" ? hourlyPrecip[idx]! : null,
-        cloudCover: typeof hourlyCloud[idx] === "number" ? hourlyCloud[idx]! : null,
-        isDay,
-      };
-    }
-
-    // Fill gaps from nearest hour or current conditions
-    for (let h = 0; h < 24; h++) {
-      if (hourly[h]!.emoji !== "·") continue;
-      const near = hourly.find(x => x.emoji !== "·");
-      hourly[h] = {
-        hour: h,
-        emoji: near?.emoji ?? emoji,
-        condition: near?.condition ?? condition,
-        weatherCode: near?.weatherCode ?? code,
-        tempC: near?.tempC ?? (typeof cur.temperature_2m === "number" ? cur.temperature_2m : null),
-        precipProb: near?.precipProb ?? null,
-        cloudCover: near?.cloudCover ?? null,
-        isDay: h >= 6 && h < 20,
-      };
-    }
-
-    const curHour = new Date().getHours();
-    const curSlot = hourly[curHour];
-
-    return {
-      condition,
-      emoji,
-      tempC: typeof cur.temperature_2m === "number" ? cur.temperature_2m : null,
-      windKmh: typeof cur.wind_speed_10m === "number" ? cur.wind_speed_10m : null,
-      pressureHpa: typeof cur.surface_pressure === "number" ? cur.surface_pressure : null,
-      weatherCode: code,
-      cloudCover: typeof cur.cloud_cover === "number" ? cur.cloud_cover : curSlot?.cloudCover ?? null,
-      isDay: curIsDay,
-      precipProb: curSlot?.precipProb ?? null,
-      hourly,
-    };
+    return metToWeather(await res.json(), { lat: la, lon: lo, timeZone: tz, localDate });
   } catch {
     return undefined;
   }

@@ -293,6 +293,7 @@ export function DashboardContainer({
               {weatherTell?.emoji && weatherTell.emoji !== "·" ? weatherTell.emoji : "·"}{" "}
               {weatherTell?.tempC != null ? `${Math.round(weatherTell.tempC)}° ` : ""}
               {weatherTell?.condition ?? "Weather —"}
+              {weatherTell?.condition ? <small style={{ opacity: 0.6 }}> · MET Norway</small> : null}
             </span>
             <span>Day {currentDate.getDate()}</span>
           </div>

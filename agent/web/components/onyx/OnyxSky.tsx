@@ -25,6 +25,7 @@ import { ChamberHeader } from "./ChamberHeader";
 import { cardinalFromHeading } from "./onyxCopy";
 import { SkyOrrery } from "./SkyOrrery";
 import { OnyxOrrerySplash } from "./OnyxOrrerySplash";
+import { MET_CREDIT } from "../../lib/metNorway";
 import { PneumaWhen } from "./PneumaWhen";
 import { usePneumaClock } from "../../hooks/usePneumaClock";
 import { clockLabel } from "../../lib/cosmic/pneumaClock";
@@ -511,6 +512,9 @@ export function OnyxSky({
             {offsetLabel ? ` · ${offsetLabel}` : ""}
             {lockLabel ? ` · ${lockLabel}` : ""}
           </div>
+          {weather ? (
+            <div className="onyx-sky-meta onyx-sky-credit">clouds and light from the weather · {MET_CREDIT}</div>
+          ) : null}
         </div>
 
         <div className="onyx-heading-mark" aria-hidden>

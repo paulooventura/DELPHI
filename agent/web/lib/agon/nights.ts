@@ -4,8 +4,15 @@
  * Pure functions only: the night's states, the staff budget, the lock, the Pay order and cancellation. Money is in
  * whole cents. Nothing here moves money; Stripe Connect comes later (T499), after the lawyer and Paulo's decisions.
  *
- * Still Paulo's call (AGON-MONEY §13), so they are settings with placeholders, never hard-coded promises:
- *   platform fee (decision 3), crew cancellation pay (decision 4), Stripe's payout fee (from Stripe's pricing).
+ * Paulo's rules (2026-11-12, Homebase decisions/dec-agon-money-core.md):
+ *   - Pneuma's fee is 5% of profit only: nothing on a night that breaks even or loses. Stripe's fees pass at cost.
+ *   - The owner cancels: crew get nothing more than 72 hours before, half their pay inside 72 hours. People who did
+ *     pre-event work (promo, marketing, design) are paid for the work they delivered either way.
+ *   - Crew who drop out before the night aren't paid; the owner books a replacement.
+ *   - The night's steward (PM) records who showed up; a no-show isn't paid.
+ *   - Funding above $1,000 comes by bank transfer; backers carry their own gain or loss.
+ *   - Tickets: option A (the owner sells on Ticket Fairy and pays the ticket income in at Pay).
+ * Stripe's payout fee is a placeholder until the platform account opens.
  */
 
 export type NightStatus = "draft" | "budgeted" | "funded" | "live" | "ended" | "paid" | "closed" | "cancelled";
@@ -22,6 +29,14 @@ export type Booking = {
   approvedOvertimeCents?: number;
   /** The crew member accepted pay, hours and the cancellation terms. */
   accepted?: boolean;
+  /** Dropped out before the night: not paid, and the owner books a replacement. */
+  withdrawn?: boolean;
+  /** Set by the night's steward only: false = no-show, not paid. */
+  attended?: boolean;
+  /** Work done before the night (promo, marketing, design): paid for what was delivered, even if the night is cancelled. */
+  preEvent?: boolean;
+  /** For pre-event work: what was delivered by cancellation time, in cents (defaults to the agreed amount). */
+  deliveredCents?: number;
 };
 
 export type Funding = {
@@ -40,9 +55,9 @@ export type NightMoneyRules = {
   overtimeBuffer: number;
   /** Stripe's fee on one payout, in cents. PLACEHOLDER until checked against Stripe's live Connect pricing. */
   payoutFeeCents: (amountCents: number) => number;
-  /** Pneuma's platform fee for the night, in cents. Decision 3, open: none until Paulo picks. */
-  platformFeeCents: (potCents: number) => number;
-  /** Crew cancellation pay as a share of agreed pay, by hours before the night. Decision 4, open. */
+  /** Pneuma's share of the night's profit (what is left after crew, costs, Stripe and the backers' money back). */
+  profitFeeShare: number;
+  /** Crew cancellation pay as a share of agreed pay, by hours before the night (when the owner cancels). */
   cancellationShare: (hoursBefore: number) => number;
   /** Share of the upside kept as the reserve / next seed. */
   reserveShare: number;
@@ -52,8 +67,8 @@ export const DEFAULT_RULES: NightMoneyRules = {
   overtimeBuffer: 0.1,
   // Stripe Connect payouts are about 0.25% + 25¢ each in the US (placeholder; confirm when the platform account opens).
   payoutFeeCents: a => (a > 0 ? Math.ceil(a * 0.0025) + 25 : 0),
-  platformFeeCents: () => 0,
-  // The example in AGON-MONEY §4: 50% of agreed pay inside 72 hours of the night, nothing before.
+  profitFeeShare: 0.05,
+  // Nothing more than 72 hours before the night; half the agreed pay inside 72 hours.
   cancellationShare: h => (h < 72 ? 0.5 : 0),
   reserveShare: 0,
 };
@@ -63,7 +78,19 @@ export const INCIDENT_WINDOW_H = 48;
 export const CREW_AUTOPAY_H = 72;
 
 const sum = (xs: number[]) => xs.reduce((s, x) => s + x, 0);
-const crew = (b: Booking[]) => b.filter(x => x.kind === "crew");
+/** Crew still on the night (a withdrawn crew member is replaced, never paid). */
+const crew = (b: Booking[]) => b.filter(x => x.kind === "crew" && !x.withdrawn);
+
+/** Above this, funding has to come by bank transfer (card charges can be clawed back weeks later). */
+export const CARD_LIMIT_CENTS = 100_000;
+export const fundingMethodAllowed = (cents: number, method: "card" | "bank") => method === "bank" || cents <= CARD_LIMIT_CENTS;
+
+/** Attendance belongs to the night's steward: anyone else is refused. */
+export function markAttendance(b: Booking, by: string, stewardId: string, attended: boolean): Booking | { error: string } {
+  if (by !== stewardId) return { error: "Only the night's steward records who showed up." };
+  if (b.kind !== "crew") return { error: "Attendance is for crew bookings." };
+  return { ...b, attended };
+}
 
 export type StaffBudget = { payCents: number; bufferCents: number; feesCents: number; totalCents: number };
 
@@ -171,17 +198,17 @@ export function payOrder(
 ): PayResult {
   const potCents = clearedCents(input.fundings) + Math.max(0, input.ticketCents);
   const lines: PayLine[] = [];
-  const crewLines = crew(input.bookings).map(b => ({ b, cents: b.agreedCents + (b.approvedOvertimeCents ?? 0) }));
+  const crewLines = crew(input.bookings)
+    .filter(b => b.preEvent || b.attended !== false)
+    .map(b => ({ b, cents: b.agreedCents + (b.approvedOvertimeCents ?? 0) }));
   const costLines = input.bookings.filter(b => b.kind !== "crew").map(b => ({ b, cents: b.agreedCents }));
   const payoutFees = sum([...crewLines, ...costLines].map(l => rules.payoutFeeCents(l.cents)));
-  const platform = rules.platformFeeCents(potCents);
-  const fixed = sum(crewLines.map(l => l.cents)) + sum(costLines.map(l => l.cents)) + payoutFees + platform;
+  const fixed = sum(crewLines.map(l => l.cents)) + sum(costLines.map(l => l.cents)) + payoutFees;
   if (fixed > potCents) return { ok: false, shortfallCents: fixed - potCents, lines: [] };
 
   for (const l of crewLines) lines.push({ step: 1, label: "Crew", payee: l.b.payee, cents: l.cents });
   for (const l of costLines) lines.push({ step: 2, label: l.b.kind === "venue" ? "Venue" : "Cost", payee: l.b.payee, cents: l.cents });
   if (payoutFees) lines.push({ step: 3, label: "Payout fees", payee: "stripe", cents: payoutFees });
-  if (platform) lines.push({ step: 3, label: "Platform fee", payee: "pneuma", cents: platform });
   let left = potCents - fixed;
 
   const backed: Record<string, number> = {};
@@ -192,10 +219,14 @@ export function payOrder(
   left -= recoup;
 
   if (left > 0) {
+    // Profit: Pneuma's share first, then the agreed split.
+    const fee = Math.floor(left * rules.profitFeeShare);
+    if (fee > 0) lines.push({ step: 5, label: "Pneuma fee (5% of profit)", payee: "pneuma", cents: fee });
+    left -= fee;
     const reserve = Math.floor(left * rules.reserveShare);
     const upside = left - reserve;
     for (const [payee, cents] of Object.entries(splitCents(upside, input.shares))) lines.push({ step: 5, label: "Upside", payee, cents });
-    const paidUpside = sum(lines.filter(l => l.step === 5).map(l => l.cents));
+    const paidUpside = sum(lines.filter(l => l.step === 5 && l.payee !== "pneuma").map(l => l.cents));
     const toReserve = left - paidUpside;
     if (toReserve > 0) lines.push({ step: 6, label: "Reserve", payee: "reserve", cents: toReserve });
     left = 0;
@@ -212,7 +243,12 @@ export function cancellation(
   const pot = clearedCents(input.fundings);
   let left = pot;
   const crewPay: PayLine[] = [];
-  for (const b of crew(input.bookings)) {
+  for (const b of input.bookings.filter(x => x.preEvent && !x.withdrawn)) {
+    const cents = Math.min(left, Math.max(0, b.deliveredCents ?? b.agreedCents));
+    if (cents > 0) crewPay.push({ step: 1, label: "Pre-event work", payee: b.payee, cents });
+    left -= cents;
+  }
+  for (const b of crew(input.bookings).filter(x => !x.preEvent)) {
     const cents = Math.min(left, Math.floor(b.agreedCents * share));
     if (cents > 0) crewPay.push({ step: 1, label: "Cancellation pay", payee: b.payee, cents });
     left -= cents;

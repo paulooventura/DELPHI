@@ -5,6 +5,8 @@
 create table if not exists public.agon_nights (
   id uuid primary key default gen_random_uuid(),
   owner_email text not null,
+  -- The night's steward (PM): records who showed up and reads incident disputes first.
+  steward_email text,
   title text not null,
   night_at timestamptz not null,
   status text not null default 'draft'
@@ -25,6 +27,13 @@ create table if not exists public.agon_bookings (
   hours numeric,
   approved_overtime_cents integer not null default 0 check (approved_overtime_cents >= 0),
   accepted_at timestamptz,
+  -- Dropped out before the night: not paid; the owner books a replacement.
+  withdrawn_at timestamptz,
+  -- Set by the steward only: false = no-show (not paid).
+  attended boolean,
+  -- Pre-event work (promo, marketing, design): paid for what was delivered even if the night is cancelled.
+  pre_event boolean not null default false,
+  delivered_cents integer check (delivered_cents >= 0),
   incident_notes text,
   created_at timestamptz not null default now()
 );
@@ -35,6 +44,8 @@ create table if not exists public.agon_fundings (
   funder text not null,
   cents integer not null check (cents > 0),
   backer boolean not null default false,
+  -- Above $1,000 a funding must come by bank transfer (lib/agon/nights.ts CARD_LIMIT_CENTS).
+  method text not null default 'card' check (method in ('card', 'bank')),
   stripe_payment_id text,
   cleared_at timestamptz,
   created_at timestamptz not null default now()
@@ -52,6 +63,9 @@ create table if not exists public.agon_ledger (
   stripe_object_id text,
   created_at timestamptz not null default now()
 );
+
+alter table public.agon_fundings drop constraint if exists agon_fundings_card_limit;
+alter table public.agon_fundings add constraint agon_fundings_card_limit check (method = 'bank' or cents <= 100000);
 
 create index if not exists agon_bookings_night on public.agon_bookings (night_id);
 create index if not exists agon_fundings_night on public.agon_fundings (night_id);
