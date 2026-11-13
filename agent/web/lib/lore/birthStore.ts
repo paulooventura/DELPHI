@@ -16,7 +16,7 @@ export type BirthRecord = {
   /** Optional local clock; noon if omitted. */
   hour?: number;
   minute?: number;
-  /** City label from on-device place search (Open-Meteo). Never sent to Delphi. */
+  /** City label from on-device place search (bundled GeoNames list). Never sent to Delphi. */
   placeLabel?: string;
   /** Birth-place coords from the locked city pick (client geocode). */
   lat?: number;

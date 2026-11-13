@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { nearestPlaceLabel } from "../lib/geo/placeSearch";
 
 export type LaunchPhase = "void" | "awakening" | "ripple" | "calibration" | "transition" | "done";
 
@@ -96,19 +97,10 @@ export function useLaunchSequence(onComplete: () => void, telemetryReady: boolea
   };
 }
 
+/** Names where the person is from the bundled place list: their coordinates never leave the device. */
 export async function reversePlaceLabel(lat: number, lon: number): Promise<string> {
   try {
-    const res = await fetch(
-      `https://geocoding-api.open-meteo.com/v1/reverse?latitude=${lat}&longitude=${lon}&count=1&language=en`,
-      { signal: AbortSignal.timeout(5000) },
-    );
-    if (!res.ok) throw new Error("geo fail");
-    const json = await res.json();
-    const r = json?.results?.[0];
-    if (!r) return "OBSERVATORY";
-    const city = String(r.name ?? "").toUpperCase();
-    const region = String(r.admin1 ?? r.country_code ?? "").toUpperCase();
-    return region && city !== region ? `${city}, ${region}` : city || region || "OBSERVATORY";
+    return await nearestPlaceLabel(lat, lon);
   } catch {
     return "OBSERVATORY";
   }

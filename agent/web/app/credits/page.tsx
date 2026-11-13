@@ -114,8 +114,8 @@ export default function CreditsPage() {
           under <Out href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Out> and NLOD.
         </li>
         <li>
-          Place search: <Out href="https://open-meteo.com/">Open-Meteo</Out> (
-          <Out href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Out>).
+          Places (search and naming where you are, on the device): <Out href="https://www.geonames.org/">GeoNames</Out>{" "}
+          (towns of 5,000 people and more, <Out href="https://creativecommons.org/licenses/by/4.0/">CC BY 4.0</Out>).
         </li>
       </ul>
 

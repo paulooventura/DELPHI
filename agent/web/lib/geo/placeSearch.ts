@@ -1,7 +1,8 @@
 /**
- * Forward geocode (city typeahead) via Open-Meteo — client-side only.
- * Birth place picks stay on-device; results are not sent to Delphi servers.
+ * Place search (city typeahead) and "where am I", from the place list bundled with the app (GeoNames, CC BY 4.0).
+ * Since T336 (2026-11-13) nothing is sent anywhere: what you type and where you are stay on the device.
  */
+import { nearestPlace, searchPlaceIndex, type PlaceData } from "./placeIndex";
 
 export type PlaceHit = {
   id: string;
@@ -13,61 +14,45 @@ export type PlaceHit = {
   lon: number;
 };
 
-type OpenMeteoResult = {
-  id?: number;
-  name?: string;
-  latitude?: number;
-  longitude?: number;
-  admin1?: string;
-  country?: string;
-  country_code?: string;
-};
+let loading: Promise<PlaceData | null> | null = null;
 
-function formatLabel(r: OpenMeteoResult): string {
-  const name = String(r.name ?? "").trim();
-  const admin = String(r.admin1 ?? "").trim();
-  const country = String(r.country ?? r.country_code ?? "").trim();
-  const parts = [name];
-  if (admin && admin.toLowerCase() !== name.toLowerCase()) parts.push(admin);
-  if (country) parts.push(country);
-  return parts.filter(Boolean).join(", ");
+/** The list loads once, on first use (about 1.5 MB compressed), from the app's own files. */
+export function loadPlaces(): Promise<PlaceData | null> {
+  if (!loading) {
+    loading = fetch("/geo/places.json")
+      .then(r => (r.ok ? (r.json() as Promise<PlaceData>) : null))
+      .catch(() => null)
+      .then(d => {
+        if (!d) loading = null;
+        return d;
+      });
+  }
+  return loading;
 }
 
-/** Search cities/places. Returns [] for short queries or network failure. */
-export async function searchPlaces(
-  query: string,
-  opts?: { count?: number; signal?: AbortSignal },
-): Promise<PlaceHit[]> {
+/** Search cities/places. Returns [] for short queries or when the list can't load. */
+export async function searchPlaces(query: string, opts?: { count?: number; signal?: AbortSignal }): Promise<PlaceHit[]> {
   const q = query.trim();
   if (q.length < 2) return [];
-  const count = opts?.count ?? 6;
-  try {
-    const url =
-      `https://geocoding-api.open-meteo.com/v1/search` +
-      `?name=${encodeURIComponent(q)}&count=${count}&language=en&format=json`;
-    const res = await fetch(url, {
-      signal: opts?.signal ?? AbortSignal.timeout(5000),
-    });
-    if (!res.ok) return [];
-    const json = (await res.json()) as { results?: OpenMeteoResult[] };
-    const rows = Array.isArray(json.results) ? json.results : [];
-    return rows
-      .filter(
-        r =>
-          typeof r.latitude === "number" &&
-          typeof r.longitude === "number" &&
-          String(r.name ?? "").trim(),
-      )
-      .map(r => ({
-        id: String(r.id ?? `${r.name}-${r.latitude}-${r.longitude}`),
-        name: String(r.name).trim(),
-        admin1: r.admin1 ? String(r.admin1) : undefined,
-        country: r.country ? String(r.country) : r.country_code ? String(r.country_code) : undefined,
-        label: formatLabel(r),
-        lat: r.latitude as number,
-        lon: r.longitude as number,
-      }));
-  } catch {
-    return [];
-  }
+  const d = await loadPlaces();
+  if (!d || opts?.signal?.aborted) return [];
+  return searchPlaceIndex(d, q, opts?.count ?? 6).map(m => ({
+    id: `gn-${m.i}`,
+    label: m.label,
+    name: m.name,
+    admin1: m.admin1,
+    country: m.country,
+    lat: m.lat,
+    lon: m.lon,
+  }));
+}
+
+/** "NASHVILLE, TENNESSEE" for the nearest listed place, or "OBSERVATORY" when none is known. */
+export async function nearestPlaceLabel(lat: number, lon: number): Promise<string> {
+  const d = await loadPlaces();
+  const m = d ? nearestPlace(d, lat, lon) : null;
+  if (!m) return "OBSERVATORY";
+  const city = m.name.toUpperCase();
+  const region = (m.admin1 ?? m.country ?? "").toUpperCase();
+  return region && city !== region ? `${city}, ${region}` : city || "OBSERVATORY";
 }

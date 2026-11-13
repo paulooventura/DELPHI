@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacy" },
 };
 
-const UPDATED = "12 November 2026";
+const UPDATED = "13 November 2026";
 
 const h2 = { fontSize: "1.05rem", margin: "2rem 0 0.5rem", color: "#e8e4f4", fontWeight: 500 } as const;
 
@@ -39,6 +39,7 @@ export default function PrivacyPage() {
         <li>Your birth date, hour and place (Psyche), your casts and your preferences, stored in the app&apos;s local storage.</li>
         <li>Sky alerts: the place you save for alerts (rounded to about 1 km) and the alert schedule. Notifications are planned and delivered by your phone.</li>
         <li>The sky, orrery and clock math. Your live location is used on the device to draw your sky.</li>
+        <li>Place search and the name of the place you&apos;re in: both use a list of towns built into the app, so what you type and where you are aren&apos;t sent anywhere.</li>
         <li>For offline use: the satellite orbits last downloaded, and the map pieces you&apos;ve viewed (up to 60 MB; the oldest are dropped first).</li>
       </ul>
 
@@ -56,21 +57,12 @@ export default function PrivacyPage() {
       <h2 style={h2}>Sent to weather, place and map services</h2>
       <ul>
         <li>
-          Your device&apos;s coordinates go from your phone to Open-Meteo&apos;s geocoding service to name the place
-          you&apos;re in.
-        </li>
-        <li>
           For the weather, our server passes your coordinates, rounded to about 1 km, to MET Norway&apos;s forecast
           service (the Norwegian Meteorological Institute). We don&apos;t store them.
         </li>
-        <li>City names you type into place search go from your device to Open-Meteo&apos;s geocoding service.</li>
         <li>
           If you turn on the world map&apos;s Clouds, Rain, Snow or Night lights layers, your device loads those map pieces
           straight from NASA&apos;s GIBS service, which sees only which pieces of the map were asked for.
-        </li>
-        <li>
-          Open-Meteo answers under its own{" "}
-          <a href="https://open-meteo.com/en/terms">terms</a>.
         </li>
       </ul>
 
