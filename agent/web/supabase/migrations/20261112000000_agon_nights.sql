@@ -75,3 +75,7 @@ alter table public.agon_nights enable row level security;
 alter table public.agon_bookings enable row level security;
 alter table public.agon_fundings enable row level security;
 alter table public.agon_ledger enable row level security;
+
+-- The server (service role) must be able to read/write these: RLS has no policies.
+grant all on public.agon_nights, public.agon_bookings, public.agon_fundings, public.agon_ledger to service_role;
+grant usage, select on all sequences in schema public to service_role;
