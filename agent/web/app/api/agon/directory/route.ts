@@ -28,8 +28,9 @@ export async function GET() {
     const entries = raw.map(toPublicEntry).filter((e): e is PublicEntry => e !== null).slice(0, 500);
     cache = { at: now, entries };
     return NextResponse.json({ configured: true, entries }, { headers: CACHE_HEADERS });
-  } catch {
-    return NextResponse.json({ configured: true, entries: cache?.entries || [], error: "store-failed" }, {
+  } catch (err) {
+    const detail = err instanceof Error ? (err.message || err.name) : String(err);
+    return NextResponse.json({ configured: true, entries: cache?.entries || [], error: "store-failed", detail }, {
       status: cache ? 200 : 502,
     });
   }
