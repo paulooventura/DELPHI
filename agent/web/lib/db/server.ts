@@ -3,23 +3,26 @@ import type { EnrollRow } from "../agon/enroll";
 import { SCREEN_COLUMNS, type TrackRows } from "../telemetry/track";
 import { supabaseUrl } from "../supabaseUrl";
 
+/** The _B key is the good one (Nov 2026: Vercel won't let Paulo edit the old one without its authenticator). */
+const serviceKey = () => (process.env.SUPABASE_SERVICE_ROLE_KEY_B || process.env.SUPABASE_SERVICE_ROLE_KEY || "").trim() || undefined;
+
 /**
  * Service-role Supabase access. Server only — the service key bypasses
  * row-level security, so it must never reach the browser. Vaults are not
  * touched here: they hold ciphertext the owner reads/writes directly.
  *
- * Env (Vercel, server): NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+ * Env (Vercel, server): SUPABASE_SERVICE_ROLE_KEY_B (Production). The address is in lib/supabaseUrl.ts.
  */
 
 let admin: SupabaseClient | null = null;
 
 export function dbConfigured(): boolean {
-  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(serviceKey());
 }
 
 export function db(): SupabaseClient {
   if (!dbConfigured()) throw new Error("db-not-configured");
-  admin ??= createClient(supabaseUrl(), process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  admin ??= createClient(supabaseUrl(), serviceKey()!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return admin;
