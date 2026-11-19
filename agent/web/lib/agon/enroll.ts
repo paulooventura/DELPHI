@@ -9,7 +9,7 @@
  * own that (see the portal's payment / W-9 provider list).
  */
 
-import { CERT_LABEL, GEAR_LABEL, isSlotKey, NOTICE_LABEL, RADIUS_LABEL, slotsLine, VISION_LABEL } from "./catalog";
+import { CERT_LABEL, DAY_IDS, GEAR_LABEL, isSlotKey, NOTICE_LABEL, RADIUS_LABEL, slotsLine, VISION_LABEL } from "./catalog";
 
 export const ENROLL_KINDS = ["venue", "investor", "promoter", "role"] as const;
 export type EnrollKind = (typeof ENROLL_KINDS)[number];
@@ -184,15 +184,17 @@ export function validateEnrollment(input: Input, now = Date.now()): EnrollResult
     const gear = list(input.gear, 80, GEAR_LABEL);
     const gear_other = str(input.gear_other, LIMITS.medium) || str(input.infrastructure, LIMITS.medium);
     const open_dates = str(input.open_dates, LIMITS.medium);
+    const hours = venueHours(input);
     if (!capacity) bad.push("capacity");
     headline = [venue_type || "Venue", capacity && `cap ${capacity}`].filter(Boolean).join(" · ");
-    data = { venue_type, capacity, gear, gear_other, open_dates };
+    data = { venue_type, capacity, gear, gear_other, open_dates, hours };
     details = detailLines([
       ["Venue type", venue_type],
       ["Capacity", capacity],
       ["Has", labels(gear, GEAR_LABEL).join(", ")],
       ["Also", gear_other],
-      ["Open dates", open_dates],
+      ["Hours", hoursLine(hours)],
+      ["Closed dates", open_dates],
     ]);
   } else if (kind === "investor") {
     const vision = list(input.vision, 12, VISION_LABEL);
@@ -300,4 +302,37 @@ export function toPublicEntry(raw: unknown): PublicEntry | null {
     about: clean(r.about, LIMITS.long),
     link: normalizeLink(clean(r.link, LIMITS.medium)),
   };
+}
+
+/** Venue opening hours (Paulo 2026-11-19): 24/7, or per weekday from–to ("HH:MM"); a close before the open runs past midnight. */
+export type VenueHours = {
+  open247: boolean;
+  byAppointment: boolean;
+  days: Partial<Record<(typeof DAY_IDS)[number], { from: string; to: string }>>;
+};
+
+const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function venueHours(input: Record<string, unknown>): VenueHours {
+  const open247 = bool(input.open_247);
+  const days: VenueHours["days"] = {};
+  if (!open247) {
+    for (const d of DAY_IDS) {
+      if (!bool(input[`h_${d}_on`])) continue;
+      const from = String(input[`h_${d}_from`] ?? "");
+      const to = String(input[`h_${d}_to`] ?? "");
+      if (HHMM.test(from) && HHMM.test(to) && from !== to) days[d] = { from, to };
+    }
+  }
+  return { open247, byAppointment: bool(input.by_appt), days };
+}
+
+export function hoursLine(h: VenueHours): string {
+  if (h.open247) return "Open 24/7";
+  const parts = DAY_IDS.filter(d => h.days[d]).map(d => {
+    const x = h.days[d]!;
+    return `${d[0]!.toUpperCase()}${d.slice(1)} ${x.from}–${x.to}${x.to <= x.from ? " (+1)" : ""}`;
+  });
+  const line = parts.join(", ");
+  return [line, h.byAppointment ? "also by appointment" : ""].filter(Boolean).join("; ");
 }

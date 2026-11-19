@@ -123,6 +123,35 @@
       field("blackout", "Dates you can't (optional)", { ph: "Dec 20 – Jan 2, every 1st Sunday…", max: 240 });
   }
 
+  /** Venue hours (Paulo 11-19): Open 24/7, or each weekday closed / open from–to. Late closes run past midnight. */
+  var HOUR_OPTS = (function () {
+    var o = [];
+    for (var m = 0; m < 24 * 60; m += 30) {
+      var h = Math.floor(m / 60), mm = m % 60;
+      var ap = h < 12 ? "am" : "pm", h12 = h % 12 || 12;
+      o.push({ v: (h < 10 ? "0" : "") + h + ":" + (mm ? "30" : "00"), l: h12 + (mm ? ":30" : "") + " " + ap });
+    }
+    return o;
+  })();
+  function hourSelect(name, val) {
+    return '<select class="wzin enhour" data-f="' + name + '" aria-label="' + attr(name) + '">' +
+      HOUR_OPTS.map(function (o) { return '<option value="' + o.v + '"' + (o.v === val ? " selected" : "") + ">" + esc(o.l) + "</option>"; }).join("") + "</select>";
+  }
+  function venueHours() {
+    var all = !!st.v.open_247;
+    var top = '<label class="enck"><input type="checkbox" data-f="open_247" data-rerender="1"' + (all ? " checked" : "") + "> <span><b>Open 24/7</b></span></label>" +
+      '<label class="enck"><input type="checkbox" data-f="by_appt"' + (st.v.by_appt ? " checked" : "") + "> <span>Also by appointment outside these hours</span></label>";
+    if (all) return top;
+    var rows = CAT.availability.days.map(function (d) {
+      var on = !!st.v["h_" + d.id + "_on"];
+      var from = st.v["h_" + d.id + "_from"] || "18:00", to = st.v["h_" + d.id + "_to"] || "02:00";
+      return '<div class="enhours-row"><label class="enck enday"><input type="checkbox" data-f="h_' + d.id + '_on" data-rerender="1"' + (on ? " checked" : "") + "> <span>" + esc(d.label) + "</span></label>" +
+        (on ? hourSelect("h_" + d.id + "_from", from) + '<span class="enhours-to">to</span>' + hourSelect("h_" + d.id + "_to", to) +
+          (to <= from ? '<small class="enhours-next">next day</small>' : "") : '<span class="enhours-closed">Closed</span>') + "</div>";
+    }).join("");
+    return top + '<div class="enhours">' + rows + "</div>";
+  }
+
   function certRows() {
     var picked = arr("certs");
     if (!picked.length) return "";
@@ -159,8 +188,10 @@
     if (st.kind === "venue") {
       return section("The room",
           '<div class="enrow2">' + field("venue_type", "Type of room", { options: VENUE_TYPES }) +
-          field("capacity", "Capacity", { req: true, ph: "~300", max: 20, mode: "numeric" }) + "</div>" +
-          field("open_dates", "Dates you're open", { ph: "Weeknights, Sundays, Q1…", max: 240 })) +
+          field("capacity", "Capacity", { req: true, ph: "~300", max: 20, mode: "numeric" }) + "</div>") +
+        section("Hours you're open", venueHours() +
+          field("open_dates", "Closed dates or seasons (optional)", { ph: "Closed Dec 24–26, summers only…", max: 240 }),
+          "Tick each day you're open and set the hours. A close earlier than the open runs past midnight.") +
         section("Gear & services you have", groupedChips("gear", CAT.gear) +
           field("gear_other", "Anything else", { ph: "Fire pit, rooftop, sauna…", max: 240 }), "Tick everything the room already has, so promoters and backers can plan around it.");
     }
@@ -304,6 +335,13 @@
       st = null;
       return true;
     };
+    form.querySelectorAll("[data-rerender]").forEach(function (el) {
+      el.addEventListener("change", function () {
+        collect(form);
+        st.keepScroll = true;
+        render();
+      });
+    });
     form.querySelectorAll("[data-kind]").forEach(function (b) {
       b.onclick = function () {
         collect(form);
@@ -636,6 +674,13 @@
     ".engrid tbody th{text-align:left;width:3.2em}",
     ".enslot{width:100%;min-height:34px;border-radius:8px;border:1px solid rgba(200,185,255,.22);background:rgba(8,6,18,.6);color:#fff4dc;font:inherit;font-size:14px;cursor:pointer}",
     ".enslot.on{background:rgba(214,170,90,.22);border-color:var(--amber)}",
+    ".enhours{display:grid;gap:6px;margin:8px 0 4px}",
+    ".enhours-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;min-height:40px}",
+    ".enhours-row .enday{min-width:76px;margin:0}",
+    ".enhour{width:auto;min-width:96px;padding:8px 10px}",
+    ".enhours-to{opacity:.7;font-size:13px}",
+    ".enhours-next{opacity:.65;font-size:11px}",
+    ".enhours-closed{opacity:.5;font-size:13px}",
     ".encertfiles{margin:4px 0 6px;display:grid;gap:8px}",
     ".encertrow{border:1px solid rgba(200,185,255,.18);border-radius:10px;padding:8px 10px;background:rgba(8,6,18,.45)}",
     ".encertline{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",

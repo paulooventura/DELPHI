@@ -6,6 +6,8 @@ import {
   toPublicEntry,
   toSheetRow,
   validateEnrollment,
+  hoursLine,
+  venueHours,
 } from "./enroll";
 
 const NOW = 1_800_000_000_000;
@@ -177,5 +179,25 @@ describe("sheet + public shaping", () => {
       about: "hi", link: "https://annex.example/",
     });
     expect(toPublicEntry({ kind: "bogus", display_name: "x" })).toBeNull();
+  });
+});
+
+describe("venue hours (Paulo 2026-11-19)", () => {
+  it("24/7 wins over any day rows", () => {
+    const h = venueHours({ open_247: true, h_mon_on: true, h_mon_from: "18:00", h_mon_to: "02:00" });
+    expect(h).toEqual({ open247: true, byAppointment: false, days: {} });
+    expect(hoursLine(h)).toBe("Open 24/7");
+  });
+
+  it("keeps ticked days with valid times; a close before the open runs past midnight", () => {
+    const h = venueHours({
+      h_fri_on: true, h_fri_from: "20:00", h_fri_to: "03:00",
+      h_sat_on: true, h_sat_from: "12:00", h_sat_to: "23:30",
+      h_sun_on: false, h_sun_from: "10:00", h_sun_to: "14:00",
+      h_mon_on: true, h_mon_from: "9am", h_mon_to: "17:00",
+      by_appt: true,
+    });
+    expect(Object.keys(h.days)).toEqual(["fri", "sat"]);
+    expect(hoursLine(h)).toBe("Fri 20:00–03:00 (+1), Sat 12:00–23:30; also by appointment");
   });
 });
