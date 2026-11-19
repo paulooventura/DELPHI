@@ -3530,3 +3530,10 @@ html.chorus-embed body {
 .cp-moment-nowstrip {
   margin: 0 -0.25rem;
 }
+
+/* Bundled fonts (app/layout.tsx imports them): the variables next/font used to set. */
+:root {
+  --font-fashion: "Bodoni Moda", "Didot", Georgia, serif;
+  --font-clean: "Manrope", system-ui, sans-serif;
+  --font-geist-mono: "Geist Mono", ui-monospace, monospace;
+}

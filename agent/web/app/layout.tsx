@@ -1,28 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Bodoni_Moda, Manrope, Geist_Mono } from "next/font/google";
 import Script from "next/script";
 import { SITE_URL } from "../lib/site";
 import { DELPHI_BUILD } from "../lib/buildStamp";
 import { NativeShellBoot } from "../components/NativeShellBoot";
 import "./globals.css";
 
-const fashion = Bodoni_Moda({
-  variable: "--font-fashion",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
-});
-
-const clean = Manrope({
-  variable: "--font-clean",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// Fonts ship inside the app (Fontsource, SIL OFL): Vercel's builds stopped being able to fetch
+// next/font/google on 2026-11-18, and the app should work offline anyway. Variables set in globals.css.
+import "@fontsource/bodoni-moda/latin-400.css";
+import "@fontsource/bodoni-moda/latin-500.css";
+import "@fontsource/bodoni-moda/latin-600.css";
+import "@fontsource/bodoni-moda/latin-400-italic.css";
+import "@fontsource/bodoni-moda/latin-500-italic.css";
+import "@fontsource/bodoni-moda/latin-600-italic.css";
+import "@fontsource/manrope/latin-300.css";
+import "@fontsource/manrope/latin-400.css";
+import "@fontsource/manrope/latin-500.css";
+import "@fontsource/manrope/latin-600.css";
+import "@fontsource/geist-mono/latin-400.css";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -94,7 +89,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${fashion.variable} ${clean.variable} ${geistMono.variable} h-full antialiased`}
+      className="h-full antialiased"
     >
       <head>
         <meta httpEquiv="Cache-Control" content="no-store, no-cache, must-revalidate" />
