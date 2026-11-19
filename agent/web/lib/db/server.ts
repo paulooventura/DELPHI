@@ -1,6 +1,7 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { EnrollRow } from "../agon/enroll";
 import { SCREEN_COLUMNS, type TrackRows } from "../telemetry/track";
+import { supabaseUrl } from "../supabaseUrl";
 
 /**
  * Service-role Supabase access. Server only — the service key bypasses
@@ -13,12 +14,12 @@ import { SCREEN_COLUMNS, type TrackRows } from "../telemetry/track";
 let admin: SupabaseClient | null = null;
 
 export function dbConfigured(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export function db(): SupabaseClient {
   if (!dbConfigured()) throw new Error("db-not-configured");
-  admin ??= createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+  admin ??= createClient(supabaseUrl(), process.env.SUPABASE_SERVICE_ROLE_KEY!, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
   return admin;
