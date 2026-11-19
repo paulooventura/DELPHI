@@ -1,5 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { supabaseUrl } from "../supabaseUrl";
+import { supabasePublicKey, supabaseUrl } from "../supabaseUrl";
 
 /**
  * Browser Supabase client (publishable anon key). It can only sign people in
@@ -10,13 +10,13 @@ import { supabaseUrl } from "../supabaseUrl";
 let client: SupabaseClient | null | undefined;
 
 export function accountsEnabled(): boolean {
-  return Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
+  return Boolean(supabasePublicKey());
 }
 
 export function supabase(): SupabaseClient | null {
   if (client !== undefined) return client;
   if (typeof window === "undefined" || !accountsEnabled()) return (client = null);
-  client = createClient(supabaseUrl(), process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  client = createClient(supabaseUrl(), supabasePublicKey(), {
     auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: "pkce" },
   });
   return client;
