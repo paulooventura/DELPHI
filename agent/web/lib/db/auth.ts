@@ -10,10 +10,12 @@ export async function userFromRequest(req: Request): Promise<{ id: string; email
   return { id: data.user.id, email: (data.user.email || "").toLowerCase() };
 }
 
-/** ADMIN_EMAILS (comma-separated, server env) is the whole allow-list. */
+/** Paulo, the owner, is always an admin (Vercel env edits need 2FA he can't reach; Paulo 2026-11-19). */
+const OWNER_ADMINS = ["paulooventura@gmail.com"];
+
+/** ADMIN_EMAILS (comma-separated, server env) plus the owner. */
 export function isAdminEmail(email: string): boolean {
-  const list = (process.env.ADMIN_EMAILS || "")
-    .split(",")
+  const list = [...OWNER_ADMINS, ...(process.env.ADMIN_EMAILS || "").split(",")]
     .map((e) => e.trim().toLowerCase())
     .filter(Boolean);
   return !!email && list.includes(email.toLowerCase());
